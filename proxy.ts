@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   // pages ouvertes à tous : accueil, annuaire et profils des menuisiers, connexion, inscription
-  const open = pathname === "/" || pathname === "/connexion" || pathname === "/inscription" || pathname === "/menuisiers" || pathname.startsWith("/menuisiers/");
+  const open = pathname === "/" || pathname === "/connexion" || pathname === "/inscription" || pathname === "/menuisiers" || pathname.startsWith("/menuisiers/") || pathname === "/demo-render"; // /demo-render : page de développement (404 en production)
   if (!open && !req.cookies.has("alumg_session")) {
     const url = new URL("/connexion", req.url);
     url.searchParams.set("next", pathname + req.nextUrl.search);

@@ -366,6 +366,85 @@ function Extras({ v, W, H, t }: { v: Viewable; W: number; H: number; t: number }
   );
 }
 
+// ---------- Décor (photos de démonstration) : mur, sol, fond de pièce ----------
+export type Stage = { wall: string; ground: string; sky: string; interior?: string; sill?: number };
+
+// Crépi : texture de bruit léger générée localement (aucun fichier), avec un générateur déterministe : le même crépi à chaque rendu.
+function makePlaster(color: string) {
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const x = c.getContext("2d")!;
+  x.fillStyle = color;
+  x.fillRect(0, 0, 256, 256);
+  let seed = 20251;
+  const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  for (let i = 0; i < 5200; i++) {
+    x.fillStyle = rnd() > 0.5 ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.07)";
+    x.fillRect(rnd() * 256, rnd() * 256, 1 + rnd() * 2, 1 + rnd() * 2);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(5, 3);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const usePlaster = (color: string) => useMemo(() => (typeof document === "undefined" ? null : makePlaster(color)), [color]);
+
+function Surroundings({ W, H, stage }: { W: number; H: number; stage: Stage }) {
+  const sill = stage.sill ?? 0;
+  const T = 0.3;
+  const side = 3.4;
+  const top = 1.5;
+  const total = sill + H + top;
+  const plaster = usePlaster(stage.wall);
+  const mat = <meshStandardMaterial map={plaster ?? undefined} color={plaster ? "#ffffff" : stage.wall} roughness={0.95} />;
+  const wall = (w: number, h: number, x: number, y: number) => (
+    <mesh position={[x, y, -T / 2]} castShadow receiveShadow>
+      <boxGeometry args={[w, h, T]} />
+      {mat}
+    </mesh>
+  );
+  const bush = (x: number, z: number, r: number, c = "#3f6b3a") => (
+    <mesh key={`${x}-${z}`} position={[x, r * 0.8, z]} castShadow receiveShadow>
+      <sphereGeometry args={[r, 20, 16]} />
+      <meshStandardMaterial color={c} roughness={1} />
+    </mesh>
+  );
+  return (
+    <group>
+      {wall(side, total, -(W / 2 + side / 2), total / 2)}
+      {wall(side, total, W / 2 + side / 2, total / 2)}
+      {sill > 0 && wall(W, sill, 0, sill / 2)}
+      {wall(W, top, 0, sill + H + top / 2)}
+      {/* appui et linteau en saillie */}
+      {sill > 0 && (
+        <mesh position={[0, sill - 0.03, 0.06]} castShadow receiveShadow>
+          <boxGeometry args={[W + 0.24, 0.06, 0.2]} />
+          <meshStandardMaterial color="#cfc8ba" roughness={0.8} />
+        </mesh>
+      )}
+      <mesh position={[0, sill + H + 0.07, 0.1]} castShadow receiveShadow>
+        <boxGeometry args={[W + 0.7, 0.14, 0.32]} />
+        <meshStandardMaterial color="#cfc8ba" roughness={0.8} />
+      </mesh>
+      {/* pièce derrière la vitre : plus sombre que l'extérieur, éclairée en chaud */}
+      <mesh position={[0, 2.4, -1.7]}>
+        <planeGeometry args={[14, 8]} />
+        <meshStandardMaterial color={stage.interior ?? "#5f4d39"} roughness={1} />
+      </mesh>
+      <pointLight position={[0, sill + H * 0.7, -0.9]} intensity={1.3} distance={5} color="#ffd9a0" />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 2]} receiveShadow>
+        <planeGeometry args={[60, 60]} />
+        <meshStandardMaterial color={stage.ground} roughness={1} />
+      </mesh>
+      {bush(-(W / 2 + 0.9), 0.55, 0.5)}
+      {bush(-(W / 2 + 1.7), 0.8, 0.35, "#4a7a42")}
+      {bush(W / 2 + 1.1, 0.6, 0.45, "#386132")}
+      <color attach="background" args={[stage.sky]} />
+    </group>
+  );
+}
+
 // ---------- Interaction ----------
 function clickToggle(e: ThreeEvent<MouseEvent>, fn: () => void) {
   if (e.delta > 4) return; // un glisser pour tourner la vue n'ouvre rien
@@ -409,11 +488,13 @@ function isMovable(v: Viewable) {
 // Quelles « parties mobiles » cliquables : un état d'ouverture (0 à 1) par vantail.
 const countMovers = (v: Viewable) => (v.category === "volet" || v.opening === "jalousie" ? 1 : v.leaves);
 
-export default function Viewer3D({ line, highlight = null }: { line: Viewable; highlight?: string | null }) {
+export type View = { az: number; el: number; dist?: number }; // azimut et élévation en degrés, distance relative
+
+export default function Viewer3D({ line, highlight = null, stage, bare = false, initialOpen = 0, view }: { line: Viewable; highlight?: string | null; stage?: Stage; bare?: boolean; initialOpen?: number; view?: View }) {
   const { t } = useI18n();
   const v = line;
   const n = countMovers(v);
-  const [amounts, setAmounts] = useState<number[]>(() => Array(n).fill(0));
+  const [amounts, setAmounts] = useState<number[]>(() => Array(n).fill(initialOpen));
   const [mode, setMode] = useState<"turn" | "tilt">("turn");
   const reduced = useReducedMotion();
   const controls = useRef<{ reset: () => void; saveState: () => void } | null>(null);
@@ -423,7 +504,7 @@ export default function Viewer3D({ line, highlight = null }: { line: Viewable; h
   const [lastSig, setLastSig] = useState(sig);
   if (sig !== lastSig) {
     setLastSig(sig);
-    setAmounts(Array(n).fill(0));
+    setAmounts(Array(n).fill(initialOpen));
   }
 
   const movable = isMovable(v);
@@ -446,7 +527,11 @@ export default function Viewer3D({ line, highlight = null }: { line: Viewable; h
     };
   }, [v.finish, v.glassType, v.pattern, highlight, reduced]);
 
-  const dist = Math.max(W, H) * 1.55 + 0.9;
+  const dist = (Math.max(W, H) * 1.55 + 0.9) * (view?.dist ?? 1);
+  const sillY = stage?.sill ?? 0;
+  const cam: [number, number, number] = view
+    ? [dist * Math.cos((view.el * Math.PI) / 180) * Math.sin((view.az * Math.PI) / 180), sillY + H / 2 + dist * Math.sin((view.el * Math.PI) / 180), dist * Math.cos((view.el * Math.PI) / 180) * Math.cos((view.az * Math.PI) / 180)]
+    : [dist * 0.55, H * 0.55 + 0.4, dist];
   const open = mean > 0.5;
 
   let body: ReactNode;
@@ -468,15 +553,16 @@ export default function Viewer3D({ line, highlight = null }: { line: Viewable; h
   }
 
   return (
-    <div className="space-y-3">
-      <div className="relative overflow-hidden rounded-xl border border-line bg-gradient-to-b from-sky-100 to-slate-200 dark:from-slate-700 dark:to-slate-900" style={{ height: 380 }}>
-        <Canvas shadows="percentage" dpr={[1, 2]} frameloop="demand" camera={{ position: [dist * 0.55, H * 0.55 + 0.4, dist], fov: 32, near: 0.05, far: 60 }} aria-label={t("viewer.aria")} role="img" gl={{ antialias: true }}>
+    <div className={bare ? "h-full w-full" : "space-y-3"}>
+      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line bg-gradient-to-b from-sky-100 to-slate-200 dark:from-slate-700 dark:to-slate-900"}`} style={bare ? undefined : { height: 380 }}>
+        <Canvas shadows="percentage" scene={stage ? { environmentIntensity: 0.5 } : undefined} dpr={bare ? 1 : [1, 2]} frameloop="demand" camera={{ position: cam, fov: 32, near: 0.05, far: 80 }} aria-label={t("viewer.aria")} role="img" gl={{ antialias: true, preserveDrawingBuffer: bare }}>
           <SceneCtx.Provider value={ctx}>
             <Env />
             <ambientLight intensity={0.35} />
-            <directionalLight position={[3, 5, 4]} intensity={1.4} castShadow shadow-mapSize={[1024, 1024]} />
-            <group>{body}</group>
-            <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={Math.max(W, H) * 2.4} blur={2.4} far={Math.max(H, 1.5)} />
+            <directionalLight position={[3, 5, 4]} intensity={stage ? 1.6 : 1.4} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} shadow-bias={-0.0004} />
+            {stage && <Surroundings W={W} H={H} stage={stage} />}
+            <group position={[0, sillY, 0]}>{body}</group>
+            {!stage && <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={Math.max(W, H) * 2.4} blur={2.4} far={Math.max(H, 1.5)} />}
             <OrbitControls
               ref={(c) => {
                 controls.current = c as unknown as typeof controls.current;
@@ -486,19 +572,19 @@ export default function Viewer3D({ line, highlight = null }: { line: Viewable; h
               enablePan={false}
               enableDamping
               dampingFactor={0.08}
-              target={[0, H / 2, 0]}
+              target={[0, sillY + H / 2, 0]}
               minDistance={0.6}
               maxDistance={dist * 2.2}
               maxPolarAngle={Math.PI * 0.52}
             />
           </SceneCtx.Provider>
         </Canvas>
-        <button type="button" className="absolute right-2 top-2 grid size-9 place-items-center rounded-lg bg-surface/90 text-ink shadow hover:bg-surface" onClick={() => controls.current?.reset()} aria-label={t("viewer.reset")} title={t("viewer.reset")}>
+        {!bare && <button type="button" className="absolute right-2 top-2 grid size-9 place-items-center rounded-lg bg-surface/90 text-ink shadow hover:bg-surface" onClick={() => controls.current?.reset()} aria-label={t("viewer.reset")} title={t("viewer.reset")}>
           <RotateCcw size={16} aria-hidden />
-        </button>
+        </button>}
       </div>
 
-      {movable ? (
+      {bare ? null : movable ? (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
           <button type="button" className="btn-primary" aria-pressed={open} onClick={() => setAll(open ? 0 : 1)}>
             {open ? t("viewer.close") : t("viewer.open")}
@@ -521,7 +607,7 @@ export default function Viewer3D({ line, highlight = null }: { line: Viewable; h
       ) : (
         <p className="text-sm text-muted">{t("viewer.static")}</p>
       )}
-      <p className="text-xs text-muted">{t("viewer.hint")}</p>
+      {!bare && <p className="text-xs text-muted">{t("viewer.hint")}</p>}
     </div>
   );
 }
