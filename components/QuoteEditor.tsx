@@ -1,9 +1,10 @@
 "use client";
-import { Copy, FileDown, Save, Trash2 } from "lucide-react";
+import { Box, Copy, FileDown, Image as ImageIcon, Ruler, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ProfileNeeds from "./ProfileNeeds";
+import Viewer3DLoader from "./Viewer3DLoader";
 import { Choice, Field, FinishPicker } from "./ui";
 import { allPieces, billedArea, cutList, cuttingPlan, fmt, lineTotal, meters, normalize, planTotals, unitPrice } from "@/lib/calc";
 import { useQuotes, useSettings } from "@/lib/client";
@@ -127,25 +128,45 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const { ht, tva, ttc } = totals({ lines: validLines, terms: q.terms });
   const plan = planTotals(cuttingPlan(allPieces(validLines), settings.barLength, settings.kerf));
 
-  const submit = async (withPdf: boolean) => {
+  // Enregistre le devis (création ou mise à jour) ; renvoie le devis enregistré, ou null si une ligne est invalide / si l'envoi échoue.
+  const persist = async (): Promise<Quote | null> => {
     if (validLines.length !== q.lines.length || q.lines.length === 0) {
       setMsg({ ok: false, text: t("editor.needLine") });
-      return;
+      return null;
     }
     try {
       const saved = await save(q, !persisted);
       setPersisted(true);
       setQ(saved);
-      setMsg({ ok: true, text: t("editor.saved") });
+      return saved;
+    } catch (e) {
+      console.error("[alumg] enregistrement en échec", e);
+      setMsg({ ok: false, text: t("common.error") });
+      return null;
+    }
+  };
+
+  const submit = async (withPdf: boolean) => {
+    const saved = await persist();
+    if (!saved) return;
+    setMsg({ ok: true, text: t("editor.saved") });
+    try {
       if (withPdf) {
         const { quotePdf } = await import("@/lib/pdf");
         await quotePdf(saved, settings, t, locale, attachCut);
       }
-      if (!existing) router.replace(`/devis/${saved.id}`);
     } catch (e) {
-      console.error("[alumg] enregistrement ou PDF en échec", e);
+      console.error("[alumg] génération du PDF en échec", e);
       setMsg({ ok: false, text: t("common.error") });
+      return;
     }
+    if (!existing) router.replace(`/devis/${saved.id}`);
+  };
+
+  // Ouvre la page de détail des profilés (du devis, ou d'un ouvrage) après avoir enregistré.
+  const openNeeds = async (lineId?: string) => {
+    const saved = await persist();
+    if (saved) router.push(`/devis/${saved.id}/profils${lineId ? `/${lineId}` : ""}`);
   };
 
   return (
@@ -209,6 +230,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 onChange={(p) => setLine(i, p)}
                 onRemove={q.lines.length > 1 ? () => setQ({ ...q, lines: q.lines.filter((_, j) => j !== i) }) : undefined}
                 onDuplicate={() => setQ({ ...q, lines: [...q.lines.slice(0, i + 1), { ...l, id: crypto.randomUUID() }, ...q.lines.slice(i + 1)] })}
+                onNeeds={() => openNeeds(l.id)}
                 num={num}
               />
             ))}
@@ -241,6 +263,10 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
           <section className="card space-y-1 text-sm">
             <h3 className="font-semibold">{t("editor.materials")}</h3>
+            <button type="button" className="btn-secondary mb-2 w-full" onClick={() => openNeeds()}>
+              <Ruler size={16} aria-hidden />
+              {t("needsPage.open")}
+            </button>
             <p className="flex justify-between"><span className="text-muted">{t("needs.totalBars")}</span><span className="font-semibold">{plan.bars}</span></p>
             <p className="flex justify-between"><span className="text-muted">{t("needs.totalUsed")}</span><span className="font-semibold">{meters(plan.usedLen)}</span></p>
             <p className="flex justify-between"><span className="text-muted">{t("needs.totalWaste")}</span><span className="font-semibold">{meters(plan.wasteLen)} ({plan.wastePct} %)</span></p>
@@ -272,7 +298,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 }
 
 function LineCard({
-  l, i, t, settings, valid, onChange, onRemove, onDuplicate, num,
+  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num,
 }: {
   l: Line;
   i: number;
@@ -282,8 +308,10 @@ function LineCard({
   onChange: (p: Partial<Line>) => void;
   onRemove?: () => void;
   onDuplicate: () => void;
+  onNeeds: () => void;
   num: (v: string) => number;
 }) {
+  const [view, setView] = useState<"2d" | "3d">("2d");
   const cat = l.category;
   const openable = cat === "fenetre" || cat === "porte";
   const hasGlass = cat === "garde-corps" ? l.guard === "verre" : cat !== "volet" && !(cat === "porte" && l.infill === "pleine");
@@ -396,12 +424,30 @@ function LineCard({
       </div>
 
       <div className="space-y-3 lg:sticky lg:top-20 lg:self-start">
-        <p className="text-xs text-muted">{t("editor.preview")}</p>
-        {sk ? (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted">{view === "3d" ? t("viewer.title") : t("editor.preview")}</p>
+          <div role="group" aria-label={t("editor.preview")} className="flex gap-0.5 rounded-full border border-line p-0.5">
+            <button type="button" aria-pressed={view === "2d"} onClick={() => setView("2d")} className={`flex min-h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium ${view === "2d" ? "bg-primary text-on-primary" : "text-muted hover:text-ink"}`}>
+              <ImageIcon size={13} aria-hidden />
+              {t("viewer.show2d")}
+            </button>
+            <button type="button" aria-pressed={view === "3d"} disabled={!valid} onClick={() => setView("3d")} className={`flex min-h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium disabled:opacity-50 ${view === "3d" ? "bg-primary text-on-primary" : "text-muted hover:text-ink"}`}>
+              <Box size={13} aria-hidden />
+              {t("viewer.show3d")}
+            </button>
+          </div>
+        </div>
+        {view === "3d" && valid ? (
+          <Viewer3DLoader line={l} />
+        ) : sk ? (
           <div role="img" aria-label={`${lineTitle(l, t)} ${l.width} × ${l.height} mm`} className="flex justify-center rounded-xl bg-white p-2" dangerouslySetInnerHTML={{ __html: sk.svg }} />
         ) : (
           <div className="h-44 rounded-xl bg-surface-2" />
         )}
+        <button type="button" className="btn-secondary w-full" onClick={onNeeds} disabled={!valid}>
+          <Ruler size={16} aria-hidden />
+          {t("needsPage.open")}
+        </button>
         <div className="flex gap-2">
           <button type="button" className="btn-secondary flex-1" onClick={onDuplicate}>
             <Copy size={16} aria-hidden />
