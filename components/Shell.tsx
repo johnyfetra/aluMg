@@ -7,42 +7,72 @@ import { LangMenu, ThemeSwitch, UserMenu } from "./Controls";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
+import { Briefcase, ClipboardList, Images, Search, Store, Users } from "lucide-react";
+import { useSession } from "@/lib/client";
+
 type Item = { href: string; key: keyof Messages; Icon: typeof Settings; match: (p: string) => boolean };
-const GROUPS: { label: keyof Messages; items: Item[] }[] = [
-  {
-    label: "nav.group.main",
-    items: [
-      { href: "/tableau-de-bord", key: "nav.dashboard", Icon: LayoutDashboard, match: (p) => p.startsWith("/tableau-de-bord") },
-      { href: "/devis", key: "nav.quotes", Icon: FileText, match: (p) => p === "/devis" || (p.startsWith("/devis/") && p !== "/devis/nouveau") },
-    ],
-  },
-  {
-    label: "nav.group.config",
-    items: [
-      { href: "/reglages", key: "nav.settings", Icon: Settings, match: (p) => p.startsWith("/reglages") },
-      { href: "/compte", key: "nav.account", Icon: UserCircle, match: (p) => p.startsWith("/compte") },
-    ],
-  },
-];
-const ALL = [...GROUPS.flatMap((g) => g.items), { href: "/devis/nouveau", key: "nav.new" as const, Icon: FilePlus2, match: (p: string) => p === "/devis/nouveau" }];
+type Group = { label: keyof Messages; items: Item[] };
+type Nav = { home: string; cta: Item; groups: Group[] };
+
+const starts = (...prefix: string[]) => (p: string) => prefix.some((x) => p === x || p.startsWith(`${x}/`));
+
+const MENUISIER: Nav = {
+  home: "/tableau-de-bord",
+  cta: { href: "/devis/nouveau", key: "nav.new", Icon: FilePlus2, match: (p) => p === "/devis/nouveau" },
+  groups: [
+    {
+      label: "nav.group.main",
+      items: [
+        { href: "/tableau-de-bord", key: "nav.dashboard", Icon: LayoutDashboard, match: starts("/tableau-de-bord") },
+        { href: "/devis", key: "nav.quotes", Icon: FileText, match: (p) => (p === "/devis" || p.startsWith("/devis/")) && p !== "/devis/nouveau" },
+        { href: "/chantiers", key: "nav.sites", Icon: Briefcase, match: starts("/chantiers") },
+        { href: "/clients", key: "nav.clients", Icon: Users, match: starts("/clients") },
+      ],
+    },
+    {
+      label: "nav.group.config",
+      items: [
+        { href: "/realisations", key: "nav.portfolio", Icon: Images, match: starts("/realisations") },
+        { href: "/profil-public", key: "nav.publicProfile", Icon: Store, match: starts("/profil-public") },
+        { href: "/reglages", key: "nav.settings", Icon: Settings, match: starts("/reglages") },
+        { href: "/compte", key: "nav.account", Icon: UserCircle, match: starts("/compte") },
+      ],
+    },
+  ],
+};
+
+const CLIENT: Nav = {
+  home: "/espace-client",
+  cta: { href: "/espace-client/nouvelle", key: "cl.newRequest", Icon: FilePlus2, match: starts("/espace-client/nouvelle") },
+  groups: [
+    {
+      label: "nav.group.main",
+      items: [
+        { href: "/espace-client", key: "cl.myRequests", Icon: ClipboardList, match: (p) => p === "/espace-client" || p.startsWith("/espace-client/devis") },
+        { href: "/menuisiers", key: "cl.findJoiner", Icon: Search, match: starts("/menuisiers") },
+      ],
+    },
+    { label: "nav.group.config", items: [{ href: "/compte", key: "nav.account", Icon: UserCircle, match: starts("/compte") }] },
+  ],
+};
 
 // usePathname() est lu à l'exécution : isolé dans Suspense pour garder le reste du layout prérendu.
-function NavLinks({ onNavigate }: { onNavigate: () => void }) {
+function NavLinks({ nav, onNavigate }: { nav: Nav; onNavigate: () => void }) {
   const { t } = useI18n();
   const path = usePathname();
-  const creating = path === "/devis/nouveau";
+  const creating = nav.cta.match(path);
   return (
     <nav aria-label={t("nav.main")} className="flex flex-1 flex-col gap-6 px-4">
       <Link
-        href="/devis/nouveau"
+        href={nav.cta.href}
         onClick={onNavigate}
         aria-current={creating ? "page" : undefined}
         className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-(--side-bg) shadow-sm transition hover:bg-white/90"
       >
         <FilePlus2 size={18} aria-hidden />
-        {t("nav.new")}
+        {t(nav.cta.key)}
       </Link>
-      {GROUPS.map((g) => (
+      {nav.groups.map((g) => (
         <div key={g.label}>
           <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-(--side-muted)">{t(g.label)}</p>
           <ul className="space-y-1">
@@ -70,15 +100,17 @@ function NavLinks({ onNavigate }: { onNavigate: () => void }) {
   );
 }
 
-function PageTitle() {
+function PageTitle({ nav }: { nav: Nav }) {
   const { t } = useI18n();
   const path = usePathname();
-  const cur = ALL.find((i) => i.match(path));
+  const cur = [nav.cta, ...nav.groups.flatMap((g) => g.items)].find((i) => i.match(path));
   return cur ? <p className="hidden truncate text-sm font-semibold text-muted sm:block">{t(cur.key)}</p> : null;
 }
 
 export default function Shell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
+  const { data: me } = useSession();
+  const nav = me?.role === "client" ? CLIENT : MENUISIER;
   const [open, setOpen] = useState(false);
 
   return (
@@ -92,7 +124,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-(--side-bg) py-6 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="mb-8 flex items-start justify-between px-6">
-          <Link href="/tableau-de-bord" onClick={() => setOpen(false)} className="flex items-center gap-3">
+          <Link href={nav.home} onClick={() => setOpen(false)} className="flex items-center gap-3">
             <span aria-hidden className="grid size-10 place-items-center rounded-xl bg-(--side-accent) text-(--side-bg)">
               <Ruler size={22} />
             </span>
@@ -106,7 +138,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           </button>
         </div>
         <Suspense fallback={null}>
-          <NavLinks onNavigate={() => setOpen(false)} />
+          {me && <NavLinks nav={nav} onNavigate={() => setOpen(false)} />}
         </Suspense>
       </aside>
 
@@ -116,7 +148,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             <MenuIcon size={20} aria-hidden />
           </button>
           <Suspense fallback={null}>
-            <PageTitle />
+            <PageTitle nav={nav} />
           </Suspense>
           <div className="ml-auto flex items-center gap-2">
             <LangMenu />

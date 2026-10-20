@@ -18,6 +18,7 @@ export default function AccountPage() {
     try {
       await request("PATCH", "/api/me", {
         name: f.get("name"),
+        phone: f.get("phone"),
         ...(newPassword ? { newPassword, currentPassword: f.get("currentPassword") } : {}),
       });
       await mutate("/api/me");
@@ -31,10 +32,13 @@ export default function AccountPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{t("account.title")}</h1>
-      <form onSubmit={submit} className="card max-w-xl space-y-4" key={me.name}>
+      <form onSubmit={submit} className="card max-w-xl space-y-4" key={`${me.name}|${me.phone}`}>
         <h2 className="text-lg font-semibold">{t("account.profile")}</h2>
         <Field htmlFor="n" label={t("account.name")}>
           <input id="n" name="name" required maxLength={80} defaultValue={me.name} className="input" />
+        </Field>
+        <Field htmlFor="ph" label={t("auth.phone")} hint={t("auth.phoneHint")}>
+          <input id="ph" name="phone" type="tel" required pattern="\+?[0-9][0-9 ().\-]{5,22}" defaultValue={me.phone} className="input" />
         </Field>
         <Field htmlFor="e" label={t("account.email")}>
           <input id="e" value={me.email} readOnly className="input opacity-70" />
