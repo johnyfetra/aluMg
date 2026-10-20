@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+<defs><linearGradient id="lalumada" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d4ed8"/><stop offset="1" stop-color="#0b1f6b"/></linearGradient></defs>
+<rect width="240" height="240" rx="52" fill="url(#lalumada)"/><g fill="none" stroke="#ffffff" stroke-width="9" stroke-linejoin="round"><rect x="56" y="52" width="128" height="112" rx="8"/><path d="M120 52v112M56 108h128"/></g>
+<text x="120" y="214" font-family="Helvetica,Arial,sans-serif" font-weight="700" font-size="30" fill="#fff" text-anchor="middle" letter-spacing="3">AM</text></svg>
