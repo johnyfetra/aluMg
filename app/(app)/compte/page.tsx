@@ -1,0 +1,58 @@
+"use client";
+import { useState } from "react";
+import { Field } from "@/components/ui";
+import { ApiError, request, useMe } from "@/lib/client";
+import { useI18n } from "@/lib/i18n";
+import { mutate } from "swr";
+
+export default function AccountPage() {
+  const { t } = useI18n();
+  const { data: me } = useMe();
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  if (!me) return null;
+
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const newPassword = String(f.get("newPassword") ?? "");
+    try {
+      await request("PATCH", "/api/me", {
+        name: f.get("name"),
+        ...(newPassword ? { newPassword, currentPassword: f.get("currentPassword") } : {}),
+      });
+      await mutate("/api/me");
+      (e.target as HTMLFormElement).reset();
+      setMsg({ ok: true, text: t("account.saved") });
+    } catch (err) {
+      setMsg({ ok: false, text: err instanceof ApiError && err.code === "wrong_password" ? t("account.wrongPassword") : t("common.error") });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">{t("account.title")}</h1>
+      <form onSubmit={submit} className="card max-w-xl space-y-4" key={me.name}>
+        <h2 className="text-lg font-semibold">{t("account.profile")}</h2>
+        <Field htmlFor="n" label={t("account.name")}>
+          <input id="n" name="name" required maxLength={80} defaultValue={me.name} className="input" />
+        </Field>
+        <Field htmlFor="e" label={t("account.email")}>
+          <input id="e" value={me.email} readOnly className="input opacity-70" />
+        </Field>
+        <h2 className="pt-2 text-lg font-semibold">{t("account.password")}</h2>
+        <Field htmlFor="cp" label={t("account.current")}>
+          <input id="cp" name="currentPassword" type="password" autoComplete="current-password" className="input" />
+        </Field>
+        <Field htmlFor="np" label={t("account.new")} hint={t("auth.passwordHint")}>
+          <input id="np" name="newPassword" type="password" minLength={8} autoComplete="new-password" className="input" />
+        </Field>
+        <button type="submit" className="btn-primary">
+          {t("common.save")}
+        </button>
+        <p role="status" className={`text-sm font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>
+          {msg?.text}
+        </p>
+      </form>
+    </div>
+  );
+}
