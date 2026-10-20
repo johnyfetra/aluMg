@@ -228,7 +228,7 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
         </aside>
       </div>
 
-      {open && <Lightbox images={open.item.images} index={open.i} onIndex={(i) => setOpen({ ...open, i })} onClose={() => setOpen(null)} label={open.item.title} />}
+      {open && <Lightbox images={open.item.images} index={open.i} onIndex={(i) => setOpen({ ...open, i })} onClose={() => setOpen(null)} label={open.item.title} caption={open.item.description} />}
     </div>
   );
 }

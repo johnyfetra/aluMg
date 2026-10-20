@@ -1,4 +1,4 @@
-// Données de démonstration : 6 menuisiers (avec logo, photo de profil, réalisations) et 4 clients.
+// Données de démonstration : 12 menuisiers (avec logo, photo de profil, réalisations) et 4 clients.
 // Les images sont produites par scripts/make-demo-assets.mjs (rendus 3D maison et illustrations SVG) : aucune image externe.
 const q = (o) => new URLSearchParams(o).toString();
 
@@ -36,6 +36,12 @@ export const AVATARS = {
   hery: { skin: "#a06c47", hair: "#1a120e", style: "short", shirt: "#555d6b", bg: ["#e9ecf1", "#cfd5df"] },
   noro: { skin: "#b27c55", hair: "#19110d", style: "long", shirt: "#c0485f", bg: ["#ffe2e6", "#f7bcc6"] },
   toky: { skin: "#8d5c3b", hair: "#120c09", style: "curly", shirt: "#3a7d7a", bg: ["#d9f1ef", "#aedcd8"], beard: true },
+  ando: { skin: "#a5714a", hair: "#17100c", style: "short", shirt: "#3d5a80", bg: ["#dce8f5", "#b6cde6"], beard: true },
+  miora: { skin: "#b3805a", hair: "#1a120e", style: "long", shirt: "#2a7f62", bg: ["#d8f2e6", "#aee0c9"] },
+  jaona: { skin: "#8a5b3a", hair: "#110b08", style: "curly", shirt: "#9a3b3b", bg: ["#fbe0e0", "#f1b9b9"], glasses: true },
+  soa: { skin: "#a8734e", hair: "#1b130f", style: "long", shirt: "#b8741f", bg: ["#fdebd0", "#f6d199"], glasses: true },
+  rado: { skin: "#94613f", hair: "#130d0a", style: "short", shirt: "#4a4a8a", bg: ["#e3e3f6", "#c3c3e8"] },
+  fara: { skin: "#b07b55", hair: "#19110d", style: "curly", shirt: "#1f7a8c", bg: ["#d6f0f4", "#a8dce5"], beard: true },
   lalao: { skin: "#a9724b", hair: "#1c130e", style: "short", shirt: "#d19a2a", bg: ["#fff1cf", "#f7dc97"], glasses: true },
 };
 
@@ -46,6 +52,12 @@ export const LOGOS = {
   nosybe: { kind: "wave", a: "#0284c7", b: "#0c4a6e", text: "NB" },
   fianar: { kind: "arch", a: "#7c3aed", b: "#4c1d95", text: "FM" },
   mahajanga: { kind: "shield", a: "#dc2626", b: "#7f1d1d", text: "MA" },
+  antsirabe: { kind: "grid", a: "#16a34a", b: "#14532d", text: "AV" },
+  toamasina: { kind: "wave", a: "#0891b2", b: "#164e63", text: "TP" },
+  antsiranana: { kind: "sun", a: "#ea580c", b: "#7c2d12", text: "DV" },
+  morondava: { kind: "arch", a: "#9333ea", b: "#581c87", text: "MV" },
+  ambositra: { kind: "hex", a: "#ca8a04", b: "#713f12", text: "AB" },
+  sambava: { kind: "shield", a: "#475569", b: "#0f172a", text: "SM" },
 };
 
 const pwd = "motdepasse123";
@@ -99,6 +111,55 @@ export const MENUISIERS = [
       { title: "Fenêtres coulissantes blanches, résidence", category: "fenetres", year: 2025, scene: "coul2", text: "Résidence de 24 logements : fenêtres coulissantes blanches." },
       { title: "Garde-corps verre, front de mer", category: "garde-corps", year: 2025, scene: "gardeVerre", text: "Garde-corps verre sur 40 mètres de balcons." },
       { title: "Cloison vitrée, bureaux", category: "cloisons", year: 2024, scene: "cloison", text: "Cloisons de bureaux : profilés noirs, verre clair." },
+    ] },
+  { email: "antsirabe@demo.mg", name: "Ando Ramiandrisoa", display: "Antsirabe Vitrage", city: "Antsirabe", avatar: "ando", logo: "antsirabe", phone: "034 33 210 54", verified: true,
+    specialties: ["fenetres", "portes", "vitrerie", "renovation"],
+    bio: "Atelier familial à Antsirabe : fenêtres isolantes pour le climat des Hautes Terres, portes vitrées et rénovation de menuiseries anciennes. Visite et métré gratuits.",
+    works: [
+      { title: "Fenêtres isolantes, maison de ville", category: "fenetres", year: 2025, scene: "ouv2", text: "Remplacement de huit fenêtres par des ouvrants aluminium blanc à vitrage renforcé." },
+      { title: "Porte d'entrée deux vantaux", category: "portes", year: 2025, scene: "porteOuv", text: "Porte semi-pleine imitation noyer avec serrure multipoints." },
+      { title: "Baie coulissante sur jardin", category: "fenetres", year: 2024, scene: "baie3", text: "Baie à trois vantaux, rail encastré pour un passage sans seuil." },
+      { title: "Rénovation d'une façade coloniale", category: "renovation", year: 2023, scene: "naco", text: "Menuiseries naco reprises à l'identique en aluminium champagne." },
+    ] },
+  { email: "toamasina@demo.mg", name: "Miora Randrianasolo", display: "Toamasina Portes & Fenêtres", city: "Toamasina", avatar: "miora", logo: "toamasina", phone: "032 44 120 76", verified: false,
+    specialties: ["fenetres", "portes", "garde-corps", "volets"],
+    bio: "Menuiserie aluminium pour la côte est : profilés laqués anticorrosion, volets anti-cyclone et garde-corps de balcons. Fabrication sous 3 semaines.",
+    works: [
+      { title: "Volets roulants anti-cyclone", category: "volets", year: 2025, scene: "volet", text: "Lames renforcées et coffres étanches pour une résidence face à l'océan." },
+      { title: "Garde-corps verre, immeuble de bureaux", category: "garde-corps", year: 2025, scene: "gardeVerre", text: "Garde-corps vitré feuilleté sur trois étages." },
+      { title: "Fenêtres coulissantes grand format", category: "fenetres", year: 2024, scene: "coul4", text: "Quatre vantaux coulissants champagne pour un séjour lumineux." },
+    ] },
+  { email: "antsiranana@demo.mg", name: "Jaona Rakotomalala", display: "Diego Verre & Alu", city: "Antsiranana", avatar: "jaona", logo: "antsiranana", phone: "033 21 987 65", verified: false,
+    specialties: ["vitrerie", "cloisons", "fenetres", "sur-mesure"],
+    bio: "Vitrerie et cloisons de commerces, restaurants et hôtels du nord. Verres feuilletés, miroirs et façades sur mesure, chantiers livrés clés en main.",
+    works: [
+      { title: "Cloison vitrée, hall d'hôtel", category: "cloisons", year: 2025, scene: "cloison", text: "Cloison à quatre panneaux, profilés noirs et verre clair pour le hall d'accueil." },
+      { title: "Baie fixe panoramique, restaurant", category: "vitrerie", year: 2025, scene: "baieFixe", text: "Grande baie fixe à verre teinté bronze avec vue sur la baie." },
+      { title: "Fenêtres oscillo-battantes", category: "fenetres", year: 2024, scene: "oscillo", text: "Fenêtres noires oscillo-battantes pour une villa contemporaine." },
+    ] },
+  { email: "morondava@demo.mg", name: "Soa Razafimahefa", display: "Morondava Menuiserie Alu", city: "Morondava", avatar: "soa", logo: "morondava", phone: "034 76 540 21", verified: false,
+    specialties: ["fenetres", "garde-corps", "volets", "portes"],
+    bio: "Menuisiers de la côte ouest : aluminium adapté au sel et à la chaleur, volets roulants et rideaux métalliques pour boutiques. Service après-vente réactif.",
+    works: [
+      { title: "Rideau métallique, marché couvert", category: "volets", year: 2025, scene: "rideau", text: "Six rideaux métalliques anthracite pour des boutiques voisines." },
+      { title: "Garde-corps barreaudage, auberge", category: "garde-corps", year: 2024, scene: "gardeBar", text: "Garde-corps à barreaux noirs pour une terrasse et un escalier extérieur." },
+      { title: "Porte-fenêtre coulissante bronze", category: "portes", year: 2024, scene: "porteCoul", text: "Porte-fenêtre de séjour, double vitrage et fermeture à clé." },
+    ] },
+  { email: "ambositra@demo.mg", name: "Rado Andrianjafy", display: "Ambositra Alu & Bois", city: "Ambositra", avatar: "rado", logo: "ambositra", phone: "032 65 432 10", verified: true,
+    specialties: ["portes", "fenetres", "sur-mesure", "renovation"],
+    bio: "Alliance de l'aluminium et des finitions bois : imitation chêne et noyer sur profilés alu, pour des portes et fenêtres au charme traditionnel, sans entretien.",
+    works: [
+      { title: "Porte vitrée imitation noyer", category: "portes", year: 2025, scene: "porteOuv", text: "Porte à deux vantaux, finition noyer sur aluminium." },
+      { title: "Baie fixe chêne doré", category: "fenetres", year: 2025, scene: "baieFixe", text: "Fixe vitré encadré de profilés imitation chêne doré." },
+      { title: "Fenêtres naco restaurées", category: "renovation", year: 2024, scene: "naco", text: "Remise à neuf de menuiseries à lames de verre dans une maison traditionnelle." },
+      { title: "Fenêtres coulissantes blanches", category: "fenetres", year: 2023, scene: "coul2", text: "Fenêtres coulissantes deux vantaux pour une école." },
+    ] },
+  { email: "sambava@demo.mg", name: "Fara Rabearison", display: "Sambava Alu Service", city: "Sambava", avatar: "fara", logo: "sambava", phone: "033 87 654 32", verified: false,
+    specialties: ["fenetres", "volets", "garde-corps", "vitrerie"],
+    bio: "Pose et dépannage de menuiseries aluminium dans la région SAVA : fenêtres, volets roulants, garde-corps et remplacement de vitrages.",
+    works: [
+      { title: "Fenêtres ouvrantes, école primaire", category: "fenetres", year: 2025, scene: "ouv2", text: "Douze fenêtres ouvrantes à deux vantaux." },
+      { title: "Volets roulants manuels", category: "volets", year: 2024, scene: "volet", text: "Volets à manivelle pour une maison de vanille." },
     ] },
 ];
 

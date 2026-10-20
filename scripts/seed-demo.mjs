@@ -1,5 +1,5 @@
 /**
- * Données de démonstration réalistes : 6 menuisiers (logo, photo de profil, réalisations, avis), 4 clients, des devis à tous les stades.
+ * Données de démonstration réalistes : 12 menuisiers (logo, photo de profil, réalisations, avis), 4 clients, des devis à tous les stades.
  * Nécessite `npm run dev`, les logos/portraits (npm run demo:assets) et les photos (npm run demo:photos). Idempotent : peut être relancé.
  *   npm run seed:demo
  *   ADMIN_EMAIL=admin@alumg.local ADMIN_PASSWORD=… npm run seed:demo     (pour accorder le badge « Vérifié »)
@@ -113,5 +113,20 @@ for (const [i, [ce, me, set, kind, extra]] of SCENARIOS.entries()) {
   }
   created++;
 }
+// ---------- conversations (idempotent : seulement si le fil est vide) ----------
+const CHATS = [
+  ["noro@client.mg", "tana@demo.mg", [["c", "Bonjour, avez-vous des disponibilités en novembre pour une pose de fenêtres ?"], ["m", "Bonjour ! Oui, nous pouvons passer faire le métré la semaine prochaine. Quel jour vous arrange ?"], ["c", "Mardi matin serait parfait."], ["m", "Entendu, mardi à 9 h. À bientôt !"]], 0],
+  ["hery@client.mg", "test@alumada.mg", [["c", "Bonjour, ma demande de devis est-elle bien arrivée ?"], ["m", "Bonjour Hery, oui je prépare le chiffrage et vous l'envoie demain."], ["c", "Merci, je compte sur vous."]], 1],
+  ["toky@client.mg", "test@alumada.mg", [["m", "Bonjour, votre devis est envoyé. Dites-moi si vous souhaitez ajuster la couleur."], ["c", "Pourriez-vous faire le volet en bronze plutôt qu'anthracite ?"]], 1],
+  ["lalao@client.mg", "mahajanga@demo.mg", [["c", "Bonjour, livrez-vous aussi hors de Mahajanga ?"], ["m", "Oui, jusqu'à 200 km, avec un supplément de transport."]], 0],
+];
+let chats = 0;
+for (const [ce, me, msgs] of CHATS.map(([a, b, c]) => [a, b, c])) {
+  const id = (await clients[ce].must("POST", "/api/conversations", { menuisier: slugs[me] })).id;
+  if ((await clients[ce].must("GET", `/api/conversations/${id}/messages`)).length) continue;
+  for (const [who, body] of msgs) await (who === "c" ? clients[ce] : pros[me]).must("POST", `/api/conversations/${id}/messages`, { body });
+  chats++;
+}
+console.log(`conversations de démonstration créées : ${chats}`);
 console.log(`devis de démonstration créés : ${created}`);
 console.log("Comptes (mot de passe « " + PASSWORD + " ») : " + [...MENUISIERS.map((m) => m.email), ...CLIENTS.map((c) => c.email)].join(", "));
