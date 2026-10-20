@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+<defs><linearGradient id="lsambava" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#475569"/><stop offset="1" stop-color="#0f172a"/></linearGradient></defs>
+<rect width="240" height="240" rx="52" fill="url(#lsambava)"/><g fill="none" stroke="#ffffff" stroke-width="9" stroke-linejoin="round"><path d="M120 44l60 22v50c0 30-24 50-60 64-36-14-60-34-60-64V66z"/><path d="M120 44v136M60 110h120"/></g>
+<text x="120" y="214" font-family="Helvetica,Arial,sans-serif" font-weight="700" font-size="30" fill="#fff" text-anchor="middle" letter-spacing="3">SM</text></svg>

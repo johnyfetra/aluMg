@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<defs><linearGradient id="bgsoa" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fdebd0"/><stop offset="1" stop-color="#f6d199"/></linearGradient><clipPath id="csoa"><rect width="256" height="256"/></clipPath></defs>
+<g clip-path="url(#csoa)"><rect width="256" height="256" fill="url(#bgsoa)"/>
+<path d="M64 110c-6-52 22-78 64-78s70 26 64 78l-8 56H72z" fill="#1b130f"/>
+<path d="M28 256c4-52 40-70 100-70s96 18 100 70z" fill="#b8741f"/>
+<path d="M108 186h40v-26h-40z" fill="#a8734e"/><path d="M108 168c6 10 14 14 20 14s14-4 20-14v-10h-40z" fill="rgba(0,0,0,.14)"/>
+<ellipse cx="128" cy="118" rx="44" ry="52" fill="#a8734e"/>
+<ellipse cx="84" cy="124" rx="7" ry="11" fill="#a8734e"/><ellipse cx="172" cy="124" rx="7" ry="11" fill="#a8734e"/>
+<path d="M80 96c0-34 20-52 48-52s48 18 48 52c-14-18-30-26-48-26s-34 8-48 26z" fill="#1b130f"/>
+
+<g fill="#1d140f"><ellipse cx="112" cy="120" rx="4.6" ry="5.6"/><ellipse cx="144" cy="120" rx="4.6" ry="5.6"/></g>
+<path d="M100 106q12-8 24-2M132 104q12-6 24 2" stroke="#1b130f" stroke-width="4" fill="none" stroke-linecap="round"/>
+<path d="M114 146q14 12 28 0" stroke="#5a2a20" stroke-width="4" fill="none" stroke-linecap="round"/>
+<g fill="none" stroke="#2a2a2a" stroke-width="3.5"><circle cx="112" cy="120" r="15"/><circle cx="144" cy="120" r="15"/><path d="M127 120h2"/></g>
+</g></svg>
