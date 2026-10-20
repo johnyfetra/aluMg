@@ -15,5 +15,5 @@ export async function POST(req: Request) {
   const ok = await verifyPassword(p.data.password, user?.passwordHash ?? (await dummy));
   if (!user || !ok) return fail(401, "invalid_credentials");
   await createSession(user.id);
-  return json({ id: user.id, name: user.name, email: user.email });
+  return json({ id: user.id, name: user.name, email: user.email, role: user.role });
 }

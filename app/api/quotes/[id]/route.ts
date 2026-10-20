@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { fail, isResponse, json, parseBody, requireUser } from "@/lib/api";
+import { fail, isResponse, json, parseBody, requireRole } from "@/lib/api";
 import { quoteSchema } from "@/lib/model";
 import { deleteQuote, getQuote, updateQuote } from "@/lib/repo";
 
@@ -7,7 +7,7 @@ type Ctx = RouteContext<"/api/quotes/[id]">;
 const uuid = z.uuid();
 
 export async function GET(_: Request, { params }: Ctx) {
-  const user = await requireUser();
+  const user = await requireRole("menuisier");
   if (isResponse(user)) return user;
   const { id } = await params;
   const q = uuid.safeParse(id).success ? await getQuote(user.id, id) : null;
@@ -15,7 +15,7 @@ export async function GET(_: Request, { params }: Ctx) {
 }
 
 export async function PUT(req: Request, { params }: Ctx) {
-  const user = await requireUser();
+  const user = await requireRole("menuisier");
   if (isResponse(user)) return user;
   const { id } = await params;
   const p = await parseBody(req, quoteSchema);
@@ -25,8 +25,10 @@ export async function PUT(req: Request, { params }: Ctx) {
 }
 
 export async function DELETE(_: Request, { params }: Ctx) {
-  const user = await requireUser();
+  const user = await requireRole("menuisier");
   if (isResponse(user)) return user;
   const { id } = await params;
-  return uuid.safeParse(id).success && (await deleteQuote(user.id, id)) ? json({ ok: true }) : fail(404, "not_found");
+  const done = uuid.safeParse(id).success ? await deleteQuote(user.id, id) : false;
+  if (done === "locked") return fail(409, "locked");
+  return done ? json({ ok: true }) : fail(404, "not_found");
 }

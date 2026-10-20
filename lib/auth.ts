@@ -32,14 +32,14 @@ export async function destroySession() {
   jar.delete(COOKIE);
 }
 
-export type SessionUser = { id: string; email: string; name: string; role: "user" | "admin" };
+export type SessionUser = { id: string; email: string; name: string; phone: string; role: "client" | "menuisier" | "admin" };
 
 export async function currentUser(): Promise<SessionUser | null> {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
   const db = await getDb();
   const [row] = await db
-    .select({ id: schema.users.id, email: schema.users.email, name: schema.users.name, role: schema.users.role })
+    .select({ id: schema.users.id, email: schema.users.email, name: schema.users.name, phone: schema.users.phone, role: schema.users.role })
     .from(schema.sessions)
     .innerJoin(schema.users, eq(schema.users.id, schema.sessions.userId))
     .where(and(eq(schema.sessions.id, sha(token)), gt(schema.sessions.expiresAt, new Date())));

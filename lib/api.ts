@@ -9,6 +9,12 @@ export const fail = (status: number, error: string) => json({ error }, status);
 export async function requireUser(): Promise<SessionUser | NextResponse> {
   return (await currentUser()) ?? fail(401, "unauthorized");
 }
+// Utilisateur connecté ayant l'un des rôles demandés (403 sinon).
+export async function requireRole(...roles: SessionUser["role"][]): Promise<SessionUser | NextResponse> {
+  const user = await requireUser();
+  if (isResponse(user)) return user;
+  return roles.includes(user.role) ? user : fail(403, "forbidden");
+}
 export const isResponse = (x: unknown): x is NextResponse => x instanceof NextResponse;
 
 // Lit et valide le corps JSON d'une requête : 400 si illisible ou non conforme au schéma.

@@ -1,14 +1,14 @@
-import { isResponse, json, parseBody, requireUser } from "@/lib/api";
+import { isResponse, json, parseBody, requireRole } from "@/lib/api";
 import { settingsSchema, type Settings, withDefaults } from "@/lib/model";
 import { getSettings, saveSettings } from "@/lib/repo";
 
 export async function GET() {
-  const user = await requireUser();
+  const user = await requireRole("menuisier");
   return isResponse(user) ? user : json(await getSettings(user.id));
 }
 
 export async function PUT(req: Request) {
-  const user = await requireUser();
+  const user = await requireRole("menuisier");
   if (isResponse(user)) return user;
   const p = await parseBody(req, settingsSchema);
   if ("res" in p) return p.res;
