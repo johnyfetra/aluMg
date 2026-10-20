@@ -1,11 +1,11 @@
 /**
  * Données de démonstration réalistes : 6 menuisiers (logo, photo de profil, réalisations, avis), 4 clients, des devis à tous les stades.
- * Nécessite `npm run dev` et les images (node scripts/make-demo-assets.mjs). Idempotent : peut être relancé.
+ * Nécessite `npm run dev`, les logos/portraits (npm run demo:assets) et les photos (npm run demo:photos). Idempotent : peut être relancé.
  *   npm run seed:demo
  *   ADMIN_EMAIL=admin@alumg.local ADMIN_PASSWORD=… npm run seed:demo     (pour accorder le badge « Vérifié »)
  * Tous les comptes ont le mot de passe « motdepasse123 ».
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import sharp from "sharp";
 import { CLIENTS, MENUISIERS, PASSWORD } from "./demo-data.mjs";
 
@@ -51,7 +51,7 @@ for (const m of MENUISIERS) {
   pros[m.email] = a;
   for (const it of await a.must("GET", "/api/portfolio")) await a.must("DELETE", `/api/portfolio/${it.id}`);
   for (const w of m.works) {
-    await a.must("POST", "/api/portfolio", { title: w.title, description: w.text, category: w.category, year: w.year, images: [1, 2, 3].map((i) => file(`public/demo/work/${w.scene}-${i}.jpg`)), thumb: file(`public/demo/work/${w.scene}-thumb.jpg`) });
+    await a.must("POST", "/api/portfolio", { title: w.title, description: w.text, category: w.category, year: w.year, images: [1, 2, 3].filter((i) => existsSync(`public/demo/work/${w.scene}-${i}.jpg`)).map((i) => file(`public/demo/work/${w.scene}-${i}.jpg`)), thumb: file(`public/demo/work/${w.scene}-thumb.jpg`) });
   }
   console.log("menuisier", m.display, "→", prof.slug);
 }

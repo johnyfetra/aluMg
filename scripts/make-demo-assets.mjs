@@ -1,9 +1,9 @@
 /**
  * Produit les images de démonstration dans public/demo/ :
- *   work/    photos de réalisations (rendus 3D de l'appli, mur, sol, ciel), 3 prises de vue par ouvrage + miniature
+ *   work/    (option --renders) rendus 3D de l'appli : alternative sans Internet aux vraies photos (npm run demo:photos)
  *   logos/   logos des menuiseries (SVG)
  *   avatars/ photos de profil (illustrations SVG)
- * Nécessite `npm run dev` (page /demo-render) et Chrome. Usage : node scripts/make-demo-assets.mjs [--only svg]
+ * Nécessite `npm run dev` (page /demo-render) et Chrome. Usage : node scripts/make-demo-assets.mjs [--renders]
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import puppeteer from "puppeteer-core";
@@ -61,7 +61,7 @@ const logo = ({ kind, a, b, text }, id) => `<svg xmlns="http://www.w3.org/2000/s
 for (const [k, v] of Object.entries(AVATARS)) writeFileSync(`${OUT}/avatars/${k}.svg`, avatar(v, k));
 for (const [k, v] of Object.entries(LOGOS)) writeFileSync(`${OUT}/logos/${k}.svg`, logo(v, k));
 console.log("SVG : ok");
-if (process.argv.includes("--only") && process.argv.includes("svg")) process.exit(0);
+if (!process.argv.includes("--renders")) process.exit(0);
 
 // ---------- Photos de réalisations : rendus 3D ----------
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
