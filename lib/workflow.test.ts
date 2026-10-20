@@ -170,6 +170,16 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
     expect(await wf.applyAction(m1, q.id, A({ type: "report", reason: "fraud", details: "" }))).toEqual({ ok: false, error: "invalid_transition" });
   });
 
+  it("un devis sans compte client envoyé est figé ; seul son statut peut encore changer", async () => {
+    const w = await repo.createQuote(m1, quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "draft", client: { name: "Walk-in", phone: "", address: "" }, project: "", delay: "", notes: "", lines: [{ ...line, unit: 1000 }], terms: { tva: 20, deposit: 50, validityDays: 30 } }));
+    expect(await repo.updateQuote(m1, w.id, { ...w, notes: "ok en brouillon" })).toMatchObject({ notes: "ok en brouillon" });
+    const sent = await upd(m1, w.id, { ...w, notes: "ok en brouillon", status: "sent" }); // le statut change (menu de la liste)
+    expect(sent.status).toBe("sent");
+    expect(await repo.updateQuote(m1, w.id, { ...sent, notes: "modifié après envoi" })).toBe("locked");
+    expect(await repo.updateQuote(m1, w.id, { ...sent, lines: [{ ...sent.lines[0], unit: 1 }] })).toBe("locked");
+    expect(await repo.updateQuote(m1, w.id, { ...sent, status: "accepted" })).toMatchObject({ status: "accepted" });
+  });
+
   it("un devis saisi pour un client sans compte ne s'envoie pas par l'action « send »", async () => {
     const walk = await repo.createQuote(m1, quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: "Sans compte", phone: "", address: "" }, project: "", delay: "", notes: "", lines: [{ ...line, unit: 1000 }], terms: { tva: 20, deposit: 50, validityDays: 30 } }));
     expect(walk.status).toBe("draft"); // « requested » est réservé aux demandes de clients

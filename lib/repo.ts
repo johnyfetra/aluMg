@@ -57,14 +57,21 @@ export async function createQuote(userId: string, q: Quote, opts: { clientId?: s
   return saved;
 }
 
-// Un devis lié à un client n'est modifiable que tant qu'il n'est pas dans les mains du client (demande, brouillon, négociation) :
-// une fois envoyé, accepté ou refusé, ses lignes, prix et remise sont figés pour que le client voie toujours ce qu'il a accepté.
+// Un devis envoyé (ou accepté, refusé, en cours, terminé) n'est plus modifiable : ses lignes, prix et remise sont figés pour que le client
+// voie toujours ce qu'il a reçu ou accepté. Pour le changer : négociation (devis lié à un client) ou nouvelle version (devis sans compte).
+// Un devis sans compte client garde seulement son menu de statut libre.
 export const EDITABLE = ["requested", "draft", "negotiation"];
+// Comparaison indépendante de l'ordre des clés (le JSONB de la base les réordonne).
+const canon = (v: unknown): unknown => (Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)).map(([k, x]) => [k, canon(x)])) : v);
+const content = (q: Quote) => JSON.stringify(canon([q.client, q.project, q.delay, q.notes, q.lines, q.discount ?? 0]));
 
 export async function updateQuote(userId: string, id: string, q: Quote): Promise<Quote | null | "locked"> {
   const existing = await getQuote(userId, id);
   if (!existing) return null;
-  if (existing.clientId && !EDITABLE.includes(existing.status)) return "locked";
+  if (!EDITABLE.includes(existing.status)) {
+    if (existing.clientId) return "locked";
+    if (content(existing) !== content(q)) return "locked"; // seul le statut peut changer
+  }
   // Numéro, date, conditions, client, demande et avancement ne changent jamais par cette voie.
   // Pour un devis lié à un client, le statut ne bouge que par les actions (envoi, acceptation…) ; une demande modifiée passe en préparation.
   let status = q.status;

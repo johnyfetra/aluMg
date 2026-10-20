@@ -96,7 +96,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [persisted, setPersisted] = useState(!!existing);
   // devis d'un client déjà envoyé, accepté ou refusé : en lecture seule (le client doit toujours voir ce qu'il a accepté)
-  const locked = !!existing?.clientId && !["requested", "draft", "negotiation"].includes(existing.status);
+  const locked = !!existing && !["requested", "draft", "negotiation"].includes(existing.status);
   const [q, setQ] = useState<Quote>(
     () =>
       existing ?? {
@@ -183,6 +183,16 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       router.push("/devis");
     } catch (e) {
       setMsg({ ok: false, text: e instanceof ApiError && e.code === "incomplete" ? t("editor.incompletePrices") : t("common.error") });
+    }
+  };
+
+  // Devis sans compte client déjà envoyé : on repart d'une copie en brouillon (l'original reste tel qu'il a été remis).
+  const newVersion = async () => {
+    try {
+      const copy = await save({ ...q, id: crypto.randomUUID(), number: "", status: "draft", progress: 0, date: new Date().toISOString() }, true);
+      router.push(`/devis/${copy.id}`);
+    } catch {
+      setMsg({ ok: false, text: t("common.error") });
     }
   };
 
@@ -358,6 +368,12 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 <FileDown size={18} aria-hidden />
                 {locked ? t("editor.pdfOnly") : t("editor.savePdf")}
               </button>
+              {locked && !q.clientId && (
+                <button type="button" className="btn-secondary" onClick={newVersion}>
+                  <Copy size={18} aria-hidden />
+                  {t("editor.newVersion")}
+                </button>
+              )}
               {!locked && (
                 <button type="button" className="btn-secondary" onClick={() => submit(false)}>
                   <Save size={18} aria-hidden />
