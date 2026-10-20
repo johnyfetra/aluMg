@@ -129,3 +129,39 @@ export const reports = pgTable("reports", {
   status: text("status").notNull().default("open"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Messagerie : une conversation par couple (client, menuisier) ; les messages sont rattachés à la conversation.
+// Le « lu » se mémorise par participant (date de dernière lecture) : non lus = messages de l'autre postérieurs à cette date.
+export const conversations = pgTable(
+  "conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    menuisierId: uuid("menuisier_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
+    clientReadAt: timestamp("client_read_at", { withTimezone: true }).notNull().defaultNow(),
+    menuisierReadAt: timestamp("menuisier_read_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("conversations_pair_idx").on(t.clientId, t.menuisierId), index("conversations_menuisier_idx").on(t.menuisierId)],
+);
+
+export const messages = pgTable(
+  "messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    senderId: uuid("sender_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("messages_conv_idx").on(t.conversationId, t.createdAt)],
+);
