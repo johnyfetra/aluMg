@@ -2,9 +2,13 @@
 
 Plateforme pour la menuiserie aluminium et les volets roulants à Madagascar. Vision complète : mettre en relation menuisiers vérifiés et clients (profils, avis, devis en ligne, suivi de chantier).
 
-**Version actuelle : l'outil de devis du menuisier**, avec comptes. Il configure l'ouvrage, calcule le besoin en profilés, dessine l'ouvrage, applique les tarifs et majorations du menuisier et génère un devis PDF à son entête, signé.
+**Version actuelle** : une place de marché complète en deux espaces.
 
-Catégories : fenêtre, porte, volet, garde-corps, cloison vitrée. Fenêtres : coulissante, ouvrante, oscillo-battante, à soufflet, naco (jalousie à lames de verre), fixe, avec un **nombre de vantaux libre** (jusqu'à 8). Gamme européenne ou asiatique ; couleur laquée, anodisée ou faux bois ; vitrage (type, épaisseur, double vitrage, motif) ; moustiquaire, grille de sécurité ; volet roulant ou rideau métallique, manuel ou motorisé ; garde-corps à barreaudage ou en verre.
+- **Public (sans compte)** : annuaire des menuisiers (recherche, filtres, notes, avis, badge vérifié) et profil détaillé avec réalisations en photos.
+- **Menuisier** : devis configurables (fenêtres, portes, volets, garde-corps, cloisons) avec calcul du besoin en profilés, plan d'achat selon les prix et longueurs du marché, vue 3D animée, PDF professionnel ; réception des demandes des clients, négociation, suivi des chantiers en pourcentage, clients, portfolio, profil public.
+- **Client** : demande de devis à un menuisier, suivi (demande, devis reçu, accepté, en cours, terminé), acceptation, refus ou demande de modification/remise, messages, évaluation en fin de chantier, signalement.
+
+Le contact (e-mail **et** téléphone) est obligatoire à l'inscription, pour les deux types de compte.
 
 ## Démarrer
 
@@ -18,7 +22,8 @@ Node 20+. Aucune installation de base de données : en développement, une base 
 | Commande | Rôle |
 |---|---|
 | `npm test` | Tests unitaires du calcul et des accès base (base en mémoire) |
-| `npm run test:e2e` | Tests de l'API réelle (lancez `npm run dev` avant) |
+| `npm run test:e2e:fresh` | Tests de bout en bout (API + navigateur Chrome) sur une base jetable et un autre port : **recommandé** |
+| `npm run test:e2e` | Mêmes tests contre le serveur déjà lancé (`npm run dev`) : ajoute des comptes de test à votre base locale |
 | `npm run lint` · `npm run build` | Qualité et build de production |
 | `npm run admin:create` | Crée un compte **administrateur** avec mot de passe généré (voir ci-dessous) |
 | `npx drizzle-kit generate` | Génère une migration après une modification de `lib/db/schema.ts` |
@@ -33,20 +38,25 @@ npm run admin:create -- --password "MonMotDePasse"            # mot de passe imp
 
 Le mot de passe généré est affiché **une seule fois** : notez-le. Relancer la commande avec le même e-mail réinitialise le mot de passe. En local, arrêtez `npm run dev` avant (par précaution : la base embarquée est prévue pour un seul processus à la fois). En production, définissez `DATABASE_URL` pour viser la bonne base.
 
-Le rôle `admin` est enregistré en base mais aucun écran d'administration n'existe encore (voir `docs/user-stories.md`, epic 5).
+Le rôle `admin` est enregistré en base mais aucun écran d'administration n'existe encore (voir `docs/user-stories.md`, epic 5). Les comptes créés avant l'arrivée des rôles sont devenus des comptes menuisier.
 
 ## Écrans
 
-| Écran | Rôle |
-|---|---|
-| `/tableau-de-bord` | Indicateurs, montants acceptés par mois, répartition par statut, derniers devis |
-| `/devis` | Tableau, recherche, filtres par statut, changement de statut, PDF, suppression |
-| `/devis/nouveau`, `/devis/[id]` | Éditeur : client, ouvrages configurables, illustration fidèle à tous les choix, besoin en profilés détaillé (longueur de barre, profilé par élément, plan de coupe, perte), totaux fixes à droite, PDF |
-| `/reglages` | Entête (logo, NIF/STAT, couleur), signature, tarifs au m², majorations, longueur de barre et trait de scie, TVA, acompte |
-| `/compte` | Nom, mot de passe |
-| `/connexion`, `/inscription` | Accès |
+| Zone | Écran | Rôle |
+|---|---|---|
+| Public | `/` | Accueil : présentation, menuisiers les mieux notés, comment ça marche |
+| Public | `/menuisiers`, `/menuisiers/[slug]` | Annuaire filtrable, profil (à propos, réalisations, avis) ; la demande de devis exige un compte client |
+| Public | `/connexion`, `/inscription` | Accès ; l'inscription choisit client ou menuisier |
+| Menuisier | `/tableau-de-bord` | Indicateurs, demandes à traiter, chantiers en cours, montants par mois |
+| Menuisier | `/devis`, `/devis/[id]` | Liste filtrable ; éditeur (client, ouvrages, remise, envoi au client, historique) |
+| Menuisier | `/devis/[id]/profils`, `/devis/[id]/profils/[ligne]` | Besoin en profilés : achats, coût, marge, ouvrages partageant un profilé, vue 3D |
+| Menuisier | `/chantiers`, `/clients` | Avancement des chantiers en %, liste des clients |
+| Menuisier | `/realisations`, `/profil-public` | Portfolio photos, profil public et publication |
+| Menuisier | `/reglages`, `/reglages/profils` | Entête, signature, tarifs, majorations, longueur de barre ; marché des profilés (prix et longueurs) |
+| Client | `/espace-client`, `/espace-client/nouvelle`, `/espace-client/devis/[id]` | Mes demandes, nouvelle demande, suivi d'un devis |
+| Commun | `/compte` | Nom, téléphone, mot de passe |
 
-Transversal : thème clair/sombre (barre latérale identique dans les deux), 3 langues (français, English, Malagasy), mobile-first, accessible au clavier et aux lecteurs d'écran.
+Transversal : thème clair/sombre (barre latérale identique), 3 langues (français, English, Malagasy), mobile-first, accessible au clavier et aux lecteurs d'écran.
 
 ## Documentation
 
@@ -58,5 +68,8 @@ Transversal : thème clair/sombre (barre latérale identique dans les deux), 3 l
 - Les formules de débit sont génériques ; elles doivent être calibrées avec un vrai menuisier, série de profilés par série.
 - Les tarifs et majorations affichés au départ sont des exemples.
 - Les listes d'options (couleurs, verres, gammes) viennent de `lib/model.ts` et restent à valider avec des menuisiers malgaches.
-- Pas de limitation des tentatives de connexion, pas de vérification d'e-mail ni de mot de passe oublié : à ajouter avant l'ouverture au public.
+- Pas de limitation des tentatives de connexion ni des demandes de devis, pas de vérification d'e-mail ni de mot de passe oublié : à ajouter avant l'ouverture au public.
+- Le badge « Vérifié » et le traitement des signalements n'ont pas encore d'écran d'administration (les données existent en base).
+- Les photos sont stockées en base (réduites côté navigateur) : à déplacer vers un stockage de fichiers avant la montée en charge.
+- Le client ne peut pas encore télécharger le PDF du devis (le menuisier l'envoie).
 - Les traductions malgaches doivent être relues par un locuteur natif.

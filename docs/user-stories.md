@@ -119,53 +119,81 @@ En tant que patron, je veux inviter un collaborateur afin qu'il crée des devis 
 
 ## Epic 3 — Profil public et confiance
 
-### 💡 US-3.1 Créer mon profil et partager mes réalisations
-En tant que menuisier, je veux un profil public avec photos de réalisations, zone et spécialités.
+### ✅ US-3.1 Créer mon profil et partager mes réalisations
+En tant que menuisier, je veux un profil public (nom, ville, présentation, spécialités, logo) et un portfolio de photos afin que les clients voient mon travail.
+- CA : le profil n'est visible qu'une fois publié, et seulement avec nom et ville ; la première photo sert de couverture dans l'annuaire.
 
-### 💡 US-3.2 Demander le badge « vérifié »
+### ✅ US-3.3 Chercher un menuisier fiable (sans compte)
+En tant que client ou visiteur, je veux filtrer l'annuaire par texte, ville, spécialité, note minimale et badge vérifié, et trier par note, chantiers terminés, ancienneté ou nom.
+- CA : aucune connexion n'est requise ; aucune coordonnée n'est affichée publiquement ; la page d'un profil montre réalisations (visionneuse), avis et répartition des notes.
+
+### 🔜 US-3.2 Demander le badge « vérifié »
 En tant que menuisier, je veux soumettre mes justificatifs (NIF/STAT, visite, références) pour obtenir un badge.
-- Admin : file de vérification avec décision motivée.
-
-### 💡 US-3.3 Chercher un menuisier fiable
-En tant que client, je veux filtrer par ville, spécialité, note et badge afin de choisir en confiance.
+- Admin : file de vérification avec décision motivée. (Le champ `verified` existe ; il manque la demande et l'écran d'administration.)
 
 ---
 
 ## Epic 4 — Commande et suivi de chantier
 
-### 💡 US-4.1 Demander un devis en ligne
-En tant que client, je veux décrire mon besoin (dimensions, photos) et l'envoyer à un ou plusieurs menuisiers.
+### ✅ US-4.1 Demander un devis en ligne
+En tant que client connecté, je veux décrire mon besoin (ouvrages configurés, adresse, date, message) et l'envoyer à un menuisier.
+- CA : la demande exige un compte client ; le client ne voit aucun prix tant que le devis n'est pas envoyé.
 
-### 💡 US-4.2 Répondre à une demande
-En tant que menuisier, je veux transformer une demande reçue en devis en un clic (les données sont pré-remplies).
+### ✅ US-4.2 Répondre à une demande
+En tant que menuisier, je veux que la demande arrive prête à chiffrer (prix préremplis avec mes tarifs) afin de répondre vite : envoyer le devis, ou décliner.
 
-### 💡 US-4.3 Valider le devis et suivre la réalisation
-En tant que client, je veux accepter le devis puis suivre les étapes (mesure, fabrication, pose) avec photos.
-- En tant que menuisier, je veux voir quand le client a ouvert et validé mon devis.
+### ✅ US-4.3 Valider le devis et négocier
+En tant que client, je veux accepter, refuser, ou demander une modification ou une remise (avec message), et échanger des messages avec le menuisier.
+- CA : le menuisier révise (remise incluse) puis renvoie ; un devis envoyé, accepté ou refusé est verrouillé pour le menuisier ; l'historique est visible des deux côtés.
+
+### ✅ US-4.6 Suivre l'avancement du chantier
+En tant que menuisier, je veux indiquer l'avancement en % avec une note, et en tant que client le suivre.
+- CA : 0 % accepté, 1 à 99 % en cours, 100 % terminé ; le tableau de bord montre les chantiers en cours.
+
+### ✅ US-4.5 Réceptionner et noter
+En tant que client, je veux noter le menuisier à la fin du chantier ; une seule évaluation par devis, seulement après « terminé ».
+
+### ✅ US-4.7 Signaler un menuisier
+En tant que client, je veux signaler un menuisier (motif, détails) de façon confidentielle.
+- À venir : écran d'administration pour traiter les signalements.
+
+### 🔜 US-4.8 Télécharger le devis en PDF (client)
+En tant que client, je veux télécharger le PDF du devis reçu.
 
 ### 💡 US-4.4 Paiement sécurisé par mobile money
 En tant que client, je veux payer l'acompte et le solde via MVola, Orange Money ou Airtel Money, libérés au menuisier à l'étape convenue.
 
-### 💡 US-4.5 Réceptionner et noter
-En tant que client, je veux valider la fin du chantier puis noter le menuisier ; seules les commandes terminées sur la plateforme donnent droit à un avis.
+### ✅ US-4.9 Gérer mes clients
+En tant que menuisier, je veux la liste de mes clients (compte ou saisis à la main), leurs devis acceptés et montants.
+
+### ✅ US-4.10 Détail des profilés par ouvrage
+En tant que menuisier, je veux, pour le devis et pour chaque ouvrage : les profilés nécessaires (nombre, longueurs, éléments), les autres ouvrages qui utilisent le même profilé, mes prix et longueurs de barre du marché, le plan d'achat le moins cher, le coût réel et ma marge sur profilés.
+- CA : prix et longueurs configurables par profilé (majorations gamme et finition) ; barres de couleurs différentes jamais mélangées.
+
+### ✅ US-4.11 Vue 3D animée
+En tant que menuisier ou client, je veux manipuler un modèle 3D de l'ouvrage (faire coulisser, ouvrir, incliner, relever un volet, tourner la vue) pour tester l'ouvrage.
+- CA : mouvement fluide (ressort amorti), survol d'un profilé du besoin = pièce surlignée en 3D, respect de `prefers-reduced-motion`.
 
 ---
 
 ## Epic 5 — Administration
 
 ### 💡 US-5.1 Gérer les comptes
-En tant qu'admin, je veux lister, suspendre et réinitialiser les comptes menuisiers.
+En tant qu'admin, je veux lister, suspendre et réinitialiser les comptes menuisiers et clients.
 
-### 💡 US-5.2 Tableau de bord de la plateforme
-En tant qu'admin, je veux voir le nombre de comptes, de devis et de demandes afin de piloter le lancement.
+### 💡 US-5.2 Modérer
+En tant qu'admin, je veux traiter les signalements et accorder ou retirer le badge « vérifié ».
+
+### 💡 US-5.3 Tableau de bord de la plateforme
+En tant qu'admin, je veux voir le nombre de comptes, de demandes et de chantiers afin de piloter le lancement.
 
 ---
 
 ## Ordre recommandé
 
-1. Valider avec 3 à 5 menuisiers réels : listes d'options, gammes, formules de débit (US-1.10, 1.11).
-2. Sécuriser les comptes avant l'ouverture publique : mot de passe oublié, vérification d'e-mail, limitation des tentatives.
-3. Epic 3 puis 4, en commençant par Antananarivo.
+1. Valider avec 3 à 5 menuisiers et quelques clients réels, à Antananarivo : listes d'options, formules de débit, parcours de demande de devis.
+2. Avant l'ouverture publique : mot de passe oublié, vérification d'e-mail, limitation des tentatives, écran d'administration (badge, signalements), stockage de fichiers pour les photos.
+3. Ensuite : PDF côté client, paiement mobile money, notifications (SMS/WhatsApp).
 
 ## Définition de « terminé »
 
