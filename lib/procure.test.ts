@@ -1,0 +1,84 @@
+import { describe, expect, it } from "vitest";
+import { type Piece, allPieces } from "./calc";
+import { DEFAULT_MARKET, type Line, type Market } from "./model";
+import { planGroup, priced, procure } from "./procure";
+
+const piece = (len: number, qty: number, line = 1, over: Partial<Piece> = {}): Piece => ({ profile: "pf.sash", element: "el.sashH", len, qty, line, range: "asiatique", finish: "blanc", ...over });
+const market = (offers: { length: number; price: number }[], extra: Partial<Market> = {}): Market => ({ ...DEFAULT_MARKET, offers: { ...DEFAULT_MARKET.offers, "pf.sash": offers }, ...extra });
+
+describe("planGroup", () => {
+  it("une seule offre : autant de barres que nécessaire", () => {
+    const { bars } = planGroup([2000, 2000, 2000], [{ length: 6000, price: 100 }], 5);
+    expect(bars).toHaveLength(2); // 3 x 2005 > 6000
+    expect(bars.reduce((s, b) => s + b.price, 0)).toBe(200);
+  });
+  it("plusieurs longueurs : choisit le mélange le moins cher", () => {
+    // 2 x 2500 : une barre de 6 m à 100 ou deux barres de 3 m à 40 = 80
+    const { bars } = planGroup([2500, 2500], [{ length: 6000, price: 100 }, { length: 3000, price: 40 }], 5);
+    expect(bars.map((b) => b.length)).toEqual([3000, 3000]);
+    expect(bars.reduce((s, b) => s + b.price, 0)).toBe(80);
+  });
+  it("redimensionne la dernière barre à l'offre la moins chère qui convient", () => {
+    // 6000 + 1000 : une barre de 6 m (pleine) ne peut pas porter les 2 ; le reste (1000) va sur une barre de 2 m moins chère qu'une de 6 m
+    const { bars } = planGroup([5900, 1000], [{ length: 6000, price: 100 }, { length: 2000, price: 30 }], 5);
+    expect(bars.map((b) => b.length).sort()).toEqual([2000, 6000]);
+    expect(bars.reduce((s, b) => s + b.price, 0)).toBe(130);
+  });
+  it("une barre plus chère mais plus longue peut éviter une barre de plus", () => {
+    const { bars } = planGroup([3000, 3000], [{ length: 6100, price: 110 }, { length: 3100, price: 70 }], 5);
+    expect(bars.reduce((s, b) => s + b.price, 0)).toBe(110); // 1 x 6,1 m plutôt que 2 x 3,1 m = 140
+  });
+  it("signale les pièces plus longues que toute barre du marché", () => {
+    const r = planGroup([7000, 1000], [{ length: 6000, price: 100 }], 5);
+    expect(r.tooLong).toEqual([7000]);
+    expect(r.bars).toHaveLength(1);
+  });
+  it("sans offre : aucune barre, tout est signalé", () => {
+    expect(planGroup([1000], [], 5)).toEqual({ bars: [], tooLong: [1000] });
+  });
+});
+
+describe("priced", () => {
+  it("applique les majorations de gamme et de couleur", () => {
+    const m = market([{ length: 6000, price: 100000 }]);
+    expect(priced(m.offers["pf.sash"], m, "asiatique", "blanc")[0].price).toBe(100000);
+    expect(priced(m.offers["pf.sash"], m, "europeen", "blanc")[0].price).toBe(140000);
+    expect(priced(m.offers["pf.sash"], m, "asiatique", "chene-dore")[0].price).toBe(130000);
+    expect(priced(m.offers["pf.sash"], m, "europeen", "naturel")[0].price).toBe(152000);
+  });
+});
+
+describe("procure", () => {
+  it("sépare les achats par gamme et par couleur", () => {
+    const r = procure([piece(1000, 2, 1), piece(1000, 2, 2, { range: "europeen" }), piece(1000, 2, 3, { finish: "noir" })], market([{ length: 6000, price: 100 }]), 5);
+    expect(r.groups).toHaveLength(3);
+    expect(r.bars).toBe(3);
+  });
+  it("mutualise les barres entre ouvrages du même profilé et indique lesquels", () => {
+    const r = procure([piece(2000, 2, 1), piece(1500, 2, 2)], market([{ length: 6000, price: 100 }]), 5);
+    expect(r.groups).toHaveLength(1);
+    expect(r.groups[0].lines).toEqual([1, 2]);
+    expect(r.bars).toBe(2); // 2x2000 + 2x1500 = 7000 > 6000 : 2 barres
+  });
+  it("répartit le coût exactement entre les ouvrages", () => {
+    const r = procure([piece(2000, 2, 1), piece(1500, 2, 2), piece(900, 3, 3)], market([{ length: 6000, price: 99999 }]), 5);
+    const sum = Object.values(r.byLine).reduce((s, l) => s + l.cost, 0);
+    expect(Math.abs(sum - r.totalCost)).toBeLessThanOrEqual(2); // arrondis
+    expect(r.byLine[1].usedLen).toBe(4000);
+  });
+  it("totaux : acheté = utilisé + perdu", () => {
+    const r = procure([piece(2500, 5)], market([{ length: 6000, price: 100 }, { length: 3000, price: 45 }]), 5);
+    expect(r.totalLen).toBe(r.usedLen + r.wasteLen);
+    expect(r.totalCost).toBe(r.groups.reduce((s, g) => s + g.cost, 0));
+  });
+  it("fonctionne de bout en bout avec un ouvrage réel", () => {
+    const line: Line = {
+      id: "00000000-0000-4000-8000-000000000000", category: "fenetre", opening: "coulissant", leaves: 2, shutter: "roulant", control: "manuel", guard: "barreaudage",
+      range: "europeen", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1200, height: 1000, qty: 3, unit: 0,
+    };
+    const r = procure(allPieces([line]), DEFAULT_MARKET, 5);
+    expect(r.groups.map((g) => g.profile).sort()).toEqual(["pf.dormant", "pf.sash"]);
+    expect(r.totalCost).toBeGreaterThan(0);
+    expect(r.groups.every((g) => g.tooLong.length === 0)).toBe(true);
+  });
+});
