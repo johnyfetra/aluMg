@@ -105,6 +105,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         delay: "",
         notes: "",
         lines: [newLine(settings)],
+        discount: 0,
+        progress: 0,
         terms: { tva: settings.tva, deposit: settings.deposit, validityDays: settings.validityDays },
       },
   );

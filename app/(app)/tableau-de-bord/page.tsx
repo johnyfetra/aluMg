@@ -1,8 +1,8 @@
 "use client";
-import { ArrowRight, FileText, Hourglass, Percent, Plus, Wallet } from "lucide-react";
+import { ArrowRight, Hourglass, Inbox, Percent, Plus, Wallet } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { StatusBadge } from "@/components/ui";
+import { Progress, StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
 import { useMe, useQuotes } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
@@ -10,15 +10,20 @@ import { STATUSES, type Quote, type Status } from "@/lib/model";
 import { totals } from "@/lib/totals";
 
 const STATUS_COLOR: Record<Status, string> = {
+  requested: "var(--c3)",
   draft: "var(--bar-neutral)",
   sent: "var(--c1)",
+  negotiation: "var(--warn)",
   accepted: "var(--good)",
+  in_progress: "var(--c4)",
+  completed: "var(--c2)",
   rejected: "var(--critical)",
 };
+const WON: Status[] = ["accepted", "in_progress", "completed"];
 
-function Kpi({ label, value, Icon, color }: { label: string; value: ReactNode; Icon: typeof Wallet; color: string }) {
-  return (
-    <div className="card flex items-center gap-4 !p-4">
+function Kpi({ label, value, Icon, color, href }: { label: string; value: ReactNode; Icon: typeof Wallet; color: string; href?: string }) {
+  const body = (
+    <div className="card flex items-center gap-4 !p-4 transition-shadow hover:shadow-md">
       <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-xl" style={{ background: `color-mix(in srgb, ${color} 16%, transparent)`, color }}>
         <Icon size={22} />
       </span>
@@ -28,6 +33,7 @@ function Kpi({ label, value, Icon, color }: { label: string; value: ReactNode; I
       </div>
     </div>
   );
+  return href ? <Link href={href}>{body}</Link> : body;
 }
 
 function MonthlyChart({ quotes, locale, title, empty }: { quotes: Quote[]; locale: keyof typeof DATE_LOCALE; title: string; empty: string }) {
@@ -35,7 +41,7 @@ function MonthlyChart({ quotes, locale, title, empty }: { quotes: Quote[]; local
   const months = Array.from({ length: 6 }, (_, i) => new Date(now.getFullYear(), now.getMonth() - 5 + i, 1));
   const key = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;
   const sums = new Map(months.map((m) => [key(m), 0]));
-  for (const q of quotes) if (q.status === "accepted") {
+  for (const q of quotes) if (WON.includes(q.status)) {
     const k = key(new Date(q.date));
     if (sums.has(k)) sums.set(k, sums.get(k)! + totals(q).ttc);
   }
@@ -84,10 +90,13 @@ export default function Dashboard() {
   const { data: me } = useMe();
   const { quotes = [], loading } = useQuotes();
 
-  const sum = (s: Status) => quotes.filter((q) => q.status === s).reduce((a, q) => a + totals(q).ttc, 0);
+  const inStatus = (...s: Status[]) => quotes.filter((q) => s.includes(q.status));
+  const sum = (list: Quote[]) => list.reduce((a, q) => a + totals(q).ttc, 0);
   const count = (s: Status) => quotes.filter((q) => q.status === s).length;
-  const decided = count("sent") + count("accepted") + count("rejected");
-  const rate = decided ? `${Math.round((count("accepted") / decided) * 100)} %` : "—";
+  const requests = inStatus("requested");
+  const sites = inStatus("accepted", "in_progress");
+  const decided = inStatus("sent", "negotiation", ...WON, "rejected").length;
+  const rate = decided ? `${Math.round((inStatus(...WON).length / decided) * 100)} %` : "—";
   const recent = [...quotes].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   const cur = t("common.currency");
 
@@ -116,11 +125,11 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
-          <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Kpi label={t("dash.revenue")} value={`${fmt(sum("accepted"))} ${cur}`} Icon={Wallet} color="var(--c2)" />
-            <Kpi label={t("dash.pipeline")} value={`${fmt(sum("sent"))} ${cur}`} Icon={Hourglass} color="var(--c3)" />
+          <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Kpi label={t("dash.revenue")} value={`${fmt(sum(inStatus(...WON)))} ${cur}`} Icon={Wallet} color="var(--c2)" />
+            <Kpi label={t("dash.pipeline")} value={`${fmt(sum(inStatus("sent", "negotiation")))} ${cur}`} Icon={Hourglass} color="var(--c3)" />
+            <Kpi label={t("dash.requests")} value={requests.length} Icon={Inbox} color="var(--c1)" href="/devis" />
             <Kpi label={t("dash.conversion")} value={rate} Icon={Percent} color="var(--c4)" />
-            <Kpi label={t("dash.count")} value={quotes.length} Icon={FileText} color="var(--c1)" />
           </dl>
 
           <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
@@ -146,6 +155,64 @@ export default function Dashboard() {
                   </li>
                 ))}
               </ul>
+            </section>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-2">
+            <section className="card" aria-labelledby="h-req">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 id="h-req" className="font-semibold">
+                  {t("dash.requests")}
+                </h2>
+                <Link href="/devis" className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                  {t("dash.viewAll")}
+                  <ArrowRight size={16} aria-hidden />
+                </Link>
+              </div>
+              {requests.length === 0 ? (
+                <p className="py-4 text-sm text-muted">{t("dash.noRequests")}</p>
+              ) : (
+                <ul className="divide-y divide-line">
+                  {requests.slice(0, 5).map((q) => (
+                    <li key={q.id}>
+                      <Link href={`/devis/${q.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg px-2 py-3 hover:bg-surface-2">
+                        <span className="w-32 font-semibold text-primary">{q.number}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm">{q.client.name || t("quotes.noClient")}</span>
+                        <span className="text-xs text-muted">{new Date(q.date).toLocaleDateString(DATE_LOCALE[locale])}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section className="card" aria-labelledby="h-sites">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 id="h-sites" className="font-semibold">
+                  {t("dash.sites")}
+                </h2>
+                <Link href="/chantiers" className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                  {t("dash.viewAll")}
+                  <ArrowRight size={16} aria-hidden />
+                </Link>
+              </div>
+              {sites.length === 0 ? (
+                <p className="py-4 text-sm text-muted">{t("dash.noSites")}</p>
+              ) : (
+                <ul className="space-y-3">
+                  {sites.slice(0, 5).map((q) => (
+                    <li key={q.id}>
+                      <Link href={`/chantiers`} className="block rounded-lg px-2 py-2 hover:bg-surface-2">
+                        <p className="mb-1 flex justify-between gap-2 text-sm">
+                          <span className="font-semibold">{q.number}</span>
+                          <span className="truncate text-muted">{q.client.name}</span>
+                        </p>
+                        <Progress value={q.progress ?? 0} label={q.number} />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           </div>
 

@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, FileEdit, XCircle } from "lucide-react";
+import { CheckCheck, CheckCircle2, Clock, FileEdit, Hammer, Inbox, MessageSquareWarning, XCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { FINISHES, FINISH_GROUPS, type FinishId } from "@/lib/model";
 import type { T } from "@/lib/i18n";
@@ -17,9 +17,13 @@ export function Field({ label, hint, children, htmlFor }: { label: string; hint?
 
 // Le statut porte toujours une icône ET un texte : la couleur seule ne porte pas l'information.
 const BADGE = {
+  requested: { cls: "bg-c3/15 text-c3", Icon: Inbox },
   draft: { cls: "bg-surface-2 text-muted", Icon: FileEdit },
   sent: { cls: "bg-c1/15 text-c1", Icon: Clock },
+  negotiation: { cls: "bg-warn/15 text-warn", Icon: MessageSquareWarning },
   accepted: { cls: "bg-good/15 text-ok", Icon: CheckCircle2 },
+  in_progress: { cls: "bg-c4/15 text-c4", Icon: Hammer },
+  completed: { cls: "bg-good/15 text-ok", Icon: CheckCheck },
   rejected: { cls: "bg-critical/15 text-danger", Icon: XCircle },
 } as const;
 
@@ -30,6 +34,18 @@ export function StatusBadge({ status, label }: { status: keyof typeof BADGE; lab
       <Icon size={13} aria-hidden />
       {label}
     </span>
+  );
+}
+
+// Barre d'avancement d'un chantier (0 à 100 %), annoncée aux lecteurs d'écran.
+export function Progress({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex items-center gap-2" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={value}>
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2">
+        <div className="h-full rounded-full bg-c2 transition-[width] duration-500" style={{ width: `${value}%` }} />
+      </div>
+      <span className="w-10 text-right text-xs font-semibold tabular-nums">{value} %</span>
+    </div>
   );
 }
 
