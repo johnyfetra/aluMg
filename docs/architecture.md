@@ -35,6 +35,7 @@ lib/db/                schéma Drizzle et connexion (getDb)
 lib/repo.ts            accès aux données, toujours borné à un utilisateur
 lib/auth.ts, password.ts   sessions et hachage scrypt
 lib/profiles.ts        profil public, portfolio, annuaire et avis (public)
+lib/chat.ts            messagerie : conversations client/menuisier, messages, non-lus
 lib/workflow.ts        demandes de clients, machine d'états des devis, historique, évaluations, signalements
 lib/procure.ts         plan d'achat des profilés selon le marché (longueurs et prix)
 lib/client.ts          hooks SWR (useSettings, useQuotes, useMe)

@@ -127,6 +127,12 @@ En tant que menuisier, je veux un profil public (nom, ville, présentation, spé
 En tant que client ou visiteur, je veux filtrer l'annuaire par texte, ville, spécialité, note minimale et badge vérifié, et trier par note, chantiers terminés, ancienneté ou nom.
 - CA : aucune connexion n'est requise ; aucune coordonnée n'est affichée publiquement ; la page d'un profil montre réalisations (visionneuse), avis et répartition des notes.
 
+### ✅ US-3.4 Discuter par messagerie
+En tant que client ou menuisier, je dispose d'un menu **Messagerie** (après connexion) pour échanger avec l'autre partie, avec pastille de messages non lus.
+- Le client écrit à tout menuisier publié (bouton sur le profil et sur son devis) ; le menuisier ne peut écrire qu'à un client qui lui a demandé un devis (pas de démarchage).
+- Une conversation par couple client/menuisier ; un tiers n'y accède jamais ; messages de 2 000 caractères maximum ; mise à jour par interrogation régulière (3 s).
+- Hors périmètre : pièces jointes, notifications par e-mail/SMS, temps réel (WebSocket).
+
 ### 🔜 US-3.2 Demander le badge « vérifié »
 En tant que menuisier, je veux soumettre mes justificatifs (NIF/STAT, visite, références) pour obtenir un badge.
 - Admin : file de vérification avec décision motivée. (Le champ `verified` existe ; il manque la demande et l'écran d'administration.)

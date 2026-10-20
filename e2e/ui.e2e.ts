@@ -107,6 +107,36 @@ describe("parcours dans le navigateur", () => {
     await page.close();
   }, 90_000);
 
+  it("messagerie : le client écrit depuis le profil, le menuisier voit la pastille et répond", async () => {
+    const cEmail = `ui-chat-${RUN}@ex.mg`;
+    const cp = await newPage();
+    await signup(cp, "client", "Client Chat", cEmail);
+    await cp.waitForFunction(() => location.pathname === "/espace-client", { timeout: 20_000 });
+    await cp.goto(`${BASE}/menuisiers/${joiner.slug}`, { waitUntil: "networkidle0" });
+    await click(cp, "button", "Envoyer un message");
+    await cp.waitForFunction(() => location.pathname === "/messages", { timeout: 20_000 });
+    await cp.waitForSelector("#chat-input");
+    await cp.type("#chat-input", "Bonjour, disponible en décembre ?");
+    await cp.keyboard.press("Enter");
+    await waitText(cp, "Bonjour, disponible en décembre ?");
+
+    const mp = await newPage();
+    await mp.goto(`${BASE}/connexion`, { waitUntil: "networkidle0" });
+    await mp.type("#email", `ui-pro-${RUN}@ex.mg`);
+    await mp.type("#password", PASSWORD);
+    await mp.click("button[type=submit]");
+    await mp.waitForFunction(() => location.pathname === "/tableau-de-bord", { timeout: 20_000 });
+    await mp.waitForSelector('a[href="/messages"] span[aria-label]', { timeout: 20_000 }); // pastille de non-lus
+    await mp.goto(`${BASE}/messages`, { waitUntil: "networkidle0" });
+    await click(mp, "button", "Client Chat");
+    await waitText(mp, "Bonjour, disponible en décembre ?");
+    await mp.type("#chat-input", "Oui, le 10 décembre.");
+    await mp.keyboard.press("Enter");
+    await waitText(cp, "Oui, le 10 décembre.", 20_000); // le client reçoit la réponse (interrogation régulière)
+    await cp.close();
+    await mp.close();
+  }, 90_000);
+
   it("langue et thème : changent à l'écran et sont mémorisés", async () => {
     const page = await newPage();
     await page.goto(`${BASE}/menuisiers`, { waitUntil: "networkidle0" });

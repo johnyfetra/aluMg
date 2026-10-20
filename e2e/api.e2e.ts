@@ -234,3 +234,34 @@ describe("plateforme : rôles, annuaire, demandes, suivi, évaluation", () => {
     expect(profile.reviewList[0]).toMatchObject({ client: "Hery", comment: "Très bien" });
   });
 });
+
+describe("messagerie", () => {
+  it("client ↔ menuisier : démarrage encadré, non-lus, confidentialité", async () => {
+    const pub = new Client(), m = new Client(), c = new Client(), c2 = new Client(), m2 = new Client();
+    await m.call("POST", "/api/auth/signup", acct("Atelier Chat", `chat-m-${RUN}@ex.mg`, "menuisier"));
+    await m2.call("POST", "/api/auth/signup", acct("Tiers Chat", `chat-m2-${RUN}@ex.mg`, "menuisier"));
+    await c.call("POST", "/api/auth/signup", acct("Cli Chat", `chat-c-${RUN}@ex.mg`, "client"));
+    await c2.call("POST", "/api/auth/signup", acct("Cli Tiers", `chat-c2-${RUN}@ex.mg`, "client"));
+    const prof = (await m.call("GET", "/api/profile")).body;
+    expect((await c.call("POST", "/api/conversations", { menuisier: prof.slug })).status).toBe(404); // profil non publié
+    await m.call("PUT", "/api/profile", { displayName: "Atelier Chat", slug: prof.slug, city: "Tana", bio: "", specialties: [], logo: "", published: true });
+
+    expect((await pub.call("GET", "/api/conversations")).status).toBe(401);
+    const conv = (await c.call("POST", "/api/conversations", { menuisier: prof.slug })).body.id;
+    expect((await c.call("POST", "/api/conversations", { menuisier: prof.slug })).body.id).toBe(conv); // idempotent
+    expect((await c.call("POST", `/api/conversations/${conv}/messages`, { body: "   " })).status).toBe(400);
+    expect((await c.call("POST", `/api/conversations/${conv}/messages`, { body: "Bonjour" })).status).toBe(201);
+
+    expect((await m.call("GET", "/api/messages/unread")).body.count).toBe(1);
+    expect((await m.call("GET", "/api/conversations")).body[0]).toMatchObject({ unread: 1, other: { name: "Cli Chat" } });
+    expect((await m.call("GET", `/api/conversations/${conv}/messages`)).body[0]).toMatchObject({ body: "Bonjour", mine: false });
+    expect((await m.call("GET", "/api/messages/unread")).body.count).toBe(0);
+
+    // un tiers ne lit ni n'écrit ; un menuisier ne démarre pas avec un client qui ne lui a rien demandé
+    expect((await c2.call("GET", `/api/conversations/${conv}/messages`)).status).toBe(404);
+    expect((await m2.call("POST", `/api/conversations/${conv}/messages`, { body: "x" })).status).toBe(404);
+    const me = (await c.call("GET", "/api/me")).body;
+    expect((await m.call("POST", "/api/conversations", { client: me.id })).body.id).toBe(conv);
+    expect((await m2.call("POST", "/api/conversations", { client: me.id })).status).toBe(403);
+  });
+});

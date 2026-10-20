@@ -25,7 +25,7 @@ Node 20+. Aucune installation de base de données : en développement, une base 
 | `npm run test:e2e:fresh` | Tests de bout en bout (API + navigateur Chrome) sur une base jetable et un autre port : **recommandé** |
 | `npm run test:e2e` | Mêmes tests contre le serveur déjà lancé (`npm run dev`) : ajoute des comptes de test à votre base locale |
 | `npm run lint` · `npm run build` | Qualité et build de production |
-| `npm run demo:photos` · `npm run demo:assets` · `npm run seed:demo` | Données de démonstration : vraies photos libres (Pexels, Internet requis), logos et portraits (SVG), puis 6 menuisiers, 4 clients et 15 devis à tous les stades (mot de passe `motdepasse123`) |
+| `npm run demo:photos` · `npm run demo:assets` · `npm run seed:demo` | Données de démonstration : vraies photos libres (Pexels, Internet requis), logos et portraits (SVG), puis 12 menuisiers, 4 clients, 15 devis à tous les stades et des conversations (mot de passe `motdepasse123`) |
 | `npm run admin:create` | Crée un compte **administrateur** avec mot de passe généré (voir ci-dessous) |
 | `npx drizzle-kit generate` | Génère une migration après une modification de `lib/db/schema.ts` |
 
