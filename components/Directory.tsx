@@ -13,10 +13,12 @@ const KEYS = Object.keys(EMPTY) as (keyof F)[];
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <fieldset className="space-y-2.5 border-t border-line pt-4 first:border-0 first:pt-0">
-      <legend className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">{title}</legend>
-      {children}
-    </fieldset>
+    <div className="border-t border-line pt-4 first:border-0 first:pt-0">
+      <fieldset className="m-0 min-w-0 space-y-2.5 border-0 p-0">
+        <legend className="mb-2.5 p-0 text-xs font-bold uppercase tracking-wider text-muted">{title}</legend>
+        {children}
+      </fieldset>
+    </div>
   );
 }
 

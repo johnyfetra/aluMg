@@ -25,8 +25,18 @@ Node 20+. Aucune installation de base de données : en développement, une base 
 | `npm run test:e2e:fresh` | Tests de bout en bout (API + navigateur Chrome) sur une base jetable et un autre port : **recommandé** |
 | `npm run test:e2e` | Mêmes tests contre le serveur déjà lancé (`npm run dev`) : ajoute des comptes de test à votre base locale |
 | `npm run lint` · `npm run build` | Qualité et build de production |
+| `npm run demo:photos` · `npm run demo:assets` · `npm run seed:demo` | Données de démonstration : vraies photos libres (Pexels, Internet requis), logos et portraits (SVG), puis 6 menuisiers, 4 clients et 15 devis à tous les stades (mot de passe `motdepasse123`) |
 | `npm run admin:create` | Crée un compte **administrateur** avec mot de passe généré (voir ci-dessous) |
 | `npx drizzle-kit generate` | Génère une migration après une modification de `lib/db/schema.ts` |
+
+## Données de démonstration
+
+```bash
+npm run dev                 # dans un terminal
+npm run seed:demo           # dans un autre (ADMIN_EMAIL / ADMIN_PASSWORD optionnels : accordent le badge « Vérifié »)
+```
+
+Les photos de réalisations viennent de [Pexels](https://www.pexels.com) (voir `public/demo/CREDITS.md`) : elles illustrent le *type* d'ouvrage et non de vrais chantiers ; les logos et portraits sont des illustrations générées (aucune vraie personne). Comptes : `test@alumada.mg`, `sud@alumada.mg`, `tana@demo.mg`, `nosybe@demo.mg`, `fianar@demo.mg`, `mahajanga@demo.mg` (menuisiers) ; `hery@client.mg`, `noro@client.mg`, `toky@client.mg`, `lalao@client.mg` (clients).
 
 ## Compte administrateur
 
@@ -70,6 +80,7 @@ Transversal : thème clair/sombre (barre latérale identique), 3 langues (franç
 - Les listes d'options (couleurs, verres, gammes) viennent de `lib/model.ts` et restent à valider avec des menuisiers malgaches.
 - Pas de limitation des tentatives de connexion ni des demandes de devis, pas de vérification d'e-mail ni de mot de passe oublié : à ajouter avant l'ouverture au public.
 - Le badge « Vérifié » et le traitement des signalements n'ont pas encore d'écran d'administration (les données existent en base).
+- Un devis envoyé au client est verrouillé ; pour un devis sans compte client, « Créer une nouvelle version » en repart d'une copie.
 - Les photos sont stockées en base (réduites côté navigateur) : à déplacer vers un stockage de fichiers avant la montée en charge.
 - Le client ne peut pas encore télécharger le PDF du devis (le menuisier l'envoie).
 - Les traductions malgaches doivent être relues par un locuteur natif.

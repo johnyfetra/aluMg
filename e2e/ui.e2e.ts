@@ -112,7 +112,7 @@ describe("parcours dans le navigateur", () => {
     await page.goto(`${BASE}/menuisiers`, { waitUntil: "networkidle0" });
     await click(page, "button[aria-haspopup=menu]", "Français");
     await click(page, "[role=menuitemradio]", "English");
-    await waitText(page, "Find your aluminium joiner");
+    await waitText(page, "Aluminium joiners rated by their own clients");
     expect(await page.evaluate(() => document.documentElement.lang)).toBe("en");
     await page.click('button[aria-label="Dark"]');
     expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("dark");

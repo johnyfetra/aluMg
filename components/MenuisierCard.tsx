@@ -28,10 +28,6 @@ export default function MenuisierCard({ m }: { m: DirectoryEntry }) {
             {m.rating.toFixed(1)}
           </span>
         )}
-        <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
-          <Images size={12} aria-hidden />
-          {m.portfolio}
-        </span>
         {m.owner.photo && (
           <span className="absolute -bottom-5 right-4 z-10 rounded-full bg-surface p-0.5 shadow-md" title={m.owner.name}>
             <Avatar name={m.owner.name} src={m.owner.photo} size={44} round />
@@ -70,6 +66,10 @@ export default function MenuisierCard({ m }: { m: DirectoryEntry }) {
           ) : (
             <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-muted">{t("dir.noReviews")}</span>
           )}
+          <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted">
+            <Images size={13} aria-hidden />
+            {m.portfolio}
+          </span>
         </p>
 
         {m.bio && <p className="line-clamp-2 text-sm leading-relaxed text-muted">{m.bio}</p>}
