@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { mutate } from "swr";
 import ProfileNeeds from "./ProfileNeeds";
+import ChatButton from "./ChatButton";
 import Timeline from "./Timeline";
 import Viewer3DLoader from "./Viewer3DLoader";
 import { Choice, Field, FinishPicker } from "./ui";
@@ -296,6 +297,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
           </section>
 
           <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
+          {q.clientId && persisted && <ChatButton target={{ client: q.clientId }} label={t("msg.contactClient")} />}
           {q.clientId && persisted && <Timeline quoteId={q.id} />}
         </fieldset>
 

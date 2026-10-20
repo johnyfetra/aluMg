@@ -1,5 +1,5 @@
 "use client";
-import { FilePlus2, FileText, LayoutDashboard, Menu as MenuIcon, Ruler, Settings, UserCircle, X } from "lucide-react";
+import { FilePlus2, MessageCircle, FileText, LayoutDashboard, Menu as MenuIcon, Ruler, Settings, UserCircle, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, useState, type ReactNode } from "react";
@@ -8,7 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
 import { Briefcase, ClipboardList, Images, Search, Store, Users } from "lucide-react";
-import { useSession } from "@/lib/client";
+import { useSession, useUnread } from "@/lib/client";
 
 type Item = { href: string; key: keyof Messages; Icon: typeof Settings; match: (p: string) => boolean };
 type Group = { label: keyof Messages; items: Item[] };
@@ -27,6 +27,7 @@ const MENUISIER: Nav = {
         { href: "/devis", key: "nav.quotes", Icon: FileText, match: (p) => (p === "/devis" || p.startsWith("/devis/")) && p !== "/devis/nouveau" },
         { href: "/chantiers", key: "nav.sites", Icon: Briefcase, match: starts("/chantiers") },
         { href: "/clients", key: "nav.clients", Icon: Users, match: starts("/clients") },
+        { href: "/messages", key: "nav.messages", Icon: MessageCircle, match: starts("/messages") },
       ],
     },
     {
@@ -49,6 +50,7 @@ const CLIENT: Nav = {
       label: "nav.group.main",
       items: [
         { href: "/espace-client", key: "cl.myRequests", Icon: ClipboardList, match: (p) => p === "/espace-client" || p.startsWith("/espace-client/devis") },
+        { href: "/messages", key: "nav.messages", Icon: MessageCircle, match: starts("/messages") },
         { href: "/menuisiers", key: "cl.findJoiner", Icon: Search, match: starts("/menuisiers") },
       ],
     },
@@ -61,6 +63,7 @@ function NavLinks({ nav, onNavigate }: { nav: Nav; onNavigate: () => void }) {
   const { t } = useI18n();
   const path = usePathname();
   const creating = nav.cta.match(path);
+  const unread = useUnread();
   return (
     <nav aria-label={t("nav.main")} className="flex flex-1 flex-col gap-6 px-4">
       <Link
@@ -89,6 +92,11 @@ function NavLinks({ nav, onNavigate }: { nav: Nav; onNavigate: () => void }) {
                     {active && <span aria-hidden className="absolute -left-4 top-2 bottom-2 w-1 rounded-r-full bg-(--side-accent)" />}
                     <Icon size={18} aria-hidden className={active ? "text-(--side-accent)" : ""} />
                     {t(key)}
+                    {href === "/messages" && unread > 0 && (
+                      <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-(--side-accent) px-1.5 text-[11px] font-bold text-(--side-bg)" aria-label={`${unread} ${t("msg.unread")}`}>
+                        {unread}
+                      </span>
+                    )}
                   </Link>
                 </li>
               );

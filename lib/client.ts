@@ -4,6 +4,7 @@ import type { SessionUser } from "./auth";
 import { type Quote, type Settings } from "./model";
 import type { DirectoryEntry, PortfolioInput, PortfolioItem, Profile, ProfileInput, PublicMenuisier } from "./profiles";
 import type { ClientQuote, EventView } from "./workflow";
+import type { ConversationView, MessageView } from "./chat";
 
 class ApiError extends Error {
   constructor(public status: number, public code: string) {
@@ -96,3 +97,18 @@ export function usePortfolio() {
   };
   return { items: data, loading: isLoading, save, remove };
 }
+
+// ---------- Messagerie (interrogation régulière : simple et robuste ; à remplacer par SSE/WebSocket si la charge l'exige) ----------
+export const useConversations = (enabled = true) => useSWR<ConversationView[]>(enabled ? "/api/conversations" : null, fetcher, { refreshInterval: 6000 });
+export const useMessages = (id: string | null) => useSWR<MessageView[]>(id ? `/api/conversations/${id}/messages` : null, fetcher, { refreshInterval: 3000 });
+
+// Nombre de messages non lus (pastille de la navigation) ; rien n'est demandé si personne n'est connecté.
+export function useUnread() {
+  const { data: me } = useSession();
+  const on = me?.role === "client" || me?.role === "menuisier";
+  const { data } = useSWR<{ count: number }>(on ? "/api/messages/unread" : null, fetcher, { refreshInterval: 12000 });
+  return on ? (data?.count ?? 0) : 0;
+}
+
+// Ouvre (ou crée) la conversation avec un menuisier (par son adresse publique) ou un client (par son identifiant) et renvoie son id.
+export const openConversation = (target: { menuisier: string } | { client: string }) => request<{ id: string }>("POST", "/api/conversations", target).then((r) => r.id);

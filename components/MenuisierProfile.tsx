@@ -2,6 +2,7 @@
 import { ArrowLeft, BadgeCheck, CalendarDays, Hammer, Images, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import ChatButton from "./ChatButton";
 import Lightbox from "./Lightbox";
 import { Avatar, Stars } from "./ui";
 import { useMenuisier, useSession } from "@/lib/client";
@@ -204,9 +205,12 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
           <h2 className="text-lg font-semibold">{t("mp.requestQuote")}</h2>
           <p className="text-sm text-muted">{t("mp.requestHint")}</p>
           {me?.role === "client" ? (
-            <Link href={next} className="btn-primary w-full">
-              {t("mp.requestQuote")}
-            </Link>
+            <>
+              <Link href={next} className="btn-primary w-full">
+                {t("mp.requestQuote")}
+              </Link>
+              <ChatButton target={{ menuisier: slug }} label={t("msg.contact")} />
+            </>
           ) : !me ? (
             <>
               <Link href={`/connexion?next=${encodeURIComponent(next)}`} className="btn-primary w-full">

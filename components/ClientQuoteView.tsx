@@ -3,6 +3,7 @@ import { ArrowLeft, BadgeCheck, Flag, Mail, MessageSquareWarning, Phone, ThumbsD
 import Link from "next/link";
 import { useState } from "react";
 import { mutate } from "swr";
+import ChatButton from "./ChatButton";
 import Timeline from "./Timeline";
 import { Avatar, Field, Progress, StarInput, StatusBadge } from "./ui";
 import { fmt, lineTotal } from "@/lib/calc";
@@ -181,6 +182,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-20">
+          {m.slug && <ChatButton target={{ menuisier: m.slug }} label={t("msg.contactJoiner")} />}
           {priced && (
             <section className="card space-y-2" aria-label={t("editor.totalTtc")}>
               {tot.discount > 0 && (
