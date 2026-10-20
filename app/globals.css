@@ -28,6 +28,10 @@
   --c2: #1baf7a;
   --c3: #eb6834;
   --c4: #4a3aa7;
+  --accent: #f5a524; /* touche chaude : appels à l'action et mises en avant, à utiliser avec parcimonie */
+  --on-accent: #1f1300;
+  --hero-from: #0b1533;
+  --hero-to: #14275a;
   --good: #0ca30c;
   --critical: #d03b3b;
   --bar-neutral: #98a2b8;
@@ -70,6 +74,8 @@
   --color-danger: var(--danger);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
   --color-good: var(--good);
   --color-critical: var(--critical);
   --color-c1: var(--c1);
@@ -107,6 +113,9 @@ body {
   }
   .btn-secondary {
     @apply border border-line bg-surface text-ink hover:bg-surface-2;
+  }
+  .btn-accent {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-bold text-on-accent shadow-sm transition hover:brightness-95;
   }
   .btn-danger {
     @apply border border-line bg-surface text-danger hover:bg-surface-2;
