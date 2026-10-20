@@ -12,6 +12,12 @@ const line: Line = lineSchema.parse({
   finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1200, height: 1000, qty: 1, unit: 0,
 });
 const A = (a: Action) => a;
+// updateQuote renvoie aussi « locked » / null : ce raccourci échoue explicitement si la mise à jour n'a pas eu lieu
+const upd = async (userId: string, id: string, q: Quote) => {
+  const r = await repo.updateQuote(userId, id, q);
+  if (r === null || r === "locked") throw new Error(`updateQuote: ${r}`);
+  return r;
+};
 
 let m1: string, m2: string, c1: string, c2: string; // menuisiers 1 et 2, clients 1 et 2
 let slug1: string;
@@ -93,7 +99,7 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
   });
 
   it("modifier la demande (menuisier) la passe en préparation sans toucher client, demande ni numéro", async () => {
-    const saved = (await repo.updateQuote(m1, q.id, quoteSchema.parse({ ...q, status: "accepted", clientId: c2, progress: 90, request: null, number: "HACK", lines: q.lines })))!;
+    const saved = await upd(m1, q.id, quoteSchema.parse({ ...q, status: "accepted", clientId: c2, progress: 90, request: null, number: "HACK", lines: q.lines }));
     expect(saved).toMatchObject({ status: "draft", clientId: c1, progress: 0, number: q.number });
     expect(saved.request?.message).toBe("Je voudrais 2 fenêtres");
     q = saved;
@@ -101,12 +107,17 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
 
   it("envoi : refusé si un prix est à 0, accepté sinon ; le client voit alors les prix", async () => {
     const zero = quoteSchema.parse({ ...q, lines: q.lines.map((l) => ({ ...l, unit: 0 })) });
-    await repo.updateQuote(m1, q.id, zero);
+    await upd(m1, q.id, zero);
     expect(await wf.applyAction(m1, q.id, A({ type: "send" }))).toEqual({ ok: false, error: "incomplete" });
-    await repo.updateQuote(m1, q.id, quoteSchema.parse({ ...q, discount: 0 }));
+    await upd(m1, q.id, quoteSchema.parse({ ...q, discount: 0 }));
     const r = await wf.applyAction(m1, q.id, A({ type: "send", message: "Voici mon devis" }));
     expect(r.ok && r.quote.status).toBe("sent");
     expect((await wf.getClientQuote(c1, q.id))!.quote.lines[0].unit).toBeGreaterThan(0);
+  });
+
+  it("une fois envoyé, le devis est verrouillé pour le menuisier (prix figés)", async () => {
+    expect(await repo.updateQuote(m1, q.id, quoteSchema.parse({ ...q, discount: 50 }))).toBe("locked");
+    expect((await repo.getQuote(m1, q.id))!.discount).toBe(0);
   });
 
   it("les rôles sont respectés : le client ne peut pas envoyer, le menuisier ne peut pas accepter", async () => {
@@ -119,7 +130,7 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
     const r = await wf.applyAction(c1, q.id, A({ type: "request_change", message: "Une remise possible ?", discountPercent: 10 }));
     expect(r.ok && r.quote.status).toBe("negotiation");
     // le PUT du menuisier ne change pas le statut d'un devis lié à un client…
-    const revised = (await repo.updateQuote(m1, q.id, quoteSchema.parse({ ...q, discount: 10, status: "accepted" })))!;
+    const revised = await upd(m1, q.id, quoteSchema.parse({ ...q, discount: 10, status: "accepted" }));
     expect(revised.status).toBe("negotiation");
     expect(revised.discount).toBe(10);
     const sent = await wf.applyAction(m1, q.id, A({ type: "send", message: "Remise de 10 % accordée" }));

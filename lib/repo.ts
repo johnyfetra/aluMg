@@ -57,9 +57,14 @@ export async function createQuote(userId: string, q: Quote, opts: { clientId?: s
   return saved;
 }
 
-export async function updateQuote(userId: string, id: string, q: Quote): Promise<Quote | null> {
+// Un devis lié à un client n'est modifiable que tant qu'il n'est pas dans les mains du client (demande, brouillon, négociation) :
+// une fois envoyé, accepté ou refusé, ses lignes, prix et remise sont figés pour que le client voie toujours ce qu'il a accepté.
+export const EDITABLE = ["requested", "draft", "negotiation"];
+
+export async function updateQuote(userId: string, id: string, q: Quote): Promise<Quote | null | "locked"> {
   const existing = await getQuote(userId, id);
   if (!existing) return null;
+  if (existing.clientId && !EDITABLE.includes(existing.status)) return "locked";
   // Numéro, date, conditions, client, demande et avancement ne changent jamais par cette voie.
   // Pour un devis lié à un client, le statut ne bouge que par les actions (envoi, acceptation…) ; une demande modifiée passe en préparation.
   let status = q.status;
@@ -71,11 +76,11 @@ export async function updateQuote(userId: string, id: string, q: Quote): Promise
   return saved;
 }
 
-// « locked » : un chantier accepté d'un client ne se supprime pas (il a un historique et peut avoir une évaluation).
+// « locked » : un devis déjà entre les mains d'un client (envoyé, négocié, accepté, terminé) ne se supprime pas : il a un historique et peut avoir une évaluation.
 export async function deleteQuote(userId: string, id: string): Promise<boolean | "locked"> {
   const existing = await getQuote(userId, id);
   if (!existing) return false;
-  if (existing.clientId && ["accepted", "in_progress", "completed"].includes(existing.status)) return "locked";
+  if (existing.clientId && !["requested", "draft", "rejected"].includes(existing.status)) return "locked";
   const db = await getDb();
   const r = await db.delete(schema.quotes).where(and(eq(schema.quotes.id, id), eq(schema.quotes.userId, userId))).returning({ id: schema.quotes.id });
   return r.length > 0;

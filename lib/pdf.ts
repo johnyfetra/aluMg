@@ -28,7 +28,7 @@ export async function quotePdf(q: Quote, s: Settings, t: T, locale: Locale, with
   const date = new Date(q.date);
   const until = new Date(date.getTime() + q.terms.validityDays * 864e5);
   const d = (x: Date) => x.toLocaleDateString(DATE_LOCALE[locale]);
-  const { ht, tva, ttc } = totals(q);
+  const { gross, discount, ht, tva, ttc } = totals(q);
   const gray = () => doc.setTextColor(95, 105, 125);
   const dark = () => doc.setTextColor(15, 23, 42);
   const label = (txt: string, x: number, y: number) => {
@@ -126,12 +126,21 @@ export async function quotePdf(q: Quote, s: Settings, t: T, locale: Locale, with
     doc.text(v, R - 3, yy, { align: "right" });
   };
   dark();
-  row(t("pdf.totalHt"), `${fmt(ht)} Ar`, y);
-  if (q.terms.tva > 0) row(`${t("pdf.totalTva")} ${q.terms.tva} %`, `${fmt(tva)} Ar`, y + 5.5);
-  doc.setFillColor(...accent).roundedRect(125, y + 9, R - 125, 10, 1.5, 1.5, "F");
+  let ry = y;
+  if (discount > 0) {
+    row(t("pdf.subtotal"), `${fmt(gross)} Ar`, ry);
+    row(`${t("pdf.discount")} ${q.discount} %`, `− ${fmt(discount)} Ar`, ry + 5.5);
+    ry += 11;
+  }
+  row(t("pdf.totalHt"), `${fmt(ht)} Ar`, ry);
+  if (q.terms.tva > 0) {
+    row(`${t("pdf.totalTva")} ${q.terms.tva} %`, `${fmt(tva)} Ar`, ry + 5.5);
+    ry += 5.5;
+  }
+  doc.setFillColor(...accent).roundedRect(125, ry + 9, R - 125, 10, 1.5, 1.5, "F");
   doc.setTextColor(255, 255, 255).setFont("helvetica", "bold").setFontSize(11);
-  doc.text(t("pdf.totalTtc"), 128, y + 15.6);
-  doc.text(`${fmt(ttc)} Ar`, R - 3, y + 15.6, { align: "right" });
+  doc.text(t("pdf.totalTtc"), 128, ry + 15.6);
+  doc.text(`${fmt(ttc)} Ar`, R - 3, ry + 15.6, { align: "right" });
 
   label(t("pdf.conditions"), M, y);
   gray();
