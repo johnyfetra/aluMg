@@ -1,10 +1,12 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "./db";
+import { SPECIALTIES } from "./model";
 import { getSettings } from "./repo";
 
+export { SPECIALTIES };
+
 // ---------- Profil public du menuisier ----------
-export const SPECIALTIES = ["fenetres", "portes", "volets", "garde-corps", "cloisons", "vitrerie", "renovation", "sur-mesure"] as const;
 
 const text = (n: number) => z.string().trim().max(n);
 const image = z.string().max(700_000).refine((s) => s.startsWith("data:image/"), "image");

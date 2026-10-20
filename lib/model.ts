@@ -16,6 +16,9 @@ export const THICKNESSES = ["4", "5", "6", "8", "10", "4/12/4", "6/12/6"] as con
 export const PATTERNS = ["none", "granite", "martele", "cathedrale", "cannele"] as const;
 // requested : demandé par un client ; draft : en préparation ; sent : devis reçu par le client ; negotiation : le client demande une modification
 export const STATUSES = ["requested", "draft", "sent", "negotiation", "accepted", "in_progress", "completed", "rejected"] as const;
+// Constantes partagées par le navigateur et le serveur : ne jamais les définir dans un module qui touche à la base de données.
+export const SPECIALTIES = ["fenetres", "portes", "volets", "garde-corps", "cloisons", "vitrerie", "renovation", "sur-mesure"] as const;
+export const REPORT_REASONS = ["quality", "no_response", "price", "behavior", "fraud", "other"] as const;
 export const ROLES = ["client", "menuisier", "admin"] as const;
 export type Role = (typeof ROLES)[number];
 

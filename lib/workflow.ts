@@ -2,11 +2,10 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { normalize, unitPrice } from "./calc";
 import { getDb, schema } from "./db";
-import { type Quote, type QuoteRequest, type Role, type Status, lineSchema } from "./model";
+import { type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
 import { createQuote, findUserById, getSettings } from "./repo";
 
 // ---------- Actions possibles sur un devis lié à un client ----------
-export const REPORT_REASONS = ["quality", "no_response", "price", "behavior", "fraud", "other"] as const;
 const msg = z.string().trim().max(1000);
 
 export const actionSchema = z.discriminatedUnion("type", [
