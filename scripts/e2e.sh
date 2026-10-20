@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Tests de bout en bout sur une base JETABLE et un autre port : ne touche ni à .data/ ni au serveur de développement.
+#   npm run test:e2e:fresh
+set -euo pipefail
+PORT="${PORT:-3100}"
+WORK="$(mktemp -d)"
+export PGLITE_DIR="$WORK/pg" NEXT_DIST_DIR=".next-e2e"
+trap 'kill "${PID:-0}" 2>/dev/null || true; rm -rf "$WORK" .next-e2e' EXIT
+
+npx next build >"$WORK/build.log" 2>&1 || { cat "$WORK/build.log"; exit 1; }
+npx next start -p "$PORT" >"$WORK/server.log" 2>&1 &
+PID=$!
+for _ in $(seq 1 60); do curl -sf -o /dev/null "http://localhost:$PORT/connexion" && break; sleep 1; done
+E2E=1 E2E_BASE_URL="http://localhost:$PORT" npx vitest run

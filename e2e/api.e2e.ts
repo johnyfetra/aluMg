@@ -34,6 +34,8 @@ const quote = (n: number, over: object = {}) => ({
   lines: [line], terms: { tva: 20, deposit: 50, validityDays: 30 }, ...over,
 });
 const pw = "longpassword1";
+// contact obligatoire : e-mail et téléphone ; le rôle se choisit à l'inscription
+const acct = (name: string, email: string, role: "client" | "menuisier" = "menuisier", password = pw) => ({ name, email, role, phone: "034 12 345 67", password });
 
 describe("accès", () => {
   it("API et pages protégées refusent un visiteur sans session", async () => {
@@ -49,12 +51,12 @@ describe("comptes", () => {
   const email = `alice-${RUN}@ex.mg`;
   it("inscription : validation, doublon, connexion, mots de passe", async () => {
     const a = new Client();
-    expect((await a.call("POST", "/api/auth/signup", { name: "Alice", email, password: "short" })).status).toBe(400);
-    expect((await a.call("POST", "/api/auth/signup", { name: "Alice", email: "pas-un-mail", password: pw })).status).toBe(400);
-    expect((await a.call("POST", "/api/auth/signup", { name: "Alice", email, password: pw })).status).toBe(201);
-    expect((await new Client().call("POST", "/api/auth/signup", { name: "X", email: email.toUpperCase(), password: pw })).status).toBe(409);
+    expect((await a.call("POST", "/api/auth/signup", acct("Alice", email, "menuisier", "short"))).status).toBe(400);
+    expect((await a.call("POST", "/api/auth/signup", acct("Alice", "pas-un-mail"))).status).toBe(400);
+    expect((await a.call("POST", "/api/auth/signup", acct("Alice", email))).status).toBe(201);
+    expect((await new Client().call("POST", "/api/auth/signup", acct("X", email.toUpperCase()))).status).toBe(409);
     const me = await a.call("GET", "/api/me");
-    expect(me.body).toMatchObject({ email, role: "user" });
+    expect(me.body).toMatchObject({ email, role: "menuisier", phone: "034 12 345 67" });
     expect((await new Client().call("POST", "/api/auth/login", { email, password: "mauvais-mdp" })).status).toBe(401);
     expect((await new Client().call("POST", "/api/auth/login", { email: `inconnu-${RUN}@ex.mg`, password: "mauvais-mdp" })).status).toBe(401);
     const a2 = new Client();
@@ -75,8 +77,8 @@ describe("réglages et devis", () => {
   it("validation, numérotation serveur, statuts, isolation entre comptes", async () => {
     const a = new Client();
     const b = new Client();
-    await a.call("POST", "/api/auth/signup", { name: "A", email: `a2-${RUN}@ex.mg`, password: pw });
-    await b.call("POST", "/api/auth/signup", { name: "B", email: `b2-${RUN}@ex.mg`, password: pw });
+    await a.call("POST", "/api/auth/signup", acct("A", `a2-${RUN}@ex.mg`));
+    await b.call("POST", "/api/auth/signup", acct("B", `b2-${RUN}@ex.mg`));
 
     const st = (await a.call("GET", "/api/settings")).body;
     expect(st).toMatchObject({ tva: 20 });
@@ -134,5 +136,101 @@ describe("réglages et devis", () => {
 
     expect((await a.call("DELETE", `/api/quotes/${id}`)).status).toBe(200);
     expect((await a.call("GET", `/api/quotes/${id}`)).status).toBe(404);
+  });
+});
+
+describe("plateforme : rôles, annuaire, demandes, suivi, évaluation", () => {
+  const phoneless = { name: "Sans tel", email: `nophone-${RUN}@ex.mg`, role: "client", password: pw };
+
+  it("l'inscription exige un contact (e-mail et téléphone) et un type de compte valide", async () => {
+    expect((await new Client().call("POST", "/api/auth/signup", phoneless)).status).toBe(400);
+    expect((await new Client().call("POST", "/api/auth/signup", { ...phoneless, phone: "abc" })).status).toBe(400);
+    expect((await new Client().call("POST", "/api/auth/signup", { ...phoneless, phone: "034 11 222 33", role: "admin" })).status).toBe(400);
+    expect((await new Client().call("POST", "/api/auth/signup", { ...phoneless, phone: "034 11 222 33" })).status).toBe(201);
+  });
+
+  it("annuaire public sans compte ; publication, requêtes réservées à chaque rôle, droits d'accès", async () => {
+    const pub = new Client();
+    const m = new Client();
+    const m2 = new Client();
+    const c = new Client();
+    const c2 = new Client();
+    await m.call("POST", "/api/auth/signup", acct("Atelier Rabe", `rabe-${RUN}@ex.mg`, "menuisier"));
+    await m2.call("POST", "/api/auth/signup", acct("Autre Atelier", `autre-${RUN}@ex.mg`, "menuisier"));
+    await c.call("POST", "/api/auth/signup", acct("Hery Rakoto", `hery-${RUN}@ex.mg`, "client"));
+    await c2.call("POST", "/api/auth/signup", acct("Noro Andry", `noro-${RUN}@ex.mg`, "client"));
+
+    // profil : publication refusée sans ville, acceptée ensuite ; visible sans connexion, sans coordonnées
+    const prof = (await m.call("GET", "/api/profile")).body;
+    const base = { displayName: "Atelier Rabe", city: "", bio: "Alu", specialties: ["fenetres"], logo: "", published: true };
+    expect((await m.call("PUT", "/api/profile", base)).status).toBe(422);
+    expect((await m.call("PUT", "/api/profile", { ...base, city: "Mahajanga", slug: prof.slug })).status).toBe(200);
+    expect((await m.call("PUT", "/api/profile", { ...base, city: "Mahajanga", slug: "Pas Valide!" })).status).toBe(400);
+    const list = await pub.call("GET", `/api/public/menuisiers?city=mahajanga`);
+    expect(list.status).toBe(200);
+    expect(list.body.map((e: { slug: string }) => e.slug)).toContain(prof.slug);
+    expect(JSON.stringify(list.body)).not.toContain(`rabe-${RUN}@ex.mg`);
+    expect((await pub.call("GET", `/api/public/menuisiers/${prof.slug}`)).status).toBe(200);
+    expect((await pub.call("GET", "/api/public/menuisiers/inconnu-xyz")).status).toBe(404);
+    const slug2 = (await m2.call("GET", "/api/profile")).body.slug; // profil non publié
+    expect((await pub.call("GET", `/api/public/menuisiers/${slug2}`)).status).toBe(404);
+    expect((await pub.call("GET", "/api/session")).body).toBeNull(); // visiteur : 200 et null
+
+    // chaque rôle n'accède qu'à ses routes
+    expect((await c.call("GET", "/api/quotes")).status).toBe(403);
+    expect((await c.call("GET", "/api/settings")).status).toBe(403);
+    expect((await c.call("GET", "/api/profile")).status).toBe(403);
+    expect((await m.call("GET", "/api/client/quotes")).status).toBe(403);
+    expect((await m.call("POST", "/api/requests", {})).status).toBe(403);
+    expect((await pub.call("POST", "/api/requests", {})).status).toBe(401);
+
+    // demande d'un client
+    const rq = await c.call("POST", "/api/requests", { menuisier: prof.slug, project: "Villa", message: "Bonjour", siteAddress: "Tana", wantedDate: "", lines: [{ ...line, unit: 1 }] });
+    expect(rq.status).toBe(201);
+    expect(rq.body).toMatchObject({ status: "requested", client: { name: "Hery Rakoto", phone: "034 12 345 67" } });
+    expect(rq.body.lines[0].unit).toBeGreaterThan(1); // prix du menuisier, pas celui envoyé par le client
+    expect((await c.call("POST", "/api/requests", { menuisier: slug2, lines: [line] })).status).toBe(404); // profil non publié
+    const id = rq.body.id;
+
+    // visibilité : le client voit sa demande sans prix ; les autres comptes ne voient rien
+    expect((await c.call("GET", `/api/client/quotes/${id}`)).body.quote.lines[0].unit).toBe(0);
+    expect((await c2.call("GET", `/api/client/quotes/${id}`)).status).toBe(404);
+    expect((await c2.call("GET", `/api/quotes/${id}/events`)).status).toBe(404);
+    expect((await m2.call("GET", `/api/quotes/${id}`)).status).toBe(404);
+    expect((await c2.call("POST", `/api/quotes/${id}/actions`, { type: "message", message: "intrus" })).status).toBe(404);
+
+    // droits d'action : un client n'envoie pas, un menuisier n'accepte pas, un envoi vérifie les prix
+    expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "send" })).status).toBe(409);
+    expect((await m.call("POST", `/api/quotes/${id}/actions`, { type: "accept" })).status).toBe(409);
+    expect((await m.call("POST", `/api/quotes/${id}/actions`, { type: "n'importe quoi" })).status).toBe(400);
+    expect((await m.call("POST", `/api/quotes/${id}/actions`, { type: "send", message: "Voici le devis" })).body.status).toBe("sent");
+    const seen = (await c.call("GET", `/api/client/quotes/${id}`)).body.quote;
+    expect(seen.status).toBe("sent");
+    expect(seen.lines[0].unit).toBeGreaterThan(1);
+
+    // verrouillé : le menuisier ne modifie ni ne supprime un devis envoyé
+    const mine = (await m.call("GET", `/api/quotes/${id}`)).body;
+    expect((await m.call("PUT", `/api/quotes/${id}`, { ...mine, discount: 90 })).status).toBe(409);
+    expect((await m.call("DELETE", `/api/quotes/${id}`)).status).toBe(409);
+
+    // le client accepte, le chantier avance, l'évaluation n'est possible qu'à la fin
+    expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "accept" })).body.status).toBe("accepted");
+    expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "review", rating: 5, comment: "" })).status).toBe(409);
+    expect((await m.call("POST", `/api/quotes/${id}/actions`, { type: "progress", progress: 150 })).status).toBe(400);
+    expect((await m.call("POST", `/api/quotes/${id}/actions`, { type: "progress", progress: 60, message: "Fabrication" })).body).toMatchObject({ status: "in_progress", progress: 60 });
+    expect((await c.call("GET", `/api/client/quotes/${id}`)).body.quote.progress).toBe(60);
+    expect((await m.call("POST", `/api/quotes/${id}/actions`, { type: "progress", progress: 100 })).body.status).toBe("completed");
+    expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "review", rating: 6, comment: "" })).status).toBe(400);
+    expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "review", rating: 4, comment: "Très bien" })).status).toBe(200);
+    expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "review", rating: 1, comment: "" })).status).toBe(409);
+
+    // signalement confidentiel ; avis public avec prénom seulement
+    expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "report", reason: "quality", details: "x" })).status).toBe(200);
+    const kinds = (await m.call("GET", `/api/quotes/${id}/events`)).body.map((e: { kind: string }) => e.kind);
+    expect(kinds).not.toContain("reported");
+    expect(kinds).toEqual(expect.arrayContaining(["created", "sent", "accepted", "progress", "completed", "reviewed"]));
+    const profile = (await pub.call("GET", `/api/public/menuisiers/${prof.slug}`)).body;
+    expect(profile).toMatchObject({ rating: 4, reviews: 1, completed: 1 });
+    expect(profile.reviewList[0]).toMatchObject({ client: "Hery", comment: "Très bien" });
   });
 });
