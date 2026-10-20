@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   // client : demande des devis ; menuisier : crée des devis et un profil public ; admin : plateforme
   role: text("role", { enum: ["client", "menuisier", "admin"] }).notNull().default("client"),
   phone: text("phone").notNull().default(""),
+  avatar: text("avatar").notNull().default(""), // photo de profil (data URL réduite), facultative
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

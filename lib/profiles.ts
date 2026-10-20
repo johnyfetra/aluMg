@@ -116,6 +116,7 @@ export async function deletePortfolioItem(userId: string, id: string) {
 export type DirectoryEntry = {
   slug: string; name: string; city: string; bio: string; specialties: string[]; logo: string; cover: string;
   verified: boolean; rating: number; reviews: number; completed: number; portfolio: number; since: string;
+  owner: { name: string; photo: string }; // interlocuteur : prénom et photo de profil (jamais de coordonnées)
 };
 export type DirectoryFilter = { q?: string; city?: string; specialty?: string; minRating?: number; verified?: boolean; sort?: "rating" | "recent" | "name" | "completed" };
 
@@ -126,6 +127,7 @@ export async function listPublicMenuisiers(f: DirectoryFilter = {}): Promise<Dir
   const db = await getDb();
   const profiles = await db.select().from(schema.menuisierProfiles).where(eq(schema.menuisierProfiles.published, true));
   if (!profiles.length) return [];
+  const owners = new Map((await db.select({ id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar }).from(schema.users).where(inArray(schema.users.id, profiles.map((p) => p.userId)))).map((u) => [u.id, u]));
   const ids = profiles.map((p) => p.userId);
   const [rv, done, items] = await Promise.all([
     db.select({ id: schema.reviews.menuisierId, avg: sql<number>`avg(${schema.reviews.rating})::float`, n: sql<number>`count(*)::int` }).from(schema.reviews).where(inArray(schema.reviews.menuisierId, ids)).groupBy(schema.reviews.menuisierId),
@@ -145,6 +147,7 @@ export async function listPublicMenuisiers(f: DirectoryFilter = {}): Promise<Dir
     slug: p.slug, name: p.displayName, city: p.city, bio: p.bio, specialties: p.specialties, logo: p.logo, cover: cover.get(p.userId) ?? "",
     verified: p.verified, rating: Math.round((rating.get(p.userId)?.avg ?? 0) * 10) / 10, reviews: rating.get(p.userId)?.n ?? 0,
     completed: completed.get(p.userId) ?? 0, portfolio: count.get(p.userId) ?? 0, since: p.createdAt.toISOString(),
+    owner: { name: (owners.get(p.userId)?.name ?? "").split(/\s+/)[0], photo: owners.get(p.userId)?.avatar ?? "" },
   }));
   if (f.q) out = out.filter((e) => norm(`${e.name} ${e.bio} ${e.city}`).includes(norm(f.q!)));
   if (f.city) out = out.filter((e) => norm(e.city).includes(norm(f.city!)));
@@ -184,4 +187,11 @@ export async function getPublicMenuisier(slug: string): Promise<PublicMenuisier 
   const distribution = [1, 2, 3, 4, 5].map((n) => rv.filter((r) => r.rating === n).length);
   // seul le prénom du client est affiché
   return { ...entry, items, reviewList: rv.map((r) => ({ rating: r.rating, comment: r.comment, at: r.at.toISOString(), client: (r.client ?? "").split(/\s+/)[0] })), distribution };
+}
+
+// Badge « Vérifié » : accordé ou retiré par l'équipe (rôle admin).
+export async function setVerified(slug: string, verified: boolean) {
+  const db = await getDb();
+  const r = await db.update(schema.menuisierProfiles).set({ verified }).where(eq(schema.menuisierProfiles.slug, slug)).returning({ slug: schema.menuisierProfiles.slug });
+  return r.length > 0;
 }

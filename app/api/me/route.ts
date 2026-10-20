@@ -12,6 +12,7 @@ export async function GET() {
 const patch = z.object({
   name: z.string().trim().min(1).max(80).optional(),
   phone: z.string().trim().regex(/^\+?[0-9][0-9 ().-]{5,22}$/).optional(),
+  avatar: z.string().max(300_000).refine((v) => v === "" || v.startsWith("data:image/"), "image").optional(),
   currentPassword: z.string().max(200).optional(),
   newPassword: z.string().min(8).max(200).optional(),
 });
@@ -25,11 +26,12 @@ export async function PATCH(req: Request) {
   const set: Partial<typeof schema.users.$inferInsert> = {};
   if (p.data.name) set.name = p.data.name;
   if (p.data.phone) set.phone = p.data.phone;
+  if (p.data.avatar !== undefined) set.avatar = p.data.avatar;
   if (p.data.newPassword) {
     const [row] = await db.select({ h: schema.users.passwordHash }).from(schema.users).where(eq(schema.users.id, user.id));
     if (!p.data.currentPassword || !row || !(await verifyPassword(p.data.currentPassword, row.h))) return fail(403, "wrong_password");
     set.passwordHash = await hashPassword(p.data.newPassword);
   }
   if (Object.keys(set).length) await db.update(schema.users).set(set).where(eq(schema.users.id, user.id));
-  return json({ ...user, name: set.name ?? user.name, phone: set.phone ?? user.phone });
+  return json({ ...user, name: set.name ?? user.name, phone: set.phone ?? user.phone, avatar: set.avatar ?? user.avatar });
 }

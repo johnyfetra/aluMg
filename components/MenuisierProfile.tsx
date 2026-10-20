@@ -192,6 +192,15 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
         </div>
 
         <aside className="card space-y-3 xl:sticky xl:top-24" aria-label={t("mp.requestQuote")}>
+          {m.owner.name && (
+            <div className="-mx-1 mb-1 flex items-center gap-3 rounded-xl bg-surface-2 p-3">
+              <Avatar name={m.owner.name} src={m.owner.photo} size={52} round />
+              <div>
+                <p className="text-xs text-muted">{t("mp.contact")}</p>
+                <p className="font-semibold">{m.owner.name}</p>
+              </div>
+            </div>
+          )}
           <h2 className="text-lg font-semibold">{t("mp.requestQuote")}</h2>
           <p className="text-sm text-muted">{t("mp.requestHint")}</p>
           {me?.role === "client" ? (

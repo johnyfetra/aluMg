@@ -23,7 +23,7 @@ const fetcher = <T,>(url: string) => request<T>("GET", url);
 
 export { ApiError, request };
 
-export const useMe = () => useSWR<Pick<SessionUser, "id" | "email" | "name" | "phone" | "role">>("/api/me", fetcher, { revalidateOnFocus: false });
+export const useMe = () => useSWR<Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role">>("/api/me", fetcher, { revalidateOnFocus: false });
 
 export function useSettings() {
   const { data, mutate, isLoading } = useSWR<Settings>("/api/settings", fetcher, { revalidateOnFocus: false });
@@ -50,7 +50,7 @@ export function useQuotes() {
 }
 
 // Session pour les pages publiques : jamais de redirection, renvoie null si personne n'est connecté.
-export type SessionInfo = Pick<SessionUser, "id" | "email" | "name" | "phone" | "role">;
+export type SessionInfo = Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role">;
 export const useSession = () =>
   useSWR<SessionInfo | null>(
     "session",

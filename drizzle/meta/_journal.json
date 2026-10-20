@@ -22,6 +22,13 @@
       "when": 1792520575185,
       "tag": "0002_nosy_sebastian_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792522920369,
+      "tag": "0003_flimsy_the_hand",
+      "breakpoints": true
     }
   ]
 }

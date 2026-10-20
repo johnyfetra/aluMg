@@ -3,6 +3,7 @@ import { Check, ChevronDown, Globe, LogOut, Moon, Settings, ShieldCheck, Sun, Us
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Menu, { menuItem } from "./Menu";
+import { Avatar } from "./ui";
 import { request, useMe } from "@/lib/client";
 import { LOCALES, type Locale, useI18n } from "@/lib/i18n";
 import { type Theme, setTheme, useTheme } from "@/lib/theme";
@@ -78,7 +79,6 @@ export function UserMenu() {
   const { t } = useI18n();
   const { data: me } = useMe();
   const router = useRouter();
-  const initials = (me?.name ?? "?").split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
   const logout = async () => {
     await request("POST", "/api/auth/logout");
     router.replace("/connexion");
@@ -90,7 +90,7 @@ export function UserMenu() {
       triggerClass="flex h-10 items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-3 transition-colors hover:bg-surface-2"
       trigger={
         <>
-          <span aria-hidden className="grid size-8 place-items-center rounded-full bg-primary text-xs font-bold text-on-primary">{initials}</span>
+          <Avatar name={me?.name ?? "?"} src={me?.avatar} size={32} round />
           <span className="hidden max-w-36 truncate text-sm font-medium md:block">{me?.name}</span>
           <ChevronDown size={14} aria-hidden className="text-muted" />
         </>
@@ -99,7 +99,7 @@ export function UserMenu() {
       {(close) => (
         <>
           <div className="mb-1 flex items-center gap-3 rounded-lg bg-surface-2 p-3">
-            <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-on-primary">{initials}</span>
+            <Avatar name={me?.name ?? "?"} src={me?.avatar} size={40} round />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{me?.name}</p>
               <p className="truncate text-xs text-muted">{me?.email}</p>

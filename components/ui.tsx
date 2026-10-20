@@ -129,13 +129,13 @@ export function Stars({ value, size = 16, label }: { value: number; size?: numbe
 }
 
 // Pastille avec logo, ou initiales si pas de logo.
-export function Avatar({ name, src, size = 44 }: { name: string; src?: string; size?: number }) {
+export function Avatar({ name, src, size = 44, round = false }: { name: string; src?: string; size?: number; round?: boolean }) {
   const initials = name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" width={size} height={size} className="shrink-0 rounded-xl border border-line bg-white object-contain" style={{ width: size, height: size }} />
+    <img src={src} alt="" width={size} height={size} className={`shrink-0 border border-line bg-white ${round ? "rounded-full object-cover" : "rounded-xl object-contain"}`} style={{ width: size, height: size }} />
   ) : (
-    <span aria-hidden className="grid shrink-0 place-items-center rounded-xl bg-primary/15 font-bold text-primary" style={{ width: size, height: size, fontSize: size * 0.36 }}>
+    <span aria-hidden className={`grid shrink-0 place-items-center bg-primary/15 font-bold text-primary ${round ? "rounded-full" : "rounded-xl"}`} style={{ width: size, height: size, fontSize: size * 0.36 }}>
       {initials || "?"}
     </span>
   );

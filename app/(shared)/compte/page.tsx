@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Field } from "@/components/ui";
+import { Avatar, Field } from "@/components/ui";
+import { compressImage } from "@/lib/image";
 import { ApiError, request, useMe } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { mutate } from "swr";
@@ -34,6 +35,35 @@ export default function AccountPage() {
       <h1 className="text-2xl font-bold">{t("account.title")}</h1>
       <form onSubmit={submit} className="card max-w-xl space-y-4" key={`${me.name}|${me.phone}`}>
         <h2 className="text-lg font-semibold">{t("account.profile")}</h2>
+        <div className="flex items-center gap-4">
+          <Avatar name={me.name} src={me.avatar} size={72} round />
+          <div className="space-y-2">
+            <p className="text-sm font-medium">{t("account.photo")}</p>
+            <input
+              type="file"
+              accept="image/*"
+              className="input"
+              aria-label={t("account.photo")}
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                try {
+                  await request("PATCH", "/api/me", { avatar: await compressImage(f, 256, 0.85) });
+                  await mutate("/api/me");
+                  await mutate("session");
+                  setMsg({ ok: true, text: t("account.saved") });
+                } catch {
+                  setMsg({ ok: false, text: t("common.error") });
+                }
+              }}
+            />
+            {me.avatar && (
+              <button type="button" className="btn-danger !min-h-9" onClick={async () => { await request("PATCH", "/api/me", { avatar: "" }); await mutate("/api/me"); await mutate("session"); }}>
+                {t("settings.clear")}
+              </button>
+            )}
+          </div>
+        </div>
         <Field htmlFor="n" label={t("account.name")}>
           <input id="n" name="name" required maxLength={80} defaultValue={me.name} className="input" />
         </Field>
