@@ -19,8 +19,8 @@ const Q = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}
 let a: string, b: string;
 
 beforeAll(async () => {
-  a = (await repo.createUser("A@Example.com", "Alice", await hashPassword("secret-pass")))!;
-  b = (await repo.createUser("b@example.com", "Bob", await hashPassword("other-pass")))!;
+  a = (await repo.createUser("A@Example.com", "Alice", await hashPassword("secret-pass"), "menuisier", "034 00 000 00"))!;
+  b = (await repo.createUser("b@example.com", "Bob", await hashPassword("other-pass"), "menuisier", "034 00 000 01"))!;
 });
 
 describe("comptes", () => {

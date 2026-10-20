@@ -14,7 +14,10 @@ export const INFILLS = ["vitree", "semi", "pleine"] as const;
 export const EXTRAS = ["moustiquaire", "grille"] as const;
 export const THICKNESSES = ["4", "5", "6", "8", "10", "4/12/4", "6/12/6"] as const;
 export const PATTERNS = ["none", "granite", "martele", "cathedrale", "cannele"] as const;
-export const STATUSES = ["draft", "sent", "accepted", "rejected"] as const;
+// requested : demandé par un client ; draft : en préparation ; sent : devis reçu par le client ; negotiation : le client demande une modification
+export const STATUSES = ["requested", "draft", "sent", "negotiation", "accepted", "in_progress", "completed", "rejected"] as const;
+export const ROLES = ["client", "menuisier", "admin"] as const;
+export type Role = (typeof ROLES)[number];
 
 export type Category = (typeof CATEGORIES)[number];
 export type Opening = (typeof OPENINGS)[number];
@@ -104,6 +107,9 @@ export const lineSchema = z.object({
 });
 export type Line = z.infer<typeof lineSchema>;
 
+const requestSchema = z.object({ message: text(1500), siteAddress: text(200), wantedDate: text(40) });
+export type QuoteRequest = z.infer<typeof requestSchema>;
+
 export const quoteSchema = z.object({
   id: z.uuid(),
   number: text(32),
@@ -114,6 +120,11 @@ export const quoteSchema = z.object({
   delay: text(120),
   notes: text(600),
   lines: z.array(lineSchema).min(1).max(50),
+  discount: z.number().min(0).max(100).default(0), // remise en % sur le total HT
+  // champs gérés par le serveur : ignorés quand le client de l'API les envoie
+  clientId: z.uuid().nullable().optional(),
+  progress: z.number().int().min(0).max(100).default(0),
+  request: requestSchema.nullable().optional(),
   // figés à la création : modifier les réglages ne change pas un devis déjà émis
   terms: z.object({ tva: z.number().min(0).max(100), deposit: z.number().min(0).max(100), validityDays: z.number().int().min(1).max(365) }),
 });

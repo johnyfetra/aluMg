@@ -15,6 +15,13 @@
       "when": 1792436971678,
       "tag": "0001_sturdy_stellaris",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792520575185,
+      "tag": "0002_nosy_sebastian_shaw",
+      "breakpoints": true
     }
   ]
 }
