@@ -104,3 +104,54 @@ export function FinishPicker({ name, legend, value, onChange, t }: { name: strin
     </fieldset>
   );
 }
+
+// Étoiles de notation (remplissage partiel possible : 4,5 étoiles) ; la valeur est lue en toutes lettres par les lecteurs d'écran.
+export function Stars({ value, size = 16, label }: { value: number; size?: number; label?: string }) {
+  return (
+    <span role="img" aria-label={label ?? `${value} / 5`} className="inline-flex gap-0.5 align-middle">
+      {[0, 1, 2, 3, 4].map((i) => {
+        const fill = Math.max(0, Math.min(1, value - i));
+        return (
+          <span key={i} aria-hidden className="relative inline-block" style={{ width: size, height: size }}>
+            <svg viewBox="0 0 24 24" width={size} height={size} className="absolute inset-0 text-line" fill="currentColor">
+              <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" />
+            </svg>
+            <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
+              <svg viewBox="0 0 24 24" width={size} height={size} className="text-warn" fill="currentColor" style={{ color: "#f5a524" }}>
+                <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" />
+              </svg>
+            </span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+// Pastille avec logo, ou initiales si pas de logo.
+export function Avatar({ name, src, size = 44 }: { name: string; src?: string; size?: number }) {
+  const initials = name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" width={size} height={size} className="shrink-0 rounded-xl border border-line bg-white object-contain" style={{ width: size, height: size }} />
+  ) : (
+    <span aria-hidden className="grid shrink-0 place-items-center rounded-xl bg-primary/15 font-bold text-primary" style={{ width: size, height: size, fontSize: size * 0.36 }}>
+      {initials || "?"}
+    </span>
+  );
+}
+
+// Saisie d'une note de 1 à 5 étoiles (boutons : accessible au clavier et aux lecteurs d'écran).
+export function StarInput({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
+  return (
+    <div role="group" aria-label={label} className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button key={n} type="button" aria-pressed={value === n} aria-label={`${n} / 5`} onClick={() => onChange(n)} className="grid size-11 place-items-center rounded-lg hover:bg-surface-2">
+          <svg viewBox="0 0 24 24" width={28} height={28} fill={n <= value ? "#f5a524" : "none"} stroke={n <= value ? "#f5a524" : "currentColor"} strokeWidth={1.6} className={n <= value ? "" : "text-muted"}>
+            <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" />
+          </svg>
+        </button>
+      ))}
+    </div>
+  );
+}

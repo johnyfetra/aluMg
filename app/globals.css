@@ -123,3 +123,9 @@ body {
 aside :focus-visible {
   outline-color: var(--side-accent);
 }
+
+/* Les schémas SVG (attributs width/height fixes) s'adaptent à leur conteneur. */
+[role="img"] > svg {
+  max-width: 100%;
+  height: auto;
+}
