@@ -699,4 +699,5 @@ export const en: Messages = {
   "msg.contactClient": "Message the client",
   "msg.contactJoiner": "Message the joiner",
   "msg.loginToWrite": "Sign in to message",
+  "auth.demoClient": "Test client account (1 click)",
 };

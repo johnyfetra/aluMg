@@ -698,6 +698,7 @@ export const fr = {
   "msg.contactClient": "Écrire au client",
   "msg.contactJoiner": "Écrire au menuisier",
   "msg.loginToWrite": "Se connecter pour écrire",
+  "auth.demoClient": "Compte client de test (1 clic)",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

@@ -701,4 +701,5 @@ export const mg: Messages = {
   "msg.contactClient": "Hanoratra ho an'ny mpanjifa",
   "msg.contactJoiner": "Hanoratra ho an'ny mpanao",
   "msg.loginToWrite": "Hiditra hanoratra",
+  "auth.demoClient": "Kaonty mpanjifa fanandramana (1 tsindry)",
 };

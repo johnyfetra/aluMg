@@ -103,6 +103,11 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <button type="submit" disabled={busy} className="btn-primary w-full">
           {signup ? t("auth.signup") : t("auth.login")}
         </button>
+        {!signup && process.env.NODE_ENV !== "production" && (
+          <button type="button" disabled={busy} className="btn-secondary w-full" onClick={async () => { setBusy(true); try { const me = await request<{ role: "client" }>("POST", "/api/auth/demo-client"); router.replace(next ?? homeFor(me.role)); } catch { setError(t("common.error")); setBusy(false); } }}>
+            {t("auth.demoClient")}
+          </button>
+        )}
         <p className="text-center text-sm text-muted">
           {signup ? t("auth.haveAccount") : t("auth.noAccount")}{" "}
           <Link href={`${signup ? "/connexion" : "/inscription"}${suffix}`} className="font-semibold text-primary underline">
