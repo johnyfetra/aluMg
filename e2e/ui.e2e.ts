@@ -132,6 +132,7 @@ describe("parcours dans le navigateur", () => {
     await waitText(mp, "Bonjour, disponible en décembre ?");
     await mp.type("#chat-input", "Oui, le 10 décembre.");
     await mp.keyboard.press("Enter");
+    await cp.bringToFront(); // SWR ne relance pas les requêtes d'un onglet masqué
     await waitText(cp, "Oui, le 10 décembre.", 20_000); // le client reçoit la réponse (interrogation régulière)
     await cp.close();
     await mp.close();

@@ -260,8 +260,8 @@ describe("messagerie", () => {
     // un tiers ne lit ni n'écrit ; un menuisier ne démarre pas avec un client qui ne lui a rien demandé
     expect((await c2.call("GET", `/api/conversations/${conv}/messages`)).status).toBe(404);
     expect((await m2.call("POST", `/api/conversations/${conv}/messages`, { body: "x" })).status).toBe(404);
-    const me = (await c.call("GET", "/api/me")).body;
-    expect((await m.call("POST", "/api/conversations", { client: me.id })).body.id).toBe(conv);
+    const me = (await c.call("GET", "/api/session")).body;
+    expect((await m.call("POST", "/api/conversations", { client: me.id })).status).toBe(403); // pas de devis demandé : pas de démarchage
     expect((await m2.call("POST", "/api/conversations", { client: me.id })).status).toBe(403);
   });
 });
