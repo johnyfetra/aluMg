@@ -233,7 +233,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         </section>
       )}
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] 2xl:grid-cols-[minmax(0,1fr)_22rem]">
         <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
           <section className="card space-y-4" aria-labelledby="h-client">
             <h2 id="h-client" className="text-lg font-semibold">
@@ -402,7 +402,7 @@ export function LineCard({
   const p = (k: string) => `${l.id}-${k}`;
 
   return (
-    <fieldset className="card grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
+    <fieldset className="card grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] 2xl:grid-cols-[minmax(0,1fr)_23rem]">
       <legend className="px-2 text-sm font-semibold text-muted">
         {t("editor.line")} {i + 1} — {cap(lineTitle(l, t))}
       </legend>
