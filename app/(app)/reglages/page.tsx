@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import SignaturePad from "@/components/SignaturePad";
 import { Field } from "@/components/ui";
@@ -168,6 +169,9 @@ function Form({ initial }: { initial: Settings }) {
           {numeric("bar", "barLength", t("settings.barLength"))}
           {numeric("kerf", "kerf", t("settings.kerf"))}
         </div>
+        <Link href="/reglages/profils" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+          {t("market.link")} →
+        </Link>
       </section>
 
       <section className="card space-y-4" aria-labelledby="h-te">
