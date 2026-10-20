@@ -1,13 +1,15 @@
 "use client";
-import { Box, Copy, FileDown, Image as ImageIcon, Ruler, Save, Trash2 } from "lucide-react";
+import { Box, Copy, FileDown, Image as ImageIcon, Inbox, Ruler, Save, Send, Trash2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { mutate } from "swr";
 import ProfileNeeds from "./ProfileNeeds";
+import Timeline from "./Timeline";
 import Viewer3DLoader from "./Viewer3DLoader";
 import { Choice, Field, FinishPicker } from "./ui";
 import { allPieces, billedArea, cutList, cuttingPlan, fmt, lineTotal, meters, normalize, planTotals, unitPrice } from "@/lib/calc";
-import { useQuotes, useSettings } from "@/lib/client";
+import { ApiError, request, useQuotes, useSettings } from "@/lib/client";
 import { lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { type T, useI18n } from "@/lib/i18n";
@@ -43,7 +45,7 @@ const DEFAULT_SIZE: Record<Category, [number, number]> = {
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const price = (l: Line, s: Settings) => unitPrice(l, s.tariffs, s.surcharges, s.minArea);
 
-function newLine(s: Settings): Line {
+export function newLine(s: Settings): Line {
   const base: Line = {
     id: crypto.randomUUID(),
     category: "fenetre",
@@ -93,6 +95,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const [attachCut, setAttachCut] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [persisted, setPersisted] = useState(!!existing);
+  // devis d'un client déjà envoyé, accepté ou refusé : en lecture seule (le client doit toujours voir ce qu'il a accepté)
+  const locked = !!existing?.clientId && !["requested", "draft", "negotiation"].includes(existing.status);
   const [q, setQ] = useState<Quote>(
     () =>
       existing ?? {
@@ -127,11 +131,12 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
   const valid = (l: Line) => lineSchema.safeParse(l).success;
   const validLines = q.lines.filter(valid);
-  const { ht, tva, ttc } = totals({ lines: validLines, terms: q.terms });
+  const { discount, ht, tva, ttc } = totals({ lines: validLines, terms: q.terms, discount: q.discount });
   const plan = planTotals(cuttingPlan(allPieces(validLines), settings.barLength, settings.kerf));
 
   // Enregistre le devis (création ou mise à jour) ; renvoie le devis enregistré, ou null si une ligne est invalide / si l'envoi échoue.
   const persist = async (): Promise<Quote | null> => {
+    if (locked) return q;
     if (validLines.length !== q.lines.length || q.lines.length === 0) {
       setMsg({ ok: false, text: t("editor.needLine") });
       return null;
@@ -165,6 +170,22 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     if (!existing) router.replace(`/devis/${saved.id}`);
   };
 
+  // Demande d'un client : le menuisier vérifie les prix puis envoie le devis (ou décline la demande).
+  const canAct = !!q.clientId && persisted && ["requested", "draft", "negotiation"].includes(q.status);
+  const [note, setNote] = useState("");
+  const act = async (type: "send" | "decline") => {
+    if (type === "decline" && !confirm(t("editor.confirmDecline"))) return;
+    const saved = await persist();
+    if (!saved) return;
+    try {
+      await request("POST", `/api/quotes/${saved.id}/actions`, { type, ...(note.trim() ? { message: note.trim() } : {}) });
+      await mutate("/api/quotes");
+      router.push("/devis");
+    } catch (e) {
+      setMsg({ ok: false, text: e instanceof ApiError && e.code === "incomplete" ? t("editor.incompletePrices") : t("common.error") });
+    }
+  };
+
   // Ouvre la page de détail des profilés (du devis, ou d'un ouvrage) après avoir enregistré.
   const openNeeds = async (lineId?: string) => {
     const saved = await persist();
@@ -172,7 +193,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   };
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{q.number ? `${t("editor.titleEdit")} ${q.number}` : t("editor.titleNew")}</h1>
         <Link href="/devis" className="btn-secondary">
@@ -189,8 +210,31 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         </p>
       )}
 
+      {locked && (
+        <p role="note" className="card border-primary text-sm">
+          {t("editor.locked")}
+        </p>
+      )}
+
+      {q.request && (
+        <section className="card space-y-2 border-c3" aria-labelledby="h-req" role="note">
+          <h2 id="h-req" className="flex items-center gap-2 text-lg font-semibold">
+            <Inbox size={20} aria-hidden className="text-c3" />
+            {t("editor.requestTitle")}
+          </h2>
+          <p className="text-sm text-muted">{t("editor.requestHint")}</p>
+          <dl className="grid gap-x-8 gap-y-1 text-sm sm:grid-cols-2">
+            <div><dt className="inline text-muted">{t("editor.clientName")} : </dt><dd className="inline font-medium">{q.client.name}</dd></div>
+            <div><dt className="inline text-muted">{t("editor.clientPhone")} : </dt><dd className="inline font-medium">{q.client.phone}</dd></div>
+            {q.request.siteAddress && <div><dt className="inline text-muted">{t("editor.clientAddress")} : </dt><dd className="inline font-medium">{q.request.siteAddress}</dd></div>}
+            {q.request.wantedDate && <div><dt className="inline text-muted">{t("req.wantedDate")} : </dt><dd className="inline font-medium">{q.request.wantedDate}</dd></div>}
+          </dl>
+          {q.request.message && <p className="whitespace-pre-line rounded-lg bg-surface-2 px-3 py-2 text-sm">{q.request.message}</p>}
+        </section>
+      )}
+
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="min-w-0 space-y-6">
+        <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
           <section className="card space-y-4" aria-labelledby="h-client">
             <h2 id="h-client" className="text-lg font-semibold">
               {t("editor.client")}
@@ -242,11 +286,19 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
           </section>
 
           <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
-        </div>
+          {q.clientId && persisted && <Timeline quoteId={q.id} />}
+        </fieldset>
 
         {/* Colonne de synthèse : reste visible pendant la saisie sur grand écran */}
         <aside className="space-y-4 xl:sticky xl:top-20" aria-label="Total">
           <section className="card space-y-2">
+            <div className="flex items-end justify-between gap-3 text-sm">
+              <label className="flex items-center gap-2 text-muted">
+                {t("editor.discount")}
+                <input type="number" inputMode="decimal" min={0} max={100} className="input !min-h-9 !w-20 !py-1" value={q.discount || ""} placeholder="0" onChange={(e) => setQ({ ...q, discount: Math.min(100, Math.max(0, num(e.target.value))) })} />
+              </label>
+              {discount > 0 && <span>− {fmt(discount)} {t("common.currency")}</span>}
+            </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted">{t("editor.totalHt")}</span>
               <span>{fmt(ht)} {t("common.currency")}</span>
@@ -274,6 +326,28 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             <p className="flex justify-between"><span className="text-muted">{t("needs.totalWaste")}</span><span className="font-semibold">{meters(plan.wasteLen)} ({plan.wastePct} %)</span></p>
           </section>
 
+          {canAct && (
+            <section className="card space-y-3 border-primary" aria-labelledby="h-act">
+              <h3 id="h-act" className="font-semibold">
+                {t("editor.sendClient")}
+              </h3>
+              <label className="block text-sm font-medium">
+                {t("editor.noteToClient")}
+                <textarea className="input mt-1 min-h-20 font-normal" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
+              </label>
+              <button type="button" className="btn-primary w-full" onClick={() => act("send")}>
+                <Send size={16} aria-hidden />
+                {t("editor.sendClient")}
+              </button>
+              {q.status !== "negotiation" && (
+                <button type="button" className="btn-danger w-full" onClick={() => act("decline")}>
+                  <XCircle size={16} aria-hidden />
+                  {t("editor.decline")}
+                </button>
+              )}
+            </section>
+          )}
+
           <section className="card space-y-3">
             <label className="flex min-h-11 items-center gap-2 text-sm">
               <input type="checkbox" className="size-5" checked={attachCut} onChange={(e) => setAttachCut(e.target.checked)} />
@@ -282,12 +356,14 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             <div className="flex flex-col gap-2">
               <button type="button" className="btn-primary" onClick={() => submit(true)}>
                 <FileDown size={18} aria-hidden />
-                {t("editor.savePdf")}
+                {locked ? t("editor.pdfOnly") : t("editor.savePdf")}
               </button>
-              <button type="button" className="btn-secondary" onClick={() => submit(false)}>
-                <Save size={18} aria-hidden />
-                {t("editor.saveDraft")}
-              </button>
+              {!locked && (
+                <button type="button" className="btn-secondary" onClick={() => submit(false)}>
+                  <Save size={18} aria-hidden />
+                  {t("editor.saveDraft")}
+                </button>
+              )}
             </div>
             <p role="status" className={`text-sm font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>
               {msg?.text}
@@ -295,12 +371,12 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
           </section>
         </aside>
       </div>
-    </form>
+    </div>
   );
 }
 
-function LineCard({
-  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num,
+export function LineCard({
+  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false,
 }: {
   l: Line;
   i: number;
@@ -312,6 +388,7 @@ function LineCard({
   onDuplicate: () => void;
   onNeeds: () => void;
   num: (v: string) => number;
+  clientMode?: boolean; // demande d'un client : pas de prix ni de détail des profilés
 }) {
   const [view, setView] = useState<"2d" | "3d">("2d");
   const cat = l.category;
@@ -408,6 +485,7 @@ function LineCard({
           </fieldset>
         )}
 
+        {!clientMode && (
         <div className="grid items-end gap-4 border-t border-line pt-4 sm:grid-cols-2">
           <Field htmlFor={p("u")} label={t("editor.unit")} hint={t("editor.unitHint")}>
             <input id={p("u")} className="input" type="number" inputMode="numeric" min={0} value={l.unit || ""} onChange={(e) => onChange({ unit: num(e.target.value) })} />
@@ -423,6 +501,7 @@ function LineCard({
             </button>
           )}
         </div>
+        )}
       </div>
 
       <div className="space-y-3 lg:sticky lg:top-20 lg:self-start">
@@ -446,10 +525,12 @@ function LineCard({
         ) : (
           <div className="h-44 rounded-xl bg-surface-2" />
         )}
-        <button type="button" className="btn-secondary w-full" onClick={onNeeds} disabled={!valid}>
-          <Ruler size={16} aria-hidden />
-          {t("needsPage.open")}
-        </button>
+        {!clientMode && (
+          <button type="button" className="btn-secondary w-full" onClick={onNeeds} disabled={!valid}>
+            <Ruler size={16} aria-hidden />
+            {t("needsPage.open")}
+          </button>
+        )}
         <div className="flex gap-2">
           <button type="button" className="btn-secondary flex-1" onClick={onDuplicate}>
             <Copy size={16} aria-hidden />

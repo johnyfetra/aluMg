@@ -1,7 +1,8 @@
 "use client";
 import { Download, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
 import { useQuotes, useSettings } from "@/lib/client";
@@ -10,10 +11,19 @@ import { STATUSES, type Quote, type Status } from "@/lib/model";
 import { totals } from "@/lib/totals";
 
 export default function QuotesPage() {
+  return (
+    <Suspense fallback={null}>
+      <QuotesView />
+    </Suspense>
+  );
+}
+
+function QuotesView() {
   const { t, locale } = useI18n();
+  const params = useSearchParams();
   const { quotes = [], loading, save, remove } = useQuotes();
   const { settings } = useSettings();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(params.get("q") ?? "");
   const [status, setStatus] = useState<Status | "all">("all");
 
   const needle = search.trim().toLowerCase();
@@ -27,14 +37,15 @@ export default function QuotesPage() {
     await quotePdf(q, settings, t, locale, false);
   };
   const date = (q: Quote) => new Date(q.date).toLocaleDateString(DATE_LOCALE[locale]);
-  const statusSelect = (q: Quote) => (
+  // Un devis lié à un compte client change de statut par ses actions (envoi, acceptation…) : pas de menu libre.
+  const statusSelect = (q: Quote) => q.clientId ? null : (
     <select
       aria-label={`${t("status.label")} — ${q.number}`}
       value={q.status}
       onChange={(e) => save({ ...q, status: e.target.value as Status }, false)}
       className="input !min-h-9 !w-auto !py-1 text-sm"
     >
-      {STATUSES.map((s) => (
+      {STATUSES.filter((s) => s !== "requested").map((s) => (
         <option key={s} value={s}>
           {t(`status.${s}`)}
         </option>
