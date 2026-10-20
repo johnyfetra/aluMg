@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Jetons de design : tout le thème passe par ces variables (voir docs/architecture.md). */
+:root {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-2: #eef1f8;
+  --text: #0f172a;
+  --muted: #4b5a75;
+  --border: #d5dbe8;
+  --primary: #1d4ed8;
+  --primary-hover: #1e40af;
+  --on-primary: #ffffff;
+  --danger: #b91c1c;
+  --ok: #047857;
+  --warn: #92400e;
+  /* barre latérale : volontairement identique en clair et en sombre */
+  --side-bg: #0e1a3a;
+  --side-fg: #d5ddf3;
+  --side-muted: #8ea0cc;
+  --side-hover: rgba(255, 255, 255, 0.08);
+  --side-active: rgba(255, 255, 255, 0.16);
+  --side-accent: #8fb0ff;
+  /* palette du tableau de bord (catégorielle validée : bleu, aqua, orange, violet) */
+  --c1: #2a78d6;
+  --c2: #1baf7a;
+  --c3: #eb6834;
+  --c4: #4a3aa7;
+  --good: #0ca30c;
+  --critical: #d03b3b;
+  --bar-neutral: #98a2b8;
+  --grid: #e1e5ee;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0b1020;
+  --surface: #131b33;
+  --surface-2: #1a2442;
+  --text: #e8ecf8;
+  --muted: #a6b1cf;
+  --border: #2a3558;
+  --primary: #7aa2ff;
+  --primary-hover: #9db9ff;
+  --on-primary: #0b1020;
+  --danger: #ff8a8a;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --c1: #3987e5;
+  --c2: #199e70;
+  --c3: #d95926;
+  --c4: #9085e9;
+  --bar-neutral: #66718f;
+  --grid: #2a3558;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-good: var(--good);
+  --color-critical: var(--critical);
+  --color-c1: var(--c1);
+  --color-c2: var(--c2);
+  --color-c3: var(--c3);
+  --color-c4: var(--c4);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6;
+  }
+  .input {
+    @apply min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2 text-ink placeholder:text-muted;
+  }
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-primary text-on-primary hover:bg-primary-hover;
+  }
+  .btn-secondary {
+    @apply border border-line bg-surface text-ink hover:bg-surface-2;
+  }
+  .btn-danger {
+    @apply border border-line bg-surface text-danger hover:bg-surface-2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+aside :focus-visible {
+  outline-color: var(--side-accent);
+}
