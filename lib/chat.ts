@@ -1,21 +1,12 @@
 import { and, asc, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
+import { ATTACH, ATTACH_MIME, isImageMime } from "./attach";
 import { getDb, schema } from "./db";
 import { totals } from "./totals";
 
 // ---------- Règles de la messagerie ----------
 // Un client écrit à un menuisier dont le profil est publié ; un menuisier n'écrit qu'à un client qui lui a demandé un devis
 // (pas de démarchage à l'aveugle). Une fois la conversation créée, chacun peut y répondre.
-// Pièces jointes : photos, PDF, documents Office, texte. Envoyées en base64 dans le JSON (limite de 4,5 Mo par requête sur Vercel).
-export const ATTACH = { maxFiles: 6, maxFile: 3_000_000, maxTotal: 3_500_000 } as const;
-export const ATTACH_MIME: Record<string, string[]> = {
-  "image/jpeg": ["jpg", "jpeg"], "image/png": ["png"], "image/webp": ["webp"], "image/gif": ["gif"],
-  "application/pdf": ["pdf"],
-  "application/msword": ["doc"], "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ["docx"],
-  "application/vnd.ms-excel": ["xls"], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ["xlsx"],
-  "text/plain": ["txt"], "text/csv": ["csv"],
-};
-export const isImageMime = (m: string) => m.startsWith("image/");
 const bytesOf = (b64: string) => Math.floor((b64.length * 3) / 4) - (b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0);
 const cleanName = (n: string) => n.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").trim().slice(0, 120) || "fichier";
 
@@ -30,6 +21,7 @@ export const messageSchema = z
 export type MessageInput = z.infer<typeof messageSchema>;
 export const startSchema = z.union([z.object({ menuisier: z.string().min(1).max(80) }), z.object({ client: z.uuid() })]);
 
+export { ATTACH, isImageMime };
 export type Role = "client" | "menuisier" | "admin";
 export type Other = { id: string; name: string; avatar: string; role: "client" | "menuisier"; slug: string; logo: string };
 export type ConversationView = {
