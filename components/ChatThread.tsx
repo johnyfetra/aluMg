@@ -186,7 +186,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
   };
   const preview = (m: { body: string; files: number }) => m.body || (m.files ? t("msg.attachment") : t("msg.original"));
   const canSend = !sending && (!!text.trim() || pending.length > 0 || !!quote);
-  const ghost = "grid size-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-line/50 hover:text-primary";
+  const ghost = `grid ${compact ? "size-8" : "size-9"} shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-line/50 hover:text-primary`;
 
   return (
     <div
@@ -372,7 +372,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
         ) : (
           <div className={`flex items-end ${compact ? "gap-1.5" : "gap-2.5"}`}>
             {/* champ de saisie : un seul conteneur qui s'éclaire doucement au focus, boutons discrets à l'intérieur */}
-            <div className="flex min-w-0 flex-1 items-end gap-0.5 rounded-2xl border border-line bg-surface-2/60 px-1.5 py-1.5 transition-[border-color,background-color,box-shadow] duration-200 focus-within:border-primary/40 focus-within:bg-surface focus-within:shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_9%,transparent)]">
+            <div className={`flex min-w-0 flex-1 items-end gap-0.5 rounded-full border border-line bg-surface-2/60 px-1.5 py-1 transition-[border-color,background-color,box-shadow] duration-200 focus-within:border-primary/40 focus-within:bg-surface focus-within:shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_9%,transparent)] ${compact ? "min-h-10" : "min-h-11"}`}>
               <div className="relative">
                 <button type="button" className={ghost} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu(!menu)} aria-label={t("msg.attach")} title={t("msg.attach")}>
                   <Paperclip size={18} aria-hidden />
@@ -426,15 +426,15 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                     else send();
                   }
                 }}
-                className="bare-focus max-h-32 min-h-9 flex-1 resize-none bg-transparent px-1.5 py-2 text-sm leading-5 text-ink outline-none placeholder:text-muted"
+                className={`bare-focus max-h-32 flex-1 resize-none bg-transparent px-2 text-sm leading-5 text-ink outline-none placeholder:text-muted ${compact ? "min-h-8 py-1.5" : "min-h-9 py-2"}`}
               />
               <button type="button" className={ghost} onClick={() => photoInput.current?.click()} aria-label={t("msg.gallery")} title={t("msg.gallery")}>
                 <ImageIcon size={18} aria-hidden />
               </button>
             </div>
             <MicButton t={t} small={compact} onClick={() => setRecording(true)} disabled={sending} />
-            <button type="submit" disabled={!canSend} aria-label={sending ? t("msg.sending") : t("tl.send")} title={t("tl.send")} className={`grid shrink-0 place-items-center rounded-full bg-primary text-on-primary shadow-sm transition-[background-color,opacity] hover:bg-primary-hover disabled:opacity-40 disabled:shadow-none ${compact ? "size-9" : "size-10"}`}>
-              <Send size={17} aria-hidden />
+            <button type="submit" disabled={!canSend} aria-label={sending ? t("msg.sending") : t("tl.send")} title={t("tl.send")} className={`grid shrink-0 place-items-center rounded-full bg-primary text-on-primary shadow-sm transition-[background-color,opacity] hover:bg-primary-hover disabled:opacity-40 disabled:shadow-none ${compact ? "size-10" : "size-11"}`}>
+              <Send size={18} aria-hidden />
             </button>
           </div>
         )}
