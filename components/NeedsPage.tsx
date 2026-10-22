@@ -2,6 +2,7 @@
 import { ArrowLeft, ArrowRight, Box, Coins, PackageCheck, Percent, Scissors, Settings2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useMemo, useState } from "react";
+import Budget from "./Budget";
 import { MarketSim } from "./MarketSim";
 import Viewer3DLoader from "./Viewer3DLoader";
 import { allPieces, fmt, lineTotal, meters } from "@/lib/calc";
@@ -108,6 +109,8 @@ function QuoteView({ quote, base, settings, t }: { quote: Quote; base: ReturnTyp
       <MarketSim sim={sim} setSim={setSim} lines={quote.lines} kerf={settings.kerf} baseCost={base.totalCost} cost={plan.totalCost} saved={settings.market} onSave={applySim} t={t} />
       <p role="status" className={`text-sm font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>{msg?.text}</p>
 
+      <Budget quote={quote} plan={plan} t={t} />
+
       <section className="card !p-0 overflow-hidden" aria-labelledby="h-lines">
         <h2 id="h-lines" className="border-b border-line px-4 py-3 font-semibold">
           {t("needsPage.perLineCost")}
@@ -191,6 +194,12 @@ function GroupCard({ g, quoteId, lines, t }: { g: GroupPlan; quoteId: string; li
         </span>
       </header>
 
+      {g.unavailable && (
+        <p role="note" className="mb-2 flex items-center gap-2 text-sm font-medium text-warn">
+          <TriangleAlert size={16} aria-hidden />
+          {t("needsPage.unavailable")}
+        </p>
+      )}
       {g.noOffer ? (
         <p role="alert" className="text-sm font-medium text-danger">
           {t("needsPage.noOffer")} <Link href="/reglages/profils" className="underline">{t("needsPage.configure")}</Link>
