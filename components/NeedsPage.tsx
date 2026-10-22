@@ -11,7 +11,8 @@ import { lineDetails, lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { type T, useI18n } from "@/lib/i18n";
 import { FINISHES, type Line, type Quote, type Settings } from "@/lib/model";
-import { type GroupPlan, initSim, procure, simulate } from "@/lib/procure";
+import { type GroupPlan, type Plan, initSim, procure, simulate } from "@/lib/procure";
+import { totals } from "@/lib/totals";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -55,18 +56,18 @@ export default function NeedsPage({ id, lineId }: { id: string; lineId?: string 
     );
   }
   const plan = procure(allPieces(quote.lines), settings.market, settings.kerf);
-  return lineId ? <LineView quote={quote} idx={idx} plan={plan} t={t} /> : <QuoteView quote={quote} base={plan} settings={settings} t={t} />;
+  return lineId ? <LineView quote={quote} idx={idx} plan={plan} t={t} /> : <QuoteView quote={quote} base={simulate(quote.lines, initSim(settings.market), settings.kerf)} settings={settings} t={t} />;
 }
 
 // ---------- Vue du devis : tout ce qu'il faut acheter ----------
-function QuoteView({ quote, base, settings, t }: { quote: Quote; base: ReturnType<typeof procure>; settings: Settings; t: T }) {
+function QuoteView({ quote, base, settings, t }: { quote: Quote; base: Plan; settings: Settings; t: T }) {
   const { save } = useSettings();
   const [sim, setSim] = useState(() => initSim(settings.market));
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   // Besoin et coût sous les hypothèses de la simulation ; `base` = ce que donne le marché enregistré.
   const plan = useMemo(() => simulate(quote.lines, sim, settings.kerf), [quote.lines, sim, settings.kerf]);
-  const sale = quote.lines.reduce((s, l) => s + lineTotal(l), 0);
-  const margin = sale - plan.totalCost;
+  const sale = totals(quote).ht;
+  const margin = sale - plan.allCost;
   const cur = t("common.currency");
   const diff = (n: number, unit = "") => (n === 0 ? undefined : `${n > 0 ? "+" : "−"}${fmt(Math.abs(n))}${unit}`);
   const applySim = async () => {
@@ -100,13 +101,13 @@ function QuoteView({ quote, base, settings, t }: { quote: Quote; base: ReturnTyp
 
       <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Kpi label={t("needsPage.totalBars")} value={plan.bars} hint={diff(plan.bars - base.bars)} Icon={PackageCheck} />
-        <Kpi label={t("needsPage.cost")} value={`${fmt(plan.totalCost)} ${cur}`} hint={diff(plan.totalCost - base.totalCost, ` ${cur}`)} Icon={Coins} />
-        <Kpi label={t("needsPage.sale")} value={`${fmt(sale)} ${cur}`} Icon={Box} />
+        <Kpi label={t("needsPage.allCost")} value={`${fmt(plan.allCost)} ${cur}`} hint={diff(plan.allCost - base.allCost, ` ${cur}`)} Icon={Coins} />
+        <Kpi label={t("editor.totalHt")} value={`${fmt(sale)} ${cur}`} Icon={Box} />
         <Kpi label={t("needsPage.margin")} value={`${fmt(margin)} ${cur}`} hint={sale ? `${Math.round((margin / sale) * 100)} % ${t("needsPage.vsSale")}` : undefined} Icon={Percent} tone={margin < 0 ? "text-danger" : "text-ok"} />
         <Kpi label={t("needs.totalWaste")} value={`${meters(plan.wasteLen)} (${plan.wastePct} %)`} Icon={Scissors} tone={plan.wastePct > 40 ? "text-warn" : undefined} />
       </dl>
 
-      <MarketSim sim={sim} setSim={setSim} lines={quote.lines} kerf={settings.kerf} baseCost={base.totalCost} cost={plan.totalCost} saved={settings.market} onSave={applySim} t={t} />
+      <MarketSim sim={sim} setSim={setSim} lines={quote.lines} kerf={settings.kerf} baseCost={base.allCost} cost={plan.allCost} saved={settings.market} onSave={applySim} t={t} />
       <p role="status" className={`text-sm font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>{msg?.text}</p>
 
       <Budget quote={quote} plan={plan} t={t} />
