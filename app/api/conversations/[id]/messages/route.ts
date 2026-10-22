@@ -20,6 +20,7 @@ export async function POST(req: Request, { params }: Ctx) {
   if (!z.uuid().safeParse(id).success) return fail(404, "not_found");
   const p = await parseBody(req, messageSchema);
   if ("res" in p) return p.res;
-  const m = await sendMessage(user.id, id, p.data.body);
-  return m ? json(m, 201) : fail(404, "not_found");
+  const r = await sendMessage(user.id, id, p.data);
+  if (r.ok) return json(r.message, 201);
+  return r.error === "not_found" ? fail(404, "not_found") : r.error === "too_big" ? fail(413, "too_big") : fail(400, r.error);
 }

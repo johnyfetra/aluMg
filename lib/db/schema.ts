@@ -1,5 +1,5 @@
-import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import type { Quote, Settings } from "../model";
+import { type AnyPgColumn, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import type { Market, Quote, Settings } from "../model";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -160,8 +160,40 @@ export const messages = pgTable(
     senderId: uuid("sender_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    body: text("body").notNull(),
+    body: text("body").notNull().default(""),
+    // réponse à un message du même fil, et devis cité (tag) dans le message
+    replyToId: uuid("reply_to_id").references((): AnyPgColumn => messages.id, { onDelete: "set null" }),
+    quoteId: uuid("quote_id").references(() => quotes.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("messages_conv_idx").on(t.conversationId, t.createdAt)],
 );
+
+// shortcut: pièces jointes stockées en base (contenu en base64), à déplacer vers un stockage de fichiers (Vercel Blob, S3) avant la montée en charge.
+export const messageAttachments = pgTable(
+  "message_attachments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    messageId: uuid("message_id")
+      .notNull()
+      .references(() => messages.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    mime: text("mime").notNull(),
+    size: integer("size").notNull(),
+    data: text("data").notNull(),
+  },
+  (t) => [index("message_attachments_msg_idx").on(t.messageId)],
+);
+
+// Catalogue des fournisseurs propre à un devis : à défaut, le devis utilise le catalogue général du menuisier.
+// Table séparée de `quotes` : ces prix d'achat ne sont jamais renvoyés avec le devis au client.
+export const quoteCatalogs = pgTable("quote_catalogs", {
+  quoteId: uuid("quote_id")
+    .primaryKey()
+    .references(() => quotes.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  data: jsonb("data").$type<Market>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
