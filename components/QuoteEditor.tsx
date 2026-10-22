@@ -674,7 +674,7 @@ export function LineCard({
       <h3 className="m-0">
         <button type="button" aria-expanded={open} aria-controls={`${l.id}-body`} onClick={onToggle} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left hover:bg-surface-2/60 sm:px-6">
           <ChevronDown size={18} aria-hidden className={`shrink-0 text-muted transition-transform ${open ? "" : "-rotate-90"}`} />
-          {thumb && <span aria-hidden className="hidden h-14 w-[4.75rem] shrink-0 place-items-center rounded-lg bg-white sm:grid [&>svg]:max-h-full [&>svg]:max-w-full" dangerouslySetInnerHTML={{ __html: thumb.svg }} />}
+          {thumb && <span aria-hidden className="hidden h-14 w-[4.75rem] shrink-0 place-items-center rounded-lg bg-white sm:grid p-0.5 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: thumb.svg }} />}
           <span className="min-w-0 flex-1">
             <span className="block truncate font-semibold">{title}</span>
             <span className="flex flex-wrap items-center gap-x-2 text-sm font-normal text-muted">

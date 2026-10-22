@@ -1,5 +1,5 @@
 "use client";
-import { ContactShadows, Html, Line as DLine, OrbitControls } from "@react-three/drei";
+import { ContactShadows, Line as DLine, OrbitControls } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { RotateCcw } from "lucide-react";
 import { createContext, type ReactNode, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -22,8 +22,8 @@ const GLASS: Record<string, { color: string; opacity: number; rough: number; met
   depoli: { color: "#ffffff", opacity: 0.8, rough: 0.9, metal: 0 },
 };
 
-type Ctx = { hex: string; highlight: string | null; glass: (typeof GLASS)[string]; reduced: boolean; marks: boolean };
-const SceneCtx = createContext<Ctx>({ hex: "#ffffff", highlight: null, glass: GLASS.clair, reduced: false, marks: false });
+type Ctx = { hex: string; highlight: string | null; glass: (typeof GLASS)[string]; reduced: boolean; marks: boolean; size: number };
+const SceneCtx = createContext<Ctx>({ hex: "#ffffff", highlight: null, glass: GLASS.clair, reduced: false, marks: false, size: 1 });
 const useScene = () => useContext(SceneCtx);
 
 // ---------- Mouvement : ressort critiquement amorti (accélère puis freine, sans rebond ni saccade) ----------
@@ -93,15 +93,47 @@ function Panel({ w, h, position }: { w: number; h: number; position?: [number, n
 }
 
 // Corps d'un vantail centré sur l'origine : cadre (traverses, montants) + remplissage selon la catégorie.
-// Repère du vantail (V1, F1…) : pastille qui suit le vantail quand il bouge.
-function Tag({ text, y }: { text: string; y: number }) {
-  const { marks } = useScene();
-  if (!marks) return null;
+// Étiquette dessinée dans la scène (sprite) : suit l'objet qui bouge, sans calque HTML.
+function Label({ text, position, h }: { text: string; position: [number, number, number]; h: number }) {
+  const made = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const font = "bold 40px Helvetica, Arial, sans-serif";
+    const c = document.createElement("canvas");
+    const x = c.getContext("2d")!;
+    x.font = font;
+    const w = Math.ceil(x.measureText(text).width) + 30;
+    c.width = w;
+    c.height = 64;
+    x.font = font;
+    x.fillStyle = "rgba(255,255,255,.96)";
+    x.strokeStyle = "#334155";
+    x.lineWidth = 3;
+    x.beginPath();
+    x.roundRect(2, 2, w - 4, 60, 10);
+    x.fill();
+    x.stroke();
+    x.fillStyle = "#0f172a";
+    x.textAlign = "center";
+    x.textBaseline = "middle";
+    x.fillText(text, w / 2, 34);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return { tex, aspect: w / 64 };
+  }, [text]);
+  useEffect(() => () => made?.tex.dispose(), [made]);
+  if (!made) return null;
   return (
-    <Html position={[0, y, 0.03]} center zIndexRange={[5, 0]}>
-      <div className="pointer-events-none select-none rounded border border-slate-700 bg-white px-1 text-[10px] font-bold leading-4 text-slate-900 shadow-sm">{text}</div>
-    </Html>
+    <sprite position={position} scale={[h * made.aspect, h, 1]} renderOrder={10}>
+      <spriteMaterial map={made.tex} depthTest={false} transparent toneMapped={false} />
+    </sprite>
   );
+}
+
+// Repère du vantail (V1, F1…).
+function Tag({ text, y }: { text: string; y: number }) {
+  const { marks, size } = useScene();
+  if (!marks) return null;
+  return <Label text={text} position={[0, y, 0.04]} h={0.04 + 0.05 * size} />;
 }
 
 function LeafBody({ w, h, v, infill, depth = 0.034, mark }: { w: number; h: number; v: Viewable; infill: Viewable["infill"]; depth?: number; mark?: string }) {
@@ -474,20 +506,16 @@ function Surroundings({ W, H, stage }: { W: number; H: number; stage: Stage }) {
 
 // ---------- Cotes : la largeur et la hauteur réelles, suivent la vue ----------
 function Dimensions({ W, H, leaves }: { W: number; H: number; leaves: number }) {
-  const label = "pointer-events-none select-none whitespace-nowrap rounded bg-surface/90 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-ink shadow";
   const y = -0.1;
   const x = -W / 2 - 0.12;
   const col = "#64748b";
+  const h = 0.04 + 0.05 * Math.max(W, H);
   return (
     <group>
       <DLine points={[[-W / 2, y, 0.05], [W / 2, y, 0.05]]} color={col} lineWidth={1} />
       <DLine points={[[x, 0, 0.05], [x, H, 0.05]]} color={col} lineWidth={1} />
-      <Html position={[0, y - 0.07, 0.05]} center zIndexRange={[10, 0]}>
-        <div className={label}>{Math.round(W * 1000)} mm{leaves > 1 ? ` · ${leaves} × ${Math.round((W * 1000) / leaves)}` : ""}</div>
-      </Html>
-      <Html position={[x - 0.02, H / 2, 0.05]} center zIndexRange={[10, 0]}>
-        <div className={label}>{Math.round(H * 1000)} mm</div>
-      </Html>
+      <Label text={`${Math.round(W * 1000)} mm${leaves > 1 ? ` · ${leaves} × ${Math.round((W * 1000) / leaves)}` : ""}`} position={[0, y - h, 0.05]} h={h} />
+      <Label text={`${Math.round(H * 1000)}`} position={[x, H / 2, 0.05]} h={h} /> {/* centrée sur la cote : une étiquette plus large sortirait du cadre */}
     </group>
   );
 }
@@ -572,10 +600,11 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
       glass: v.pattern !== "none" ? { ...base, rough: 0.5, opacity: Math.min(0.9, base.opacity + 0.2) } : base,
       reduced,
       marks: !bare && !stage,
+      size: Math.max(v.width, v.height) / 1000,
     };
-  }, [v.finish, v.glassType, v.pattern, highlight, reduced, bare, stage]);
+  }, [v.finish, v.glassType, v.pattern, highlight, reduced, bare, stage, v.width, v.height]);
 
-  const dist = (Math.max(W, H) * 1.55 + 0.9) * (view?.dist ?? 1);
+  const dist = (Math.max(W, H) * 1.55 + 0.9) * (view?.dist ?? 1) * (bare || stage ? 1 : 1.12); // un peu de recul pour les cotes
   const sillY = stage?.sill ?? 0;
   const cam: [number, number, number] = view
     ? [dist * Math.cos((view.el * Math.PI) / 180) * Math.sin((view.az * Math.PI) / 180), sillY + H / 2 + dist * Math.sin((view.el * Math.PI) / 180), dist * Math.cos((view.el * Math.PI) / 180) * Math.cos((view.az * Math.PI) / 180)]
