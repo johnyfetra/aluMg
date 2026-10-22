@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type Drawable, drawingSvg } from "./drawing";
-import { type Direction, leafMotion, CATEGORIES, EXTRAS, FINISHES, GLASSES, GUARDS, OPENINGS, PATTERNS, RANGES, SHUTTERS, THICKNESSES, CONTROLS, INFILLS } from "./model";
+import { type Direction, type LeafMode, leafMarks, leafMotion, lineMarks, CATEGORIES, EXTRAS, FINISHES, GLASSES, GUARDS, OPENINGS, PATTERNS, RANGES, SHUTTERS, THICKNESSES, CONTROLS, INFILLS } from "./model";
 
 // Le PDF convertit le SVG en image : un attribut en double ou une balise mal formée fait échouer toute la génération.
 function problems(svg: string): string[] {
@@ -81,5 +81,25 @@ describe("sens d'ouverture", () => {
     expect(arrow("right")).toBe(1);
     expect(drawingSvg({ ...base, direction: "both" }, "x").svg.match(/stroke-width="1.4"/g)?.length).toBe(2);
     expect(drawingSvg({ ...base, direction: "left" }, "x").svg).not.toBe(drawingSvg({ ...base, direction: "right" }, "x").svg);
+  });
+
+  it("parties fixes choisies vantail par vantail, avec repères V1 / F1", () => {
+    const l = { category: "fenetre", opening: "coulissant", leaves: 3, leafCfg: ["F", "L", "F"] as LeafMode[] } as const;
+    expect(leafMotion(l).map((m) => m.slide)).toEqual([0, -1, 0]);
+    expect(leafMarks(l)).toEqual(["F1", "V1", "F2"]);
+    // un vantail qui n'a pas de voisin du côté choisi ne peut pas coulisser : il reste fixe
+    expect(leafMotion({ ...l, leafCfg: ["L", "F", "R"] }).map((m) => m.slide)).toEqual([0, 0, 0]);
+    // deux vantaux qui viennent l'un vers l'autre se partagent la course
+    expect(leafMotion({ ...l, leaves: 2, leafCfg: ["R", "L"] }).map((m) => m.travel)).toEqual([0.5, 0.5]);
+  });
+
+  it("battant : un vantail fixe n'a pas de mouvement ni de charnière dessinée", () => {
+    const l = { category: "fenetre", opening: "ouvrant", leaves: 2, leafCfg: ["F", "R"] as LeafMode[] } as const;
+    expect(leafMotion(l).map((m) => m.fixed)).toEqual([true, false]);
+    expect(leafMarks(l)).toEqual(["F1", "V1"]);
+  });
+
+  it("repères d'ouvrage par catégorie", () => {
+    expect(lineMarks([{ category: "fenetre" }, { category: "porte" }, { category: "fenetre" }])).toEqual(["F-01", "P-01", "F-02"]);
   });
 });

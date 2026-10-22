@@ -49,27 +49,61 @@ const PANELS_SPEC: Spec = { presets: [2, 3, 4, 5], min: 1, max: 10 };
 export const leavesSpec = (l: { category: Category; opening: Opening }): Spec | null =>
   l.category === "cloison" ? PANELS_SPEC : l.category === "fenetre" || l.category === "porte" ? LEAVES_SPEC[l.opening] : null;
 
-// Sens d'ouverture : coulissant = côté vers lequel glissent les vantaux mobiles ; battant à 1 vantail = côté des charnières.
-// « both » (coulissant seulement) : les deux vantaux d'une paire coulissent l'un vers l'autre, on ouvre des deux côtés.
+// ---------- Configuration des vantaux ----------
+// Chaque vantail a un mode : F = fixe, L / R = coulisse vers la gauche / la droite (coulissant) ou charnières à gauche / à droite (battant).
+export const LEAF_MODES = ["F", "L", "R"] as const;
+export type LeafMode = (typeof LEAF_MODES)[number];
+// Raccourcis : côté d'ouverture. « both » (coulissant) : les deux vantaux d'une paire s'ouvrent l'un vers l'autre, chacun de moitié.
 export const DIRECTIONS = ["left", "right", "both"] as const;
 export type Direction = (typeof DIRECTIONS)[number];
 
-// Comportement de chaque vantail. Source unique du sens : le schéma (flèches, charnières) et la vue 3D (animation) la lisent.
-// slide : -1 glisse vers la gauche, 1 vers la droite, 0 = fixe (ou battant). front : rail avant. travel : course en fraction d'un pas de vantail (« both » : la moitié, chaque côté s'ouvre). hingeLeft : charnières à gauche (battants).
-export function leafMotion(l: { opening: Opening; leaves: number; direction?: Direction }) {
-  const dir = l.direction ?? "left";
-  return Array.from({ length: l.leaves }, (_, i) => {
-    if (l.opening === "coulissant") {
-      // un vantail mobile passe devant son voisin ; à gauche : les rangs impairs, à droite : les rangs pairs qui ont un voisin à leur droite
-      const slide = dir === "left" ? (i % 2 === 1 ? -1 : 0) : dir === "right" ? (i % 2 === 0 && i + 1 < l.leaves ? 1 : 0) : i % 2 === 1 ? -1 : i + 1 < l.leaves ? 1 : 0;
-      return { slide, travel: dir === "both" ? 0.5 : 1, front: dir === "both" ? i % 2 === 1 : slide !== 0, hingeLeft: true };
-    }
-    return { slide: 0, travel: 1, front: false, hingeLeft: l.leaves === 1 ? dir !== "right" : i < l.leaves / 2 };
+type Cfg = { opening: Opening; leaves: number; direction?: Direction; leafCfg?: LeafMode[] };
+
+export function presetModes(l: Pick<Cfg, "opening" | "leaves">, d: Direction = "left"): LeafMode[] {
+  const n = l.leaves;
+  return Array.from({ length: n }, (_, i): LeafMode => {
+    if (l.opening === "fixe") return "F";
+    if (l.opening === "coulissant") return d === "left" ? (i % 2 ? "L" : "F") : d === "right" ? (i % 2 || i + 1 >= n ? "F" : "R") : i % 2 ? "L" : i + 1 < n ? "R" : "F";
+    return n === 1 ? (d === "right" ? "R" : "L") : i < n / 2 ? "L" : "R";
   });
 }
-// La liste de choix du sens n'a de sens que pour un coulissant ou un battant à un seul vantail.
-export const hasDirection = (l: { category: Category; opening: Opening; leaves: number }) =>
-  (l.category === "fenetre" || l.category === "porte") && (l.opening === "coulissant" || ((l.opening === "ouvrant" || l.opening === "oscillo") && l.leaves === 1));
+// Modes effectifs : ceux saisis par le menuisier s'ils sont complets, sinon le raccourci de sens d'ouverture.
+export const leafModes = (l: Cfg): LeafMode[] => (l.leafCfg?.length === l.leaves ? l.leafCfg : presetModes(l, l.direction));
+
+// Comportement de chaque vantail. Source unique : le schéma (flèches, charnières, repères) et la vue 3D (animation) la lisent.
+// slide : -1 glisse à gauche, 1 à droite, 0 immobile. travel : course en fraction d'un pas de vantail (1/2 si le voisin vient à sa rencontre).
+// front : rail avant (les rails alternent). hingeLeft : charnières à gauche. fixed : vantail dormant, sans mouvement.
+export function leafMotion(l: Cfg) {
+  const modes = leafModes(l);
+  const n = l.leaves;
+  const sliding = l.opening === "coulissant";
+  const slide = modes.map((m, i) => (!sliding ? 0 : m === "L" && i > 0 ? -1 : m === "R" && i < n - 1 ? 1 : 0));
+  return modes.map((m, i) => ({
+    slide: slide[i],
+    travel: slide[i] && slide[i + slide[i]] === -slide[i] ? 0.5 : 1,
+    front: i % 2 === 1,
+    hingeLeft: m !== "R",
+    fixed: l.opening === "fixe" || (sliding ? slide[i] === 0 : m === "F"),
+  }));
+}
+
+// Repères professionnels : V1, V2… pour les vantaux mobiles, F1, F2… pour les parties fixes (de gauche à droite) ; P1… pour les panneaux de cloison.
+export function leafMarks(l: Cfg & { category: Category }): string[] {
+  if (l.category === "cloison") return Array.from({ length: l.leaves }, (_, i) => `P${i + 1}`);
+  let v = 0;
+  let f = 0;
+  return leafMotion(l).map((m) => (m.fixed ? `F${++f}` : `V${++v}`));
+}
+
+const MARK: Record<Category, string> = { fenetre: "F", porte: "P", volet: "VR", "garde-corps": "GC", cloison: "CL" };
+// Repère d'ouvrage : lettre de catégorie + rang dans la catégorie (F-01, P-02…).
+export function lineMarks(lines: readonly { category: Category }[]): string[] {
+  const seen: Partial<Record<Category, number>> = {};
+  return lines.map((l) => `${MARK[l.category]}-${String((seen[l.category] = (seen[l.category] ?? 0) + 1)).padStart(2, "0")}`);
+}
+
+// Un ouvrage a des vantaux configurables s'il s'ouvre (fenêtre ou porte, sauf fixe).
+export const hasLeafConfig = (l: { category: Category; opening: Opening }) => (l.category === "fenetre" || l.category === "porte") && l.opening !== "fixe" && l.opening !== "jalousie";
 
 export const FINISHES = [
   { id: "blanc", group: "laque", hex: "#f5f5f2", label: "finish.blanc" },
@@ -117,6 +151,7 @@ export const lineSchema = z.object({
   leaves: z.number().int().min(1).max(8),
   guard: z.enum(GUARDS).default("barreaudage"),
   direction: z.enum(DIRECTIONS).optional(),
+  leafCfg: z.array(z.enum(LEAF_MODES)).max(8).optional(),
   shutter: z.enum(SHUTTERS),
   control: z.enum(CONTROLS),
   range: z.enum(RANGES),

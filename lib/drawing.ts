@@ -1,8 +1,8 @@
-import { FINISHES, type Line, leafMotion } from "./model";
+import { FINISHES, type Line, leafMarks, leafMotion } from "./model";
 
 export type Drawable = Pick<
   Line,
-  "category" | "opening" | "leaves" | "direction" | "shutter" | "control" | "guard" | "infill" | "finish" | "glassType" | "thickness" | "pattern" | "range" | "extras" | "width" | "height"
+  "category" | "opening" | "leaves" | "direction" | "leafCfg" | "shutter" | "control" | "guard" | "infill" | "finish" | "glassType" | "thickness" | "pattern" | "range" | "extras" | "width" | "height"
 >;
 
 const GLASS_FILL: Record<string, string> = {
@@ -92,6 +92,9 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
   };
   const arrow = (cx: number, cy: number, dir: 1 | -1) =>
     `<path d="M${f(cx - dir * 12)},${f(cy)} L${f(cx + dir * 12)},${f(cy)} M${f(cx + dir * 12)},${f(cy)} l${-dir * 6},-4 M${f(cx + dir * 12)},${f(cy)} l${-dir * 6},4" stroke="${INK}" stroke-width="1.4" fill="none"/>`;
+  // Repère de vantail (V1, F1…) : pastille centrée au tiers haut du vantail.
+  const tag = (cx: number, y: number, text: string) =>
+    `<rect x="${f(cx - 11)}" y="${f(y - 8)}" width="22" height="14" rx="3" fill="#fff" stroke="${INK}" stroke-width=".8"/><text x="${f(cx)}" y="${f(y + 2.5)}" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="700" text-anchor="middle" fill="${INK}">${text}</text>`;
   const dashed = (pts: string) => `<polyline points="${pts}" fill="none" stroke="${INK}" stroke-width="1" stroke-dasharray="4 3"/>`;
 
   if (l.category === "volet") {
@@ -134,6 +137,7 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
     for (let i = 0; i < n; i++) {
       const x = ox + t + i * (pw + mull);
       body += glass(x, oy + t, pw, fh - 2 * t);
+      if (pw > 26 && fh > 50) body += tag(x + pw / 2, oy + t + (fh - 2 * t) * 0.22, `P${i + 1}`);
       if (i < n - 1) body += rect(x + pw, oy + t, mull, fh - 2 * t, FRAME);
     }
   } else {
@@ -143,7 +147,8 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
     const iw = fw - 2 * t;
     const ih = fh - 2 * t;
     const n = l.leaves;
-    if (l.opening === "fixe") body += glass(ix, iy, iw, ih);
+    const marks = leafMarks(l);
+    if (l.opening === "fixe") body += glass(ix, iy, iw, ih) + (iw > 26 && ih > 50 ? tag(ix + iw / 2, iy + ih * 0.22, "F1") : "");
     else if (l.opening === "jalousie") {
       // naco : lames de verre horizontales dans deux montants
       const k = Math.max(4, Math.min(16, Math.round(ih / 14)));
@@ -160,7 +165,10 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
           if (motion[i].front !== front) continue;
           const x = ix + i * (vw - ov);
           body += leaf(x, iy + (front ? 0 : 1), vw, ih - 1);
-          if (motion[i].slide !== 0 && vw > 30) body += arrow(x + vw / 2, iy + ih / 2, motion[i].slide as 1 | -1);
+          if (vw > 30) {
+            if (motion[i].slide !== 0) body += arrow(x + vw / 2, iy + ih / 2, motion[i].slide as 1 | -1);
+            if (ih > 50) body += tag(x + vw / 2, iy + ih * 0.22, marks[i]);
+          }
         }
     } else {
       const vw = iw / n;
@@ -168,7 +176,10 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
       for (let i = 0; i < n; i++) {
         const x = ix + i * vw;
         body += leaf(x, iy, vw, ih);
-        const hingeLeft = leafMotion(l)[i].hingeLeft;
+        const m = leafMotion(l)[i];
+        if (vw > 26 && ih > 50) body += tag(x + vw / 2, iy + ih * 0.22, marks[i]);
+        if (m.fixed) continue; // partie fixe : ni ouverture ni poignée
+        const hingeLeft = m.hingeLeft;
         const [a, b] = hingeLeft ? [x + vw - t, x + t] : [x + t, x + vw - t];
         if (l.opening === "soufflet") body += dashed(`${f(x + t)},${f(iy + ih - t)} ${f(x + vw / 2)},${f(iy + t)} ${f(x + vw - t)},${f(iy + ih - t)}`);
         else {

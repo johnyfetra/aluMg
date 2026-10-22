@@ -1,5 +1,5 @@
 import type { Messages } from "./messages/fr";
-import { type Line, FINISHES, PATTERN_GLASSES, type TariffKey, type Tariffs, OPENINGS_BY_CATEGORY, leavesSpec } from "./model";
+import { type Line, FINISHES, PATTERN_GLASSES, type TariffKey, type Tariffs, OPENINGS_BY_CATEGORY, hasLeafConfig, leavesSpec } from "./model";
 
 type Label = keyof Messages;
 
@@ -24,6 +24,7 @@ export function normalize(l: Line): Line {
   const glassy = next.category === "fenetre" || next.category === "porte" || next.category === "cloison" || (next.category === "garde-corps" && next.guard === "verre");
   if (!glassy || !PATTERN_GLASSES.includes(next.glassType)) next.pattern = "none";
   if (next.category !== "fenetre" && next.category !== "porte") next.extras = [];
+  if (next.leafCfg && (next.leafCfg.length !== next.leaves || !hasLeafConfig(next))) delete next.leafCfg;
   return next;
 }
 

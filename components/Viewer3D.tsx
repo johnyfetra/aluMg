@@ -6,9 +6,9 @@ import { createContext, type ReactNode, useContext, useEffect, useLayoutEffect, 
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { useI18n } from "@/lib/i18n";
-import { FINISHES, type Line, leafMotion } from "@/lib/model";
+import { FINISHES, type Line, leafMarks, leafMotion } from "@/lib/model";
 
-export type Viewable = Pick<Line, "category" | "opening" | "leaves" | "direction" | "shutter" | "control" | "guard" | "infill" | "finish" | "glassType" | "pattern" | "range" | "extras" | "width" | "height">;
+export type Viewable = Pick<Line, "category" | "opening" | "leaves" | "direction" | "leafCfg" | "shutter" | "control" | "guard" | "infill" | "finish" | "glassType" | "pattern" | "range" | "extras" | "width" | "height">;
 
 // ---------- Matériaux ----------
 const GLASS: Record<string, { color: string; opacity: number; rough: number; metal: number }> = {
@@ -22,8 +22,8 @@ const GLASS: Record<string, { color: string; opacity: number; rough: number; met
   depoli: { color: "#ffffff", opacity: 0.8, rough: 0.9, metal: 0 },
 };
 
-type Ctx = { hex: string; highlight: string | null; glass: (typeof GLASS)[string]; reduced: boolean };
-const SceneCtx = createContext<Ctx>({ hex: "#ffffff", highlight: null, glass: GLASS.clair, reduced: false });
+type Ctx = { hex: string; highlight: string | null; glass: (typeof GLASS)[string]; reduced: boolean; marks: boolean };
+const SceneCtx = createContext<Ctx>({ hex: "#ffffff", highlight: null, glass: GLASS.clair, reduced: false, marks: false });
 const useScene = () => useContext(SceneCtx);
 
 // ---------- Mouvement : ressort critiquement amorti (accélère puis freine, sans rebond ni saccade) ----------
@@ -93,7 +93,18 @@ function Panel({ w, h, position }: { w: number; h: number; position?: [number, n
 }
 
 // Corps d'un vantail centré sur l'origine : cadre (traverses, montants) + remplissage selon la catégorie.
-function LeafBody({ w, h, v, infill, depth = 0.034 }: { w: number; h: number; v: Viewable; infill: Viewable["infill"]; depth?: number }) {
+// Repère du vantail (V1, F1…) : pastille qui suit le vantail quand il bouge.
+function Tag({ text, y }: { text: string; y: number }) {
+  const { marks } = useScene();
+  if (!marks) return null;
+  return (
+    <Html position={[0, y, 0.03]} center zIndexRange={[5, 0]}>
+      <div className="pointer-events-none select-none rounded border border-slate-700 bg-white px-1 text-[10px] font-bold leading-4 text-slate-900 shadow-sm">{text}</div>
+    </Html>
+  );
+}
+
+function LeafBody({ w, h, v, infill, depth = 0.034, mark }: { w: number; h: number; v: Viewable; infill: Viewable["infill"]; depth?: number; mark?: string }) {
   const t = 0.04;
   const iw = w - 2 * t;
   const ih = h - 2 * t;
@@ -113,6 +124,7 @@ function LeafBody({ w, h, v, infill, depth = 0.034 }: { w: number; h: number; v:
         </>
       )}
       {!(isDoor && infill !== "vitree") && <Pane w={iw} h={ih} />}
+      {mark && <Tag text={mark} y={h * 0.22} />}
     </group>
   );
 }
@@ -139,12 +151,12 @@ function Dormant({ W, H, t, depth }: { W: number; H: number; t: number; depth: n
 }
 
 // ---------- Fenêtres et portes coulissantes ----------
-function SlideLeaf({ closedX, openX, z, w, h, v, target, side, onToggle }: { closedX: number; openX: number; z: number; side: -1 | 1; w: number; h: number; v: Viewable; target: number; onToggle: () => void }) {
+function SlideLeaf({ closedX, openX, z, w, h, v, target, side, mark, onToggle }: { closedX: number; openX: number; z: number; side: -1 | 1; mark: string; w: number; h: number; v: Viewable; target: number; onToggle: () => void }) {
   const g = useRef<THREE.Group>(null);
   useSpring(target, (x) => g.current && (g.current.position.x = THREE.MathUtils.lerp(closedX, openX, x)), v.category === "porte" ? 5.5 : 7);
   return (
     <group ref={g} position={[closedX, 0, z]} onClick={(e) => clickToggle(e, onToggle)} onPointerOver={pointer(true)} onPointerOut={pointer(false)}>
-      <LeafBody w={w} h={h} v={v} infill={v.infill} />
+      <LeafBody w={w} h={h} v={v} infill={v.infill} mark={mark} />
       <Handle position={[side * (w / 2 - 0.05), 0, z > 0 ? 0.02 : -0.02]} />
     </group>
   );
@@ -158,15 +170,16 @@ function Sliding({ v, W, H, t, amounts, toggle }: { v: Viewable; W: number; H: n
   const lv = (w + (n - 1) * ov) / n;
   const x = (i: number) => -w / 2 + lv / 2 + i * (lv - ov);
   const motion = leafMotion(v);
+  const marks = leafMarks(v);
   return (
     <group position={[0, H / 2, 0]}>
       {motion.map(({ slide, front, travel }, i) =>
         slide === 0 ? (
-          <group key={i} position={[x(i), 0, -0.016]}>
-            <LeafBody w={lv} h={h} v={v} infill={v.infill} />
+          <group key={i} position={[x(i), 0, front ? 0.016 : -0.016]}>
+            <LeafBody w={lv} h={h} v={v} infill={v.infill} mark={marks[i]} />
           </group>
         ) : (
-          <SlideLeaf key={i} closedX={x(i)} openX={x(i) + slide * travel * (lv - ov)} side={slide === 1 ? 1 : -1} z={front ? 0.016 : -0.016} w={lv} h={h} v={v} target={amounts[i] ?? 0} onToggle={() => toggle(i)} />
+          <SlideLeaf key={i} closedX={x(i)} openX={x(i) + slide * travel * (lv - ov)} side={slide === 1 ? 1 : -1} mark={marks[i]} z={front ? 0.016 : -0.016} w={lv} h={h} v={v} target={amounts[i] ?? 0} onToggle={() => toggle(i)} />
         ),
       )}
     </group>
@@ -174,7 +187,7 @@ function Sliding({ v, W, H, t, amounts, toggle }: { v: Viewable; W: number; H: n
 }
 
 // ---------- Ouvrants : battant, oscillo-battant, soufflet ----------
-function CasementLeaf({ hingeLeft, px, lv, h, v, mode, amount, onToggle }: { hingeLeft: boolean; px: number; lv: number; h: number; v: Viewable; mode: "turn" | "tilt"; amount: number; onToggle: () => void }) {
+function CasementLeaf({ hingeLeft, px, lv, h, v, mode, amount, mark, onToggle }: { hingeLeft: boolean; mark: string; px: number; lv: number; h: number; v: Viewable; mode: "turn" | "tilt"; amount: number; onToggle: () => void }) {
   const turn = useRef<THREE.Group>(null);
   const tilt = useRef<THREE.Group>(null);
   const side = hingeLeft ? -1 : 1;
@@ -193,7 +206,7 @@ function CasementLeaf({ hingeLeft, px, lv, h, v, mode, amount, onToggle }: { hin
       <group position={[px - hx, pivotY, 0]}>
         <group ref={tilt}>
           <group position={[0, -pivotY, 0]}>
-            <LeafBody w={lv} h={h} v={v} infill={v.infill} />
+            <LeafBody w={lv} h={h} v={v} infill={v.infill} mark={mark} />
             <Handle position={[-side * (lv / 2 - 0.05), 0, 0.02]} />
           </group>
         </group>
@@ -208,12 +221,19 @@ function Casement({ v, W, H, t, amounts, mode, toggle }: { v: Viewable; W: numbe
   const h = H - 2 * t;
   const lv = w / n;
   const motion = leafMotion(v);
+  const marks = leafMarks(v);
   return (
     <group position={[0, H / 2, 0]}>
       {Array.from({ length: n }, (_, i) => {
-        const { hingeLeft } = motion[i];
+        const { hingeLeft, fixed } = motion[i];
         const cx = -w / 2 + i * lv + lv / 2;
-        return <CasementLeaf key={i} hingeLeft={hingeLeft} px={cx} lv={lv - 0.004} h={h - 0.004} v={v} mode={mode} amount={amounts[i] ?? 0} onToggle={() => toggle(i)} />;
+        if (fixed)
+          return (
+            <group key={i} position={[cx, 0, 0]}>
+              <LeafBody w={lv - 0.004} h={h - 0.004} v={v} infill={v.infill} mark={marks[i]} />
+            </group>
+          );
+        return <CasementLeaf key={i} hingeLeft={hingeLeft} mark={marks[i]} px={cx} lv={lv - 0.004} h={h - 0.004} v={v} mode={mode} amount={amounts[i] ?? 0} onToggle={() => toggle(i)} />;
       })}
       {n >= 2 && Array.from({ length: Math.floor(n / 2) }, (_, k) => <Bar key={k} element="el.battement" size={[0.03, h, 0.026]} position={[-w / 2 + (2 * k + 1) * lv, 0, -0.018]} />)}
     </group>
@@ -318,7 +338,12 @@ function Partition({ v, W, H, t }: { v: Viewable; W: number; H: number; t: numbe
   return (
     <group>
       <Dormant W={W} H={H} t={t} depth={0.07} />
-      {Array.from({ length: n }, (_, i) => <Pane key={i} w={pw} h={H - 2 * t} position={[-w / 2 + pw / 2 + i * (pw + m), H / 2, 0]} />)}
+      {Array.from({ length: n }, (_, i) => (
+        <group key={i} position={[-w / 2 + pw / 2 + i * (pw + m), H / 2, 0]}>
+          <Pane w={pw} h={H - 2 * t} />
+          <Tag text={`P${i + 1}`} y={(H - 2 * t) * 0.22} />
+        </group>
+      ))}
       {Array.from({ length: n - 1 }, (_, i) => <Bar key={i} element="el.mullion" size={[m, H - 2 * t, 0.05]} position={[-w / 2 + (i + 1) * pw + i * m + m / 2, H / 2, 0]} />)}
     </group>
   );
@@ -504,7 +529,7 @@ const useReducedMotion = () =>
 function isMovable(v: Viewable) {
   if (v.category === "volet") return true;
   if (v.category !== "fenetre" && v.category !== "porte") return false;
-  return v.opening !== "fixe";
+  return v.opening !== "fixe" && (v.opening === "jalousie" || leafMotion(v).some((m) => !m.fixed));
 }
 
 // Quelles « parties mobiles » cliquables : un état d'ouverture (0 à 1) par vantail.
@@ -522,7 +547,7 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
   const controls = useRef<{ reset: () => void; saveState: () => void } | null>(null);
 
   // la configuration change (autre nombre de vantaux…) : on repart fermé
-  const sig = `${v.category}|${v.opening}|${v.leaves}|${v.shutter}|${v.direction}`;
+  const sig = `${v.category}|${v.opening}|${v.leaves}|${v.shutter}|${v.direction}|${v.leafCfg?.join("")}`;
   const [lastSig, setLastSig] = useState(sig);
   if (sig !== lastSig) {
     setLastSig(sig);
@@ -530,7 +555,7 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
   }
 
   const movable = isMovable(v);
-  const mobileIdx = v.category === "fenetre" || v.category === "porte" ? (v.opening === "coulissant" ? [...Array(n).keys()].filter((i) => leafMotion(v)[i].slide !== 0) : [...Array(n).keys()]) : [0];
+  const mobileIdx = v.category === "fenetre" || v.category === "porte" ? (v.opening === "jalousie" ? [0] : [...Array(n).keys()].filter((i) => !leafMotion(v)[i].fixed)) : [0];
   const mean = mobileIdx.length ? mobileIdx.reduce((s, i) => s + (amounts[i] ?? 0), 0) / mobileIdx.length : 0;
   const setAll = (x: number) => setAmounts((a) => a.map((_, i) => (mobileIdx.includes(i) ? x : 0)));
   const toggle = (i: number) => setAmounts((a) => a.map((x, j) => (j === i ? (x > 0.5 ? 0 : 1) : x)));
@@ -546,8 +571,9 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
       highlight,
       glass: v.pattern !== "none" ? { ...base, rough: 0.5, opacity: Math.min(0.9, base.opacity + 0.2) } : base,
       reduced,
+      marks: !bare && !stage,
     };
-  }, [v.finish, v.glassType, v.pattern, highlight, reduced]);
+  }, [v.finish, v.glassType, v.pattern, highlight, reduced, bare, stage]);
 
   const dist = (Math.max(W, H) * 1.55 + 0.9) * (view?.dist ?? 1);
   const sillY = stage?.sill ?? 0;
@@ -562,7 +588,7 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
   else if (v.category === "cloison") body = <Partition v={v} W={W} H={H} t={tFrame} />;
   else {
     const frame = <Dormant W={W} H={H} t={tFrame} depth={euro ? 0.09 : 0.07} />;
-    if (v.opening === "fixe") body = <>{frame}<Pane w={W - 2 * tFrame} h={H - 2 * tFrame} position={[0, H / 2, 0]} /></>;
+    if (v.opening === "fixe") body = <>{frame}<group position={[0, H / 2, 0]}><Pane w={W - 2 * tFrame} h={H - 2 * tFrame} /><Tag text="F1" y={(H - 2 * tFrame) * 0.22} /></group></>;
     else if (v.opening === "jalousie") body = <>{frame}<Louvre W={W} H={H} t={tFrame} amount={amounts[0] ?? 0} onToggle={() => toggle(0)} /></>;
     else if (v.opening === "coulissant") body = <>{frame}<Sliding v={v} W={W} H={H} t={tFrame} amounts={amounts} toggle={toggle} /></>;
     else body = <>{frame}<Casement v={v} W={W} H={H} t={tFrame} amounts={amounts} mode={mode} toggle={toggle} /></>;
