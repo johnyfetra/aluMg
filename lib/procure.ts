@@ -1,5 +1,5 @@
-import { type ElementUse, type Piece, KERF } from "./calc";
-import { FINISHES, type Market, type Offer } from "./model";
+import { type ElementUse, type Piece, KERF, allPieces } from "./calc";
+import { FINISHES, type FinishId, type Line, type Market, type Offer } from "./model";
 import type { Messages } from "./messages/fr";
 
 type Label = keyof Messages;
@@ -141,4 +141,16 @@ export function procure(pieces: Piece[], market: Market, kerf = KERF): Procureme
     wastePct: totalLen ? Math.round(((totalLen - usedLen) / totalLen) * 100) : 0,
     byLine,
   };
+}
+
+// Hypothèses de simulation : tout est local à la page, rien n'est enregistré tant que le menuisier ne le demande pas.
+export type Sim = { market: Market; range: "" | Line["range"]; finish: "" | FinishId; pct: number };
+export const initSim = (market: Market): Sim => ({ market, range: "", finish: "", pct: 0 });
+
+// Plan d'achat des profilés du devis sous les hypothèses : gamme et couleur imposées à tous les ouvrages, prix du marché majorés de pct %.
+export function simulate(lines: Line[], sim: Sim, kerf: number, finish: "" | FinishId = sim.finish) {
+  const k = 1 + sim.pct / 100;
+  const offers = Object.fromEntries(Object.entries(sim.market.offers).map(([p, os]) => [p, os.map((o) => ({ ...o, price: Math.round(o.price * k) }))]));
+  const set = lines.map((l) => ({ ...l, range: sim.range || l.range, finish: finish || l.finish }));
+  return procure(allPieces(set), { ...sim.market, offers }, kerf);
 }

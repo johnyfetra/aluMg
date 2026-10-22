@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { type Piece, allPieces } from "./calc";
 import { DEFAULT_MARKET, type Line, type Market } from "./model";
-import { planGroup, priced, procure } from "./procure";
+import { initSim, planGroup, priced, procure, simulate } from "./procure";
 
 const piece = (len: number, qty: number, line = 1, over: Partial<Piece> = {}): Piece => ({ profile: "pf.sash", element: "el.sashH", len, qty, line, range: "asiatique", finish: "blanc", ...over });
 const market = (offers: { length: number; price: number }[], extra: Partial<Market> = {}): Market => ({ ...DEFAULT_MARKET, offers: { ...DEFAULT_MARKET.offers, "pf.sash": offers }, ...extra });
@@ -80,5 +80,28 @@ describe("procure", () => {
     expect(r.groups.map((g) => g.profile).sort()).toEqual(["pf.dormant", "pf.sash"]);
     expect(r.totalCost).toBeGreaterThan(0);
     expect(r.groups.every((g) => g.tooLong.length === 0)).toBe(true);
+  });
+});
+
+describe("simulate (hypothèses du menuisier)", () => {
+  const line: Line = {
+    id: "00000000-0000-4000-8000-000000000001", category: "fenetre", opening: "coulissant", leaves: 2, shutter: "roulant", control: "manuel", guard: "barreaudage",
+    range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1200, height: 1000, qty: 3, unit: 0,
+  };
+  const base = simulate([line], initSim(DEFAULT_MARKET), 5);
+
+  it("sans hypothèse, donne le même plan que le marché enregistré", () => {
+    expect(base.totalCost).toBe(procure(allPieces([line]), DEFAULT_MARKET, 5).totalCost);
+  });
+  it("une variation de prix de +20 % augmente le coût d'autant, sans changer les barres", () => {
+    const up = simulate([line], { ...initSim(DEFAULT_MARKET), pct: 20 }, 5);
+    expect(up.bars).toBe(base.bars);
+    expect(up.totalCost / base.totalCost).toBeCloseTo(1.2, 1);
+  });
+  it("gamme européenne et couleur imposées renchérissent ; une barre plus courte change le plan", () => {
+    expect(simulate([line], { ...initSim(DEFAULT_MARKET), range: "europeen" }, 5).totalCost).toBeGreaterThan(base.totalCost);
+    expect(simulate([line], { ...initSim(DEFAULT_MARKET), finish: "chene-dore" }, 5).totalCost).toBeGreaterThan(base.totalCost);
+    const short = { ...DEFAULT_MARKET, offers: Object.fromEntries(Object.entries(DEFAULT_MARKET.offers).map(([k, o]) => [k, [{ length: 3000, price: o[0].price / 2 }]])) };
+    expect(simulate([line], { ...initSim(short) }, 5).bars).toBeGreaterThan(base.bars);
   });
 });
