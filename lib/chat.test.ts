@@ -128,4 +128,41 @@ describe("messagerie", () => {
       expect(await chat.citableQuotes(c2, conv)).toBeNull();
     });
   });
+
+  describe("accusés (envoyé, reçu, lu), saisie en cours et vocaux", () => {
+    it("un message passe de envoyé à reçu (l'autre reçoit la liste) puis lu (l'autre ouvre le fil)", async () => {
+      const r = await send(c1, conv, "Accusés ?");
+      expect(r.ok && r.message.receipt).toBe("sent");
+      const seen = async () => (await chat.readMessages(c1, conv))!.find((m) => m.body === "Accusés ?")!.receipt;
+      // le menuisier reçoit sa liste de conversations : reçu, pas encore lu
+      await new Promise((x) => setTimeout(x, 15));
+      await chat.listConversations(m1);
+      expect(await seen()).toBe("delivered");
+      expect((await chat.listConversations(c1)).find((c) => c.id === conv)!.last).toMatchObject({ mine: true, receipt: "delivered" });
+      await new Promise((x) => setTimeout(x, 15));
+      await chat.readMessages(m1, conv);
+      expect(await seen()).toBe("read");
+      // les messages reçus n'ont pas d'accusé
+      expect((await chat.readMessages(m1, conv))!.find((m) => m.body === "Accusés ?")!.receipt).toBeNull();
+    });
+
+    it("« en train d'écrire » : visible par l'autre seulement, s'efface à l'envoi", async () => {
+      expect(await chat.getTyping(m1, conv)).toBeNull();
+      expect(await chat.setTyping(c1, conv, "text")).toBe(true);
+      expect(await chat.getTyping(m1, conv)).toBe("text");
+      expect(await chat.getTyping(c1, conv)).toBeNull(); // on ne se voit pas soi-même
+      await chat.setTyping(c1, conv, "voice");
+      expect(await chat.getTyping(m1, conv)).toBe("voice");
+      await send(c1, conv, "fini");
+      expect(await chat.getTyping(m1, conv)).toBeNull();
+      expect(await chat.setTyping(c2, conv, "text")).toBe(false); // un tiers ne peut pas
+      expect(await chat.getTyping(c2, conv)).toBeUndefined();
+    });
+
+    it("un message vocal garde sa durée ; seul l'audio en a une", async () => {
+      const audio = Buffer.from("OggS-fake").toString("base64");
+      const r = await chat.sendMessage(c1, conv, { body: "", files: [{ name: "vocal.webm", mime: "audio/webm", data: audio, durationMs: 12_500 }, { name: "n.pdf", mime: "application/pdf", data: Buffer.from("%PDF").toString("base64"), durationMs: 99 }] });
+      expect(r.ok && r.message.attachments.map((a) => a.durationMs)).toEqual([12_500, null]);
+    });
+  });
 });

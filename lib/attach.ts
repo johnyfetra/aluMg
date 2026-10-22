@@ -7,8 +7,12 @@ export const ATTACH_MIME: Record<string, string[]> = {
   "application/msword": ["doc"], "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ["docx"],
   "application/vnd.ms-excel": ["xls"], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ["xlsx"],
   "text/plain": ["txt"], "text/csv": ["csv"],
+  // messages vocaux (enregistrés dans le navigateur) et fichiers audio
+  "audio/webm": ["webm"], "audio/ogg": ["ogg", "oga"], "audio/mp4": ["m4a", "mp4"], "audio/mpeg": ["mp3"], "audio/wav": ["wav"],
 };
 export const isImageMime = (m: string) => m.startsWith("image/");
+export const isAudioMime = (m: string) => m.startsWith("audio/");
+export const VOICE_MAX_MS = 180_000; // un vocal dure 3 minutes au plus
 // Type d'un fichier d'après son extension (les navigateurs laissent parfois le type vide).
 export const mimeOfName = (name: string) => {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";

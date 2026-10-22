@@ -43,6 +43,13 @@
       "when": 1792683013400,
       "tag": "0005_messagerie_pieces_jointes_catalogue",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792683971247,
+      "tag": "0006_messagerie_saisie_vocaux_accuses",
+      "breakpoints": true
     }
   ]
 }

@@ -146,6 +146,9 @@ export const conversations = pgTable(
     lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
     clientReadAt: timestamp("client_read_at", { withTimezone: true }).notNull().defaultNow(),
     menuisierReadAt: timestamp("menuisier_read_at", { withTimezone: true }).notNull().defaultNow(),
+    // dernière fois que l'appareil de chaque participant a reçu les messages (accusé de réception : ✓✓)
+    clientDeliveredAt: timestamp("client_delivered_at", { withTimezone: true }).notNull().defaultNow(),
+    menuisierDeliveredAt: timestamp("menuisier_delivered_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("conversations_pair_idx").on(t.clientId, t.menuisierId), index("conversations_menuisier_idx").on(t.menuisierId)],
 );
@@ -169,6 +172,22 @@ export const messages = pgTable(
   (t) => [index("messages_conv_idx").on(t.conversationId, t.createdAt)],
 );
 
+// « Écrit… » / « enregistre un vocal… » : une ligne par participant et conversation, valable quelques secondes (voir lib/chat.ts).
+export const conversationTyping = pgTable(
+  "conversation_typing",
+  {
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["text", "voice"] }).notNull().default("text"),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("conversation_typing_pk").on(t.conversationId, t.userId)],
+);
+
 // shortcut: pièces jointes stockées en base (contenu en base64), à déplacer vers un stockage de fichiers (Vercel Blob, S3) avant la montée en charge.
 export const messageAttachments = pgTable(
   "message_attachments",
@@ -180,6 +199,7 @@ export const messageAttachments = pgTable(
     name: text("name").notNull(),
     mime: text("mime").notNull(),
     size: integer("size").notNull(),
+    durationMs: integer("duration_ms"), // durée d'un message vocal
     data: text("data").notNull(),
   },
   (t) => [index("message_attachments_msg_idx").on(t.messageId)],
