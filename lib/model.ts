@@ -63,6 +63,7 @@ export function presetModes(l: Pick<Cfg, "opening" | "leaves">, d: Direction = "
   const n = l.leaves;
   return Array.from({ length: n }, (_, i): LeafMode => {
     if (l.opening === "fixe") return "F";
+    if (l.opening === "soufflet") return "L"; // un soufflet pivote par le haut : pas de côté
     if (l.opening === "coulissant") return d === "left" ? (i % 2 ? "L" : "F") : d === "right" ? (i % 2 || i + 1 >= n ? "F" : "R") : i % 2 ? "L" : i + 1 < n ? "R" : "F";
     return n === 1 ? (d === "right" ? "R" : "L") : i < n / 2 ? "L" : "R";
   });
@@ -148,10 +149,10 @@ export const lineSchema = z.object({
   id: z.string().min(1).max(64),
   category: z.enum(CATEGORIES),
   opening: z.enum(OPENINGS),
-  leaves: z.number().int().min(1).max(8),
+  leaves: z.number().int().min(1).max(10), // 10 = maximum de panneaux d'une cloison
   guard: z.enum(GUARDS).default("barreaudage"),
   direction: z.enum(DIRECTIONS).optional(),
-  leafCfg: z.array(z.enum(LEAF_MODES)).max(8).optional(),
+  leafCfg: z.array(z.enum(LEAF_MODES)).max(10).optional(),
   shutter: z.enum(SHUTTERS),
   control: z.enum(CONTROLS),
   range: z.enum(RANGES),

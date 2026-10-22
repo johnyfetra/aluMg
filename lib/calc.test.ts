@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cutList, cuttingPlan, normalize, planTotals, surchargeKeys, unitPrice } from "./calc";
-import { DEFAULT_SETTINGS, type Line, lineSchema } from "./model";
+import { drawingSvg } from "./drawing";
+import { CATEGORIES, DEFAULT_SETTINGS, GUARDS, INFILLS, type Line, OPENINGS_BY_CATEGORY, SHUTTERS, leafMarks, leafMotion, leavesSpec, lineSchema } from "./model";
 
 const base: Line = {
   id: "00000000-0000-4000-8000-000000000000",
@@ -159,5 +160,42 @@ describe("normalize et validation", () => {
     expect(lineSchema.safeParse(base).success).toBe(true);
     expect(lineSchema.safeParse({ ...base, width: 100 }).success).toBe(false);
     expect(lineSchema.safeParse({ ...base, width: 7000 }).success).toBe(false);
+  });
+});
+
+// Parcours exhaustif de ce que le formulaire permet de choisir : aucune combinaison ne doit produire un ouvrage invalide, un prix absurde ou un schéma cassé.
+describe("toutes les possibilités par catégorie", () => {
+  const combos: Partial<Line>[] = [];
+  for (const category of CATEGORIES) {
+    const openings = OPENINGS_BY_CATEGORY[category].length ? OPENINGS_BY_CATEGORY[category] : (["fixe"] as const);
+    for (const opening of openings) {
+      const spec = leavesSpec({ category, opening });
+      for (let leaves = spec?.min ?? 1; leaves <= (spec?.max ?? 1); leaves++) {
+        for (const shutter of category === "volet" ? SHUTTERS : ["roulant" as const])
+          for (const guard of category === "garde-corps" ? GUARDS : ["barreaudage" as const])
+            for (const infill of category === "porte" ? INFILLS : ["vitree" as const]) combos.push({ category, opening, leaves, shutter, guard, infill });
+      }
+    }
+  }
+
+  it("chaque combinaison reste valide, a un prix, un débit et un schéma", () => {
+    expect(combos.length).toBeGreaterThan(70);
+    for (const c of combos) {
+      const l = normalize({ ...base, ...c, width: 2400, height: 1500 });
+      expect(lineSchema.safeParse(l).success, JSON.stringify(c)).toBe(true);
+      expect(price(l), JSON.stringify(c)).toBeGreaterThan(0);
+      expect(cutList(l).pieces.length, JSON.stringify(c)).toBeGreaterThan(0);
+      expect(drawingSvg(l, "t").svg).not.toMatch(/NaN|undefined/);
+    }
+  });
+
+  it("repères uniques et cohérents avec le mouvement de chaque vantail", () => {
+    for (const c of combos) {
+      const l = normalize({ ...base, ...c });
+      if (l.category !== "fenetre" && l.category !== "porte") continue;
+      const marks = leafMarks(l);
+      expect(new Set(marks).size, JSON.stringify(c)).toBe(l.leaves);
+      leafMotion(l).forEach((m, i) => expect(marks[i].startsWith(m.fixed ? "F" : "V")).toBe(true));
+    }
   });
 });
