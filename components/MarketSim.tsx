@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Choice, Field, FinishPicker } from "./ui";
 import { fmt } from "@/lib/calc";
 import type { T } from "@/lib/i18n";
-import { FINISHES, type FinishId, type Line, type Market, type Offer, PROFILE_KEYS, RANGES } from "@/lib/model";
+import { FINISHES, type FinishId, type Line, type Market, type Offer, PROFILE_KEYS, RANGES, finishOn, rangeOn } from "@/lib/model";
 import { type Sim, initSim, simulate } from "@/lib/procure";
 
 const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${fmt(Math.abs(n))}`;
@@ -52,7 +52,7 @@ export function MarketSim({ sim, setSim, lines, kerf, baseCost, cost, saved, onS
                 name="sim-range"
                 legend={t("sim.range")}
                 value={sim.range}
-                options={[{ value: "", label: t("sim.asInQuote") }, ...RANGES.map((r) => ({ value: r, label: t(`range.${r}`) }))]}
+                options={[{ value: "", label: t("sim.asInQuote") }, ...RANGES.map((r) => ({ value: r, label: `${t(`range.${r}`)}${rangeOn(sim.market, r) ? "" : ` (${t("market.unavailable")})`}` }))]}
                 onChange={(range) => setSim({ ...sim, range })}
               />
               <div className="space-y-1">
@@ -90,7 +90,7 @@ export function MarketSim({ sim, setSim, lines, kerf, baseCost, cost, saved, onS
                   const sel = sim.finish === f.id;
                   return (
                     <li key={f.id}>
-                      <button type="button" aria-pressed={sel} onClick={() => setSim({ ...sim, finish: f.id })} className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-sm hover:bg-surface-2 ${sel ? "border-primary ring-2 ring-primary/30" : "border-line"}`}>
+                      <button type="button" aria-pressed={sel} onClick={() => setSim({ ...sim, finish: f.id })} title={finishOn(sim.market, f.id) ? undefined : t("market.unavailable")} className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-sm hover:bg-surface-2 ${finishOn(sim.market, f.id) ? "" : "opacity-50"} ${sel ? "border-primary ring-2 ring-primary/30" : "border-line"}`}>
                         <span aria-hidden className="size-4 shrink-0 rounded-full border border-black/20" style={{ background: f.hex }} />
                         <span className="min-w-0 flex-1 truncate">{t(f.label)}</span>
                         <span className={`tabular-nums ${cost === cheapest ? "font-bold text-ok" : "font-medium"}`}>{fmt(cost)}</span>

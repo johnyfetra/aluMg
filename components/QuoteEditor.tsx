@@ -30,8 +30,10 @@ import {
   PATTERN_GLASSES,
   DIRECTIONS,
   type LeafMode,
+  finishOn,
   hasLeafConfig,
   lineMarks,
+  rangeOn,
   leafMarks,
   leafModes,
   presetModes,
@@ -65,8 +67,8 @@ export function newLine(s: Settings): Line {
     shutter: "roulant",
     control: "manuel",
     guard: "barreaudage",
-    range: "asiatique",
-    finish: "blanc",
+    range: RANGES.find((r) => rangeOn(s.market, r)) ?? "asiatique", // premier choix que les fournisseurs ont
+    finish: FINISHES.find((f) => finishOn(s.market, f.id))?.id ?? "blanc",
     infill: "vitree",
     glassType: "clair",
     thickness: "5",
@@ -556,8 +558,8 @@ export function LineCard({
         </Section>
 
         <Section title={t("editor.sectionFinish")}>
-          <Choice dense name={p("rg")} legend={t("editor.range")} value={l.range} options={RANGES.map((r) => ({ value: r, label: t(`range.${r}`) }))} onChange={(range) => onChange({ range })} />
-          <FinishPicker dense name={p("fn")} legend={t("editor.finish")} value={l.finish} onChange={(finish) => onChange({ finish })} t={t} />
+          <Choice dense name={p("rg")} legend={t("editor.range")} value={l.range} options={RANGES.filter((r) => r === l.range || rangeOn(settings.market, r)).map((r) => ({ value: r, label: t(`range.${r}`) }))} onChange={(range) => onChange({ range })} />
+          <FinishPicker dense name={p("fn")} legend={t("editor.finish")} value={l.finish} onChange={(finish) => onChange({ finish })} t={t} hide={settings.market.off?.finishes} />
 
           {hasGlass && (
             <div className="grid gap-3 sm:grid-cols-3">

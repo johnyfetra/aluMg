@@ -83,7 +83,18 @@ export function Choice<V extends string | number>({
 }
 
 // Choix de couleur du profilé : pastilles groupées (laqué, anodisé, faux bois).
-export function FinishPicker({ name, legend, value, onChange, t, dense = false }: { name: string; legend: string; value: FinishId; onChange: (v: FinishId) => void; t: T; dense?: boolean }) {
+// Interrupteur (oui / non) accessible : un bouton role="switch".
+export function Switch({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} title={label} disabled={disabled} onClick={() => onChange(!checked)} className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors disabled:opacity-50 ${checked ? "border-primary bg-primary" : "border-line bg-surface-2"}`}>
+      <span aria-hidden className={`size-4 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-6" : "translate-x-1"}`} />
+    </button>
+  );
+}
+
+// hide : couleurs que les fournisseurs n'ont pas (la couleur déjà choisie reste visible).
+export function FinishPicker({ name, legend, value, onChange, t, dense = false, hide = [] }: { name: string; legend: string; value: FinishId; onChange: (v: FinishId) => void; t: T; dense?: boolean; hide?: readonly FinishId[] }) {
+  const shown = FINISHES.filter((f) => f.id === value || !hide.includes(f.id));
   if (dense)
     // Version compacte : une seule rangée de pastilles, le nom de la couleur choisie est affiché à côté.
     return (
@@ -94,7 +105,7 @@ export function FinishPicker({ name, legend, value, onChange, t, dense = false }
         <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
           {FINISH_GROUPS.map(([group, label], gi) => (
             <div key={group} role="group" aria-label={t(label)} className={`flex flex-wrap gap-1 ${gi ? "ml-2 border-l border-line pl-3" : ""}`}>
-              {FINISHES.filter((f) => f.group === group).map((f) => (
+              {shown.filter((f) => f.group === group).map((f) => (
                 <label key={f.id} className="cursor-pointer" title={t(f.label)}>
                   <input type="radio" name={name} className="peer sr-only" checked={f.id === value} onChange={() => onChange(f.id)} />
                   <span className="grid size-8 place-items-center rounded-full border border-transparent peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/40 peer-focus-visible:outline-3 peer-focus-visible:outline-primary hover:bg-surface-2">
@@ -115,7 +126,7 @@ export function FinishPicker({ name, legend, value, onChange, t, dense = false }
         <div key={group}>
           <p className="mb-1 text-xs text-muted">{t(label)}</p>
           <div className="flex flex-wrap gap-2">
-            {FINISHES.filter((f) => f.group === group).map((f) => (
+            {shown.filter((f) => f.group === group).map((f) => (
               <label key={f.id} className="cursor-pointer">
                 <input type="radio" name={name} className="peer sr-only" checked={f.id === value} onChange={() => onChange(f.id)} />
                 <span className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-sm peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary hover:bg-surface-2">
