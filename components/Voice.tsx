@@ -191,9 +191,9 @@ export function VoicePlayer({ src, durationMs, mine, t }: { src: string; duratio
   );
 }
 
-export function MicButton({ t, onClick, disabled }: { t: T; onClick: () => void; disabled?: boolean }) {
+export function MicButton({ t, onClick, disabled, small = false }: { t: T; onClick: () => void; disabled?: boolean; small?: boolean }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} aria-label={t("msg.mic")} title={t("msg.mic")} className="grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50">
+    <button type="button" onClick={onClick} disabled={disabled} aria-label={t("msg.mic")} title={t("msg.mic")} className={`grid shrink-0 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50 ${small ? "size-9" : "size-10"}`}>
       <Mic size={18} aria-hidden />
     </button>
   );

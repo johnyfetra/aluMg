@@ -39,7 +39,7 @@ export function Ticks({ receipt, t, onPrimary = true }: { receipt: Receipt; t: T
 }
 
 // Fil d'une conversation : messages, pièces jointes, vocaux, réponses, devis cités, accusés, « écrit… » et le champ de saisie.
-export default function Thread({ conv, onBack, header = true }: { conv: ConversationView; onBack?: () => void; header?: boolean }) {
+export default function Thread({ conv, onBack, header = true, compact = false }: { conv: ConversationView; onBack?: () => void; header?: boolean; compact?: boolean }) {
   const { t, locale } = useI18n();
   const { data: msgs = [] } = useMessages(conv.id);
   const { data: live } = useTyping(conv.id);
@@ -186,7 +186,7 @@ export default function Thread({ conv, onBack, header = true }: { conv: Conversa
   };
   const preview = (m: { body: string; files: number }) => m.body || (m.files ? t("msg.attachment") : t("msg.original"));
   const canSend = !sending && (!!text.trim() || pending.length > 0 || !!quote);
-  const ghost = "grid size-9 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-line/50 hover:text-primary";
+  const ghost = "grid size-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-line/50 hover:text-primary";
 
   return (
     <div
@@ -224,7 +224,7 @@ export default function Thread({ conv, onBack, header = true }: { conv: Conversa
         </header>
       )}
 
-      <div ref={box} className="min-h-0 flex-1 space-y-1 overflow-y-auto bg-surface-2/40 px-4 py-4" role="log" aria-live="polite" aria-label={t("msg.thread")}>
+      <div ref={box} className={`min-h-0 flex-1 space-y-1 overflow-y-auto bg-surface-2/40 ${compact ? "px-3 py-3" : "px-4 py-4"}`} role="log" aria-live="polite" aria-label={t("msg.thread")}>
         {msgs.length === 0 && <p className="py-10 text-center text-sm text-muted">{t("msg.startHint")}</p>}
         {msgs.map((m, i) => {
           const newDay = i === 0 || new Date(msgs[i - 1].at).toDateString() !== new Date(m.at).toDateString();
@@ -235,7 +235,7 @@ export default function Thread({ conv, onBack, header = true }: { conv: Conversa
             <div key={m.id}>
               {newDay && <p className="my-3 text-center text-xs font-medium capitalize text-muted">{day(m.at)}</p>}
               <div className={`group flex items-end gap-1.5 ${m.mine ? "flex-row-reverse" : ""}`}>
-                <div id={`m-${m.id}`} className={`max-w-[82%] space-y-1.5 rounded-2xl px-3.5 py-2 text-sm shadow-sm transition-shadow ${m.mine ? "rounded-br-md bg-primary text-on-primary" : "rounded-bl-md border border-line bg-surface"}`}>
+                <div id={`m-${m.id}`} className={`max-w-[85%] space-y-1.5 rounded-2xl px-3.5 py-2 text-sm shadow-sm transition-shadow ${m.mine ? "rounded-br-md bg-primary text-on-primary" : "rounded-bl-md border border-line bg-surface"}`}>
                   {m.replyTo && (
                     <button type="button" onClick={() => jump(m.replyTo!.id)} className={`block w-full rounded-lg border-l-4 px-2.5 py-1.5 text-left text-xs ${m.mine ? "border-white/70 bg-white/15" : "border-primary bg-surface-2"}`}>
                       <span className="block font-semibold">{m.replyTo.mine ? t("msg.you") : o.name}</span>
@@ -247,7 +247,7 @@ export default function Thread({ conv, onBack, header = true }: { conv: Conversa
                       {imgs.map((a) => (
                         <button key={a.id} type="button" onClick={() => setZoom(images.indexOf(`/api/attachments/${a.id}`))} aria-label={`${t("msg.zoom")} — ${a.name}`} className="overflow-hidden rounded-lg">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={`/api/attachments/${a.id}`} alt={a.name} loading="lazy" className="max-h-60 w-full object-cover" />
+                          <img src={`/api/attachments/${a.id}`} alt={a.name} loading="lazy" className={`w-full object-cover ${compact ? "max-h-44" : "max-h-60"}`} />
                         </button>
                       ))}
                     </div>
@@ -302,7 +302,7 @@ export default function Thread({ conv, onBack, header = true }: { conv: Conversa
         <div ref={end} />
       </div>
 
-      <form onSubmit={send} className="relative border-t border-line bg-surface px-3 pb-3 pt-2.5">
+      <form onSubmit={send} className={`relative border-t border-line bg-surface ${compact ? "px-3 pb-3.5 pt-3" : "px-5 pb-5 pt-4"}`}>
         {replyTo && (
           <div className="mb-2 flex items-start gap-2 rounded-lg border-l-4 border-primary bg-surface-2 px-3 py-2 text-sm">
             <div className="min-w-0 flex-1">
@@ -370,9 +370,9 @@ export default function Thread({ conv, onBack, header = true }: { conv: Conversa
         {recording ? (
           <RecorderBar t={t} onTick={() => notifyTyping("voice")} onCancel={() => setRecording(false)} onError={(m) => { setRecording(false); setError(m); }} onSend={(r) => void sendVoice(r)} />
         ) : (
-          <div className="flex items-end gap-2">
+          <div className={`flex items-end ${compact ? "gap-1.5" : "gap-2.5"}`}>
             {/* champ de saisie : un seul conteneur qui s'éclaire doucement au focus, boutons discrets à l'intérieur */}
-            <div className="flex min-w-0 flex-1 items-end gap-0.5 rounded-2xl border border-line bg-surface-2/60 px-1 py-1 transition-[border-color,background-color,box-shadow] duration-200 focus-within:border-primary/40 focus-within:bg-surface focus-within:shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_9%,transparent)]">
+            <div className="flex min-w-0 flex-1 items-end gap-0.5 rounded-2xl border border-line bg-surface-2/60 px-1.5 py-1.5 transition-[border-color,background-color,box-shadow] duration-200 focus-within:border-primary/40 focus-within:bg-surface focus-within:shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_9%,transparent)]">
               <div className="relative">
                 <button type="button" className={ghost} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu(!menu)} aria-label={t("msg.attach")} title={t("msg.attach")}>
                   <Paperclip size={18} aria-hidden />
@@ -409,7 +409,7 @@ export default function Thread({ conv, onBack, header = true }: { conv: Conversa
                 rows={1}
                 maxLength={2000}
                 value={text}
-                placeholder={t("msg.write")}
+                placeholder={t(compact ? "msg.writeShort" : "msg.write")}
                 onChange={(e) => onText(e.target.value)}
                 onPaste={(e) => {
                   const files = [...e.clipboardData.files].filter((f) => isImageMime(f.type));
@@ -432,13 +432,13 @@ export default function Thread({ conv, onBack, header = true }: { conv: Conversa
                 <ImageIcon size={18} aria-hidden />
               </button>
             </div>
-            <MicButton t={t} onClick={() => setRecording(true)} disabled={sending} />
-            <button type="submit" disabled={!canSend} aria-label={sending ? t("msg.sending") : t("tl.send")} title={t("tl.send")} className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-on-primary shadow-sm transition-[background-color,opacity] hover:bg-primary-hover disabled:opacity-40 disabled:shadow-none">
+            <MicButton t={t} small={compact} onClick={() => setRecording(true)} disabled={sending} />
+            <button type="submit" disabled={!canSend} aria-label={sending ? t("msg.sending") : t("tl.send")} title={t("tl.send")} className={`grid shrink-0 place-items-center rounded-full bg-primary text-on-primary shadow-sm transition-[background-color,opacity] hover:bg-primary-hover disabled:opacity-40 disabled:shadow-none ${compact ? "size-9" : "size-10"}`}>
               <Send size={17} aria-hidden />
             </button>
           </div>
         )}
-        {!recording && <p className="mt-1.5 hidden px-1 text-[11px] text-muted sm:block">{t("msg.hint")}</p>}
+        {!recording && !compact && <p className="mt-2.5 hidden px-1 text-[11px] text-muted sm:block">{t("msg.hint")}</p>}
       </form>
 
       {drag && <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center rounded-2xl border-2 border-dashed border-primary bg-primary/10 text-lg font-semibold text-primary backdrop-blur-[1px]">{t("msg.drop")}</div>}

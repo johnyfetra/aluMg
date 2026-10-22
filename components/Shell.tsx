@@ -166,7 +166,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             <UserMenu />
           </div>
         </header>
-        <main id="main" className="mx-auto w-full max-w-[110rem] px-4 py-6 sm:px-8 xl:px-10">
+        <main id="main" className="mx-auto w-full max-w-[110rem] px-4 pb-20 pt-6 sm:px-8 xl:px-10">
           {children}
         </main>
         <ChatWidget />
