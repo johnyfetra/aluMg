@@ -1,11 +1,12 @@
 "use client";
-import { Box, Copy, FileDown, Image as ImageIcon, Inbox, Ruler, Save, Send, Trash2, XCircle } from "lucide-react";
+import { Box, ChevronDown, Copy, FileDown, Image as ImageIcon, Inbox, LayoutGrid, Rows3, Ruler, Save, Send, Table2, Trash2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { mutate } from "swr";
 import ProfileNeeds from "./ProfileNeeds";
 import ChatButton from "./ChatButton";
+import LinesTable from "./LinesTable";
 import Timeline from "./Timeline";
 import Viewer3DLoader from "./Viewer3DLoader";
 import { Choice, Field, FinishPicker } from "./ui";
@@ -17,7 +18,9 @@ import { type T, useI18n } from "@/lib/i18n";
 import {
   CATEGORIES,
   CONTROLS,
+  DIRECTIONS,
   EXTRAS,
+  FINISHES,
   GLASSES,
   GUARDS,
   INFILLS,
@@ -26,6 +29,7 @@ import {
   OPENINGS_BY_CATEGORY,
   PATTERNS,
   PATTERN_GLASSES,
+  hasDirection,
   RANGES,
   SHUTTERS,
   THICKNESSES,
@@ -96,6 +100,10 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const [attachCut, setAttachCut] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [persisted, setPersisted] = useState(!!existing);
+  // Ouvrages : cartes dépliables ou tableau. Un devis à un seul ouvrage s'ouvre déplié, un devis plus long s'ouvre replié.
+  const [first] = useState(() => newLine(settings));
+  const [layout, setLayout] = useState<"cards" | "table">("cards");
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set((existing ?? { lines: [first] }).lines.length > 1 ? [] : (existing ?? { lines: [first] }).lines.map((l) => l.id)));
   // devis d'un client déjà envoyé, accepté ou refusé : en lecture seule (le client doit toujours voir ce qu'il a accepté)
   const locked = !!existing && !["requested", "draft", "negotiation"].includes(existing.status);
   const [q, setQ] = useState<Quote>(
@@ -109,7 +117,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         project: "",
         delay: "",
         notes: "",
-        lines: [newLine(settings)],
+        lines: [first],
         discount: 0,
         progress: 0,
         terms: { tva: settings.tva, deposit: settings.deposit, validityDays: settings.validityDays },
@@ -127,6 +135,18 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         return "unit" in patch ? next : { ...next, unit: price(next, settings) };
       }),
     }));
+  const allOpen = q.lines.every((l) => openIds.has(l.id));
+  const toggleOpen = (id: string) =>
+    setOpenIds((o) => {
+      const n = new Set(o);
+      if (!n.delete(id)) n.add(id);
+      return n;
+    });
+  const duplicate = (i: number) => {
+    const copy = { ...q.lines[i], id: crypto.randomUUID() };
+    setQ((c) => ({ ...c, lines: [...c.lines.slice(0, i + 1), copy, ...c.lines.slice(i + 1)] }));
+    setOpenIds((o) => new Set(o).add(copy.id));
+  };
   const setClient = (patch: Partial<Quote["client"]>) => setQ((c) => ({ ...c, client: { ...c.client, ...patch } }));
   const num = (v: string) => Number(v) || 0;
 
@@ -245,12 +265,12 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       )}
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] 2xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
+        <div className="min-w-0 space-y-6">
           <section className="card space-y-4" aria-labelledby="h-client">
             <h2 id="h-client" className="text-lg font-semibold">
               {t("editor.client")}
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <fieldset disabled={locked} className="m-0 grid min-w-0 gap-4 border-0 p-0 sm:grid-cols-2 lg:grid-cols-3">
               <Field htmlFor="cn" label={t("editor.clientName")}>
                 <input id="cn" className="input" autoComplete="name" maxLength={120} value={q.client.name} onChange={(e) => setClient({ name: e.target.value })} />
               </Field>
@@ -269,37 +289,87 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               <Field htmlFor="nt" label={t("editor.notes")}>
                 <input id="nt" className="input" maxLength={600} value={q.notes} onChange={(e) => setQ({ ...q, notes: e.target.value })} />
               </Field>
-            </div>
+            </fieldset>
           </section>
 
           <section className="space-y-4" aria-labelledby="h-lines">
-            <h2 id="h-lines" className="text-lg font-semibold">
-              {t("editor.lines")}
-            </h2>
-            {q.lines.map((l, i) => (
-              <LineCard
-                key={l.id}
-                l={l}
-                i={i}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 id="h-lines" className="text-lg font-semibold">
+                {t("editor.lines")} <span className="text-sm font-normal text-muted">({q.lines.length})</span>
+              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                {layout === "cards" && q.lines.length > 1 && (
+                  <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => setOpenIds(allOpen ? new Set() : new Set(q.lines.map((l) => l.id)))}>
+                    <Rows3 size={15} aria-hidden />
+                    {allOpen ? t("editor.collapseAll") : t("editor.expandAll")}
+                  </button>
+                )}
+                <div role="group" aria-label={t("editor.layout")} className="flex gap-0.5 rounded-full border border-line bg-surface p-0.5">
+                  {([["cards", LayoutGrid, "editor.viewCards"], ["table", Table2, "editor.viewTable"]] as const).map(([k, Icon, label]) => (
+                    <button key={k} type="button" aria-pressed={layout === k} onClick={() => setLayout(k)} className={`flex min-h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold ${layout === k ? "bg-primary text-on-primary" : "text-muted hover:text-ink"}`}>
+                      <Icon size={14} aria-hidden />
+                      {t(label)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {layout === "table" ? (
+              <LinesTable
+                lines={q.lines}
                 t={t}
-                settings={settings}
-                valid={valid(l)}
-                onChange={(p) => setLine(i, p)}
-                onRemove={q.lines.length > 1 ? () => setQ({ ...q, lines: q.lines.filter((_, j) => j !== i) }) : undefined}
-                onDuplicate={() => setQ({ ...q, lines: [...q.lines.slice(0, i + 1), { ...l, id: crypto.randomUUID() }, ...q.lines.slice(i + 1)] })}
-                onNeeds={() => openNeeds(l.id)}
-                num={num}
+                validIds={new Set(validLines.map((l) => l.id))}
+                locked={locked}
+                onEdit={(i) => {
+                  setOpenIds(new Set([q.lines[i].id]));
+                  setLayout("cards");
+                  requestAnimationFrame(() => document.getElementById(`line-${q.lines[i].id}`)?.scrollIntoView({ block: "start" }));
+                }}
+                onDuplicate={(i) => duplicate(i)}
+                onRemove={q.lines.length > 1 ? (i) => setQ({ ...q, lines: q.lines.filter((_, j) => j !== i) }) : undefined}
               />
-            ))}
-            <button type="button" className="btn-secondary" onClick={() => setQ({ ...q, lines: [...q.lines, newLine(settings)] })}>
-              + {t("editor.addLine")}
-            </button>
+            ) : (
+              q.lines.map((l, i) => (
+                <LineCard
+                  key={l.id}
+                  l={l}
+                  i={i}
+                  t={t}
+                  settings={settings}
+                  valid={valid(l)}
+                  locked={locked}
+                  open={openIds.has(l.id)}
+                  onToggle={() => toggleOpen(l.id)}
+                  onChange={(p) => setLine(i, p)}
+                  onRemove={q.lines.length > 1 ? () => setQ({ ...q, lines: q.lines.filter((_, j) => j !== i) }) : undefined}
+                  onDuplicate={() => duplicate(i)}
+                  onNeeds={() => openNeeds(l.id)}
+                  num={num}
+                />
+              ))
+            )}
+            {!locked && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  const nl = newLine(settings);
+                  setQ({ ...q, lines: [...q.lines, nl] });
+                  setOpenIds((o) => new Set(o).add(nl.id));
+                  setLayout("cards");
+                }}
+              >
+                + {t("editor.addLine")}
+              </button>
+            )}
           </section>
 
-          <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
-          {q.clientId && persisted && <ChatButton target={{ client: q.clientId }} label={t("msg.contactClient")} />}
-          {q.clientId && persisted && <Timeline quoteId={q.id} />}
-        </fieldset>
+          <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
+            <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
+            {q.clientId && persisted && <ChatButton target={{ client: q.clientId }} label={t("msg.contactClient")} />}
+            {q.clientId && persisted && <Timeline quoteId={q.id} />}
+          </fieldset>
+        </div>
 
         {/* Colonne de synthèse : reste visible pendant la saisie sur grand écran */}
         <aside className="space-y-4 xl:sticky xl:top-20" aria-label="Total">
@@ -394,7 +464,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 }
 
 export function LineCard({
-  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false,
+  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false,
 }: {
   l: Line;
   i: number;
@@ -407,6 +477,9 @@ export function LineCard({
   onNeeds: () => void;
   num: (v: string) => number;
   clientMode?: boolean; // demande d'un client : pas de prix ni de détail des profilés
+  open?: boolean;
+  onToggle?: () => void; // fourni : la carte est dépliable, avec un en-tête résumé
+  locked?: boolean;
 }) {
   const [view, setView] = useState<"2d" | "3d">("2d");
   const cat = l.category;
@@ -419,12 +492,10 @@ export function LineCard({
   const spec = leavesSpec(l);
   const p = (k: string) => `${l.id}-${k}`;
 
-  return (
-    <fieldset className="card grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] 2xl:grid-cols-[minmax(0,1fr)_23rem]">
-      <legend className="px-2 text-sm font-semibold text-muted">
-        {t("editor.line")} {i + 1} — {cap(lineTitle(l, t))}
-      </legend>
-
+  const title = `${t("editor.line")} ${i + 1} — ${cap(lineTitle(l, t))}`;
+  const grid = "grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] 2xl:grid-cols-[minmax(0,1fr)_23rem]";
+  const body = (
+    <>
       <div className="min-w-0 space-y-5">
         <Choice name={p("cat")} legend={t("editor.category")} value={cat} options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))} onChange={(category) => onChange({ category })} />
 
@@ -449,6 +520,15 @@ export function LineCard({
               <input id={p("lc")} className="input !w-28" type="number" inputMode="numeric" min={spec.min} max={spec.max} value={l.leaves} onChange={(e) => onChange({ leaves: num(e.target.value) })} />
             </Field>
           </div>
+        )}
+        {hasDirection(l) && (
+          <Choice
+            name={p("dr")}
+            legend={t("editor.direction")}
+            value={l.direction ?? "left"}
+            options={DIRECTIONS.map((d) => ({ value: d, label: t(`dir.${d}.${l.opening === "coulissant" ? "slide" : "hinge"}`) }))}
+            onChange={(direction) => onChange({ direction })}
+          />
         )}
         {cat === "porte" && <Choice name={p("in")} legend={t("editor.infill")} value={l.infill} options={INFILLS.map((x) => ({ value: x, label: t(`infill.${x}`) }))} onChange={(infill) => onChange({ infill })} />}
 
@@ -561,6 +641,48 @@ export function LineCard({
           )}
         </div>
       </div>
-    </fieldset>
+    </>
+  );
+
+  if (!onToggle)
+    return (
+      <fieldset className={`card ${grid}`}>
+        <legend className="px-2 text-sm font-semibold text-muted">{title}</legend>
+        {body}
+      </fieldset>
+    );
+
+  const finish = FINISHES.find((f) => f.id === l.finish);
+  return (
+    <div id={`line-${l.id}`} className={`card scroll-mt-20 !p-0 ${valid ? "" : "border-danger"}`}>
+      <h3 className="m-0">
+        <button type="button" aria-expanded={open} aria-controls={`${l.id}-body`} onClick={onToggle} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left hover:bg-surface-2/60 sm:px-6">
+          <ChevronDown size={18} aria-hidden className={`shrink-0 text-muted transition-transform ${open ? "" : "-rotate-90"}`} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-semibold">{title}</span>
+            <span className="flex flex-wrap items-center gap-x-2 text-sm font-normal text-muted">
+              <span>{valid ? `${l.width} × ${l.height} mm` : t("editor.invalidSize")}</span>
+              <span aria-hidden>·</span>
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="size-3 rounded-full border border-line" style={{ background: finish?.hex }} />
+                {t(`range.${l.range}`)}
+              </span>
+            </span>
+          </span>
+          {!clientMode && (
+            <span className="shrink-0 text-right">
+              <span className="block font-semibold tabular-nums">{valid ? fmt(lineTotal(l)) : "—"} {t("common.currency")}</span>
+              <span className="text-xs font-normal text-muted">{t("editor.qty")} : {l.qty}</span>
+            </span>
+          )}
+          <span className="sr-only">{open ? t("editor.collapseLine") : t("editor.expandLine")}</span>
+        </button>
+      </h3>
+      {open && (
+        <fieldset id={`${l.id}-body`} disabled={locked} className={`m-0 border-0 border-t border-line p-4 sm:p-6 ${grid}`}>
+          {body}
+        </fieldset>
+      )}
+    </div>
   );
 }

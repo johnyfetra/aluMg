@@ -699,6 +699,22 @@ export const fr = {
   "msg.contactJoiner": "Écrire au menuisier",
   "msg.loginToWrite": "Se connecter pour écrire",
   "auth.demoClient": "Compte client de test (1 clic)",
+  "editor.direction": "Sens d'ouverture",
+  "dir.left.slide": "Coulisse vers la gauche",
+  "dir.right.slide": "Coulisse vers la droite",
+  "dir.left.hinge": "Charnières à gauche",
+  "dir.right.hinge": "Charnières à droite",
+  "editor.viewCards": "Cartes",
+  "editor.viewTable": "Tableau",
+  "editor.layout": "Affichage des ouvrages",
+  "editor.expandAll": "Tout déplier",
+  "editor.collapseAll": "Tout replier",
+  "editor.expandLine": "Déplier l'ouvrage",
+  "editor.collapseLine": "Replier l'ouvrage",
+  "editor.colDesignation": "Désignation",
+  "editor.colSize": "Dimensions",
+  "editor.colProfile": "Profilé",
+  "editor.edit": "Modifier",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;
