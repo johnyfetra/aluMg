@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "./db";
-import { type Quote, type QuoteRequest, type Role, type Settings, withDefaults } from "./model";
+import { type Market, type Quote, type QuoteRequest, type Role, type Settings, withDefaults } from "./model";
 
 // Accès aux données, toujours borné à un utilisateur (userId) : un compte ne lit ni n'écrit les données d'un autre.
 
@@ -81,6 +81,26 @@ export async function updateQuote(userId: string, id: string, q: Quote): Promise
   const db = await getDb();
   await db.update(schema.quotes).set({ status: saved.status, data: saved }).where(and(eq(schema.quotes.id, id), eq(schema.quotes.userId, userId)));
   return saved;
+}
+
+// Catalogue des fournisseurs propre à un devis (prix, longueurs, couleurs disponibles). Absent : le devis suit le catalogue général du menuisier.
+// Accessible quel que soit le statut du devis : ce sont des prix d'achat internes, jamais montrés au client.
+export async function getQuoteCatalog(userId: string, quoteId: string): Promise<Market | null> {
+  const db = await getDb();
+  const [row] = await db.select({ data: schema.quoteCatalogs.data }).from(schema.quoteCatalogs).where(and(eq(schema.quoteCatalogs.quoteId, quoteId), eq(schema.quoteCatalogs.userId, userId)));
+  return row ? withDefaults({ market: row.data }).market : null;
+}
+
+export async function saveQuoteCatalog(userId: string, quoteId: string, market: Market): Promise<boolean> {
+  if (!(await getQuote(userId, quoteId))) return false;
+  const db = await getDb();
+  await db.insert(schema.quoteCatalogs).values({ quoteId, userId, data: market }).onConflictDoUpdate({ target: schema.quoteCatalogs.quoteId, set: { data: market, updatedAt: new Date() } });
+  return true;
+}
+
+export async function deleteQuoteCatalog(userId: string, quoteId: string) {
+  const db = await getDb();
+  await db.delete(schema.quoteCatalogs).where(and(eq(schema.quoteCatalogs.quoteId, quoteId), eq(schema.quoteCatalogs.userId, userId)));
 }
 
 // « locked » : un devis déjà entre les mains d'un client (envoyé, négocié, accepté, terminé) ne se supprime pas : il a un historique et peut avoir une évaluation.

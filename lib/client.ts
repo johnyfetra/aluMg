@@ -1,7 +1,7 @@
 "use client";
 import useSWR from "swr";
 import type { SessionUser } from "./auth";
-import { type Quote, type Settings } from "./model";
+import { type Market, type Quote, type Settings } from "./model";
 import type { DirectoryEntry, PortfolioInput, PortfolioItem, Profile, ProfileInput, PublicMenuisier } from "./profiles";
 import type { ClientQuote, EventView } from "./workflow";
 import type { ConversationView, MessageView } from "./chat";
@@ -34,6 +34,20 @@ export function useSettings() {
     return saved;
   };
   return { settings: data, loading: isLoading, save };
+}
+
+// Catalogue des fournisseurs propre à un devis ({ market: null } : le devis suit le catalogue général).
+export function useQuoteCatalog(id: string | undefined) {
+  const { data, mutate, isLoading } = useSWR<{ market: Market | null }>(id ? `/api/quotes/${id}/catalog` : null, fetcher, { revalidateOnFocus: false });
+  const save = async (market: Market) => {
+    const r = await request<{ market: Market | null }>("PUT", `/api/quotes/${id}/catalog`, market);
+    await mutate(r, false);
+  };
+  const reset = async () => {
+    await request("DELETE", `/api/quotes/${id}/catalog`);
+    await mutate({ market: null }, false);
+  };
+  return { market: data?.market ?? null, loading: isLoading, save, reset };
 }
 
 export function useQuotes() {

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { type Quote, lineSchema, quoteSchema, withDefaults } from "./model";
+import { DEFAULT_MARKET, type Quote, lineSchema, quoteSchema, withDefaults } from "./model";
 
 process.env.PGLITE_DIR = "memory://";
 const repo = await import("./repo");
@@ -75,5 +75,31 @@ describe("réglages", () => {
     const s = await repo.getSettings(a);
     expect(s.company).toBe("Alu Mada");
     expect((await repo.getSettings(b)).company).toBe("");
+  });
+});
+
+describe("catalogue propre à un devis", () => {
+  const id = Q(900);
+  it("n'existe que pour le propriétaire du devis, survit au statut, et se supprime", async () => {
+    await repo.createQuote(a, quote(id));
+    expect(await repo.getQuoteCatalog(a, id)).toBeNull(); // par défaut : catalogue général
+    const own = { ...DEFAULT_MARKET, rangeMarkup: 55, off: { finishes: ["noir" as const] } };
+    expect(await repo.saveQuoteCatalog(a, id, own)).toBe(true);
+    expect((await repo.getQuoteCatalog(a, id))?.rangeMarkup).toBe(55);
+    expect((await repo.getQuoteCatalog(a, id))?.off?.finishes).toEqual(["noir"]);
+    // un autre menuisier ne le voit pas et ne peut pas en créer sur ce devis
+    expect(await repo.getQuoteCatalog(b, id)).toBeNull();
+    expect(await repo.saveQuoteCatalog(b, id, own)).toBe(false);
+    // le catalogue général n'est pas touché
+    expect((await repo.getSettings(a)).market.rangeMarkup).toBe(DEFAULT_MARKET.rangeMarkup);
+    await repo.deleteQuoteCatalog(a, id);
+    expect(await repo.getQuoteCatalog(a, id)).toBeNull();
+  });
+  it("disparaît avec le devis", async () => {
+    const id2 = Q(901);
+    await repo.createQuote(a, quote(id2));
+    await repo.saveQuoteCatalog(a, id2, DEFAULT_MARKET);
+    await repo.deleteQuote(a, id2);
+    expect(await repo.getQuoteCatalog(a, id2)).toBeNull();
   });
 });

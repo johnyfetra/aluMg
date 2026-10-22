@@ -295,7 +295,7 @@ export const DEFAULT_MARKET: Market = {
 };
 
 const offerSchema = z.object({ length: z.number().int().min(500).max(12000), price: z.number().min(0).max(1e8), off: z.boolean().optional() });
-const marketSchema = z.object({
+export const marketSchema = z.object({
   offers: z.record(z.string(), z.array(offerSchema).max(8)),
   rangeMarkup: z.number().min(-90).max(500),
   finishMarkup: z.object({ anodise: z.number().min(-90).max(500), fauxbois: z.number().min(-90).max(500) }),
