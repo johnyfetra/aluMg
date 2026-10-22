@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type Drawable, drawingSvg } from "./drawing";
-import { CATEGORIES, EXTRAS, FINISHES, GLASSES, GUARDS, OPENINGS, PATTERNS, RANGES, SHUTTERS, THICKNESSES, CONTROLS, INFILLS } from "./model";
+import { leafMotion, CATEGORIES, EXTRAS, FINISHES, GLASSES, GUARDS, OPENINGS, PATTERNS, RANGES, SHUTTERS, THICKNESSES, CONTROLS, INFILLS } from "./model";
 
 // Le PDF convertit le SVG en image : un attribut en double ou une balise mal formée fait échouer toute la génération.
 function problems(svg: string): string[] {
@@ -52,5 +52,31 @@ describe("drawingSvg", () => {
     const b = drawingSvg({ ...base, pattern: "granite" }, "bbb").svg;
     expect(a).toContain('id="ptaaa"');
     expect(b).toContain('id="ptbbb"');
+  });
+});
+
+describe("sens d'ouverture", () => {
+  const slide = (leaves: number, direction?: "left" | "right") => leafMotion({ opening: "coulissant", leaves, direction }).map((m) => m.slide);
+
+  it("coulissant : les vantaux mobiles glissent du côté choisi (gauche par défaut)", () => {
+    expect(slide(2)).toEqual([0, -1]);
+    expect(slide(2, "right")).toEqual([1, 0]);
+    expect(slide(3, "right")).toEqual([1, 0, 0]);
+    expect(slide(4, "right")).toEqual([1, 0, 1, 0]);
+  });
+
+  it("battant à un vantail : charnières du côté choisi ; à plusieurs vantaux : aux extrémités", () => {
+    const hinge = (leaves: number, direction?: "left" | "right") => leafMotion({ opening: "ouvrant", leaves, direction }).map((m) => m.hingeLeft);
+    expect(hinge(1)).toEqual([true]);
+    expect(hinge(1, "right")).toEqual([false]);
+    expect(hinge(2, "right")).toEqual([true, false]);
+  });
+
+  it("le schéma dessine la flèche du côté choisi", () => {
+    const base = { category: "fenetre", opening: "coulissant", leaves: 2, shutter: "roulant", control: "manuel", guard: "barreaudage", infill: "vitree", finish: "blanc", glassType: "clair", thickness: "5", pattern: "none", range: "asiatique", extras: [], width: 1200, height: 1000 } as const;
+    const arrow = (d: "left" | "right") => drawingSvg({ ...base, direction: d }, "x").svg.match(/stroke-width="1.4"/g)?.length;
+    expect(arrow("left")).toBe(1);
+    expect(arrow("right")).toBe(1);
+    expect(drawingSvg({ ...base, direction: "left" }, "x").svg).not.toBe(drawingSvg({ ...base, direction: "right" }, "x").svg);
   });
 });

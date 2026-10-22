@@ -49,6 +49,27 @@ const PANELS_SPEC: Spec = { presets: [2, 3, 4, 5], min: 1, max: 10 };
 export const leavesSpec = (l: { category: Category; opening: Opening }): Spec | null =>
   l.category === "cloison" ? PANELS_SPEC : l.category === "fenetre" || l.category === "porte" ? LEAVES_SPEC[l.opening] : null;
 
+// Sens d'ouverture : coulissant = côté vers lequel glissent les vantaux mobiles ; battant à 1 vantail = côté des charnières.
+export const DIRECTIONS = ["left", "right"] as const;
+export type Direction = (typeof DIRECTIONS)[number];
+
+// Comportement de chaque vantail. Source unique du sens : le schéma (flèches, charnières) et la vue 3D (animation) la lisent.
+// slide : -1 glisse vers la gauche, 1 vers la droite, 0 = fixe (ou battant). hingeLeft : charnières à gauche (battants).
+export function leafMotion(l: { opening: Opening; leaves: number; direction?: Direction }) {
+  const dir = l.direction ?? "left";
+  return Array.from({ length: l.leaves }, (_, i) => {
+    if (l.opening === "coulissant") {
+      // un vantail mobile passe devant son voisin ; à gauche : les rangs impairs, à droite : les rangs pairs qui ont un voisin à leur droite
+      const slide = dir === "left" ? (i % 2 === 1 ? -1 : 0) : i % 2 === 0 && i + 1 < l.leaves ? 1 : 0;
+      return { slide, hingeLeft: true };
+    }
+    return { slide: 0, hingeLeft: l.leaves === 1 ? dir === "left" : i < l.leaves / 2 };
+  });
+}
+// La liste de choix du sens n'a de sens que pour un coulissant ou un battant à un seul vantail.
+export const hasDirection = (l: { category: Category; opening: Opening; leaves: number }) =>
+  (l.category === "fenetre" || l.category === "porte") && (l.opening === "coulissant" || ((l.opening === "ouvrant" || l.opening === "oscillo") && l.leaves === 1));
+
 export const FINISHES = [
   { id: "blanc", group: "laque", hex: "#f5f5f2", label: "finish.blanc" },
   { id: "noir", group: "laque", hex: "#1c1c1c", label: "finish.noir" },
@@ -94,6 +115,7 @@ export const lineSchema = z.object({
   opening: z.enum(OPENINGS),
   leaves: z.number().int().min(1).max(8),
   guard: z.enum(GUARDS).default("barreaudage"),
+  direction: z.enum(DIRECTIONS).optional(),
   shutter: z.enum(SHUTTERS),
   control: z.enum(CONTROLS),
   range: z.enum(RANGES),

@@ -1,8 +1,8 @@
-import { FINISHES, type Line } from "./model";
+import { FINISHES, type Line, leafMotion } from "./model";
 
 export type Drawable = Pick<
   Line,
-  "category" | "opening" | "leaves" | "shutter" | "control" | "guard" | "infill" | "finish" | "glassType" | "thickness" | "pattern" | "range" | "extras" | "width" | "height"
+  "category" | "opening" | "leaves" | "direction" | "shutter" | "control" | "guard" | "infill" | "finish" | "glassType" | "thickness" | "pattern" | "range" | "extras" | "width" | "height"
 >;
 
 const GLASS_FILL: Record<string, string> = {
@@ -150,17 +150,21 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
     } else if (l.opening === "coulissant") {
       const ov = t * 2;
       const vw = (iw + (n - 1) * ov) / n;
-      for (let i = 0; i < n; i++) {
-        const x = ix + i * (vw - ov);
-        body += leaf(x, iy + (i % 2 ? 0 : 1), vw, ih - 1);
-        if (vw > 30) body += arrow(x + vw / 2, iy + ih / 2, i % 2 ? -1 : 1);
-      }
+      const motion = leafMotion(l);
+      // les vantaux fixes d'abord, les mobiles par-dessus ; la flèche indique le sens de glissement
+      for (const mobile of [false, true])
+        for (let i = 0; i < n; i++) {
+          if ((motion[i].slide !== 0) !== mobile) continue;
+          const x = ix + i * (vw - ov);
+          body += leaf(x, iy + (mobile ? 0 : 1), vw, ih - 1);
+          if (mobile && vw > 30) body += arrow(x + vw / 2, iy + ih / 2, motion[i].slide as 1 | -1);
+        }
     } else {
       const vw = iw / n;
       for (let i = 0; i < n; i++) {
         const x = ix + i * vw;
         body += leaf(x, iy, vw, ih);
-        const hingeLeft = n === 1 || i < n / 2;
+        const hingeLeft = leafMotion(l)[i].hingeLeft;
         const [a, b] = hingeLeft ? [x + vw - t, x + t] : [x + t, x + vw - t];
         if (l.opening === "soufflet") body += dashed(`${f(x + t)},${f(iy + ih - t)} ${f(x + vw / 2)},${f(iy + t)} ${f(x + vw - t)},${f(iy + ih - t)}`);
         else {

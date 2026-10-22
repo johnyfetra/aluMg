@@ -6,9 +6,9 @@ import { createContext, type ReactNode, useContext, useEffect, useLayoutEffect, 
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { useI18n } from "@/lib/i18n";
-import { FINISHES, type Line } from "@/lib/model";
+import { FINISHES, type Line, leafMotion } from "@/lib/model";
 
-export type Viewable = Pick<Line, "category" | "opening" | "leaves" | "shutter" | "control" | "guard" | "infill" | "finish" | "glassType" | "pattern" | "range" | "extras" | "width" | "height">;
+export type Viewable = Pick<Line, "category" | "opening" | "leaves" | "direction" | "shutter" | "control" | "guard" | "infill" | "finish" | "glassType" | "pattern" | "range" | "extras" | "width" | "height">;
 
 // ---------- Matériaux ----------
 const GLASS: Record<string, { color: string; opacity: number; rough: number; metal: number }> = {
@@ -139,13 +139,13 @@ function Dormant({ W, H, t, depth }: { W: number; H: number; t: number; depth: n
 }
 
 // ---------- Fenêtres et portes coulissantes ----------
-function SlideLeaf({ closedX, openX, z, w, h, v, target, onToggle }: { closedX: number; openX: number; z: number; w: number; h: number; v: Viewable; target: number; onToggle: () => void }) {
+function SlideLeaf({ closedX, openX, z, w, h, v, target, side, onToggle }: { closedX: number; openX: number; z: number; side: -1 | 1; w: number; h: number; v: Viewable; target: number; onToggle: () => void }) {
   const g = useRef<THREE.Group>(null);
   useSpring(target, (x) => g.current && (g.current.position.x = THREE.MathUtils.lerp(closedX, openX, x)), v.category === "porte" ? 5.5 : 7);
   return (
     <group ref={g} position={[closedX, 0, z]} onClick={(e) => clickToggle(e, onToggle)} onPointerOver={pointer(true)} onPointerOut={pointer(false)}>
       <LeafBody w={w} h={h} v={v} infill={v.infill} />
-      <Handle position={[-w / 2 + 0.05, 0, z > 0 ? 0.02 : -0.02]} />
+      <Handle position={[side * (w / 2 - 0.05), 0, z > 0 ? 0.02 : -0.02]} />
     </group>
   );
 }
@@ -157,15 +157,16 @@ function Sliding({ v, W, H, t, amounts, toggle }: { v: Viewable; W: number; H: n
   const ov = 0.04;
   const lv = (w + (n - 1) * ov) / n;
   const x = (i: number) => -w / 2 + lv / 2 + i * (lv - ov);
+  const motion = leafMotion(v);
   return (
     <group position={[0, H / 2, 0]}>
-      {Array.from({ length: n }, (_, i) =>
-        i % 2 === 0 ? (
+      {motion.map(({ slide }, i) =>
+        slide === 0 ? (
           <group key={i} position={[x(i), 0, -0.016]}>
             <LeafBody w={lv} h={h} v={v} infill={v.infill} />
           </group>
         ) : (
-          <SlideLeaf key={i} closedX={x(i)} openX={x(i - 1)} z={0.016} w={lv} h={h} v={v} target={amounts[i] ?? 0} onToggle={() => toggle(i)} />
+          <SlideLeaf key={i} closedX={x(i)} openX={x(i + slide)} side={slide === 1 ? 1 : -1} z={0.016} w={lv} h={h} v={v} target={amounts[i] ?? 0} onToggle={() => toggle(i)} />
         ),
       )}
     </group>
@@ -206,10 +207,11 @@ function Casement({ v, W, H, t, amounts, mode, toggle }: { v: Viewable; W: numbe
   const w = W - 2 * t;
   const h = H - 2 * t;
   const lv = w / n;
+  const motion = leafMotion(v);
   return (
     <group position={[0, H / 2, 0]}>
       {Array.from({ length: n }, (_, i) => {
-        const hingeLeft = n === 1 || i < n / 2;
+        const { hingeLeft } = motion[i];
         const cx = -w / 2 + i * lv + lv / 2;
         return <CasementLeaf key={i} hingeLeft={hingeLeft} px={cx} lv={lv - 0.004} h={h - 0.004} v={v} mode={mode} amount={amounts[i] ?? 0} onToggle={() => toggle(i)} />;
       })}
@@ -500,7 +502,7 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
   const controls = useRef<{ reset: () => void; saveState: () => void } | null>(null);
 
   // la configuration change (autre nombre de vantaux…) : on repart fermé
-  const sig = `${v.category}|${v.opening}|${v.leaves}|${v.shutter}`;
+  const sig = `${v.category}|${v.opening}|${v.leaves}|${v.shutter}|${v.direction}`;
   const [lastSig, setLastSig] = useState(sig);
   if (sig !== lastSig) {
     setLastSig(sig);
@@ -508,7 +510,7 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
   }
 
   const movable = isMovable(v);
-  const mobileIdx = v.category === "fenetre" || v.category === "porte" ? (v.opening === "coulissant" ? [...Array(n).keys()].filter((i) => i % 2 === 1) : [...Array(n).keys()]) : [0];
+  const mobileIdx = v.category === "fenetre" || v.category === "porte" ? (v.opening === "coulissant" ? [...Array(n).keys()].filter((i) => leafMotion(v)[i].slide !== 0) : [...Array(n).keys()]) : [0];
   const mean = mobileIdx.length ? mobileIdx.reduce((s, i) => s + (amounts[i] ?? 0), 0) / mobileIdx.length : 0;
   const setAll = (x: number) => setAmounts((a) => a.map((_, i) => (mobileIdx.includes(i) ? x : 0)));
   const toggle = (i: number) => setAmounts((a) => a.map((x, j) => (j === i ? (x > 0.5 ? 0 : 1) : x)));
