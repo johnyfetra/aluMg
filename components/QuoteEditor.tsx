@@ -526,7 +526,7 @@ export function LineCard({
             name={p("dr")}
             legend={t("editor.direction")}
             value={l.direction ?? "left"}
-            options={DIRECTIONS.map((d) => ({ value: d, label: t(`dir.${d}.${l.opening === "coulissant" ? "slide" : "hinge"}`) }))}
+            options={DIRECTIONS.filter((d) => d !== "both" || l.opening === "coulissant").map((d) => ({ value: d, label: t(d === "both" ? "dir.both.slide" : `dir.${d}.${l.opening === "coulissant" ? "slide" : "hinge"}`) }))}
             onChange={(direction) => onChange({ direction })}
           />
         )}

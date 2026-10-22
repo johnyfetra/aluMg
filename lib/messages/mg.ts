@@ -703,6 +703,7 @@ export const mg: Messages = {
   "msg.loginToWrite": "Hiditra hanoratra",
   "auth.demoClient": "Kaonty mpanjifa fanandramana (1 tsindry)",
   "editor.direction": "Lalana fanokafana",
+  "dir.both.slide": "Roa tonta",
   "dir.left.slide": "Mihazo mankavia",
   "dir.right.slide": "Mihazo mankavanana",
   "dir.left.hinge": "Rohy eo ankavia",

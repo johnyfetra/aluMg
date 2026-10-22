@@ -701,6 +701,7 @@ export const en: Messages = {
   "msg.loginToWrite": "Sign in to message",
   "auth.demoClient": "Test client account (1 click)",
   "editor.direction": "Opening direction",
+  "dir.both.slide": "Both sides",
   "dir.left.slide": "Slides to the left",
   "dir.right.slide": "Slides to the right",
   "dir.left.hinge": "Hinges on the left",

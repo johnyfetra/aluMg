@@ -700,6 +700,7 @@ export const fr = {
   "msg.loginToWrite": "Se connecter pour écrire",
   "auth.demoClient": "Compte client de test (1 clic)",
   "editor.direction": "Sens d'ouverture",
+  "dir.both.slide": "Les deux côtés",
   "dir.left.slide": "Coulisse vers la gauche",
   "dir.right.slide": "Coulisse vers la droite",
   "dir.left.hinge": "Charnières à gauche",

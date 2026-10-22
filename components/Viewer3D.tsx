@@ -160,13 +160,13 @@ function Sliding({ v, W, H, t, amounts, toggle }: { v: Viewable; W: number; H: n
   const motion = leafMotion(v);
   return (
     <group position={[0, H / 2, 0]}>
-      {motion.map(({ slide }, i) =>
+      {motion.map(({ slide, front }, i) =>
         slide === 0 ? (
           <group key={i} position={[x(i), 0, -0.016]}>
             <LeafBody w={lv} h={h} v={v} infill={v.infill} />
           </group>
         ) : (
-          <SlideLeaf key={i} closedX={x(i)} openX={x(i + slide)} side={slide === 1 ? 1 : -1} z={0.016} w={lv} h={h} v={v} target={amounts[i] ?? 0} onToggle={() => toggle(i)} />
+          <SlideLeaf key={i} closedX={x(i)} openX={x(i + slide)} side={slide === 1 ? 1 : -1} z={front ? 0.016 : -0.016} w={lv} h={h} v={v} target={amounts[i] ?? 0} onToggle={() => toggle(i)} />
         ),
       )}
     </group>

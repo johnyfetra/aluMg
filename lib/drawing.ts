@@ -152,12 +152,12 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
       const vw = (iw + (n - 1) * ov) / n;
       const motion = leafMotion(l);
       // les vantaux fixes d'abord, les mobiles par-dessus ; la flèche indique le sens de glissement
-      for (const mobile of [false, true])
+      for (const front of [false, true])
         for (let i = 0; i < n; i++) {
-          if ((motion[i].slide !== 0) !== mobile) continue;
+          if (motion[i].front !== front) continue;
           const x = ix + i * (vw - ov);
-          body += leaf(x, iy + (mobile ? 0 : 1), vw, ih - 1);
-          if (mobile && vw > 30) body += arrow(x + vw / 2, iy + ih / 2, motion[i].slide as 1 | -1);
+          body += leaf(x, iy + (front ? 0 : 1), vw, ih - 1);
+          if (motion[i].slide !== 0 && vw > 30) body += arrow(x + vw / 2, iy + ih / 2, motion[i].slide as 1 | -1);
         }
     } else {
       const vw = iw / n;
