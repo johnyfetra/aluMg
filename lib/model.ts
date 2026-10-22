@@ -240,12 +240,34 @@ export const PROFILE_KEYS: readonly Label[] = [
   "pf.dormant", "pf.sash", "pf.battement", "pf.mid", "pf.louvre", "pf.box", "pf.guide",
   "pf.slat", "pf.shaft", "pf.slatR", "pf.post", "pf.rail", "pf.bar", "pf.mullion",
 ];
+// Accessoires (quincaillerie) : prix à l'unité ou au mètre ; les quantités par ouvrage sont calculées (voir accessoriesFor).
+export const ACCESSORIES = [
+  { key: "acc.handle", unit: "piece", def: 12000 },
+  { key: "acc.doorHandle", unit: "piece", def: 35000 },
+  { key: "acc.knob", unit: "piece", def: 15000 },
+  { key: "acc.lock", unit: "piece", def: 45000 },
+  { key: "acc.hinge", unit: "piece", def: 6000 },
+  { key: "acc.roller", unit: "piece", def: 5000 },
+  { key: "acc.sliderLock", unit: "piece", def: 10000 },
+  { key: "acc.seal", unit: "ml", def: 1500 },
+  { key: "acc.net", unit: "piece", def: 30000 },
+  { key: "acc.plate", unit: "piece", def: 8000 },
+  { key: "acc.motor", unit: "piece", def: 180000 },
+  { key: "acc.crank", unit: "piece", def: 25000 },
+  { key: "acc.silicone", unit: "piece", def: 7000 },
+] as const satisfies readonly { key: Label; unit: "piece" | "ml"; def: number }[];
+export type AccessoryKey = (typeof ACCESSORIES)[number]["key"];
+// Verre : prix au m² pour une épaisseur simple de 4 à 6 mm ; le double vitrage et les fortes épaisseurs sont majorés dans le calcul.
+export const GLASS_PRICE_DEFAULTS: Record<string, number> = { clair: 70000, "teinte-bronze": 95000, "teinte-gris": 95000, "teinte-vert": 95000, reflechissant: 120000, feuillete: 150000, trempe: 140000, depoli: 90000 };
+
 export type Offer = { length: number; price: number; off?: boolean }; // une barre à l'achat : longueur (mm), prix (Ar) ; off : plus disponible chez le fournisseur
 export type Market = {
   offers: Record<string, Offer[]>; // par profilé, pour la gamme asiatique et un profilé blanc
   rangeMarkup: number; // % ajouté au prix de la barre en gamme européenne
   finishMarkup: { anodise: number; fauxbois: number }; // % ajouté pour un profilé anodisé ou faux bois (par défaut du groupe)
   finishPct?: Partial<Record<FinishId, number>>; // majoration propre à une couleur : remplace celle de son groupe
+  accessories?: Record<string, number>; // prix par accessoire (Ar, à la pièce ou au mètre)
+  glass?: Record<string, number>; // prix du verre au m², par type
   off?: { ranges?: Line["range"][]; finishes?: FinishId[]; profiles?: string[] }; // ce que les fournisseurs n'ont pas (tout est disponible par défaut)
 };
 
@@ -268,6 +290,8 @@ export const DEFAULT_MARKET: Market = {
   offers: Object.fromEntries(PROFILE_KEYS.map((k) => [k, [{ length: 6000, price: BAR_PRICE[k] }, { length: 4000, price: Math.round((BAR_PRICE[k] * 0.72) / 1000) * 1000 }]])),
   rangeMarkup: 40,
   finishMarkup: { anodise: 12, fauxbois: 30 },
+  accessories: Object.fromEntries(ACCESSORIES.map((a) => [a.key, a.def])),
+  glass: GLASS_PRICE_DEFAULTS,
 };
 
 const offerSchema = z.object({ length: z.number().int().min(500).max(12000), price: z.number().min(0).max(1e8), off: z.boolean().optional() });
@@ -275,6 +299,8 @@ const marketSchema = z.object({
   offers: z.record(z.string(), z.array(offerSchema).max(8)),
   rangeMarkup: z.number().min(-90).max(500),
   finishMarkup: z.object({ anodise: z.number().min(-90).max(500), fauxbois: z.number().min(-90).max(500) }),
+  accessories: z.record(z.string(), z.number().min(0).max(1e8)).optional(),
+  glass: z.record(z.string(), z.number().min(0).max(1e8)).optional(),
   finishPct: z.partialRecord(z.enum(FINISH_IDS), z.number().min(-90).max(500)).optional(),
   off: z.object({ ranges: z.array(z.enum(RANGES)).max(RANGES.length).optional(), finishes: z.array(z.enum(FINISH_IDS)).max(FINISHES.length).optional(), profiles: z.array(z.string().max(40)).max(40).optional() }).optional(),
 });
@@ -354,6 +380,8 @@ export const withDefaults = (s: Partial<Settings> | null | undefined): Settings 
     rangeMarkup: s?.market?.rangeMarkup ?? DEFAULT_MARKET.rangeMarkup,
     finishMarkup: { ...DEFAULT_MARKET.finishMarkup, ...s?.market?.finishMarkup },
     finishPct: s?.market?.finishPct,
+    accessories: { ...DEFAULT_MARKET.accessories, ...s?.market?.accessories },
+    glass: { ...DEFAULT_MARKET.glass, ...s?.market?.glass },
     off: s?.market?.off,
   },
 });

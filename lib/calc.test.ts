@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cutList, cuttingPlan, normalize, planTotals, surchargeKeys, unitPrice } from "./calc";
+import { accessoriesFor, cutList, cuttingPlan, normalize, planTotals, surchargeKeys, unitPrice } from "./calc";
 import { drawingSvg } from "./drawing";
 import { CATEGORIES, DEFAULT_SETTINGS, GUARDS, INFILLS, type Line, OPENINGS_BY_CATEGORY, SHUTTERS, leafMarks, leafMotion, leavesSpec, lineSchema } from "./model";
 
@@ -197,5 +197,20 @@ describe("toutes les possibilités par catégorie", () => {
       expect(new Set(marks).size, JSON.stringify(c)).toBe(l.leaves);
       leafMotion(l).forEach((m, i) => expect(marks[i].startsWith(m.fixed ? "F" : "V")).toBe(true));
     }
+  });
+});
+
+describe("accessoires", () => {
+  const acc = (l: Partial<Line>) => Object.fromEntries(accessoriesFor({ ...base, ...l }).map((a) => [a.key, a.qty]));
+  it("coulissant 2 vantaux : 1 vantail mobile = 2 galets et 1 fermeture", () => {
+    expect(acc({})).toMatchObject({ "acc.roller": 2, "acc.sliderLock": 1 });
+  });
+  it("porte ouvrante : charnières, serrure, poignée et pommeau par vantail", () => {
+    expect(acc({ category: "porte", opening: "ouvrant", leaves: 1, height: 2100, width: 900 })).toMatchObject({ "acc.hinge": 3, "acc.lock": 1, "acc.doorHandle": 1, "acc.knob": 1 });
+  });
+  it("volet : moteur si motorisé, manivelle sinon ; garde-corps : platines", () => {
+    expect(acc({ category: "volet", control: "motorise" })).toEqual({ "acc.motor": 1 });
+    expect(acc({ category: "volet", control: "manuel" })).toEqual({ "acc.crank": 1 });
+    expect(acc({ category: "garde-corps", width: 3000 })["acc.plate"]).toBe(8);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { type Piece, allPieces } from "./calc";
 import { DEFAULT_MARKET, type Line, type Market } from "./model";
-import { initSim, planGroup, priced, procure, simulate } from "./procure";
+import { extrasCost, initSim, planGroup, priced, procure, simulate } from "./procure";
 
 const piece = (len: number, qty: number, line = 1, over: Partial<Piece> = {}): Piece => ({ profile: "pf.sash", element: "el.sashH", len, qty, line, range: "asiatique", finish: "blanc", ...over });
 const market = (offers: { length: number; price: number }[], extra: Partial<Market> = {}): Market => ({ ...DEFAULT_MARKET, offers: { ...DEFAULT_MARKET.offers, "pf.sash": offers }, ...extra });
@@ -103,5 +103,28 @@ describe("simulate (hypothèses du menuisier)", () => {
     expect(simulate([line], { ...initSim(DEFAULT_MARKET), finish: "chene-dore" }, 5).totalCost).toBeGreaterThan(base.totalCost);
     const short = { ...DEFAULT_MARKET, offers: Object.fromEntries(Object.entries(DEFAULT_MARKET.offers).map(([k, o]) => [k, [{ length: 3000, price: o[0].price / 2 }]])) };
     expect(simulate([line], { ...initSim(short) }, 5).bars).toBeGreaterThan(base.bars);
+  });
+});
+
+describe("accessoires et verre dans le budget", () => {
+  const line: Line = {
+    id: "00000000-0000-4000-8000-000000000002", category: "fenetre", opening: "coulissant", leaves: 2, shutter: "roulant", control: "manuel", guard: "barreaudage",
+    range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1200, height: 1000, qty: 2, unit: 0,
+  };
+  it("compte les accessoires × quantité et chiffre le verre au m²", () => {
+    const e = extrasCost([line], DEFAULT_MARKET);
+    expect(e.acc.find((a) => a.key === "acc.roller")?.qty).toBe(4);
+    expect(e.accCost).toBeGreaterThan(0);
+    expect(e.glassArea).toBeGreaterThan(1);
+    expect(e.glassCost).toBeCloseTo(e.glassArea * 70000, -3);
+  });
+  it("le double vitrage coûte le double ; une variation de prix touche aussi les accessoires", () => {
+    const single = extrasCost([line], DEFAULT_MARKET).glassCost;
+    expect(extrasCost([{ ...line, thickness: "4/12/4" }], DEFAULT_MARKET).glassCost).toBeCloseTo(single * 2, -3);
+    expect(extrasCost([line], DEFAULT_MARKET, 10).accCost).toBeGreaterThan(extrasCost([line], DEFAULT_MARKET).accCost);
+  });
+  it("le coût total additionne profilés, accessoires et verre", () => {
+    const p = simulate([line], initSim(DEFAULT_MARKET), 5);
+    expect(p.allCost).toBe(p.totalCost + p.accCost + p.glassCost);
   });
 });

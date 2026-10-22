@@ -1,5 +1,5 @@
-import { type ElementUse, type Piece, KERF, allPieces } from "./calc";
-import { type FinishId, type Line, type Market, type Offer, finishMarkup, finishOn, profileOn, rangeOn } from "./model";
+import { type ElementUse, type Piece, KERF, accessoriesFor, allPieces, glassOf } from "./calc";
+import { ACCESSORIES, type AccessoryKey, type FinishId, GLASS_PRICE_DEFAULTS, type Line, type Market, type Offer, finishMarkup, finishOn, profileOn, rangeOn } from "./model";
 import type { Messages } from "./messages/fr";
 
 type Label = keyof Messages;
@@ -148,9 +148,45 @@ export type Sim = { market: Market; range: "" | Line["range"]; finish: "" | Fini
 export const initSim = (market: Market): Sim => ({ market, range: "", finish: "", pct: 0 });
 
 // Plan d'achat des profilés du devis sous les hypothèses : gamme et couleur imposées à tous les ouvrages, prix du marché majorés de pct %.
+// Accessoires et verre d'un devis : quantités calculées par ouvrage (× quantité du devis), prix du catalogue (× variation éventuelle).
+export type Extras = {
+  acc: { key: AccessoryKey; qty: number; price: number; cost: number }[];
+  accCost: number;
+  glass: { id: string; area: number; price: number; cost: number }[];
+  glassArea: number;
+  glassCost: number;
+};
+export function extrasCost(lines: Line[], market: Market, pct = 0): Extras {
+  const k = 1 + pct / 100;
+  const qty = new Map<AccessoryKey, number>();
+  const area = new Map<string, { area: number; weighted: number }>();
+  for (const l of lines) {
+    for (const a of accessoriesFor(l)) qty.set(a.key, (qty.get(a.key) ?? 0) + a.qty * l.qty);
+    const g = glassOf(l);
+    if (g.area > 0) {
+      const cur = area.get(g.id) ?? { area: 0, weighted: 0 };
+      area.set(g.id, { area: cur.area + g.area * l.qty, weighted: cur.weighted + g.weighted * l.qty });
+    }
+  }
+  const acc = ACCESSORIES.filter((a) => qty.has(a.key)).map((a) => {
+    const price = Math.round((market.accessories?.[a.key] ?? a.def) * k);
+    return { key: a.key, qty: Math.round(qty.get(a.key)! * 10) / 10, price, cost: Math.round(qty.get(a.key)! * price) };
+  });
+  const glass = [...area].map(([id, v]) => {
+    const price = Math.round((market.glass?.[id] ?? GLASS_PRICE_DEFAULTS[id] ?? 0) * k);
+    return { id, area: Math.round(v.area * 100) / 100, price, cost: Math.round(v.weighted * price) };
+  });
+  return { acc, accCost: acc.reduce((s, a) => s + a.cost, 0), glass, glassArea: glass.reduce((s, g) => s + g.area, 0), glassCost: glass.reduce((s, g) => s + g.cost, 0) };
+}
+
+export type Plan = Procurement & Extras & { allCost: number }; // allCost = profilés + accessoires + verre (hors main-d'œuvre)
+
 export function simulate(lines: Line[], sim: Sim, kerf: number, finish: "" | FinishId = sim.finish) {
   const k = 1 + sim.pct / 100;
   const offers = Object.fromEntries(Object.entries(sim.market.offers).map(([p, os]) => [p, os.map((o) => ({ ...o, price: Math.round(o.price * k) }))]));
   const set = lines.map((l) => ({ ...l, range: sim.range || l.range, finish: finish || l.finish }));
-  return procure(allPieces(set), { ...sim.market, offers }, kerf);
+  const market = { ...sim.market, offers };
+  const p = procure(allPieces(set), market, kerf);
+  const e = extrasCost(lines, sim.market, sim.pct);
+  return { ...p, ...e, allCost: p.totalCost + e.accCost + e.glassCost };
 }

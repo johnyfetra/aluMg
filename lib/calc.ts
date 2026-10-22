@@ -1,5 +1,5 @@
 import type { Messages } from "./messages/fr";
-import { type Line, FINISHES, PATTERN_GLASSES, type TariffKey, type Tariffs, OPENINGS_BY_CATEGORY, hasLeafConfig, leavesSpec } from "./model";
+import { type AccessoryKey, type Line, FINISHES, PATTERN_GLASSES, type TariffKey, type Tariffs, OPENINGS_BY_CATEGORY, hasLeafConfig, leafMotion, leavesSpec } from "./model";
 
 type Label = keyof Messages;
 
@@ -199,3 +199,51 @@ export const meters = (mm: number) => `${(mm / 1000).toFixed(2).replace(".", ","
 // Toutes les coupes d'un devis, avec le numéro d'ouvrage et la quantité multipliée par celle de la ligne.
 export const allPieces = (lines: Line[]): Piece[] =>
   lines.flatMap((l, i) => cutList(l).pieces.map((p) => ({ ...p, qty: p.qty * l.qty, line: i + 1, range: l.range, finish: l.finish })));
+
+// Accessoires nécessaires à UN ouvrage (la quantité du devis est appliquée par l'appelant) : poignées, serrures, charnières, galets, joints, moteur…
+// shortcut: règles génériques (nombre de charnières, longueur de joint), à ajuster avec les gens du métier.
+export function accessoriesFor(l: Pick<Line, "category" | "opening" | "leaves" | "direction" | "leafCfg" | "control" | "guard" | "extras" | "width" | "height">): { key: AccessoryKey; qty: number }[] {
+  const out: Partial<Record<AccessoryKey, number>> = {};
+  const add = (k: AccessoryKey, n: number) => n > 0 && (out[k] = (out[k] ?? 0) + n);
+  const W = l.width / 1000;
+  const H = l.height / 1000;
+  const perimeter = 2 * (W + H);
+  if (l.category === "volet") {
+    add(l.control === "motorise" ? "acc.motor" : "acc.crank", 1);
+    return Object.entries(out).map(([key, qty]) => ({ key: key as AccessoryKey, qty: qty! }));
+  }
+  if (l.category === "garde-corps") {
+    add("acc.plate", 2 * (Math.ceil(l.width / 1200) + 1));
+    if (l.guard === "verre") add("acc.silicone", 1);
+  } else if (l.category === "cloison") {
+    add("acc.silicone", Math.max(1, Math.ceil(perimeter / 8)));
+  } else {
+    const door = l.category === "porte";
+    const mob = l.opening === "jalousie" ? 1 : leafMotion(l).filter((m) => !m.fixed).length;
+    const lv = W / Math.max(l.leaves, 1);
+    if (l.opening === "coulissant") {
+      add("acc.roller", 2 * mob);
+      add("acc.sliderLock", mob);
+      if (door) add("acc.doorHandle", mob);
+      add("acc.seal", perimeter + 2 * H * mob);
+    } else if (l.opening === "ouvrant" || l.opening === "oscillo" || l.opening === "soufflet") {
+      add(door ? "acc.doorHandle" : "acc.handle", mob);
+      add("acc.hinge", mob * (door ? (l.height > 2200 ? 4 : 3) : l.height > 1500 ? 3 : 2));
+      if (door) {
+        add("acc.lock", mob);
+        add("acc.knob", mob);
+      }
+      add("acc.seal", mob * 2 * (lv + H));
+    } else if (l.opening === "jalousie") add("acc.crank", 1);
+    if (l.extras.includes("moustiquaire")) add("acc.net", Math.max(1, mob));
+    add("acc.silicone", Math.max(1, Math.ceil(perimeter / 8)));
+  }
+  return Object.entries(out).map(([key, qty]) => ({ key: key as AccessoryKey, qty: Math.round(qty! * 10) / 10 }));
+}
+
+// Surface de verre d'un ouvrage en m² (× quantité du devis non appliquée), avec le coefficient de prix : double vitrage ×2, 8 mm et plus ×1,5.
+export function glassOf(l: Line): { id: string; area: number; weighted: number } {
+  const area = cutList(l).glass.reduce((s, g) => s + (g.w * g.h * g.qty) / 1e6, 0);
+  const k = l.thickness.includes("/") ? 2 : Number(l.thickness) >= 8 ? 1.5 : 1;
+  return { id: l.glassType, area, weighted: area * k };
+}
