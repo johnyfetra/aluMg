@@ -56,12 +56,14 @@ export function Choice<V extends string | number>({
   value,
   options,
   onChange,
+  dense = false,
 }: {
   name: string;
   legend: string;
   value: V;
   options: readonly { value: V; label: string }[];
   onChange: (v: V) => void;
+  dense?: boolean;
 }) {
   return (
     <fieldset className="min-w-0 space-y-1">
@@ -70,7 +72,7 @@ export function Choice<V extends string | number>({
         {options.map((o) => (
           <label key={String(o.value)} className="cursor-pointer">
             <input type="radio" name={name} className="peer sr-only" checked={o.value === value} onChange={() => onChange(o.value)} />
-            <span className="flex min-h-11 items-center rounded-lg border border-line bg-surface px-3 text-sm font-medium peer-checked:border-primary peer-checked:bg-primary peer-checked:text-on-primary peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary hover:bg-surface-2 peer-checked:hover:bg-primary">
+            <span className={`flex items-center rounded-lg border border-line bg-surface text-sm font-medium ${dense ? "min-h-9 px-2.5" : "min-h-11 px-3"} peer-checked:border-primary peer-checked:bg-primary peer-checked:text-on-primary peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary hover:bg-surface-2 peer-checked:hover:bg-primary`}>
               {o.label}
             </span>
           </label>
@@ -81,7 +83,31 @@ export function Choice<V extends string | number>({
 }
 
 // Choix de couleur du profilé : pastilles groupées (laqué, anodisé, faux bois).
-export function FinishPicker({ name, legend, value, onChange, t }: { name: string; legend: string; value: FinishId; onChange: (v: FinishId) => void; t: T }) {
+export function FinishPicker({ name, legend, value, onChange, t, dense = false }: { name: string; legend: string; value: FinishId; onChange: (v: FinishId) => void; t: T; dense?: boolean }) {
+  if (dense)
+    // Version compacte : une seule rangée de pastilles, le nom de la couleur choisie est affiché à côté.
+    return (
+      <fieldset className="min-w-0 space-y-1">
+        <legend className="text-sm font-medium">
+          {legend} <span className="font-normal text-muted">· {t(FINISHES.find((f) => f.id === value)?.label ?? "finish.blanc")}</span>
+        </legend>
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+          {FINISH_GROUPS.map(([group, label], gi) => (
+            <div key={group} role="group" aria-label={t(label)} className={`flex flex-wrap gap-1 ${gi ? "ml-2 border-l border-line pl-3" : ""}`}>
+              {FINISHES.filter((f) => f.group === group).map((f) => (
+                <label key={f.id} className="cursor-pointer" title={t(f.label)}>
+                  <input type="radio" name={name} className="peer sr-only" checked={f.id === value} onChange={() => onChange(f.id)} />
+                  <span className="grid size-8 place-items-center rounded-full border border-transparent peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/40 peer-focus-visible:outline-3 peer-focus-visible:outline-primary hover:bg-surface-2">
+                    <span className="size-5 rounded-full border border-black/20" style={{ background: f.hex }} />
+                    <span className="sr-only">{t(f.label)}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          ))}
+        </div>
+      </fieldset>
+    );
   return (
     <fieldset className="min-w-0 space-y-2">
       <legend className="text-sm font-medium">{legend}</legend>

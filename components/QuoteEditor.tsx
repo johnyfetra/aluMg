@@ -18,7 +18,6 @@ import { type T, useI18n } from "@/lib/i18n";
 import {
   CATEGORIES,
   CONTROLS,
-  DIRECTIONS,
   EXTRAS,
   FINISHES,
   GLASSES,
@@ -29,7 +28,13 @@ import {
   OPENINGS_BY_CATEGORY,
   PATTERNS,
   PATTERN_GLASSES,
-  hasDirection,
+  DIRECTIONS,
+  type LeafMode,
+  hasLeafConfig,
+  lineMarks,
+  leafMarks,
+  leafModes,
+  presetModes,
   RANGES,
   SHUTTERS,
   THICKNESSES,
@@ -135,6 +140,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         return "unit" in patch ? next : { ...next, unit: price(next, settings) };
       }),
     }));
+  const marks = lineMarks(q.lines);
   const allOpen = q.lines.every((l) => openIds.has(l.id));
   const toggleOpen = (id: string) =>
     setOpenIds((o) => {
@@ -318,6 +324,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               <LinesTable
                 lines={q.lines}
                 t={t}
+                marks={marks}
                 validIds={new Set(validLines.map((l) => l.id))}
                 locked={locked}
                 onEdit={(i) => {
@@ -338,6 +345,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                   settings={settings}
                   valid={valid(l)}
                   locked={locked}
+                  mark={marks[i]}
                   open={openIds.has(l.id)}
                   onToggle={() => toggleOpen(l.id)}
                   onChange={(p) => setLine(i, p)}
@@ -464,7 +472,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 }
 
 export function LineCard({
-  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false,
+  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark,
 }: {
   l: Line;
   i: number;
@@ -480,6 +488,7 @@ export function LineCard({
   open?: boolean;
   onToggle?: () => void; // fourni : la carte est dépliable, avec un en-tête résumé
   locked?: boolean;
+  mark?: string; // repère d'ouvrage (F-01…)
 }) {
   const [view, setView] = useState<"2d" | "3d">("2d");
   const cat = l.category;
@@ -492,113 +501,118 @@ export function LineCard({
   const spec = leavesSpec(l);
   const p = (k: string) => `${l.id}-${k}`;
 
-  const title = `${t("editor.line")} ${i + 1} — ${cap(lineTitle(l, t))}`;
+  const title = `${mark ?? `${t("editor.line")} ${i + 1}`} — ${cap(lineTitle(l, t))}`;
   const grid = "grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] 2xl:grid-cols-[minmax(0,1fr)_23rem]";
   const body = (
     <>
-      <div className="min-w-0 space-y-5">
-        <Choice name={p("cat")} legend={t("editor.category")} value={cat} options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))} onChange={(category) => onChange({ category })} />
+      <div className="min-w-0 space-y-4">
+        <Section title={t("editor.sectionConfig")}>
+          <Choice dense name={p("cat")} legend={t("editor.category")} value={cat} options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))} onChange={(category) => onChange({ category })} />
 
-        {cat === "volet" && (
-          <>
-            <Choice name={p("sh")} legend={t("editor.shutter")} value={l.shutter} options={SHUTTERS.map((s) => ({ value: s, label: t(`shutter.${s}`) }))} onChange={(shutter) => onChange({ shutter })} />
-            <Choice name={p("ct")} legend={t("editor.control")} value={l.control} options={CONTROLS.map((c) => ({ value: c, label: cap(t(`control.${c}`)) }))} onChange={(control) => onChange({ control })} />
-          </>
-        )}
-        {cat === "garde-corps" && <Choice name={p("gd")} legend={t("editor.guard")} value={l.guard} options={GUARDS.map((g) => ({ value: g, label: cap(t(`guard.${g}`)) }))} onChange={(guard) => onChange({ guard })} />}
-        {openable && <Choice name={p("op")} legend={t("editor.opening")} value={l.opening} options={OPENINGS_BY_CATEGORY[cat].map((o) => ({ value: o, label: cap(t(`opening.${o}`)) }))} onChange={(opening) => onChange({ opening })} />}
-        {spec && spec.max > spec.min && (
-          <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
-            <Choice
-              name={p("lv")}
-              legend={cat === "cloison" ? t("editor.panels") : t("editor.leaves")}
-              value={l.leaves}
-              options={spec.presets.map((n) => ({ value: n, label: n === 1 ? t("editor.oneLeaf") : `${n} ${cat === "cloison" ? t("editor.panelsWord") : t("editor.leavesWord")}` }))}
-              onChange={(leaves) => onChange({ leaves })}
-            />
-            <Field htmlFor={p("lc")} label={t("editor.leavesCustom")} hint={t("editor.leavesRange").replace("{min}", String(spec.min)).replace("{max}", String(spec.max))}>
-              <input id={p("lc")} className="input !w-28" type="number" inputMode="numeric" min={spec.min} max={spec.max} value={l.leaves} onChange={(e) => onChange({ leaves: num(e.target.value) })} />
-            </Field>
-          </div>
-        )}
-        {hasDirection(l) && (
-          <Choice
-            name={p("dr")}
-            legend={t("editor.direction")}
-            value={l.direction ?? "left"}
-            options={DIRECTIONS.filter((d) => d !== "both" || l.opening === "coulissant").map((d) => ({ value: d, label: t(d === "both" ? "dir.both.slide" : `dir.${d}.${l.opening === "coulissant" ? "slide" : "hinge"}`) }))}
-            onChange={(direction) => onChange({ direction })}
-          />
-        )}
-        {cat === "porte" && <Choice name={p("in")} legend={t("editor.infill")} value={l.infill} options={INFILLS.map((x) => ({ value: x, label: t(`infill.${x}`) }))} onChange={(infill) => onChange({ infill })} />}
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field htmlFor={p("w")} label={cat === "garde-corps" ? t("editor.length") : t("editor.width")}>
-            <input id={p("w")} className="input" type="number" inputMode="numeric" value={l.width || ""} aria-invalid={!valid} onChange={(e) => onChange({ width: num(e.target.value) })} />
-          </Field>
-          <Field htmlFor={p("h")} label={t("editor.height")}>
-            <input id={p("h")} className="input" type="number" inputMode="numeric" value={l.height || ""} aria-invalid={!valid} onChange={(e) => onChange({ height: num(e.target.value) })} />
-          </Field>
-          <Field htmlFor={p("q")} label={t("editor.qty")}>
-            <input id={p("q")} className="input" type="number" inputMode="numeric" min={1} value={l.qty || ""} onChange={(e) => onChange({ qty: num(e.target.value) })} />
-          </Field>
-        </div>
-        {!valid && <p role="alert" className="text-sm font-medium text-danger">{t("editor.invalidSize")}</p>}
-        {tooLong && <p role="alert" className="text-sm font-medium text-danger">{t("editor.tooLong")}</p>}
-
-        <Choice name={p("rg")} legend={t("editor.range")} value={l.range} options={RANGES.map((r) => ({ value: r, label: t(`range.${r}`) }))} onChange={(range) => onChange({ range })} />
-        <FinishPicker name={p("fn")} legend={t("editor.finish")} value={l.finish} onChange={(finish) => onChange({ finish })} t={t} />
-
-        {hasGlass && (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field htmlFor={p("gt")} label={t("editor.glassType")}>
-              <select id={p("gt")} className="input" value={l.glassType} onChange={(e) => onChange({ glassType: e.target.value as Line["glassType"] })}>
-                {GLASSES.map((g) => <option key={g.id} value={g.id}>{t(g.label)}</option>)}
-              </select>
-            </Field>
-            <Field htmlFor={p("th")} label={t("editor.thickness")}>
-              <select id={p("th")} className="input" value={l.thickness} onChange={(e) => onChange({ thickness: e.target.value as Line["thickness"] })}>
-                {THICKNESSES.map((x) => <option key={x} value={x}>{t(`thickness.${x}`)}</option>)}
-              </select>
-            </Field>
-            <Field htmlFor={p("pt")} label={t("editor.pattern")}>
-              <select id={p("pt")} className="input" disabled={!canPattern} value={canPattern ? l.pattern : "none"} onChange={(e) => onChange({ pattern: e.target.value as Line["pattern"] })}>
-                {PATTERNS.map((x) => <option key={x} value={x}>{t(`pattern.${x}`)}</option>)}
-              </select>
-            </Field>
-          </div>
-        )}
-
-        {openable && (
-          <fieldset>
-            <legend className="mb-1 text-sm font-medium">{t("editor.extras")}</legend>
-            <div className="flex flex-wrap gap-x-6">
-              {EXTRAS.map((x) => (
-                <label key={x} className="flex min-h-11 items-center gap-2 text-sm">
-                  <input type="checkbox" className="size-5" checked={l.extras.includes(x)} onChange={(e) => onChange({ extras: e.target.checked ? [...l.extras, x] : l.extras.filter((y) => y !== x) })} />
-                  {t(`extra.${x}`)}
-                </label>
-              ))}
+          {cat === "volet" && (
+            <div className="flex flex-wrap gap-x-6 gap-y-3">
+              <Choice dense name={p("sh")} legend={t("editor.shutter")} value={l.shutter} options={SHUTTERS.map((s) => ({ value: s, label: t(`shutter.${s}`) }))} onChange={(shutter) => onChange({ shutter })} />
+              <Choice dense name={p("ct")} legend={t("editor.control")} value={l.control} options={CONTROLS.map((c) => ({ value: c, label: cap(t(`control.${c}`)) }))} onChange={(control) => onChange({ control })} />
             </div>
-          </fieldset>
-        )}
+          )}
+          {cat === "garde-corps" && <Choice dense name={p("gd")} legend={t("editor.guard")} value={l.guard} options={GUARDS.map((g) => ({ value: g, label: cap(t(`guard.${g}`)) }))} onChange={(guard) => onChange({ guard })} />}
+          {openable && <Choice dense name={p("op")} legend={t("editor.opening")} value={l.opening} options={OPENINGS_BY_CATEGORY[cat].map((o) => ({ value: o, label: cap(t(`opening.${o}`)) }))} onChange={(opening) => onChange({ opening })} />}
+
+          {spec && spec.max > spec.min && (
+            <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+              <Choice
+                dense
+                name={p("lv")}
+                legend={cat === "cloison" ? t("editor.panels") : t("editor.leaves")}
+                value={l.leaves}
+                options={spec.presets.map((n) => ({ value: n, label: n === 1 ? t("editor.oneLeaf") : String(n) }))}
+                onChange={(leaves) => onChange({ leaves })}
+              />
+              <Field htmlFor={p("lc")} label={t("editor.leavesCustom")} hint={t("editor.leavesRange").replace("{min}", String(spec.min)).replace("{max}", String(spec.max))}>
+                <input id={p("lc")} className="input !min-h-9 !w-24 !py-1" type="number" inputMode="numeric" min={spec.min} max={spec.max} value={l.leaves} onChange={(e) => onChange({ leaves: num(e.target.value) })} />
+              </Field>
+            </div>
+          )}
+
+          {hasLeafConfig(l) && <LeafConfig l={l} t={t} onChange={onChange} id={l.id} />}
+          {cat === "porte" && <Choice dense name={p("in")} legend={t("editor.infill")} value={l.infill} options={INFILLS.map((x) => ({ value: x, label: t(`infill.${x}`) }))} onChange={(infill) => onChange({ infill })} />}
+        </Section>
+
+        <Section title={t("editor.sectionSize")}>
+          <div className="grid grid-cols-3 gap-3">
+            <Field htmlFor={p("w")} label={cat === "garde-corps" ? t("editor.length") : t("editor.width")}>
+              <input id={p("w")} className="input !min-h-10" type="number" inputMode="numeric" value={l.width || ""} aria-invalid={!valid} onChange={(e) => onChange({ width: num(e.target.value) })} />
+            </Field>
+            <Field htmlFor={p("h")} label={t("editor.height")}>
+              <input id={p("h")} className="input !min-h-10" type="number" inputMode="numeric" value={l.height || ""} aria-invalid={!valid} onChange={(e) => onChange({ height: num(e.target.value) })} />
+            </Field>
+            <Field htmlFor={p("q")} label={t("editor.qty")}>
+              <input id={p("q")} className="input !min-h-10" type="number" inputMode="numeric" min={1} value={l.qty || ""} onChange={(e) => onChange({ qty: num(e.target.value) })} />
+            </Field>
+          </div>
+          {!valid && <p role="alert" className="text-sm font-medium text-danger">{t("editor.invalidSize")}</p>}
+          {tooLong && <p role="alert" className="text-sm font-medium text-danger">{t("editor.tooLong")}</p>}
+        </Section>
+
+        <Section title={t("editor.sectionFinish")}>
+          <Choice dense name={p("rg")} legend={t("editor.range")} value={l.range} options={RANGES.map((r) => ({ value: r, label: t(`range.${r}`) }))} onChange={(range) => onChange({ range })} />
+          <FinishPicker dense name={p("fn")} legend={t("editor.finish")} value={l.finish} onChange={(finish) => onChange({ finish })} t={t} />
+
+          {hasGlass && (
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field htmlFor={p("gt")} label={t("editor.glassType")}>
+                <select id={p("gt")} className="input !min-h-10" value={l.glassType} onChange={(e) => onChange({ glassType: e.target.value as Line["glassType"] })}>
+                  {GLASSES.map((g) => <option key={g.id} value={g.id}>{t(g.label)}</option>)}
+                </select>
+              </Field>
+              <Field htmlFor={p("th")} label={t("editor.thickness")}>
+                <select id={p("th")} className="input !min-h-10" value={l.thickness} onChange={(e) => onChange({ thickness: e.target.value as Line["thickness"] })}>
+                  {THICKNESSES.map((x) => <option key={x} value={x}>{t(`thickness.${x}`)}</option>)}
+                </select>
+              </Field>
+              <Field htmlFor={p("pt")} label={t("editor.pattern")}>
+                <select id={p("pt")} className="input !min-h-10" disabled={!canPattern} value={canPattern ? l.pattern : "none"} onChange={(e) => onChange({ pattern: e.target.value as Line["pattern"] })}>
+                  {PATTERNS.map((x) => <option key={x} value={x}>{t(`pattern.${x}`)}</option>)}
+                </select>
+              </Field>
+            </div>
+          )}
+
+          {openable && (
+            <fieldset>
+              <legend className="mb-1 text-sm font-medium">{t("editor.extras")}</legend>
+              <div className="flex flex-wrap gap-x-5">
+                {EXTRAS.map((x) => (
+                  <label key={x} className="flex min-h-9 items-center gap-2 text-sm">
+                    <input type="checkbox" className="size-4" checked={l.extras.includes(x)} onChange={(e) => onChange({ extras: e.target.checked ? [...l.extras, x] : l.extras.filter((y) => y !== x) })} />
+                    {t(`extra.${x}`)}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+        </Section>
 
         {!clientMode && (
-        <div className="grid items-end gap-4 border-t border-line pt-4 sm:grid-cols-2">
-          <Field htmlFor={p("u")} label={t("editor.unit")} hint={t("editor.unitHint")}>
-            <input id={p("u")} className="input" type="number" inputMode="numeric" min={0} value={l.unit || ""} onChange={(e) => onChange({ unit: num(e.target.value) })} />
-          </Field>
-          <div>
-            <p className="text-sm text-muted">{t("editor.lineTotal")}</p>
-            <p className="text-xl font-bold">{fmt(lineTotal(l))} {t("common.currency")}</p>
-            {valid && <p className="text-xs text-muted">{t("editor.area")} : {fmt(Math.round(billedArea(l, settings.minArea) * 100) / 100)} m²</p>}
-          </div>
-          {auto !== l.unit && (
-            <button type="button" className="btn-secondary sm:col-span-2 sm:w-fit" onClick={() => onChange({ unit: auto })}>
-              {t("editor.recalc")}
-            </button>
-          )}
-        </div>
+          <Section title={t("editor.sectionPrice")}>
+            <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+              <div className="w-44">
+                <Field htmlFor={p("u")} label={t("editor.unit")} hint={t("editor.unitHint")}>
+                  <input id={p("u")} className="input !min-h-10" type="number" inputMode="numeric" min={0} value={l.unit || ""} onChange={(e) => onChange({ unit: num(e.target.value) })} />
+                </Field>
+              </div>
+              <div>
+                <p className="text-sm text-muted">{t("editor.lineTotal")}</p>
+                <p className="text-xl font-bold tabular-nums">{fmt(lineTotal(l))} {t("common.currency")}</p>
+                {valid && <p className="text-xs text-muted">{t("editor.area")} : {fmt(Math.round(billedArea(l, settings.minArea) * 100) / 100)} m²</p>}
+              </div>
+              {auto !== l.unit && (
+                <button type="button" className="btn-secondary !min-h-9" onClick={() => onChange({ unit: auto })}>
+                  {t("editor.recalc")}
+                </button>
+              )}
+            </div>
+          </Section>
         )}
       </div>
 
@@ -653,11 +667,14 @@ export function LineCard({
     );
 
   const finish = FINISHES.find((f) => f.id === l.finish);
+  const thumb = valid && !open ? drawingSvg(l, `th${l.id}`, 76, 58) : null;
+  const leafList = valid && (cat === "fenetre" || cat === "porte" || cat === "cloison") && l.leaves > 1 ? leafMarks(l).join(" · ") : "";
   return (
     <div id={`line-${l.id}`} className={`card scroll-mt-20 !p-0 ${valid ? "" : "border-danger"}`}>
       <h3 className="m-0">
         <button type="button" aria-expanded={open} aria-controls={`${l.id}-body`} onClick={onToggle} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left hover:bg-surface-2/60 sm:px-6">
           <ChevronDown size={18} aria-hidden className={`shrink-0 text-muted transition-transform ${open ? "" : "-rotate-90"}`} />
+          {thumb && <span aria-hidden className="hidden h-14 w-[4.75rem] shrink-0 place-items-center rounded-lg bg-white sm:grid [&>svg]:max-h-full [&>svg]:max-w-full" dangerouslySetInnerHTML={{ __html: thumb.svg }} />}
           <span className="min-w-0 flex-1">
             <span className="block truncate font-semibold">{title}</span>
             <span className="flex flex-wrap items-center gap-x-2 text-sm font-normal text-muted">
@@ -667,6 +684,12 @@ export function LineCard({
                 <span aria-hidden className="size-3 rounded-full border border-line" style={{ background: finish?.hex }} />
                 {t(`range.${l.range}`)}
               </span>
+              {leafList && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span className="font-medium tabular-nums">{leafList}</span>
+                </>
+              )}
             </span>
           </span>
           {!clientMode && (
@@ -684,5 +707,51 @@ export function LineCard({
         </fieldset>
       )}
     </div>
+  );
+}
+
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3 border-t border-line pt-3 first:border-t-0 first:pt-0">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted">{title}</h4>
+      {children}
+    </section>
+  );
+}
+
+// Un vantail par tuile : repère professionnel (V1, F1…) et fonction (fixe, coulisse, charnières). Les raccourcis remplissent toutes les tuiles d'un coup.
+function LeafConfig({ l, t, onChange, id }: { l: Line; t: T; onChange: (p: Partial<Line>) => void; id: string }) {
+  const modes = leafModes(l);
+  const marks = leafMarks(l);
+  const sliding = l.opening === "coulissant";
+  const n = l.leaves;
+  const label = (m: LeafMode) => t(m === "F" ? "leaf.F" : l.opening === "soufflet" ? "leaf.mobile" : sliding ? (m === "L" ? "leaf.slideL" : "leaf.slideR") : m === "L" ? "leaf.hingeL" : "leaf.hingeR");
+  const allowed = (i: number): LeafMode[] => (sliding ? (["F", ...(i > 0 ? ["L"] : []), ...(i < n - 1 ? ["R"] : [])] as LeafMode[]) : l.opening === "soufflet" ? ["F", "L"] : ["F", "L", "R"]);
+  const same = (a: LeafMode[], b: LeafMode[]) => a.join() === b.join();
+  const set = (i: number, m: LeafMode) => onChange({ leafCfg: modes.map((x, j) => (j === i ? m : x)) });
+  return (
+    <fieldset className="min-w-0 space-y-2">
+      <legend className="text-sm font-medium">{t("editor.leafConfig")}</legend>
+      {sliding && (
+        <div role="group" aria-label={t("editor.shortcuts")} className="flex flex-wrap items-center gap-1.5">
+          {DIRECTIONS.map((d) => (
+            <button key={d} type="button" aria-pressed={same(modes, presetModes(l, d))} onClick={() => onChange({ direction: d, leafCfg: presetModes(l, d) })} className="min-h-8 rounded-full border border-line px-3 text-xs font-medium hover:bg-surface-2 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-on-primary">
+              {t(`dir.${d}.slide`)}
+            </button>
+          ))}
+        </div>
+      )}
+      <ul className="flex flex-wrap gap-2">
+        {modes.map((m, i) => (
+          <li key={i} className={`flex min-w-[7.5rem] flex-col gap-1 rounded-lg border p-1.5 ${m === "F" ? "border-line bg-surface-2/60" : "border-primary/50 bg-primary/5"}`}>
+            <label htmlFor={`${id}-lf${i}`} className="text-xs font-bold tabular-nums">{marks[i]}</label>
+            <select id={`${id}-lf${i}`} className="input !min-h-8 !px-2 !py-0.5 text-xs" value={m} onChange={(e) => set(i, e.target.value as LeafMode)}>
+              {allowed(i).map((x) => <option key={x} value={x}>{label(x)}</option>)}
+            </select>
+          </li>
+        ))}
+      </ul>
+    </fieldset>
   );
 }
