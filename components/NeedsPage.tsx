@@ -1,15 +1,16 @@
 "use client";
 import { ArrowLeft, ArrowRight, Box, Coins, PackageCheck, Percent, Scissors, Settings2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
+import { MarketSim } from "./MarketSim";
 import Viewer3DLoader from "./Viewer3DLoader";
 import { allPieces, fmt, lineTotal, meters } from "@/lib/calc";
 import { useQuotes, useSettings } from "@/lib/client";
 import { lineDetails, lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { type T, useI18n } from "@/lib/i18n";
-import { FINISHES, type Line, type Quote } from "@/lib/model";
-import { type GroupPlan, procure } from "@/lib/procure";
+import { FINISHES, type Line, type Quote, type Settings } from "@/lib/model";
+import { type GroupPlan, initSim, procure, simulate } from "@/lib/procure";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -53,14 +54,33 @@ export default function NeedsPage({ id, lineId }: { id: string; lineId?: string 
     );
   }
   const plan = procure(allPieces(quote.lines), settings.market, settings.kerf);
-  return lineId ? <LineView quote={quote} idx={idx} plan={plan} t={t} /> : <QuoteView quote={quote} plan={plan} t={t} />;
+  return lineId ? <LineView quote={quote} idx={idx} plan={plan} t={t} /> : <QuoteView quote={quote} base={plan} settings={settings} t={t} />;
 }
 
 // ---------- Vue du devis : tout ce qu'il faut acheter ----------
-function QuoteView({ quote, plan, t }: { quote: Quote; plan: ReturnType<typeof procure>; t: T }) {
+function QuoteView({ quote, base, settings, t }: { quote: Quote; base: ReturnType<typeof procure>; settings: Settings; t: T }) {
+  const { save } = useSettings();
+  const [sim, setSim] = useState(() => initSim(settings.market));
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // Besoin et coût sous les hypothèses de la simulation ; `base` = ce que donne le marché enregistré.
+  const plan = useMemo(() => simulate(quote.lines, sim, settings.kerf), [quote.lines, sim, settings.kerf]);
   const sale = quote.lines.reduce((s, l) => s + lineTotal(l), 0);
   const margin = sale - plan.totalCost;
   const cur = t("common.currency");
+  const diff = (n: number, unit = "") => (n === 0 ? undefined : `${n > 0 ? "+" : "−"}${fmt(Math.abs(n))}${unit}`);
+  const applySim = async () => {
+    // les prix simulés (variation générale comprise) deviennent les prix du marché
+    const k = 1 + sim.pct / 100;
+    const offers = Object.fromEntries(Object.entries(sim.market.offers).map(([p, os]) => [p, os.map((o) => ({ ...o, price: Math.round(o.price * k) }))]));
+    const market = { ...sim.market, offers };
+    try {
+      await save({ ...settings, market });
+      setSim(initSim(market));
+      setMsg({ ok: true, text: t("sim.applied") });
+    } catch {
+      setMsg({ ok: false, text: t("common.error") });
+    }
+  };
   return (
     <div className="space-y-6">
       <Link href={`/devis/${quote.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
@@ -78,12 +98,15 @@ function QuoteView({ quote, plan, t }: { quote: Quote; plan: ReturnType<typeof p
       </div>
 
       <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Kpi label={t("needsPage.totalBars")} value={plan.bars} Icon={PackageCheck} />
-        <Kpi label={t("needsPage.cost")} value={`${fmt(plan.totalCost)} ${cur}`} Icon={Coins} />
+        <Kpi label={t("needsPage.totalBars")} value={plan.bars} hint={diff(plan.bars - base.bars)} Icon={PackageCheck} />
+        <Kpi label={t("needsPage.cost")} value={`${fmt(plan.totalCost)} ${cur}`} hint={diff(plan.totalCost - base.totalCost, ` ${cur}`)} Icon={Coins} />
         <Kpi label={t("needsPage.sale")} value={`${fmt(sale)} ${cur}`} Icon={Box} />
         <Kpi label={t("needsPage.margin")} value={`${fmt(margin)} ${cur}`} hint={sale ? `${Math.round((margin / sale) * 100)} % ${t("needsPage.vsSale")}` : undefined} Icon={Percent} tone={margin < 0 ? "text-danger" : "text-ok"} />
         <Kpi label={t("needs.totalWaste")} value={`${meters(plan.wasteLen)} (${plan.wastePct} %)`} Icon={Scissors} tone={plan.wastePct > 40 ? "text-warn" : undefined} />
       </dl>
+
+      <MarketSim sim={sim} setSim={setSim} lines={quote.lines} kerf={settings.kerf} baseCost={base.totalCost} cost={plan.totalCost} saved={settings.market} onSave={applySim} t={t} />
+      <p role="status" className={`text-sm font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>{msg?.text}</p>
 
       <section className="card !p-0 overflow-hidden" aria-labelledby="h-lines">
         <h2 id="h-lines" className="border-b border-line px-4 py-3 font-semibold">
