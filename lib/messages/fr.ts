@@ -915,6 +915,8 @@ export const fr = {
   "preview.edit": "Modifier",
   "preview.pdf": "Télécharger le PDF",
   "preview.open": "Voir le devis",
+  "preview.full": "Voir le devis complet",
+  "preview.view": "Voir",
   "dir.left.slide": "Coulisse vers la gauche",
   "dir.right.slide": "Coulisse vers la droite",
   "dir.left.hinge": "Charnières à gauche",

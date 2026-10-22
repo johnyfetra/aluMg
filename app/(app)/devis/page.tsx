@@ -56,6 +56,7 @@ function QuotesView() {
       </button>
       <Link href={`/devis/${q.id}/apercu`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("preview.open")} ${q.number}`} title={t("preview.open")}>
         <Eye size={16} aria-hidden />
+        <span className="max-xl:hidden">{t("preview.view")}</span>
       </Link>
       <Link href={`/devis/${q.id}`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("common.edit")} ${q.number}`}>
         <Pencil size={16} aria-hidden />

@@ -395,6 +395,12 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
         {/* Colonne de synthèse : reste visible pendant la saisie sur grand écran */}
         <aside className="space-y-4 xl:sticky xl:top-20" aria-label="Total">
+          {persisted && (
+            <Link href={`/devis/${q.id}/apercu`} className="btn-primary w-full">
+              <Eye size={18} aria-hidden />
+              {t("preview.full")}
+            </Link>
+          )}
           <section className="card space-y-2">
             <div className="flex items-end justify-between gap-3 text-sm">
               <label className="flex items-center gap-2 text-muted">

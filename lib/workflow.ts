@@ -2,7 +2,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { normalize, unitPrice } from "./calc";
 import { getDb, schema } from "./db";
-import { type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
+import { type Issuer, ISSUER_KEYS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
 import { createQuote, findUserById, getSettings } from "./repo";
 
 // ---------- Actions possibles sur un devis lié à un client ----------
@@ -120,7 +120,7 @@ export async function listEvents(quoteId: string): Promise<EventView[]> {
   }));
 }
 
-export type ClientQuote = { quote: Quote; menuisier: { name: string; slug: string; logo: string; phone: string; email: string; verified: boolean }; reviewed: boolean };
+export type ClientQuote = { quote: Quote; menuisier: { name: string; slug: string; logo: string; phone: string; email: string; verified: boolean }; issuer: Issuer; reviewed: boolean };
 
 async function toClientQuote(row: typeof schema.quotes.$inferSelect): Promise<ClientQuote> {
   const db = await getDb();
@@ -130,8 +130,10 @@ async function toClientQuote(row: typeof schema.quotes.$inferSelect): Promise<Cl
     .where(eq(schema.users.id, row.userId));
   const [p] = await db.select().from(schema.menuisierProfiles).where(eq(schema.menuisierProfiles.userId, row.userId));
   const [r] = await db.select({ id: schema.reviews.id }).from(schema.reviews).where(eq(schema.reviews.quoteId, row.id));
+  const settings = await getSettings(row.userId);
   return {
     quote: clientView({ ...row.data, status: row.status as Status, progress: row.progress }),
+    issuer: Object.fromEntries(ISSUER_KEYS.map((k) => [k, settings[k]])) as Issuer,
     menuisier: { name: p?.displayName || m?.name || "", slug: p?.slug ?? "", logo: p?.logo ?? "", phone: m?.phone ?? "", email: m?.email ?? "", verified: p?.verified ?? false },
     reviewed: !!r,
   };

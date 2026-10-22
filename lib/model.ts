@@ -329,6 +329,9 @@ export const settingsSchema = z.object({
   market: marketSchema,
 });
 export type Settings = z.infer<typeof settingsSchema> & { tariffs: Tariffs };
+// Ce que le client voit de l'entreprise sur son devis (les mêmes mentions que sur le PDF) : jamais les tarifs ni les prix d'achat.
+export const ISSUER_KEYS = ["company", "address", "phone", "email", "website", "nif", "stat", "logo", "accent", "paymentInfo", "signature", "signer", "minArea"] as const;
+export type Issuer = Pick<Settings, (typeof ISSUER_KEYS)[number]>;
 
 export const DEFAULT_SETTINGS: Settings = {
   company: "",

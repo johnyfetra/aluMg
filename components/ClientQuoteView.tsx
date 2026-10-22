@@ -1,5 +1,5 @@
 "use client";
-import { ArrowLeft, BadgeCheck, Flag, Mail, MessageSquareWarning, Phone, ThumbsDown, ThumbsUp } from "lucide-react";
+import { ArrowLeft, BadgeCheck, FileText, Flag, Mail, MessageSquareWarning, Phone, ThumbsDown, ThumbsUp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { mutate } from "swr";
@@ -79,6 +79,10 @@ export default function ClientQuoteView({ id }: { id: string }) {
       <header className="card space-y-5">
         <div className="flex flex-wrap items-start gap-4">
           <Avatar name={m.name} src={m.logo} size={64} />
+          <Link href={`/espace-client/devis/${q.id}/apercu`} className="btn-primary order-last ml-auto">
+            <FileText size={18} aria-hidden />
+            {t("preview.full")}
+          </Link>
           <div className="min-w-0 flex-1">
             <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
               {q.number}

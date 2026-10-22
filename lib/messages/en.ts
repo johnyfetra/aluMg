@@ -916,6 +916,8 @@ export const en: Messages = {
   "preview.edit": "Edit",
   "preview.pdf": "Download PDF",
   "preview.open": "View quote",
+  "preview.full": "View the full quote",
+  "preview.view": "View",
   "dir.left.slide": "Slides to the left",
   "dir.right.slide": "Slides to the right",
   "dir.left.hinge": "Hinges on the left",

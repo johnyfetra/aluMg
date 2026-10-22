@@ -918,6 +918,8 @@ export const mg: Messages = {
   "preview.edit": "Ovay",
   "preview.pdf": "Alaivo ny PDF",
   "preview.open": "Jereo ny tolotra",
+  "preview.full": "Jereo ny tolotra feno",
+  "preview.view": "Jereo",
   "dir.left.slide": "Mihazo mankavia",
   "dir.right.slide": "Mihazo mankavanana",
   "dir.left.hinge": "Rohy eo ankavia",
