@@ -20,7 +20,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   if (!res.ok) throw new ApiError(res.status, data.error ?? "error");
   return data as T;
 }
-const fetcher = <T,>(url: string) => request<T>("GET", url);
+export const fetcher = <T,>(url: string) => request<T>("GET", url);
 
 export { ApiError, request };
 
@@ -114,7 +114,10 @@ export function usePortfolio() {
 
 // ---------- Messagerie (interrogation régulière : simple et robuste ; à remplacer par SSE/WebSocket si la charge l'exige) ----------
 export const useConversations = (enabled = true) => useSWR<ConversationView[]>(enabled ? "/api/conversations" : null, fetcher, { refreshInterval: 6000 });
-export const useMessages = (id: string | null) => useSWR<MessageView[]>(id ? `/api/conversations/${id}/messages` : null, fetcher, { refreshInterval: 3000 });
+export const useMessages = (id: string | null) => useSWR<MessageView[]>(id ? `/api/conversations/${id}/messages` : null, fetcher, { refreshInterval: 2500 });
+// L'autre participant écrit-il ? Interrogé plus souvent que les messages pour que l'indicateur reste vivant.
+export const useTyping = (id: string | null) => useSWR<{ typing: "text" | "voice" | null }>(id ? `/api/conversations/${id}/typing` : null, fetcher, { refreshInterval: 1500 });
+export const useCitableQuotes = (id: string, enabled: boolean) => useSWR<{ id: string; number: string; project: string; status: string }[]>(enabled ? `/api/conversations/${id}/quotes` : null, fetcher);
 
 // Nombre de messages non lus (pastille de la navigation) ; rien n'est demandé si personne n'est connecté.
 export function useUnread() {

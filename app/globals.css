@@ -91,9 +91,40 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+/* Notre propre indicateur de focus : le champ de message est dans un conteneur qui s'éclaire doucement (focus-within), pas de contour épais. */
+.bare-focus:focus-visible {
+  outline: none;
+}
+
 :focus-visible {
   outline: 3px solid var(--primary);
   outline-offset: 2px;
+}
+
+@keyframes chat-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.chat-pop {
+  animation: chat-pop 0.18s ease-out;
+}
+
+/* « L'autre écrit… » : trois points qui montent et descendent, décalés ; immobiles si l'utilisateur réduit les animations. */
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+.typing-dot {
+  animation: typing-dot 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+@keyframes voice-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.voice-rec-dot {
+  animation: voice-pulse 1.4s ease-in-out infinite;
 }
 
 @layer components {
@@ -123,6 +154,9 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .typing-dot, .voice-rec-dot {
+    animation: none;
+  }
   * {
     transition: none !important;
     animation: none !important;
