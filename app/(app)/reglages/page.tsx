@@ -169,7 +169,7 @@ function Form({ initial }: { initial: Settings }) {
           {numeric("bar", "barLength", t("settings.barLength"))}
           {numeric("kerf", "kerf", t("settings.kerf"))}
         </div>
-        <Link href="/reglages/profils" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+        <Link href="/fournisseurs" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
           {t("market.link")} →
         </Link>
       </section>

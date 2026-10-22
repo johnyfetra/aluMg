@@ -7,7 +7,7 @@ import { LangMenu, ThemeSwitch, UserMenu } from "./Controls";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
-import { Briefcase, ClipboardList, Images, Search, Store, Users } from "lucide-react";
+import { Boxes, Briefcase, ClipboardList, Images, Search, Store, Users } from "lucide-react";
 import { useSession, useUnread } from "@/lib/client";
 
 type Item = { href: string; key: keyof Messages; Icon: typeof Settings; match: (p: string) => boolean };
@@ -33,6 +33,7 @@ const MENUISIER: Nav = {
     {
       label: "nav.group.config",
       items: [
+        { href: "/fournisseurs", key: "nav.suppliers", Icon: Boxes, match: starts("/fournisseurs") },
         { href: "/realisations", key: "nav.portfolio", Icon: Images, match: starts("/realisations") },
         { href: "/profil-public", key: "nav.publicProfile", Icon: Store, match: starts("/profil-public") },
         { href: "/reglages", key: "nav.settings", Icon: Settings, match: starts("/reglages") },

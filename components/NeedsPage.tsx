@@ -3,14 +3,15 @@ import { ArrowLeft, ArrowRight, Box, Coins, PackageCheck, Percent, Scissors, Set
 import Link from "next/link";
 import { type ReactNode, useMemo, useState } from "react";
 import Budget from "./Budget";
+import CatalogSource from "./CatalogSource";
 import { MarketSim } from "./MarketSim";
 import Viewer3DLoader from "./Viewer3DLoader";
 import { allPieces, fmt, lineTotal, meters } from "@/lib/calc";
-import { useQuotes, useSettings } from "@/lib/client";
+import { useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
 import { lineDetails, lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { type T, useI18n } from "@/lib/i18n";
-import { FINISHES, type Line, type Quote, type Settings } from "@/lib/model";
+import { FINISHES, type Line, type Market, type Quote, type Settings } from "@/lib/model";
 import { type GroupPlan, type Plan, initSim, procure, simulate } from "@/lib/procure";
 import { totals } from "@/lib/totals";
 
@@ -42,8 +43,10 @@ export default function NeedsPage({ id, lineId }: { id: string; lineId?: string 
   const { t } = useI18n();
   const { quotes, loading } = useQuotes();
   const { settings } = useSettings();
-  if (loading || !quotes || !settings) return null;
+  const catalog = useQuoteCatalog(id);
+  if (loading || !quotes || !settings || catalog.loading) return null;
   const quote = quotes.find((q) => q.id === id);
+  const market = catalog.market ?? settings.market; // le catalogue de ce devis, sinon le catalogue général
   const idx = lineId ? quote?.lines.findIndex((l) => l.id === lineId) ?? -1 : -1;
   if (!quote || (lineId && idx < 0)) {
     return (
@@ -55,14 +58,14 @@ export default function NeedsPage({ id, lineId }: { id: string; lineId?: string 
       </p>
     );
   }
-  const plan = procure(allPieces(quote.lines), settings.market, settings.kerf);
-  return lineId ? <LineView quote={quote} idx={idx} plan={plan} t={t} /> : <QuoteView quote={quote} base={simulate(quote.lines, initSim(settings.market), settings.kerf)} settings={settings} t={t} />;
+  const plan = procure(allPieces(quote.lines), market, settings.kerf);
+  return lineId ? <LineView quote={quote} idx={idx} plan={plan} t={t} /> : <QuoteView quote={quote} market={market} specific={!!catalog.market} catalog={catalog} base={simulate(quote.lines, initSim(market), settings.kerf)} settings={settings} t={t} />;
 }
 
 // ---------- Vue du devis : tout ce qu'il faut acheter ----------
-function QuoteView({ quote, base, settings, t }: { quote: Quote; base: Plan; settings: Settings; t: T }) {
+function QuoteView({ quote, base, settings, market, specific, catalog, t }: { quote: Quote; base: Plan; settings: Settings; market: Market; specific: boolean; catalog: ReturnType<typeof useQuoteCatalog>; t: T }) {
   const { save } = useSettings();
-  const [sim, setSim] = useState(() => initSim(settings.market));
+  const [sim, setSim] = useState(() => initSim(market));
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   // Besoin et coût sous les hypothèses de la simulation ; `base` = ce que donne le marché enregistré.
   const plan = useMemo(() => simulate(quote.lines, sim, settings.kerf), [quote.lines, sim, settings.kerf]);
@@ -70,15 +73,17 @@ function QuoteView({ quote, base, settings, t }: { quote: Quote; base: Plan; set
   const margin = sale - plan.allCost;
   const cur = t("common.currency");
   const diff = (n: number, unit = "") => (n === 0 ? undefined : `${n > 0 ? "+" : "−"}${fmt(Math.abs(n))}${unit}`);
-  const applySim = async () => {
-    // les prix simulés (variation générale comprise) deviennent les prix du marché
+  // Garder les prix simulés : pour ce devis seulement (catalogue propre au devis) ou pour tous les devis (catalogue général). La variation générale est intégrée aux prix.
+  const applySim = async (scope: "quote" | "global") => {
     const k = 1 + sim.pct / 100;
+    const scale = (o: Record<string, number> | undefined) => (o ? Object.fromEntries(Object.entries(o).map(([key, v]) => [key, Math.round(v * k)])) : o);
     const offers = Object.fromEntries(Object.entries(sim.market.offers).map(([p, os]) => [p, os.map((o) => ({ ...o, price: Math.round(o.price * k) }))]));
-    const market = { ...sim.market, offers };
+    const next: Market = { ...sim.market, offers, accessories: scale(sim.market.accessories), glass: scale(sim.market.glass) };
     try {
-      await save({ ...settings, market });
-      setSim(initSim(market));
-      setMsg({ ok: true, text: t("sim.applied") });
+      if (scope === "quote") await catalog.save(next);
+      else await save({ ...settings, market: next });
+      setSim(initSim(next));
+      setMsg({ ok: true, text: t(scope === "quote" ? "sim.appliedQuote" : "sim.applied") });
     } catch {
       setMsg({ ok: false, text: t("common.error") });
     }
@@ -93,7 +98,7 @@ function QuoteView({ quote, base, settings, t }: { quote: Quote; base: Plan; set
         <h1 className="text-2xl font-bold">
           {t("needsPage.title")} — {quote.number}
         </h1>
-        <Link href="/reglages/profils" className="btn-secondary">
+        <Link href="/fournisseurs" className="btn-secondary">
           <Settings2 size={16} aria-hidden />
           {t("needsPage.configure")}
         </Link>
@@ -107,7 +112,22 @@ function QuoteView({ quote, base, settings, t }: { quote: Quote; base: Plan; set
         <Kpi label={t("needs.totalWaste")} value={`${meters(plan.wasteLen)} (${plan.wastePct} %)`} Icon={Scissors} tone={plan.wastePct > 40 ? "text-warn" : undefined} />
       </dl>
 
-      <MarketSim sim={sim} setSim={setSim} lines={quote.lines} kerf={settings.kerf} baseCost={base.allCost} cost={plan.allCost} saved={settings.market} onSave={applySim} t={t} />
+      <CatalogSource
+        specific={specific}
+        market={market}
+        general={settings.market}
+        t={t}
+        onSave={async (m) => {
+          await catalog.save(m);
+          setSim(initSim(m));
+        }}
+        onReset={async () => {
+          await catalog.reset();
+          setSim(initSim(settings.market));
+        }}
+      />
+
+      <MarketSim sim={sim} setSim={setSim} lines={quote.lines} kerf={settings.kerf} baseCost={base.allCost} cost={plan.allCost} saved={market} onSave={applySim} t={t} />
       <p role="status" className={`text-sm font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>{msg?.text}</p>
 
       <Budget quote={quote} plan={plan} t={t} />
@@ -203,7 +223,7 @@ function GroupCard({ g, quoteId, lines, t }: { g: GroupPlan; quoteId: string; li
       )}
       {g.noOffer ? (
         <p role="alert" className="text-sm font-medium text-danger">
-          {t("needsPage.noOffer")} <Link href="/reglages/profils" className="underline">{t("needsPage.configure")}</Link>
+          {t("needsPage.noOffer")} <Link href="/fournisseurs" className="underline">{t("needsPage.configure")}</Link>
         </p>
       ) : (
         <ul className="mb-3 space-y-1 text-sm">

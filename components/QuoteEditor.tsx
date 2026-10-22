@@ -11,7 +11,7 @@ import Timeline from "./Timeline";
 import Viewer3DLoader from "./Viewer3DLoader";
 import { Choice, Field, FinishPicker } from "./ui";
 import { allPieces, billedArea, cutList, cuttingPlan, fmt, lineTotal, meters, normalize, planTotals, unitPrice } from "@/lib/calc";
-import { ApiError, request, useQuotes, useSettings } from "@/lib/client";
+import { ApiError, request, useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
 import { lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { type T, useI18n } from "@/lib/i18n";
@@ -105,6 +105,9 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const { t, locale } = useI18n();
   const router = useRouter();
   const { save } = useQuotes();
+  // gammes et couleurs proposées : celles du catalogue de ce devis s'il en a un, sinon du catalogue général
+  const catalog = useQuoteCatalog(existing?.id);
+  const eff = catalog.market ? { ...settings, market: catalog.market } : settings;
   const [attachCut, setAttachCut] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [persisted, setPersisted] = useState(!!existing);
@@ -345,7 +348,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                   l={l}
                   i={i}
                   t={t}
-                  settings={settings}
+                  settings={eff}
                   valid={valid(l)}
                   locked={locked}
                   mark={marks[i]}
@@ -364,7 +367,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 type="button"
                 className="btn-secondary"
                 onClick={() => {
-                  const nl = newLine(settings);
+                  const nl = newLine(eff);
                   setQ({ ...q, lines: [...q.lines, nl] });
                   setOpenIds((o) => new Set(o).add(nl.id));
                   setLayout("cards");

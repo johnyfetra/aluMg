@@ -11,7 +11,7 @@ import { type Sim, initSim, simulate } from "@/lib/procure";
 const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${fmt(Math.abs(n))}`;
 
 // Simulateur : le menuisier essaie une autre gamme, une autre couleur, d'autres prix ; tout est local, rien n'est enregistré sans son accord.
-export function MarketSim({ sim, setSim, lines, kerf, baseCost, cost, saved, onSave, t }: { sim: Sim; setSim: (s: Sim) => void; lines: Line[]; kerf: number; baseCost: number; cost: number; saved: Market; onSave: () => void; t: T }) {
+export function MarketSim({ sim, setSim, lines, kerf, baseCost, cost, saved, onSave, t }: { sim: Sim; setSim: (s: Sim) => void; lines: Line[]; kerf: number; baseCost: number; cost: number; saved: Market; onSave: (scope: "quote" | "global") => void; t: T }) {
   const [open, setOpen] = useState(true);
   const cur = t("common.currency");
   const marketChanged = JSON.stringify(sim.market) !== JSON.stringify(saved);
@@ -44,10 +44,17 @@ export function MarketSim({ sim, setSim, lines, kerf, baseCost, cost, saved, onS
             <RotateCcw size={15} aria-hidden />
             {t("sim.reset")}
           </button>
-          <button type="button" className="btn-primary !min-h-10" disabled={!marketChanged && sim.pct === 0} onClick={onSave}>
-            <Save size={15} aria-hidden />
-            {t("sim.apply")}
-          </button>
+          <span className="flex items-center gap-2 rounded-xl border border-line bg-surface p-1 pl-3">
+            <span className="text-sm font-medium text-muted">{t("sim.keep")}</span>
+            <button type="button" className="btn-secondary !min-h-9 !px-3" disabled={!marketChanged && sim.pct === 0} onClick={() => onSave("quote")}>
+              <Save size={15} aria-hidden />
+              {t("sim.forQuote")}
+            </button>
+            <button type="button" className="btn-primary !min-h-9 !px-3" disabled={!marketChanged && sim.pct === 0} onClick={() => onSave("global")}>
+              <Save size={15} aria-hidden />
+              {t("sim.forAll")}
+            </button>
+          </span>
         </div>
       </div>
 
