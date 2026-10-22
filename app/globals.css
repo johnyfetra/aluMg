@@ -172,3 +172,21 @@ aside :focus-visible {
   max-width: 100%;
   height: auto;
 }
+
+/* Impression d'un devis (page d'aperçu) : seule la feuille est imprimée. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #quote-paper, #quote-paper * {
+    visibility: visible;
+  }
+  #quote-paper {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+  @page {
+    margin: 12mm;
+  }
+}

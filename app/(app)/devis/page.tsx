@@ -1,5 +1,5 @@
 "use client";
-import { Download, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Download, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -54,6 +54,9 @@ function QuotesView() {
         <Download size={16} aria-hidden />
         PDF
       </button>
+      <Link href={`/devis/${q.id}/apercu`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("preview.open")} ${q.number}`} title={t("preview.open")}>
+        <Eye size={16} aria-hidden />
+      </Link>
       <Link href={`/devis/${q.id}`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("common.edit")} ${q.number}`}>
         <Pencil size={16} aria-hidden />
       </Link>

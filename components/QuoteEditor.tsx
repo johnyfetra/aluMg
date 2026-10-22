@@ -1,5 +1,5 @@
 "use client";
-import { Box, ChevronDown, Copy, FileDown, Image as ImageIcon, Inbox, LayoutGrid, Rows3, Ruler, Save, Send, Table2, Trash2, XCircle } from "lucide-react";
+import { Box, ChevronDown, Copy, Eye, FileDown, Image as ImageIcon, Inbox, LayoutGrid, Rows3, Ruler, Save, Send, Table2, Trash2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -239,9 +239,17 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{q.number ? `${t("editor.titleEdit")} ${q.number}` : t("editor.titleNew")}</h1>
-        <Link href="/devis" className="btn-secondary">
-          {t("common.back")}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {persisted && (
+            <Link href={`/devis/${q.id}/apercu`} className="btn-secondary">
+              <Eye size={16} aria-hidden />
+              {t("preview.open")}
+            </Link>
+          )}
+          <Link href="/devis" className="btn-secondary">
+            {t("common.back")}
+          </Link>
+        </div>
       </div>
 
       {!settings.company && (
