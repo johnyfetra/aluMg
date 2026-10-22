@@ -1,5 +1,5 @@
 "use client";
-import { ContactShadows, OrbitControls } from "@react-three/drei";
+import { ContactShadows, Html, Line as DLine, OrbitControls } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { RotateCcw } from "lucide-react";
 import { createContext, type ReactNode, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -160,13 +160,13 @@ function Sliding({ v, W, H, t, amounts, toggle }: { v: Viewable; W: number; H: n
   const motion = leafMotion(v);
   return (
     <group position={[0, H / 2, 0]}>
-      {motion.map(({ slide, front }, i) =>
+      {motion.map(({ slide, front, travel }, i) =>
         slide === 0 ? (
           <group key={i} position={[x(i), 0, -0.016]}>
             <LeafBody w={lv} h={h} v={v} infill={v.infill} />
           </group>
         ) : (
-          <SlideLeaf key={i} closedX={x(i)} openX={x(i + slide)} side={slide === 1 ? 1 : -1} z={front ? 0.016 : -0.016} w={lv} h={h} v={v} target={amounts[i] ?? 0} onToggle={() => toggle(i)} />
+          <SlideLeaf key={i} closedX={x(i)} openX={x(i) + slide * travel * (lv - ov)} side={slide === 1 ? 1 : -1} z={front ? 0.016 : -0.016} w={lv} h={h} v={v} target={amounts[i] ?? 0} onToggle={() => toggle(i)} />
         ),
       )}
     </group>
@@ -447,6 +447,26 @@ function Surroundings({ W, H, stage }: { W: number; H: number; stage: Stage }) {
   );
 }
 
+// ---------- Cotes : la largeur et la hauteur réelles, suivent la vue ----------
+function Dimensions({ W, H, leaves }: { W: number; H: number; leaves: number }) {
+  const label = "pointer-events-none select-none whitespace-nowrap rounded bg-surface/90 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-ink shadow";
+  const y = -0.1;
+  const x = -W / 2 - 0.12;
+  const col = "#64748b";
+  return (
+    <group>
+      <DLine points={[[-W / 2, y, 0.05], [W / 2, y, 0.05]]} color={col} lineWidth={1} />
+      <DLine points={[[x, 0, 0.05], [x, H, 0.05]]} color={col} lineWidth={1} />
+      <Html position={[0, y - 0.07, 0.05]} center zIndexRange={[10, 0]}>
+        <div className={label}>{Math.round(W * 1000)} mm{leaves > 1 ? ` · ${leaves} × ${Math.round((W * 1000) / leaves)}` : ""}</div>
+      </Html>
+      <Html position={[x - 0.02, H / 2, 0.05]} center zIndexRange={[10, 0]}>
+        <div className={label}>{Math.round(H * 1000)} mm</div>
+      </Html>
+    </group>
+  );
+}
+
 // ---------- Interaction ----------
 function clickToggle(e: ThreeEvent<MouseEvent>, fn: () => void) {
   if (e.delta > 4) return; // un glisser pour tourner la vue n'ouvre rien
@@ -564,6 +584,7 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
             <directionalLight position={[3, 5, 4]} intensity={stage ? 1.6 : 1.4} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} shadow-bias={-0.0004} />
             {stage && <Surroundings W={W} H={H} stage={stage} />}
             <group position={[0, sillY, 0]}>{body}</group>
+            {!bare && !stage && <Dimensions W={W} H={H} leaves={v.category === "fenetre" || v.category === "porte" || v.category === "cloison" ? v.leaves : 1} />}
             {!stage && <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={Math.max(W, H) * 2.4} blur={2.4} far={Math.max(H, 1.5)} />}
             <OrbitControls
               ref={(c) => {

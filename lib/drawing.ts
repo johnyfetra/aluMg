@@ -37,7 +37,8 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
   const fw = width * s;
   const fh = height * s;
   const W = Math.round(ox + fw + 12);
-  const H = Math.round(oy + fh + 34);
+  let H = Math.round(oy + fh + 34);
+  let leafMm = 0; // largeur d'un vantail, cotée sous la largeur totale
   const euro = l.range === "europeen";
   const t = Math.max(4, Math.min(8, Math.min(fw, fh) * 0.05)) * (euro ? 1.3 : 1);
   const hex = FINISHES.find((f) => f.id === l.finish)?.hex ?? "#f5f5f2";
@@ -129,6 +130,7 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
     const iw = fw - 2 * t;
     const mull = Math.max(3, t * 0.7);
     const pw = (iw - (n - 1) * mull) / n;
+    leafMm = width / n;
     for (let i = 0; i < n; i++) {
       const x = ox + t + i * (pw + mull);
       body += glass(x, oy + t, pw, fh - 2 * t);
@@ -151,6 +153,7 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
       const ov = t * 2;
       const vw = (iw + (n - 1) * ov) / n;
       const motion = leafMotion(l);
+      leafMm = width / n;
       // les vantaux fixes d'abord, les mobiles par-dessus ; la flèche indique le sens de glissement
       for (const front of [false, true])
         for (let i = 0; i < n; i++) {
@@ -161,6 +164,7 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
         }
     } else {
       const vw = iw / n;
+      leafMm = width / n;
       for (let i = 0; i < n; i++) {
         const x = ix + i * vw;
         body += leaf(x, iy, vw, ih);
@@ -187,11 +191,13 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
     }
   }
 
+  if (leafMm > 0 && l.leaves > 1) H += 14;
+  const leafDim = leafMm > 0 && l.leaves > 1 ? `<text x="${f(ox + fw / 2)}" y="${f(oy + fh + 40)}" font-size="10" fill-opacity=".65">${l.leaves} × ${Math.round(leafMm)} mm</text>` : "";
   const dim = `<g font-family="Helvetica,Arial,sans-serif" font-size="11" fill="${INK}" text-anchor="middle">
     <line x1="${ox}" x2="${f(ox + fw)}" y1="${f(oy + fh + 12)}" y2="${f(oy + fh + 12)}" stroke="${INK}" stroke-width="0.8"/>
     <text x="${f(ox + fw / 2)}" y="${f(oy + fh + 26)}">${width} mm</text>
     <line x1="${ox - 12}" x2="${ox - 12}" y1="${oy}" y2="${f(oy + fh)}" stroke="${INK}" stroke-width="0.8"/>
-    <text transform="translate(${ox - 17},${f(oy + fh / 2)}) rotate(-90)">${height} mm</text></g>`;
+    <text transform="translate(${ox - 17},${f(oy + fh / 2)}) rotate(-90)">${height} mm</text>${leafDim}</g>`;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${defs.join("")}</defs>${body}${dim}</svg>`;
   return { svg, w: W, h: H };

@@ -55,16 +55,16 @@ export const DIRECTIONS = ["left", "right", "both"] as const;
 export type Direction = (typeof DIRECTIONS)[number];
 
 // Comportement de chaque vantail. Source unique du sens : le schéma (flèches, charnières) et la vue 3D (animation) la lisent.
-// slide : -1 glisse vers la gauche, 1 vers la droite, 0 = fixe (ou battant). front : rail avant. hingeLeft : charnières à gauche (battants).
+// slide : -1 glisse vers la gauche, 1 vers la droite, 0 = fixe (ou battant). front : rail avant. travel : course en fraction d'un pas de vantail (« both » : la moitié, chaque côté s'ouvre). hingeLeft : charnières à gauche (battants).
 export function leafMotion(l: { opening: Opening; leaves: number; direction?: Direction }) {
   const dir = l.direction ?? "left";
   return Array.from({ length: l.leaves }, (_, i) => {
     if (l.opening === "coulissant") {
       // un vantail mobile passe devant son voisin ; à gauche : les rangs impairs, à droite : les rangs pairs qui ont un voisin à leur droite
       const slide = dir === "left" ? (i % 2 === 1 ? -1 : 0) : dir === "right" ? (i % 2 === 0 && i + 1 < l.leaves ? 1 : 0) : i % 2 === 1 ? -1 : i + 1 < l.leaves ? 1 : 0;
-      return { slide, front: dir === "both" ? i % 2 === 1 : slide !== 0, hingeLeft: true };
+      return { slide, travel: dir === "both" ? 0.5 : 1, front: dir === "both" ? i % 2 === 1 : slide !== 0, hingeLeft: true };
     }
-    return { slide: 0, front: false, hingeLeft: l.leaves === 1 ? dir !== "right" : i < l.leaves / 2 };
+    return { slide: 0, travel: 1, front: false, hingeLeft: l.leaves === 1 ? dir !== "right" : i < l.leaves / 2 };
   });
 }
 // La liste de choix du sens n'a de sens que pour un coulissant ou un battant à un seul vantail.
