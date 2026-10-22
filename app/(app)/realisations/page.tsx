@@ -7,6 +7,7 @@ import { compressImage, thumbnail } from "@/lib/image";
 import { useI18n } from "@/lib/i18n";
 import { SPECIALTIES } from "@/lib/model";
 import type { PortfolioItem } from "@/lib/profiles";
+import Select from "@/components/Select";
 
 type Draft = { id?: string; title: string; description: string; category: PortfolioItem["category"]; year: number | null; images: string[] };
 const EMPTY: Draft = { title: "", description: "", category: "", year: new Date().getFullYear(), images: [] };
@@ -77,14 +78,7 @@ export default function PortfolioPage() {
             </Field>
             <div className="grid grid-cols-2 gap-4">
               <Field htmlFor="pt-cat" label={t("port.category")}>
-                <select id="pt-cat" className="input" value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as Draft["category"] })}>
-                  <option value="">—</option>
-                  {SPECIALTIES.map((s) => (
-                    <option key={s} value={s}>
-                      {t(`spec.${s}`)}
-                    </option>
-                  ))}
-                </select>
+                <Select id="pt-cat" value={draft.category} onChange={(v) => setDraft({ ...draft, category: v as Draft["category"] })} options={[{ value: "", label: "—" }, ...SPECIALTIES.map((s) => ({ value: s, label: t(`spec.${s}`) }))]} />
               </Field>
               <Field htmlFor="pt-year" label={t("port.year")}>
                 <input id="pt-year" type="number" className="input" min={1990} max={2100} value={draft.year ?? ""} onChange={(e) => setDraft({ ...draft, year: e.target.value ? Number(e.target.value) : null })} />

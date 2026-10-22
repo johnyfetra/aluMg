@@ -43,6 +43,7 @@ import {
   leavesSpec,
   lineSchema,
 } from "@/lib/model";
+import Select from "./Select";
 import { totals } from "@/lib/totals";
 
 const DEFAULT_SIZE: Record<Category, [number, number]> = {
@@ -561,19 +562,13 @@ export function LineCard({
           {hasGlass && (
             <div className="grid gap-3 sm:grid-cols-3">
               <Field htmlFor={p("gt")} label={t("editor.glassType")}>
-                <select id={p("gt")} className="input !min-h-10" value={l.glassType} onChange={(e) => onChange({ glassType: e.target.value as Line["glassType"] })}>
-                  {GLASSES.map((g) => <option key={g.id} value={g.id}>{t(g.label)}</option>)}
-                </select>
+                <Select id={p("gt")} className="!min-h-10" value={l.glassType} onChange={(v) => onChange({ glassType: v as Line["glassType"] })} options={GLASSES.map((g) => ({ value: g.id, label: t(g.label) }))} />
               </Field>
               <Field htmlFor={p("th")} label={t("editor.thickness")}>
-                <select id={p("th")} className="input !min-h-10" value={l.thickness} onChange={(e) => onChange({ thickness: e.target.value as Line["thickness"] })}>
-                  {THICKNESSES.map((x) => <option key={x} value={x}>{t(`thickness.${x}`)}</option>)}
-                </select>
+                <Select id={p("th")} className="!min-h-10" value={l.thickness} onChange={(v) => onChange({ thickness: v as Line["thickness"] })} options={THICKNESSES.map((x) => ({ value: x, label: t(`thickness.${x}`) }))} />
               </Field>
               <Field htmlFor={p("pt")} label={t("editor.pattern")}>
-                <select id={p("pt")} className="input !min-h-10" disabled={!canPattern} value={canPattern ? l.pattern : "none"} onChange={(e) => onChange({ pattern: e.target.value as Line["pattern"] })}>
-                  {PATTERNS.map((x) => <option key={x} value={x}>{t(`pattern.${x}`)}</option>)}
-                </select>
+                <Select id={p("pt")} className="!min-h-10" disabled={!canPattern} value={canPattern ? l.pattern : "none"} onChange={(v) => onChange({ pattern: v as Line["pattern"] })} options={PATTERNS.map((x) => ({ value: x, label: t(`pattern.${x}`) }))} />
               </Field>
             </div>
           )}
@@ -746,9 +741,7 @@ function LeafConfig({ l, t, onChange, id }: { l: Line; t: T; onChange: (p: Parti
         {modes.map((m, i) => (
           <li key={i} className={`flex min-w-[7.5rem] flex-col gap-1 rounded-lg border p-1.5 ${m === "F" ? "border-line bg-surface-2/60" : "border-primary/50 bg-primary/5"}`}>
             <label htmlFor={`${id}-lf${i}`} className="text-xs font-bold tabular-nums">{marks[i]}</label>
-            <select id={`${id}-lf${i}`} className="input !min-h-8 !px-2 !py-0.5 text-xs" value={m} onChange={(e) => set(i, e.target.value as LeafMode)}>
-              {allowed(i).map((x) => <option key={x} value={x}>{label(x)}</option>)}
-            </select>
+            <Select id={`${id}-lf${i}`} className="!min-h-8 !px-2 !py-0.5 text-xs" value={m} onChange={(v) => set(i, v as LeafMode)} options={allowed(i).map((x) => ({ value: x, label: label(x) }))} />
           </li>
         ))}
       </ul>

@@ -10,6 +10,7 @@ import { normalize } from "@/lib/calc";
 import { ApiError, request, useDirectory } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { DEFAULT_SETTINGS, type Line, lineSchema } from "@/lib/model";
+import Select from "./Select";
 
 // Formulaire de demande de devis d'un client : il décrit ses ouvrages (sans voir de prix) ; le menuisier répond avec son devis.
 export default function RequestForm() {
@@ -60,15 +61,7 @@ export default function RequestForm() {
         </h2>
         <div className="grid items-start gap-4 lg:grid-cols-2">
           <Field htmlFor="rq-m" label={t("req.joiner")}>
-            <select id="rq-m" className="input" required value={slug} onChange={(e) => setSlug(e.target.value)}>
-              <option value="">{t("req.pickJoiner")}</option>
-              {directory.map((m) => (
-                <option key={m.slug} value={m.slug}>
-                  {m.name}
-                  {m.city ? ` — ${m.city}` : ""}
-                </option>
-              ))}
-            </select>
+            <Select id="rq-m" required value={slug} onChange={setSlug} options={[{ value: "", label: t("req.pickJoiner") }, ...directory.map((m) => ({ value: m.slug, label: `${m.name}${m.city ? ` — ${m.city}` : ""}` }))]} />
           </Field>
           {chosen && (
             <Link href={`/menuisiers/${chosen.slug}`} target="_blank" className="flex items-center gap-3 rounded-xl border border-line p-3 hover:bg-surface-2">

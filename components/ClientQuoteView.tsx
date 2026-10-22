@@ -13,6 +13,7 @@ import { drawingSvg } from "@/lib/drawing";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import { REPORT_REASONS } from "@/lib/model";
 import { totals } from "@/lib/totals";
+import Select from "./Select";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const STEPS = ["requested", "sent", "accepted", "in_progress", "completed"] as const;
@@ -324,13 +325,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
               >
                 <p className="text-xs text-muted">{t("act.reportHint")}</p>
                 <Field htmlFor="rp-r" label={t("act.reportReason")}>
-                  <select id="rp-r" className="input" value={reason} onChange={(e) => setReason(e.target.value as typeof reason)}>
-                    {REPORT_REASONS.map((r) => (
-                      <option key={r} value={r}>
-                        {t(`rp.${r}`)}
-                      </option>
-                    ))}
-                  </select>
+                  <Select id="rp-r" value={reason} onChange={(v) => setReason(v as typeof reason)} options={REPORT_REASONS.map((r) => ({ value: r, label: t(`rp.${r}`) }))} />
                 </Field>
                 <Field htmlFor="rp-d" label={t("act.reportDetails")}>
                   <textarea id="rp-d" className="input min-h-20" maxLength={1500} value={message} onChange={(e) => setMessage(e.target.value)} />

@@ -9,6 +9,7 @@ import { useQuotes, useSettings } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import { STATUSES, type Quote, type Status } from "@/lib/model";
 import { totals } from "@/lib/totals";
+import Select from "@/components/Select";
 
 export default function QuotesPage() {
   return (
@@ -39,18 +40,13 @@ function QuotesView() {
   const date = (q: Quote) => new Date(q.date).toLocaleDateString(DATE_LOCALE[locale]);
   // Un devis lié à un compte client change de statut par ses actions (envoi, acceptation…) : pas de menu libre.
   const statusSelect = (q: Quote) => q.clientId ? null : (
-    <select
+    <Select
       aria-label={`${t("status.label")} — ${q.number}`}
       value={q.status}
-      onChange={(e) => save({ ...q, status: e.target.value as Status }, false)}
-      className="input !min-h-9 !w-auto !py-1 text-sm"
-    >
-      {STATUSES.filter((s) => s !== "requested").map((s) => (
-        <option key={s} value={s}>
-          {t(`status.${s}`)}
-        </option>
-      ))}
-    </select>
+      onChange={(v) => save({ ...q, status: v as Status }, false)}
+      className="!min-h-9 !w-auto !py-1 text-sm"
+      options={STATUSES.filter((s) => s !== "requested").map((s) => ({ value: s, label: t(`status.${s}`) }))}
+    />
   );
   const actions = (q: Quote) => (
     <div className="flex gap-2">

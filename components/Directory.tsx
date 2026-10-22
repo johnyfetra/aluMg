@@ -6,6 +6,7 @@ import MenuisierCard from "./MenuisierCard";
 import { useDirectory } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { SPECIALTIES } from "@/lib/model";
+import Select from "./Select";
 
 type F = { q: string; city: string; specialty: string; minRating: string; verified: string; sort: string };
 const EMPTY: F = { q: "", city: "", specialty: "", minRating: "", verified: "", sort: "rating" };
@@ -172,13 +173,7 @@ export default function Directory() {
               </button>
               <label className="flex items-center gap-2 text-sm">
                 <span className="hidden text-muted sm:inline">{t("dir.sortBy")}</span>
-                <select className="input !w-auto !min-h-10" value={f.sort} onChange={(e) => set({ sort: e.target.value })} aria-label={t("dir.sort")}>
-                  {(["rating", "completed", "recent", "name"] as const).map((s) => (
-                    <option key={s} value={s}>
-                      {t(`dir.sort.${s}`)}
-                    </option>
-                  ))}
-                </select>
+                <Select className="!w-auto !min-h-10" value={f.sort} onChange={(v) => set({ sort: v })} aria-label={t("dir.sort")} options={(["rating", "completed", "recent", "name"] as const).map((s) => ({ value: s, label: t(`dir.sort.${s}`) }))} />
               </label>
             </div>
           </div>

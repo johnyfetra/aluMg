@@ -94,7 +94,7 @@ export const en: Messages = {
   "range.europeen": "European range",
   "range.asiatique": "Asian range",
   "infill.vitree": "Glazed",
-  "infill.semi": "Half-panel (glazed on top)",
+  "infill.semi": "Half-glazed (glass on top)",
   "infill.pleine": "Solid",
   "extra.moustiquaire": "Insect screen",
   "extra.grille": "Security grille",

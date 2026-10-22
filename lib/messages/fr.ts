@@ -93,7 +93,7 @@ export const fr = {
   "range.europeen": "Gamme européenne",
   "range.asiatique": "Gamme asiatique",
   "infill.vitree": "Vitrée",
-  "infill.semi": "Semi-pleine (vitrée en haut)",
+  "infill.semi": "Demi-vitrée (vitrage en haut)",
   "infill.pleine": "Pleine",
   "extra.moustiquaire": "Moustiquaire",
   "extra.grille": "Grille de sécurité",
