@@ -240,12 +240,24 @@ export const PROFILE_KEYS: readonly Label[] = [
   "pf.dormant", "pf.sash", "pf.battement", "pf.mid", "pf.louvre", "pf.box", "pf.guide",
   "pf.slat", "pf.shaft", "pf.slatR", "pf.post", "pf.rail", "pf.bar", "pf.mullion",
 ];
-export type Offer = { length: number; price: number }; // une barre à l'achat : longueur (mm) et prix (Ar)
+export type Offer = { length: number; price: number; off?: boolean }; // une barre à l'achat : longueur (mm), prix (Ar) ; off : plus disponible chez le fournisseur
 export type Market = {
   offers: Record<string, Offer[]>; // par profilé, pour la gamme asiatique et un profilé blanc
   rangeMarkup: number; // % ajouté au prix de la barre en gamme européenne
-  finishMarkup: { anodise: number; fauxbois: number }; // % ajouté pour un profilé anodisé ou faux bois
+  finishMarkup: { anodise: number; fauxbois: number }; // % ajouté pour un profilé anodisé ou faux bois (par défaut du groupe)
+  finishPct?: Partial<Record<FinishId, number>>; // majoration propre à une couleur : remplace celle de son groupe
+  off?: { ranges?: Line["range"][]; finishes?: FinishId[]; profiles?: string[] }; // ce que les fournisseurs n'ont pas (tout est disponible par défaut)
 };
+
+// Disponibilité et majoration lues dans le catalogue des fournisseurs.
+export const rangeOn = (m: Market, r: Line["range"]) => !m.off?.ranges?.includes(r);
+export const finishOn = (m: Market, f: FinishId) => !m.off?.finishes?.includes(f);
+export const profileOn = (m: Market, p: string) => !m.off?.profiles?.includes(p);
+export const groupMarkup = (m: Market, f: FinishId) => {
+  const g = FINISHES.find((x) => x.id === f)?.group;
+  return g === "anodise" ? m.finishMarkup.anodise : g === "fauxbois" ? m.finishMarkup.fauxbois : 0;
+};
+export const finishMarkup = (m: Market, f: FinishId) => m.finishPct?.[f] ?? groupMarkup(m, f);
 
 // valeurs d'exemple : prix d'une barre de 6 m ; la barre de 4 m est proposée à ~72 % du prix
 const BAR_PRICE: Record<string, number> = {
@@ -258,11 +270,13 @@ export const DEFAULT_MARKET: Market = {
   finishMarkup: { anodise: 12, fauxbois: 30 },
 };
 
-const offerSchema = z.object({ length: z.number().int().min(500).max(12000), price: z.number().min(0).max(1e8) });
+const offerSchema = z.object({ length: z.number().int().min(500).max(12000), price: z.number().min(0).max(1e8), off: z.boolean().optional() });
 const marketSchema = z.object({
   offers: z.record(z.string(), z.array(offerSchema).max(8)),
   rangeMarkup: z.number().min(-90).max(500),
   finishMarkup: z.object({ anodise: z.number().min(-90).max(500), fauxbois: z.number().min(-90).max(500) }),
+  finishPct: z.partialRecord(z.enum(FINISH_IDS), z.number().min(-90).max(500)).optional(),
+  off: z.object({ ranges: z.array(z.enum(RANGES)).max(RANGES.length).optional(), finishes: z.array(z.enum(FINISH_IDS)).max(FINISHES.length).optional(), profiles: z.array(z.string().max(40)).max(40).optional() }).optional(),
 });
 
 export const settingsSchema = z.object({
@@ -339,5 +353,7 @@ export const withDefaults = (s: Partial<Settings> | null | undefined): Settings 
     offers: { ...DEFAULT_MARKET.offers, ...s?.market?.offers },
     rangeMarkup: s?.market?.rangeMarkup ?? DEFAULT_MARKET.rangeMarkup,
     finishMarkup: { ...DEFAULT_MARKET.finishMarkup, ...s?.market?.finishMarkup },
+    finishPct: s?.market?.finishPct,
+    off: s?.market?.off,
   },
 });

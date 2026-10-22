@@ -1,5 +1,5 @@
 import { type ElementUse, type Piece, KERF, allPieces } from "./calc";
-import { FINISHES, type FinishId, type Line, type Market, type Offer } from "./model";
+import { type FinishId, type Line, type Market, type Offer, finishMarkup, finishOn, profileOn, rangeOn } from "./model";
 import type { Messages } from "./messages/fr";
 
 type Label = keyof Messages;
@@ -23,14 +23,14 @@ export type GroupPlan = {
   cost: number;
   tooLong: number[]; // pièces plus longues que toutes les barres du marché
   noOffer: boolean;
+  unavailable: boolean; // gamme ou couleur que les fournisseurs n'ont pas : le prix est indicatif
   share: Record<number, { usedLen: number; cost: number }>; // part de chaque ouvrage (longueur coupée, coût avec sa part de chute)
 };
 
 // Prix d'une offre pour une gamme et une couleur données (majorations du marché appliquées).
 export function priced(offers: Offer[], market: Market, range: string, finish: string): Offer[] {
-  const group = FINISHES.find((f) => f.id === finish)?.group;
-  const pct = (range === "europeen" ? market.rangeMarkup : 0) + (group === "anodise" ? market.finishMarkup.anodise : group === "fauxbois" ? market.finishMarkup.fauxbois : 0);
-  return offers.filter((o) => o.length > 0).map((o) => ({ length: o.length, price: Math.round(o.price * (1 + pct / 100)) }));
+  const pct = (range === "europeen" ? market.rangeMarkup : 0) + finishMarkup(market, finish as FinishId);
+  return offers.filter((o) => o.length > 0 && !o.off).map((o) => ({ length: o.length, price: Math.round(o.price * (1 + pct / 100)) }));
 }
 
 // Remplit des barres de longueur `len` (first-fit decreasing), puis ramène chaque barre à l'offre la moins chère qui contient ses coupes.
@@ -92,7 +92,7 @@ export function procure(pieces: Piece[], market: Market, kerf = KERF): Procureme
 
   const groups: GroupPlan[] = [...byKey].map(([key, list]) => {
     const { profile, range = "asiatique", finish = "blanc" } = list[0];
-    const offers = priced(market.offers[profile] ?? [], market, range, finish);
+    const offers = profileOn(market, profile) ? priced(market.offers[profile] ?? [], market, range, finish) : [];
     const uses = new Map<string, ElementUse>();
     for (const p of list) {
       const k = `${p.element}|${p.len}`;
@@ -119,7 +119,7 @@ export function procure(pieces: Piece[], market: Market, kerf = KERF): Procureme
     return {
       key, profile, range, finish, elements: [...uses.values()], lines: [...new Set(list.flatMap((p) => (p.line !== undefined ? [p.line] : [])))].sort((a, b) => a - b),
       bars, purchase, usedLen, totalLen, wasteLen: totalLen - usedLen, wastePct: totalLen ? Math.round(((totalLen - usedLen) / totalLen) * 100) : 0,
-      cost, tooLong, noOffer: offers.length === 0, share,
+      cost, tooLong, noOffer: offers.length === 0, unavailable: !rangeOn(market, range as Line["range"]) || !finishOn(market, finish as FinishId), share,
     };
   });
 
