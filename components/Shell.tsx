@@ -1,4 +1,5 @@
 "use client";
+import ChatWidget from "./ChatWidget";
 import { FilePlus2, MessageCircle, FileText, LayoutDashboard, Menu as MenuIcon, Ruler, Settings, UserCircle, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -168,6 +169,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         <main id="main" className="mx-auto w-full max-w-[110rem] px-4 py-6 sm:px-8 xl:px-10">
           {children}
         </main>
+        <ChatWidget />
       </div>
     </div>
   );

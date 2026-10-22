@@ -11,6 +11,10 @@ export default function CameraDialog({ t, onCapture, onClose }: { t: T; onCaptur
   const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [shot, setShot] = useState<{ url: string; blob: Blob } | null>(null);
   const [error, setError] = useState("");
+  const denied = useRef(t("msg.cameraDenied"));
+  useEffect(() => {
+    denied.current = t("msg.cameraDenied");
+  });
 
   const stop = () => {
     stream.current?.getTracks().forEach((tr) => tr.stop());
@@ -31,12 +35,12 @@ export default function CameraDialog({ t, onCapture, onClose }: { t: T; onCaptur
           await video.current.play().catch(() => {});
         }
       })
-      .catch(() => alive && setError(t("msg.cameraDenied")));
+      .catch(() => alive && setError(denied.current));
     return () => {
       alive = false;
       stop(); // pas de d.close() ici : l'événement « close » rappellerait onClose et démonterait la boîte (React rejoue les effets en développement)
     };
-  }, [facing, t]);
+  }, [facing]);
 
   useEffect(() => () => { if (shot) URL.revokeObjectURL(shot.url); }, [shot]);
 
