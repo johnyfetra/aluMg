@@ -93,7 +93,7 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
 }
 
 // hide : couleurs que les fournisseurs n'ont pas (la couleur déjà choisie reste visible).
-export function FinishPicker({ name, legend, value, onChange, t, dense = false, hide = [] }: { name: string; legend: string; value: FinishId; onChange: (v: FinishId) => void; t: T; dense?: boolean; hide?: readonly FinishId[] }) {
+export function FinishPicker({ name, legend, value, onChange, t, dense = false, hide = [], lead }: { name: string; legend: string; value: FinishId; onChange: (v: FinishId) => void; t: T; dense?: boolean; hide?: readonly FinishId[]; lead?: ReactNode }) {
   const shown = FINISHES.filter((f) => f.id === value || !hide.includes(f.id));
   if (dense)
     // Version compacte : une seule rangée de pastilles, le nom de la couleur choisie est affiché à côté.
@@ -103,6 +103,7 @@ export function FinishPicker({ name, legend, value, onChange, t, dense = false, 
           {legend} <span className="font-normal text-muted">· {t(FINISHES.find((f) => f.id === value)?.label ?? "finish.blanc")}</span>
         </legend>
         <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+          {lead}
           {FINISH_GROUPS.map(([group, label], gi) => (
             <div key={group} role="group" aria-label={t(label)} className={`flex flex-wrap gap-1 ${gi ? "ml-2 border-l border-line pl-3" : ""}`}>
               {shown.filter((f) => f.group === group).map((f) => (
