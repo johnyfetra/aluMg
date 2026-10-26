@@ -3,7 +3,7 @@ import { billedArea, fmt, lineTotal } from "@/lib/calc";
 import { lineDetails, lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { DATE_LOCALE, type T } from "@/lib/i18n";
-import type { Issuer, Quote } from "@/lib/model";
+import { DOC_PRESETS, type Issuer, type Quote } from "@/lib/model";
 import { serviceTotal, totals } from "@/lib/totals";
 import { amountInWords } from "@/lib/words";
 
@@ -21,38 +21,85 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
   const cur = t("common.currency");
   const small = "text-xs text-slate-500";
   const label = "text-[10px] font-bold uppercase tracking-wider";
+  // personnalisation cadrée : seule la mise en page varie, jamais les mentions (voir lib/docStyle.ts)
+  const st = { ...DOC_PRESETS.classique, ...s.docStyle };
+  const compact = st.density === "compact";
+  const cell = compact ? "px-3 py-2" : "px-3 py-4";
+  const th = `px-3 ${compact ? "py-2" : "py-2.5"}`;
+  const boxed = st.table === "boxed";
+  const headFill = st.table !== "lines";
+
+  const logo = s.logo ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={s.logo} alt="" className={`${st.header === "center" ? "mx-auto" : ""} h-16 max-w-32 object-contain`} />
+  ) : null;
+  const identity = (withName: boolean) => (
+    <div className="min-w-0 space-y-0.5">
+      {withName && <p className="text-xl font-bold leading-tight">{s.company || "—"}</p>}
+      {s.address && <p className={small}>{s.address}</p>}
+      {(s.phone || s.email) && <p className={small}>{[s.phone, s.email].filter(Boolean).join("  ·  ")}</p>}
+      {s.website && <p className={small}>{s.website}</p>}
+      {(s.nif || s.stat) && <p className={small}>{[s.nif && `NIF ${s.nif}`, s.stat && `STAT ${s.stat}`].filter(Boolean).join("  ·  ")}</p>}
+    </div>
+  );
+  const meta = (
+    <dl className={`mt-3 inline-grid gap-x-6 gap-y-1 rounded-lg bg-slate-50 px-4 py-3 text-left text-sm ${st.header === "center" ? "grid-cols-[auto_auto_auto_auto_auto_auto]" : "grid-cols-[auto_auto]"}`}>
+      <dt className="text-slate-500">{t("pdf.number")}</dt>
+      <dd className="text-right font-bold tabular-nums">{q.number}</dd>
+      <dt className="text-slate-500">{t("pdf.date")}</dt>
+      <dd className="text-right font-semibold">{d(date)}</dd>
+      <dt className="text-slate-500">{t("pdf.validUntil")}</dt>
+      <dd className="text-right font-semibold">{d(until)}</dd>
+    </dl>
+  );
+  const title = <p className="text-3xl font-bold uppercase tracking-wide" style={{ color: accent }}>{t("pdf.quote")}</p>;
 
   return (
-    <article id="quote-paper" aria-label={`${t("pdf.quote")} ${q.number}`} className="mx-auto w-full max-w-[56rem] overflow-hidden rounded-xl bg-white text-slate-900 shadow-lg ring-1 ring-black/5 print:max-w-none print:rounded-none print:shadow-none print:ring-0">
-      <div className="h-2" style={{ background: accent }} />
-      <div className="space-y-8 p-6 sm:p-10">
-        {/* entête */}
-        <header className="flex flex-wrap items-start justify-between gap-6">
-          <div className="flex min-w-0 items-start gap-4">
+    <article id="quote-paper" aria-label={`${t("pdf.quote")} ${q.number}`} className="mx-auto w-full max-w-[56rem] overflow-hidden rounded-xl bg-white text-slate-900 shadow-lg ring-1 ring-black/5 print:max-w-none print:rounded-none print:shadow-none print:ring-0" style={st.font === "serif" ? { fontFamily: 'Georgia, "Times New Roman", serif' } : undefined}>
+      {st.header === "banner" ? (
+        <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-6 text-white sm:px-10" style={{ background: accent }}>
+          <div className="flex items-center gap-4">
             {s.logo && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={s.logo} alt="" className="h-16 max-w-32 object-contain" />
+              <img src={s.logo} alt="" className="h-14 max-w-28 rounded bg-white/95 object-contain p-1" />
             )}
-            <div className="min-w-0 space-y-0.5">
-              <p className="text-xl font-bold leading-tight">{s.company || "—"}</p>
-              {s.address && <p className={small}>{s.address}</p>}
-              {(s.phone || s.email) && <p className={small}>{[s.phone, s.email].filter(Boolean).join("  ·  ")}</p>}
-              {s.website && <p className={small}>{s.website}</p>}
-              {(s.nif || s.stat) && <p className={small}>{[s.nif && `NIF ${s.nif}`, s.stat && `STAT ${s.stat}`].filter(Boolean).join("  ·  ")}</p>}
+            <p className="text-2xl font-bold leading-tight">{s.company || "—"}</p>
+          </div>
+          <p className="text-2xl font-bold uppercase tracking-wide">{t("pdf.quote")}</p>
+        </div>
+      ) : (
+        <div className="h-2" style={{ background: accent }} />
+      )}
+      <div className="space-y-8 p-6 sm:p-10">
+        {/* entête */}
+        {st.header === "split" && (
+          <header className="flex flex-wrap items-start justify-between gap-6">
+            <div className="flex min-w-0 items-start gap-4">
+              {logo}
+              {identity(true)}
             </div>
-          </div>
-          <div className="text-right">
-            <p className="text-3xl font-bold uppercase tracking-wide" style={{ color: accent }}>{t("pdf.quote")}</p>
-            <dl className="mt-3 inline-grid grid-cols-[auto_auto] gap-x-6 gap-y-1 rounded-lg bg-slate-50 px-4 py-3 text-left text-sm">
-              <dt className="text-slate-500">{t("pdf.number")}</dt>
-              <dd className="text-right font-bold tabular-nums">{q.number}</dd>
-              <dt className="text-slate-500">{t("pdf.date")}</dt>
-              <dd className="text-right font-semibold">{d(date)}</dd>
-              <dt className="text-slate-500">{t("pdf.validUntil")}</dt>
-              <dd className="text-right font-semibold">{d(until)}</dd>
-            </dl>
-          </div>
-        </header>
+            <div className="text-right">
+              {title}
+              {meta}
+            </div>
+          </header>
+        )}
+        {st.header === "center" && (
+          <header className="flex flex-col items-center gap-2 text-center">
+            {logo}
+            {identity(true)}
+            <div className="mt-2 w-full border-t border-slate-200 pt-4">
+              {title}
+              {meta}
+            </div>
+          </header>
+        )}
+        {st.header === "banner" && (
+          <header className="flex flex-wrap items-start justify-between gap-6">
+            {identity(false)}
+            <div className="text-right">{meta}</div>
+          </header>
+        )}
 
         {/* client et projet */}
         <section className="grid gap-4 sm:grid-cols-2">
@@ -76,21 +123,21 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
           <div className="overflow-x-auto">
             <table className="w-full min-w-[34rem] border-collapse text-sm">
               <thead>
-                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-white" style={{ background: accent }}>
-                  <th className="rounded-tl-md px-3 py-2.5">{t("pdf.designation")}</th>
-                  <th className="px-3 py-2.5 text-center">{t("pdf.qty")}</th>
-                  <th className="px-3 py-2.5 text-right">{t("pdf.unit")}</th>
-                  <th className="rounded-tr-md px-3 py-2.5 text-right">{t("pdf.total")}</th>
+                <tr className={`text-left text-xs font-semibold uppercase tracking-wide ${headFill ? "text-white" : "border-b-2 text-slate-700"}`} style={headFill ? { background: accent } : { borderColor: accent }}>
+                  <th className={th}>{t("pdf.designation")}</th>
+                  <th className={`${th} text-center`}>{t("pdf.qty")}</th>
+                  <th className={`${th} text-right`}>{t("pdf.unit")}</th>
+                  <th className={`${th} text-right`}>{t("pdf.total")}</th>
                 </tr>
               </thead>
               <tbody>
                 {q.lines.map((l, i) => {
                   const sk = drawingSvg(l, `pv${i}`, 200, 150);
                   return (
-                    <tr key={l.id} className="break-inside-avoid border-b border-slate-200 align-top odd:bg-white even:bg-slate-50/60">
-                      <td className="px-3 py-4">
+                    <tr key={l.id} className={`break-inside-avoid border-b border-slate-200 align-top ${st.table === "zebra" ? "odd:bg-white even:bg-slate-50/60" : ""} ${boxed ? "[&>td]:border [&>td]:border-slate-300" : ""}`}>
+                      <td className={cell}>
                         <div className="flex gap-4">
-                          <div aria-hidden className="h-24 w-32 shrink-0 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: sk.svg }} />
+                          {st.drawings && <div aria-hidden className={`shrink-0 [&>svg]:h-full [&>svg]:w-full ${compact ? "h-16 w-24" : "h-24 w-32"}`} dangerouslySetInnerHTML={{ __html: sk.svg }} />}
                           <div className="min-w-0 space-y-0.5">
                             <p className="font-bold">{cap(lineTitle(l, t))}</p>
                             {l.room && <p className="text-sm font-semibold text-slate-700">{l.room}</p>}
@@ -102,9 +149,9 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-4 text-center tabular-nums">{l.qty}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-right tabular-nums">{fmt(l.unit)}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-right font-bold tabular-nums">{fmt(lineTotal(l))}</td>
+                      <td className={`${cell} text-center tabular-nums`}>{l.qty}</td>
+                      <td className={`${cell} whitespace-nowrap text-right tabular-nums`}>{fmt(l.unit)}</td>
+                      <td className={`${cell} whitespace-nowrap text-right font-bold tabular-nums`}>{fmt(lineTotal(l))}</td>
                     </tr>
                   );
                 })}
@@ -163,6 +210,7 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
             </div>
           ))}
         </section>
+        {st.footer && <p className="whitespace-pre-line border-t border-slate-200 pt-4 text-center text-xs text-slate-500">{st.footer}</p>}
       </div>
     </article>
   );

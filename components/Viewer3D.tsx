@@ -563,6 +563,18 @@ function isMovable(v: Viewable) {
 // Quelles « parties mobiles » cliquables : un état d'ouverture (0 à 1) par vantail.
 const countMovers = (v: Viewable) => (v.category === "volet" || v.opening === "jalousie" ? 1 : v.leaves);
 
+// Fond de la vue : toujours en contraste avec la couleur du profilé, quel que soit le thème de l'app
+// (profilé sombre → fond clair ; profilé clair → fond sombre ; teinte moyenne → gris neutre).
+const luminance = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  const lin = (c: number) => ((c /= 255) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+};
+export const backdropFor = (hex: string) => {
+  const l = luminance(hex);
+  return l < 0.12 ? "linear-gradient(180deg,#f4f4f5,#d4d4d8)" : l > 0.55 ? "linear-gradient(180deg,#52525b,#27272a)" : "linear-gradient(180deg,#e4e4e7,#a1a1aa)";
+};
+
 export type View = { az: number; el: number; dist?: number }; // azimut et élévation en degrés, distance relative
 
 export default function Viewer3D({ line, highlight = null, stage, bare = false, initialOpen = 0, view }: { line: Viewable; highlight?: string | null; stage?: Stage; bare?: boolean; initialOpen?: number; view?: View }) {
@@ -631,7 +643,7 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
 
   return (
     <div className={bare ? "h-full w-full" : "space-y-3"}>
-      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line bg-gradient-to-b from-zinc-100 to-zinc-300 dark:from-zinc-700 dark:to-zinc-900"}`} style={bare ? undefined : { height: 380 }}>
+      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line"}`} style={bare ? undefined : { height: 380, background: backdropFor(ctx.hex) }}>
         <Canvas shadows="percentage" scene={stage ? { environmentIntensity: 0.5 } : undefined} dpr={bare ? 1 : [1, 2]} frameloop="demand" camera={{ position: cam, fov: 32, near: 0.05, far: 80 }} aria-label={t("viewer.aria")} role="img" gl={{ antialias: true, preserveDrawingBuffer: bare }}>
           <SceneCtx.Provider value={ctx}>
             <Env />

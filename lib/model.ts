@@ -324,6 +324,31 @@ export const marketSchema = z.object({
   off: z.object({ ranges: z.array(z.enum(RANGES)).max(RANGES.length).optional(), finishes: z.array(z.enum(FINISH_IDS)).max(FINISHES.length).optional(), profiles: z.array(z.string().max(40)).max(40).optional() }).optional(),
 });
 
+// Modèle du devis (feuille et PDF). Personnalisation CADRÉE : le menuisier choisit la mise en page et le style, jamais le fond.
+// Les mentions obligatoires (identité, NIF/STAT, numéro, date, validité, client, détail, totaux HT/TVA/TTC, conditions de paiement, signatures)
+// sont toujours imprimées, quel que soit le modèle (voir docs/architecture.md).
+export const DOC_HEADERS = ["split", "center", "banner"] as const;
+export const DOC_TABLES = ["zebra", "lines", "boxed"] as const;
+export const DOC_FONTS = ["sans", "serif"] as const;
+export const DOC_DENSITIES = ["comfortable", "compact"] as const;
+export const docStyleSchema = z.object({
+  header: z.enum(DOC_HEADERS), // split : logo + société à gauche, devis à droite ; center : tout centré ; banner : bandeau de couleur
+  table: z.enum(DOC_TABLES), // zebra : lignes alternées ; lines : filets ; boxed : grille complète
+  font: z.enum(DOC_FONTS),
+  density: z.enum(DOC_DENSITIES),
+  drawings: z.boolean(), // schéma de chaque ouvrage
+  footer: text(300), // message libre en pied de devis (remerciement, conditions particulières)
+});
+export type DocStyle = z.infer<typeof docStyleSchema>;
+// Modèles prêts à l'emploi ; le menuisier part de l'un d'eux puis ajuste (alors « personnalisé »).
+export const DOC_PRESETS = {
+  classique: { header: "split", table: "zebra", font: "sans", density: "comfortable", drawings: true, footer: "" },
+  moderne: { header: "banner", table: "lines", font: "sans", density: "comfortable", drawings: true, footer: "" },
+  elegant: { header: "center", table: "boxed", font: "serif", density: "comfortable", drawings: true, footer: "" },
+  compact: { header: "split", table: "lines", font: "sans", density: "compact", drawings: false, footer: "" },
+} as const satisfies Record<string, DocStyle>;
+export type DocPreset = keyof typeof DOC_PRESETS;
+
 // Chiffrage au prix de revient : temps de travail (minutes) par ouvrage et taux horaire, frais généraux et marge en %.
 export const laborSchema = z.object({
   rate: z.number().min(0).max(1e6), // Ar / heure
@@ -354,6 +379,7 @@ export const settingsSchema = z.object({
   deposit: z.number().min(0).max(100),
   validityDays: z.number().int().min(1).max(365),
   minArea: z.number().min(0).max(10),
+  docStyle: docStyleSchema,
   pricing: z.enum(PRICING_MODES), // m2 : tarif au m² ; cost : matière + main-d'œuvre + frais + marge
   labor: laborSchema,
   overheadPct: z.number().min(0).max(200), // frais généraux, en % du déboursé sec
@@ -365,7 +391,7 @@ export const settingsSchema = z.object({
 });
 export type Settings = z.infer<typeof settingsSchema> & { tariffs: Tariffs };
 // Ce que le client voit de l'entreprise sur son devis (les mêmes mentions que sur le PDF) : jamais les tarifs ni les prix d'achat.
-export const ISSUER_KEYS = ["company", "address", "phone", "email", "website", "nif", "stat", "logo", "accent", "paymentInfo", "signature", "signer", "minArea"] as const;
+export const ISSUER_KEYS = ["company", "address", "phone", "email", "website", "nif", "stat", "logo", "accent", "paymentInfo", "signature", "signer", "minArea", "docStyle"] as const;
 export type Issuer = Pick<Settings, (typeof ISSUER_KEYS)[number]>;
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -387,6 +413,7 @@ export const DEFAULT_SETTINGS: Settings = {
   deposit: 50,
   validityDays: 30,
   minArea: 1,
+  docStyle: { ...DOC_PRESETS.classique },
   pricing: "m2",
   labor: { rate: 5000, fixedMin: 30, cutMin: 1.5, leafMin: 45, glazingMin: 20 }, // valeurs d'exemple à calibrer sur l'atelier
   overheadPct: 15,
@@ -416,6 +443,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export const withDefaults = (s: Partial<Settings> | null | undefined): Settings => ({
   ...DEFAULT_SETTINGS,
   ...s,
+  docStyle: { ...DEFAULT_SETTINGS.docStyle, ...s?.docStyle },
   labor: { ...DEFAULT_SETTINGS.labor, ...s?.labor },
   tariffs: { ...DEFAULT_SETTINGS.tariffs, ...s?.tariffs },
   surcharges: { ...SURCHARGE_DEFAULTS, ...s?.surcharges },

@@ -9,7 +9,7 @@ import { LangMenu, ThemeSwitch, UserMenu } from "./Controls";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
-import { Boxes, Briefcase, ClipboardList, Images, Search, Store, Users } from "lucide-react";
+import { Boxes, Briefcase, ClipboardList, Images, LayoutTemplate, Search, Store, Users } from "lucide-react";
 import { useSession, useUnread } from "@/lib/client";
 import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
@@ -39,6 +39,7 @@ const FULL_MENUISIER: Nav = {
         { href: "/fournisseurs", key: "nav.suppliers", Icon: Boxes, match: starts("/fournisseurs") },
         { href: "/realisations", key: "nav.portfolio", Icon: Images, match: starts("/realisations") },
         { href: "/profil-public", key: "nav.publicProfile", Icon: Store, match: starts("/profil-public") },
+        { href: "/modele-devis", key: "nav.docDesign", Icon: LayoutTemplate, match: starts("/modele-devis") },
         { href: "/reglages", key: "nav.settings", Icon: Settings, match: starts("/reglages") },
         { href: "/compte", key: "nav.account", Icon: UserCircle, match: starts("/compte") },
       ],
