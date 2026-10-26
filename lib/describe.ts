@@ -11,7 +11,11 @@ export const lineTitle = (l: Line, t: T) => {
 // Lignes de détail d'un ouvrage (gamme, couleur, vitrage, options), pour le PDF.
 export function lineDetails(l: Line, t: T): string[] {
   const out = [`${t(`range.${l.range}`)} · ${t(`finish.${l.finish}`)}`];
-  if (l.category === "volet") return out;
+  if (l.category === "volet") {
+    out.push([t(`box.${l.box ?? "apparent"}`), t(`slat.${l.slat ?? (l.shutter === "roulant" ? "39" : "pleine")}`)].join(" · "));
+    if (l.net) out.push(t("editor.vnet"));
+    return out;
+  }
   if (l.category === "porte") out.push(t(`infill.${l.infill}`));
   const hasGlass = l.category === "garde-corps" ? l.guard === "verre" : !(l.category === "porte" && l.infill === "pleine");
   if (hasGlass) out.push([t(`glass.${l.glassType}`), t(`thickness.${l.thickness}`), l.pattern !== "none" && t(`pattern.${l.pattern}`)].filter(Boolean).join(", "));

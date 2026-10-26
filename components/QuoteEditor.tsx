@@ -20,7 +20,11 @@ import { drawingSvg } from "@/lib/drawing";
 import { type T, useI18n } from "@/lib/i18n";
 import {
   CATEGORIES,
+  BOXES,
   CONTROLS,
+  SLATS_RIDEAU,
+  SLATS_ROULANT,
+  type Slat,
   EXTRAS,
   FINISHES,
   GLASSES,
@@ -582,6 +586,11 @@ export function LineCard({
   const tone = margin < 0 ? "text-danger" : margin < settings.minMarginPct ? "text-warn" : "text-ok";
   const spec = leavesSpec(l);
   const p = (k: string) => `${l.id}-${k}`;
+  // impact de l'option sur le prix (majoration des réglages), affiché à côté du choix
+  const pct = (key: string) => {
+    const v = key ? settings.surcharges[key] : 0;
+    return v ? ` (${v > 0 ? "+" : ""}${v} %)` : "";
+  };
 
   const title = `${mark ?? `${t("editor.line")} ${i + 1}`} — ${cap(lineTitle(l, t))}`;
   // Une colonne jusqu'à 2xl (l'illustration passe au-dessus), puis formulaire + illustration fixe à droite.
@@ -595,9 +604,34 @@ export function LineCard({
           <Choice dense name={p("cat")} legend={t("editor.category")} value={cat} options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))} onChange={(category) => onChange({ category })} />
 
           {cat === "volet" && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Choice dense name={p("sh")} legend={t("editor.shutter")} value={l.shutter} options={SHUTTERS.map((s) => ({ value: s, label: t(`shutter.${s}`) }))} onChange={(shutter) => onChange({ shutter })} />
-              <Choice dense name={p("ct")} legend={t("editor.control")} value={l.control} options={CONTROLS.map((c) => ({ value: c, label: cap(t(`control.${c}`)) }))} onChange={(control) => onChange({ control })} />
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Choice dense name={p("sh")} legend={t("editor.shutter")} value={l.shutter} options={SHUTTERS.map((s) => ({ value: s, label: t(`shutter.${s}`) }))} onChange={(shutter) => onChange({ shutter })} />
+                <Choice dense name={p("ct")} legend={t("editor.control")} value={l.control} options={CONTROLS.map((c) => ({ value: c, label: cap(t(`control.${c}`)) + pct(c === "motorise" ? "control.motorise" : "") }))} onChange={(control) => onChange({ control })} />
+              </div>
+              <Choice
+                dense
+                name={p("bx")}
+                legend={t("editor.box")}
+                value={l.box ?? "apparent"}
+                options={BOXES.filter((b) => l.shutter === "roulant" || b !== "tunnel").map((b) => ({ value: b, label: t(`box.${b}`) + pct(`volet.box.${b}`) }))}
+                onChange={(box) => onChange({ box })}
+              />
+              <Choice
+                dense
+                name={p("sl")}
+                legend={t("editor.slat")}
+                value={(l.slat ?? (l.shutter === "roulant" ? "39" : "pleine")) as Slat}
+                options={(l.shutter === "roulant" ? SLATS_ROULANT : SLATS_RIDEAU).map((s) => ({ value: s as Slat, label: t(`slat.${s}`) + pct(`volet.slat.${s}`) }))}
+                onChange={(slat) => onChange({ slat })}
+              />
+              <label className="flex min-h-9 w-fit cursor-pointer items-center">
+                <input type="checkbox" className="peer sr-only" checked={!!l.net} onChange={(e) => onChange({ net: e.target.checked })} />
+                <span className="flex min-h-9 items-center rounded-lg border border-line bg-surface px-2.5 text-sm font-medium peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-primary">
+                  {t("editor.vnet")}
+                  {pct("volet.net")}
+                </span>
+              </label>
             </div>
           )}
           {cat === "garde-corps" && <Choice dense name={p("gd")} legend={t("editor.guard")} value={l.guard} options={GUARDS.map((g) => ({ value: g, label: cap(t(`guard.${g}`)) }))} onChange={(guard) => onChange({ guard })} />}

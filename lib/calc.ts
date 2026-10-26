@@ -1,12 +1,12 @@
 import type { Messages } from "./messages/fr";
-import { type AccessoryKey, type Line, FINISHES, PATTERN_GLASSES, type TariffKey, type Tariffs, OPENINGS_BY_CATEGORY, hasLeafConfig, leafMotion, leavesSpec } from "./model";
+import { type AccessoryKey, type Line, FINISHES, PATTERN_GLASSES, type TariffKey, type Tariffs, OPENINGS_BY_CATEGORY, SLATS_ROULANT, SLATS_RIDEAU, SLAT_PITCH, hasLeafConfig, leafMotion, leavesSpec } from "./model";
 
 type Label = keyof Messages;
 
 // Une coupe : quel profilé (section achetée en barres) sert à quel élément de l'ouvrage.
 export type Piece = { profile: Label; element: Label; len: number; qty: number; line?: number; range?: Line["range"]; finish?: Line["finish"] };
 export type Pane = { w: number; h: number; qty: number };
-export type Dims = Pick<Line, "category" | "opening" | "leaves" | "shutter" | "guard" | "infill" | "width" | "height">;
+export type Dims = Pick<Line, "category" | "opening" | "leaves" | "shutter" | "guard" | "infill" | "width" | "height"> & Partial<Pick<Line, "box" | "slat">>;
 
 export const BAR_LEN = 6000;
 export const KERF = 5;
@@ -25,6 +25,16 @@ export function normalize(l: Line): Line {
   if (!glassy || !PATTERN_GLASSES.includes(next.glassType)) next.pattern = "none";
   if (next.category !== "fenetre" && next.category !== "porte") next.extras = [];
   // « double sens » (B) n'a de sens que sur une porte battante
+  // options de volet : valeurs valides pour le type de volet, sinon retirées
+  if (next.category === "volet") {
+    const slats: readonly string[] = next.shutter === "roulant" ? SLATS_ROULANT : SLATS_RIDEAU;
+    next.slat = slats.includes(next.slat ?? "") ? next.slat : (slats[0] as Line["slat"]);
+    if (next.shutter === "rideau" && next.box === "tunnel") next.box = "apparent"; // un rideau métallique n'a pas de coffre tunnel
+  } else {
+    delete next.box;
+    delete next.slat;
+    delete next.net;
+  }
   if (next.leafCfg?.includes("B") && !(next.category === "porte" && next.opening === "ouvrant")) delete next.leafCfg;
   if (next.leafCfg && (next.leafCfg.length !== next.leaves || !hasLeafConfig(next))) delete next.leafCfg;
   return next;
@@ -41,7 +51,11 @@ export function cutList(l: Dims) {
   const dormant = () => pieces.push(P("pf.dormant", "el.dormantH", L, 2), P("pf.dormant", "el.dormantV", H, 2));
 
   if (category === "volet") {
-    if (l.shutter === "roulant") pieces.push(P("pf.box", "el.box", L, 1), P("pf.guide", "el.guide", H, 2), P("pf.slat", "el.slat", L - 60, Math.ceil(H / 37)));
+    if (l.shutter === "roulant") {
+      const pitch = SLAT_PITCH[(SLATS_ROULANT as readonly string[]).includes(l.slat ?? "") ? (l.slat as keyof typeof SLAT_PITCH) : "39"];
+      if (l.box !== "tunnel") pieces.push(P("pf.box", "el.box", L, 1)); // tunnel : pas de coffre, le volet s'enroule dans la maçonnerie
+      pieces.push(P("pf.shaft", "el.shaft", L, 1), P("pf.guide", "el.guide", H, 2), P("pf.slat", "el.slat", L - 60, Math.ceil(H / pitch)));
+    }
     else pieces.push(P("pf.shaft", "el.shaft", L, 1), P("pf.guide", "el.guide", H, 2), P("pf.slatR", "el.slatR", L - 40, Math.ceil(H / 70)));
     return { pieces, glass, panels };
   }
@@ -175,6 +189,9 @@ export function surchargeKeys(l: Line): string[] {
   if (group === "anodise" || group === "fauxbois") keys.push(`finish.${group}`);
   if (l.category === "volet") {
     if (l.control === "motorise") keys.push("control.motorise");
+    if (l.box === "encastre" || l.box === "tunnel") keys.push(`volet.box.${l.box}`);
+    if (l.slat === "55" || l.slat === "perforee" || l.slat === "grille") keys.push(`volet.slat.${l.slat}`);
+    if (l.net) keys.push("volet.net");
     return keys;
   }
   if (l.category === "fenetre" || l.category === "porte") keys.push(...l.extras.map((e) => `extra.${e}`));
@@ -204,7 +221,7 @@ export const allPieces = (lines: Line[]): Piece[] =>
 
 // Accessoires nécessaires à UN ouvrage (la quantité du devis est appliquée par l'appelant) : poignées, serrures, charnières, galets, joints, moteur…
 // shortcut: règles génériques (nombre de charnières, longueur de joint), à ajuster avec les gens du métier.
-export function accessoriesFor(l: Pick<Line, "category" | "opening" | "leaves" | "direction" | "leafCfg" | "control" | "guard" | "extras" | "width" | "height">): { key: AccessoryKey; qty: number }[] {
+export function accessoriesFor(l: Pick<Line, "category" | "opening" | "leaves" | "direction" | "leafCfg" | "control" | "guard" | "extras" | "width" | "height"> & Partial<Pick<Line, "net">>): { key: AccessoryKey; qty: number }[] {
   const out: Partial<Record<AccessoryKey, number>> = {};
   const add = (k: AccessoryKey, n: number) => n > 0 && (out[k] = (out[k] ?? 0) + n);
   const W = l.width / 1000;
@@ -212,6 +229,7 @@ export function accessoriesFor(l: Pick<Line, "category" | "opening" | "leaves" |
   const perimeter = 2 * (W + H);
   if (l.category === "volet") {
     add(l.control === "motorise" ? "acc.motor" : "acc.crank", 1);
+    if (l.net) add("acc.net", 1);
     return Object.entries(out).map(([key, qty]) => ({ key: key as AccessoryKey, qty: qty! }));
   }
   if (l.category === "garde-corps") {

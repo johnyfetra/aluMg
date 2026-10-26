@@ -12,6 +12,34 @@ const base: Line = {
 const { tariffs, surcharges, minArea } = DEFAULT_SETTINGS;
 const price = (l: Partial<Line>) => unitPrice({ ...base, ...l }, tariffs, surcharges, minArea);
 
+describe("options des volets (coffre, lames, moustiquaire)", () => {
+  const volet = (p: Partial<Line> = {}): Line => lineSchema.parse({ id: "v", category: "volet", opening: "fixe", leaves: 1, shutter: "roulant", control: "manuel", guard: "barreaudage", range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1200, height: 1400, qty: 1, unit: 0, ...p });
+  const profiles = (l: Line) => cutList(l).pieces.map((x) => x.profile);
+  it("tunnel : pas de coffre dans le débit ; axe toujours coupé", () => {
+    expect(profiles(volet())).toContain("pf.box");
+    expect(profiles(volet({ box: "tunnel" }))).not.toContain("pf.box");
+    expect(profiles(volet({ box: "tunnel" }))).toContain("pf.shaft");
+  });
+  it("lame plus large : moins de lames", () => {
+    const slats = (l: Line) => cutList(l).pieces.find((x) => x.profile === "pf.slat")!.qty;
+    expect(slats(volet({ slat: "55" }))).toBeLessThan(slats(volet({ slat: "39" })));
+    expect(slats(volet())).toBe(Math.ceil(1400 / 37)); // défaut inchangé
+  });
+  it("majorations : coffre encastré, tunnel, lame 55, moustiquaire ; moustiquaire = accessoire", () => {
+    expect(surchargeKeys(volet({ box: "encastre", slat: "55", net: true }))).toEqual(expect.arrayContaining(["volet.box.encastre", "volet.slat.55", "volet.net"]));
+    expect(surchargeKeys(volet())).toEqual([]);
+    expect(accessoriesFor(volet({ net: true })).some((a) => a.key === "acc.net")).toBe(true);
+    expect(price({ category: "volet", opening: "fixe", box: "tunnel", width: 1200, height: 1400 })).toBeLessThan(price({ category: "volet", opening: "fixe", width: 1200, height: 1400 }));
+  });
+  it("normalisation : lame valide selon le type, pas de tunnel pour un rideau, options retirées hors volet", () => {
+    expect(normalize(volet({ shutter: "rideau", slat: "55" })).slat).toBe("pleine");
+    expect(normalize(volet({ slat: "grille" })).slat).toBe("39");
+    expect(normalize(volet({ shutter: "rideau", box: "tunnel" })).box).toBe("apparent");
+    const w = normalize(volet({ category: "fenetre", opening: "coulissant", leaves: 2, box: "encastre", slat: "55", net: true }));
+    expect([w.box, w.slat, w.net]).toEqual([undefined, undefined, undefined]);
+  });
+});
+
 describe("double sens (va-et-vient)", () => {
   const door: Line = { ...(lineSchema.parse({ id: "d", category: "porte", opening: "ouvrant", leaves: 2, leafCfg: ["B", "B"], shutter: "roulant", control: "manuel", guard: "barreaudage", range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1600, height: 2100, qty: 1, unit: 0 })) };
   it("conservé sur une porte battante", () => expect(normalize(door).leafCfg).toEqual(["B", "B"]));

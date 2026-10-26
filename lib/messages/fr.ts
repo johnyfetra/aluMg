@@ -1079,6 +1079,19 @@ export const fr = {
   "nav.docDesign": "Modèle de devis",
   "doc.identityHint": "Le logo, les coordonnées, le NIF/STAT, la couleur et la signature se règlent dans",
   "doc.save": "Enregistrer le modèle",
+  "editor.box": "Coffre",
+  "editor.slat": "Lames",
+  "editor.vnet": "Moustiquaire intégrée",
+  "box.apparent": "Apparent",
+  "box.encastre": "Encastré",
+  "box.tunnel": "Tunnel (sans coffre)",
+  "slat.39": "Lame 39 mm",
+  "slat.42": "Lame 42 mm",
+  "slat.55": "Lame 55 mm",
+  "slat.pleine": "Pleine",
+  "slat.perforee": "Micro-perforée",
+  "slat.grille": "Grille",
+  "editor.optionDefault": "par défaut",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

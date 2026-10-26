@@ -10,6 +10,14 @@ export const GUARDS = ["barreaudage", "verre"] as const;
 export const RANGES = ["europeen", "asiatique"] as const;
 export const SHUTTERS = ["roulant", "rideau"] as const;
 export const CONTROLS = ["manuel", "motorise"] as const;
+// Options des volets : coffre, lames (roulant : largeur ; rideau métallique : type de tablier) et moustiquaire intégrée.
+export const BOXES = ["apparent", "encastre", "tunnel"] as const;
+export const SLATS_ROULANT = ["39", "42", "55"] as const;
+export const SLATS_RIDEAU = ["pleine", "perforee", "grille"] as const;
+export type Box = (typeof BOXES)[number];
+export type Slat = (typeof SLATS_ROULANT)[number] | (typeof SLATS_RIDEAU)[number];
+// Pas des lames (mm) : nombre de lames d'un roulant = hauteur / pas.
+export const SLAT_PITCH: Record<(typeof SLATS_ROULANT)[number], number> = { "39": 37, "42": 40, "55": 53 };
 export const INFILLS = ["vitree", "semi", "pleine"] as const;
 export const EXTRAS = ["moustiquaire", "grille"] as const;
 export const THICKNESSES = ["4", "5", "6", "8", "10", "4/12/4", "6/12/6"] as const;
@@ -157,6 +165,9 @@ export const lineSchema = z.object({
   leafCfg: z.array(z.enum(LEAF_MODES)).max(10).optional(),
   shutter: z.enum(SHUTTERS),
   control: z.enum(CONTROLS),
+  box: z.enum(BOXES).optional(),
+  slat: z.enum([...SLATS_ROULANT, ...SLATS_RIDEAU]).optional(),
+  net: z.boolean().optional(), // moustiquaire intégrée (volet)
   range: z.enum(RANGES),
   finish: z.enum(FINISH_IDS),
   infill: z.enum(INFILLS),
@@ -251,6 +262,12 @@ export const SURCHARGES: readonly { key: string; group: Label; label: Label; def
   { key: "extra.moustiquaire", group: "surcharge.group.extras", label: "extra.moustiquaire", def: 6 },
   { key: "extra.grille", group: "surcharge.group.extras", label: "extra.grille", def: 12 },
   { key: "control.motorise", group: "surcharge.group.shutter", label: "control.motorise", def: 45 },
+  { key: "volet.box.encastre", group: "surcharge.group.shutter", label: "box.encastre", def: 10 },
+  { key: "volet.box.tunnel", group: "surcharge.group.shutter", label: "box.tunnel", def: -15 },
+  { key: "volet.slat.55", group: "surcharge.group.shutter", label: "slat.55", def: -5 },
+  { key: "volet.slat.perforee", group: "surcharge.group.shutter", label: "slat.perforee", def: 6 },
+  { key: "volet.slat.grille", group: "surcharge.group.shutter", label: "slat.grille", def: 10 },
+  { key: "volet.net", group: "surcharge.group.shutter", label: "editor.vnet", def: 20 },
 ];
 export const SURCHARGE_DEFAULTS: Record<string, number> = Object.fromEntries(SURCHARGES.map((s) => [s.key, s.def]));
 
