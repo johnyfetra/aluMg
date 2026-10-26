@@ -30,7 +30,7 @@ const toBase64 = (file: Blob) =>
 // Accusé d'un message envoyé : ✓ envoyé, ✓✓ reçu, ✓✓ en couleur lu. Dit aussi en toutes lettres pour les lecteurs d'écran.
 export function Ticks({ receipt, t, onPrimary = true }: { receipt: Receipt; t: T; onPrimary?: boolean }) {
   const Icon = receipt === "sent" ? Check : CheckCheck;
-  const tone = receipt === "read" ? (onPrimary ? "text-white" : "text-primary") : onPrimary ? "text-on-primary/65" : "text-muted";
+  const tone = receipt === "read" ? (onPrimary ? "text-primary" : "text-primary") : onPrimary ? "text-on-mine/60" : "text-muted";
   return (
     <span className={`inline-flex items-center ${tone}`} title={t(`msg.receipt.${receipt}`)}>
       <Icon size={14} aria-hidden strokeWidth={2.4} />
@@ -236,9 +236,9 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
             <div key={m.id}>
               {newDay && <p className="my-3 text-center text-xs font-medium capitalize text-muted">{day(m.at)}</p>}
               <div className={`group flex items-end gap-1.5 ${m.mine ? "flex-row-reverse" : ""}`}>
-                <div id={`m-${m.id}`} className={`max-w-[85%] space-y-1.5 rounded-2xl px-3.5 py-2 text-sm shadow-sm transition-shadow ${m.mine ? "rounded-br-md bg-primary text-on-primary" : "rounded-bl-md border border-line bg-surface"}`}>
+                <div id={`m-${m.id}`} className={`max-w-[85%] space-y-1.5 rounded-2xl px-3.5 py-2 text-sm shadow-sm transition-shadow ${m.mine ? "rounded-br-md border border-primary/25 bg-mine text-on-mine" : "rounded-bl-md border border-line bg-surface"}`}>
                   {m.replyTo && (
-                    <button type="button" onClick={() => jump(m.replyTo!.id)} className={`block w-full rounded-lg border-l-4 px-2.5 py-1.5 text-left text-xs ${m.mine ? "border-white/70 bg-white/15" : "border-primary bg-surface-2"}`}>
+                    <button type="button" onClick={() => jump(m.replyTo!.id)} className={`block w-full rounded-lg border-l-4 px-2.5 py-1.5 text-left text-xs ${m.mine ? "border-primary/70 bg-black/15" : "border-primary bg-surface-2"}`}>
                       <span className="block font-semibold">{m.replyTo.mine ? t("msg.you") : o.name}</span>
                       <span className="block truncate opacity-80">{preview(m.replyTo)}</span>
                     </button>
@@ -257,7 +257,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                     <VoicePlayer key={a.id} src={`/api/attachments/${a.id}`} durationMs={a.durationMs} mine={m.mine} t={t} />
                   ))}
                   {docs.map((a) => (
-                    <a key={a.id} href={`/api/attachments/${a.id}?download`} download={a.name} className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs ${m.mine ? "bg-white/15 hover:bg-white/25" : "bg-surface-2 hover:bg-line/60"}`}>
+                    <a key={a.id} href={`/api/attachments/${a.id}?download`} download={a.name} className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs ${m.mine ? "bg-black/10 hover:bg-black/20" : "bg-surface-2 hover:bg-line/60"}`}>
                       <FileText size={20} aria-hidden className="shrink-0" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{a.name}</span>
@@ -280,7 +280,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                     </Link>
                   )}
                   {m.body && <p className="whitespace-pre-wrap break-words">{m.body}</p>}
-                  <p className={`flex items-center justify-end gap-1 text-[10px] ${m.mine ? "text-on-primary/70" : "text-muted"}`}>
+                  <p className={`flex items-center justify-end gap-1 text-[10px] ${m.mine ? "text-on-mine/65" : "text-muted"}`}>
                     {hour(m.at)}
                     {m.receipt && <Ticks receipt={m.receipt} t={t} />}
                   </p>
@@ -385,7 +385,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
         ) : (
           <div className={`flex items-end ${compact ? "gap-1.5" : "gap-2.5"}`}>
             {/* champ de saisie : un seul conteneur qui s'éclaire doucement au focus, boutons discrets à l'intérieur */}
-            <div className={`flex min-w-0 flex-1 items-end gap-0.5 rounded-full border border-line bg-surface-2/60 px-1.5 py-1 transition-[border-color,background-color,box-shadow] duration-200 focus-within:border-primary/40 focus-within:bg-surface focus-within:shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_9%,transparent)] ${compact ? "min-h-10" : "min-h-11"}`}>
+            <div className={`flex min-w-0 flex-1 items-end gap-0.5 rounded-full border border-line bg-surface-2/60 px-1.5 py-1 transition-[border-color,background-color,box-shadow] duration-200 focus-within:border-[color-mix(in_srgb,var(--muted)_60%,var(--border))] focus-within:bg-surface ${compact ? "min-h-10" : "min-h-11"}`}>
               <div className="relative">
                 <button type="button" className={ghost} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu(!menu)} aria-label={t("msg.attach")} title={t("msg.attach")}>
                   <Paperclip size={18} aria-hidden />
@@ -446,7 +446,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
               </button>
             </div>
             <MicButton t={t} small={compact} onClick={() => setRecording(true)} disabled={sending} />
-            <button type="submit" disabled={!canSend} aria-label={sending ? t("msg.sending") : t("tl.send")} title={t("tl.send")} className={`grid shrink-0 place-items-center rounded-full bg-primary text-on-primary shadow-sm transition-[background-color,opacity] hover:bg-primary-hover disabled:opacity-40 disabled:shadow-none ${compact ? "size-10" : "size-11"}`}>
+            <button type="submit" disabled={!canSend} aria-label={sending ? t("msg.sending") : t("tl.send")} title={t("tl.send")} className={`grid shrink-0 place-items-center rounded-full bg-primary text-on-primary shadow-sm transition-[background-color,opacity] hover:bg-primary-hover disabled:bg-surface-2 disabled:text-muted disabled:shadow-none ${compact ? "size-10" : "size-11"}`}>
               <Send size={18} aria-hidden />
             </button>
           </div>

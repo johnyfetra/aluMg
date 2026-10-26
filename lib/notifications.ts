@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { getDb, schema } from "./db";
 
 // Notifications du devis (voir schema.notifications). `notify` accepte la transaction en cours pour rester atomique avec l'événement.
@@ -21,7 +21,8 @@ export async function listNotifications(userId: string): Promise<{ items: Notifi
     .orderBy(desc(schema.notifications.createdAt))
     .limit(40);
   const items = rows.map(({ n, number, data }) => ({ id: n.id, quoteId: n.quoteId, number, project: data.project, lineId: n.lineId, kind: n.kind, message: n.message, read: !!n.readAt, at: n.createdAt.toISOString() }));
-  return { items, unread: items.filter((i) => !i.read).length };
+  const [{ n }] = await db.select({ n: count() }).from(schema.notifications).where(and(eq(schema.notifications.userId, userId), isNull(schema.notifications.readAt)));
+  return { items, unread: n }; // compté en base : juste même au-delà des 40 dernières
 }
 
 // Sans id : tout marquer lu. Toujours borné à l'utilisateur.

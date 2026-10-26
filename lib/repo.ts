@@ -68,7 +68,12 @@ const REVISABLE = ["sent"];
 const canon = (v: unknown): unknown => (Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)).map(([k, x]) => [k, canon(x)])) : v);
 const content = (q: Quote) => JSON.stringify(canon([{ ...q.client, email: q.client.email ?? "" }, q.project, q.delay, q.notes, q.lines, q.discount ?? 0, q.services ?? [], q.warranty ?? 0]));
 
-export async function updateQuote(userId: string, id: string, q: Quote): Promise<Quote | null | "locked"> {
+// Condition « le devis est toujours dans l'état que j'ai lu » (statut + révision) : évite qu'une écriture concurrente (décision du client,
+// révision du menuisier) en écrase une autre sans bruit.
+export const unchanged = (status: string, rev: number) => and(eq(schema.quotes.status, status), sql`coalesce((${schema.quotes.data}->>'rev')::int, 0) = ${rev}`);
+export class StaleQuote extends Error {}
+
+export async function updateQuote(userId: string, id: string, q: Quote): Promise<Quote | null | "locked" | "incomplete"> {
   const existing = await getQuote(userId, id);
   if (!existing) return null;
   if (!EDITABLE.includes(existing.status) && !(existing.clientId && REVISABLE.includes(existing.status))) {
@@ -80,16 +85,23 @@ export async function updateQuote(userId: string, id: string, q: Quote): Promise
   let status = q.status;
   if (existing.clientId) status = existing.status === "requested" ? "draft" : existing.status;
   else if (status === "requested") status = "draft";
+  if (existing.clientId && existing.status === "sent" && q.lines.some((l) => !(l.unit > 0))) return "incomplete"; // le client ne doit pas pouvoir accepter une ligne à 0
   const revised = !!existing.clientId && existing.status === "sent" && content(existing) !== content(q);
   const saved: Quote = { ...q, id, number: existing.number, date: existing.date, terms: existing.terms, clientId: existing.clientId ?? null, request: existing.request ?? null, progress: existing.progress ?? 0, rev: (existing.rev ?? 0) + (revised ? 1 : 0), status };
   const db = await getDb();
-  await db.transaction(async (tx) => {
-    await tx.update(schema.quotes).set({ status: saved.status, data: saved }).where(and(eq(schema.quotes.id, id), eq(schema.quotes.userId, userId)));
-    if (revised && existing.clientId) {
-      await tx.insert(schema.quoteEvents).values({ quoteId: id, actorId: userId, kind: "revised", message: "", data: { rev: saved.rev } });
-      await notify(tx, { userId: existing.clientId, quoteId: id, kind: "revised" });
-    }
-  });
+  try {
+    await db.transaction(async (tx) => {
+      const done = await tx.update(schema.quotes).set({ status: saved.status, data: saved }).where(and(eq(schema.quotes.id, id), eq(schema.quotes.userId, userId), unchanged(existing.status, existing.rev ?? 0))).returning({ id: schema.quotes.id });
+      if (!done.length) throw new StaleQuote(); // le client a répondu (ou une autre révision est passée) entre la lecture et l'écriture
+      if (revised && existing.clientId) {
+        await tx.insert(schema.quoteEvents).values({ quoteId: id, actorId: userId, kind: "revised", message: "", data: { rev: saved.rev } });
+        await notify(tx, { userId: existing.clientId, quoteId: id, kind: "revised" });
+      }
+    });
+  } catch (e) {
+    if (e instanceof StaleQuote) return "locked";
+    throw e;
+  }
   return saved;
 }
 

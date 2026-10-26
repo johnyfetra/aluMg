@@ -22,6 +22,7 @@ export async function PUT(req: Request, { params }: Ctx) {
   if ("res" in p) return p.res;
   const saved = uuid.safeParse(id).success ? await updateQuote(user.id, id, p.data) : null;
   if (saved === "locked") return fail(409, "locked");
+  if (saved === "incomplete") return fail(409, "incomplete");
   return saved ? json(saved) : fail(404, "not_found");
 }
 

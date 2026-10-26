@@ -13,10 +13,12 @@ const line: Line = lineSchema.parse({
   finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1200, height: 1000, qty: 1, unit: 0,
 });
 const A = (a: Action) => a;
+// révision actuelle du devis (le client y rattache sa décision)
+const revOf = async (ownerId: string, id: string) => (await repo.getQuote(ownerId, id))!.rev ?? 0;
 // updateQuote renvoie aussi « locked » / null : ce raccourci échoue explicitement si la mise à jour n'a pas eu lieu
 const upd = async (userId: string, id: string, q: Quote) => {
   const r = await repo.updateQuote(userId, id, q);
-  if (r === null || r === "locked") throw new Error(`updateQuote: ${r}`);
+  if (r === null || r === "locked" || r === "incomplete") throw new Error(`updateQuote: ${r}`);
   return r;
 };
 
@@ -128,7 +130,7 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
   });
 
   it("négociation : demande de remise puis nouvel envoi avec remise", async () => {
-    const r = await wf.applyAction(c1, q.id, A({ type: "request_change", message: "Une remise possible ?", discountPercent: 10 }));
+    const r = await wf.applyAction(c1, q.id, A({ type: "request_change", message: "Une remise possible ?", discountPercent: 10, rev: await revOf(m1, q.id) }));
     expect(r.ok && r.quote.status).toBe("negotiation");
     // le PUT du menuisier ne change pas le statut d'un devis lié à un client…
     const revised = await upd(m1, q.id, quoteSchema.parse({ ...q, discount: 10, status: "accepted" }));
@@ -142,7 +144,7 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
   });
 
   it("acceptation puis chantier : l'avancement fait évoluer le statut", async () => {
-    expect((await wf.applyAction(c1, q.id, A({ type: "accept" }))).ok).toBe(true);
+    expect((await wf.applyAction(c1, q.id, A({ type: "accept", rev: await revOf(m1, q.id) }))).ok).toBe(true);
     expect(await repo.deleteQuote(m1, q.id)).toBe("locked"); // un chantier accepté ne se supprime plus
     const p40 = await wf.applyAction(m1, q.id, A({ type: "progress", progress: 40, message: "Fabrication lancée" }));
     expect(p40.ok && [p40.quote.status, p40.quote.progress]).toEqual(["in_progress", 40]);
@@ -262,6 +264,26 @@ describe("devis envoyé : révisions, commentaires d'ouvrage et notifications", 
   it("décision du client sur une révision périmée refusée ; sur la bonne révision acceptée", async () => {
     expect(await wf.applyAction(c1, q.id, A({ type: "accept", rev: 0 }))).toEqual({ ok: false, error: "quote_changed" });
     expect((await wf.applyAction(c1, q.id, A({ type: "accept", rev: 1 }))).ok).toBe(true);
+  });
+  it("une décision sans révision est refusée", async () => {
+    const x = await repo.createQuote(m1, quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "draft", client: { name: "H", phone: "", address: "", email: "c1@ex.mg" }, project: "", delay: "", notes: "", lines: [{ ...line, unit: 1000 }], terms: { tva: 0, deposit: 0, validityDays: 30 } }));
+    expect((await wf.applyAction(m1, x.id, A({ type: "send" }))).ok).toBe(true);
+    expect(await wf.applyAction(c1, x.id, A({ type: "accept" }))).toEqual({ ok: false, error: "quote_changed" });
+  });
+  it("une révision qui remet un prix à zéro est refusée ; une écriture sur un état périmé aussi", async () => {
+    const x = (await repo.listQuotes(m1)).find((y) => y.status === "sent" && y.client.email === "c1@ex.mg")!;
+    expect(await repo.updateQuote(m1, x.id, { ...x, lines: [{ ...x.lines[0], unit: 0 }] })).toBe("incomplete");
+    // course : le client accepte pendant que le menuisier enregistre une révision lue avant l'acceptation
+    const stale = { ...x, notes: "révision tardive" };
+    expect((await wf.applyAction(c1, x.id, A({ type: "accept", rev: x.rev ?? 0 }))).ok).toBe(true);
+    expect(await repo.updateQuote(m1, x.id, stale)).toBe("locked");
+    expect((await repo.getQuote(m1, x.id))!.status).toBe("accepted");
+  });
+  it("le client ne lit ni n'est prévenu des commentaires du menuisier avant l'envoi", async () => {
+    const d = await repo.createQuote(m1, quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "draft", client: { name: "", phone: "", address: "", email: "" }, project: "", delay: "", notes: "", lines: [line], terms: { tva: 0, deposit: 0, validityDays: 30 } }), { clientId: c2 });
+    expect(await wf.addLineComment(m1, d.id, { lineId: line.id, body: "je compte 450 000 Ar" })).toMatchObject({ side: "menuisier" });
+    expect(await wf.listLineComments(c2, d.id)).toEqual([]);
+    expect((await notif.listNotifications(c2)).items.some((n) => n.quoteId === d.id)).toBe(false);
   });
   it("après la réponse du client, le devis est figé", async () => {
     const cur = (await repo.getQuote(m1, q.id))!;

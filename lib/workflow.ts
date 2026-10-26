@@ -4,7 +4,7 @@ import { normalize, unitPrice } from "./calc";
 import { getDb, schema } from "./db";
 import { type Issuer, ISSUER_KEYS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
 import { notify } from "./notifications";
-import { createQuote, findUserById, getSettings } from "./repo";
+import { StaleQuote, createQuote, findUserById, getSettings, unchanged } from "./repo";
 
 // ---------- Actions possibles sur un devis lié à un client ----------
 const msg = z.string().trim().max(1000);
@@ -174,7 +174,8 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
       clientId = c.id;
     }
   }
-  if (side === "client" && "rev" in a && a.rev !== undefined && a.rev !== (row.data.rev ?? 0)) return { ok: false, error: "quote_changed" };
+  // la décision du client porte sur une révision précise (obligatoire : sans elle, rien ne prouve ce qu'il a vu)
+  if (side === "client" && ["accept", "reject", "request_change"].includes(a.type) && (!("rev" in a) || a.rev !== (row.data.rev ?? 0))) return { ok: false, error: "quote_changed" };
   if (a.type === "review") {
     const [done] = await db.select({ id: schema.reviews.id }).from(schema.reviews).where(eq(schema.reviews.quoteId, quoteId));
     if (done) return { ok: false, error: "already_reviewed" };
@@ -182,9 +183,12 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
 
   const progress = a.type === "progress" ? a.progress : row.progress;
   const quote: Quote = { ...row.data, status: next, progress, clientId };
+  try {
   await db.transaction(async (tx) => {
     if (next !== row.status || progress !== row.progress || clientId !== row.clientId) {
-      await tx.update(schema.quotes).set({ status: next, progress, clientId, data: quote }).where(eq(schema.quotes.id, quoteId));
+      // écriture conditionnelle : si le devis a changé depuis la lecture (révision, décision concurrente), on abandonne
+      const done = await tx.update(schema.quotes).set({ status: next, progress, clientId, data: quote }).where(and(eq(schema.quotes.id, quoteId), unchanged(row.status, row.data.rev ?? 0))).returning({ id: schema.quotes.id });
+      if (!done.length) throw new StaleQuote();
     }
     // l'autre partie est prévenue des étapes du devis
     const other = side === "menuisier" ? clientId : row.userId;
@@ -212,6 +216,10 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
         return void (await tx.insert(schema.reports).values({ reporterId: actorId, menuisierId: row.userId, quoteId, reason: a.reason, details: a.details }));
     }
   });
+  } catch (e) {
+    if (e instanceof StaleQuote) return { ok: false, error: "quote_changed" };
+    throw e;
+  }
   return { ok: true, quote };
 }
 
@@ -224,6 +232,7 @@ export async function listLineComments(userId: string, quoteId: string): Promise
   const found = await sideOf(userId, quoteId);
   if (!found) return null;
   const db = await getDb();
+  if (found.side === "client" && ["requested", "draft"].includes(found.row.status)) return []; // avant l'envoi, les échanges du menuisier ne sont pas visibles
   const rows = await db.select().from(schema.quoteEvents).where(and(eq(schema.quoteEvents.quoteId, quoteId), eq(schema.quoteEvents.kind, "line_comment"))).orderBy(asc(schema.quoteEvents.createdAt));
   return rows.map((e) => ({ id: e.id, lineId: String(e.data.lineId ?? ""), body: e.message, at: e.createdAt.toISOString(), side: e.actorId === found.row.userId ? "menuisier" : "client" }));
 }
@@ -238,7 +247,7 @@ export async function addLineComment(userId: string, quoteId: string, input: z.i
   const other = side === "menuisier" ? row.clientId : row.userId;
   const [e] = await db.transaction(async (tx) => {
     const ev = await tx.insert(schema.quoteEvents).values({ quoteId, actorId: userId, kind: "line_comment", message: input.body, data: { lineId: input.lineId } }).returning();
-    await notify(tx, { userId: other, quoteId, lineId: input.lineId, kind: "line_comment", message: input.body });
+    if (!(side === "menuisier" && ["requested", "draft"].includes(row.status))) await notify(tx, { userId: other, quoteId, lineId: input.lineId, kind: "line_comment", message: input.body }); // le client n'est pas prévenu avant l'envoi
     return ev;
   });
   return { id: e.id, lineId: input.lineId, body: input.body, at: e.createdAt.toISOString(), side };

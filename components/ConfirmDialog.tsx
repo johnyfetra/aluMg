@@ -56,8 +56,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               </div>
             </div>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button type="button" className="btn-secondary" onClick={() => done(false)}>{t("dlg.cancel")}</button>
-              <button type="button" autoFocus className={danger ? "btn-primary !bg-danger !text-white hover:!brightness-110" : "btn-primary"} onClick={() => done(true)}>
+              <button type="button" autoFocus={danger} className="btn-secondary" onClick={() => done(false)}>{t("dlg.cancel")}</button>
+              <button type="button" autoFocus={!danger} className={danger ? "btn-primary !bg-danger !text-white hover:!brightness-110" : "btn-primary"} onClick={() => done(true)}>
                 {opts.confirmLabel ?? t("dlg.confirm")}
               </button>
             </div>

@@ -15,13 +15,19 @@ export default function NotificationBell() {
   const { data } = useNotifications();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
   const unread = data?.unread ?? 0;
 
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setOpen(false);
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) {
+        setOpen(false);
+        if (e instanceof KeyboardEvent) trigger.current?.focus(); // le focus revient sur la cloche
+      }
     };
+    panel.current?.focus(); // le focus entre dans le panneau à l'ouverture
     document.addEventListener("mousedown", close);
     document.addEventListener("keydown", close);
     return () => {
@@ -43,7 +49,7 @@ export default function NotificationBell() {
 
   return (
     <div ref={box} className="relative">
-      <button type="button" className="btn-secondary relative w-11 !px-0" aria-label={`${t("notif.open")}${unread ? ` (${unread})` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <button ref={trigger} type="button" className="btn-secondary relative w-11 !px-0" aria-label={`${t("notif.open")}${unread ? ` (${unread})` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <Bell size={18} aria-hidden />
         {unread > 0 && (
           <span aria-hidden className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] font-bold leading-5 text-on-primary">
@@ -52,7 +58,7 @@ export default function NotificationBell() {
         )}
       </button>
       {open && (
-        <div role="dialog" aria-label={t("notif.title")} className="fixed inset-x-3 top-[4.5rem] z-50 overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[24rem]">
+        <div ref={panel} tabIndex={-1} role="dialog" aria-label={t("notif.title")} className="outline-none fixed inset-x-3 top-[4.5rem] z-50 overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[24rem]">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 className="text-sm font-semibold">{t("notif.title")}</h2>
             {unread > 0 && (

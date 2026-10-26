@@ -44,8 +44,8 @@ export default function LineComments({ quoteId, lineId, me, canWrite = true }: {
             const mine = c.side === me;
             return (
               <li key={c.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${mine ? "rounded-br-md bg-primary text-on-primary" : "rounded-bl-md border border-line bg-surface"}`}>
-                  <p className={`mb-0.5 text-[11px] font-semibold ${mine ? "text-on-primary/75" : "text-muted"}`}>
+                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${mine ? "rounded-br-md border border-primary/25 bg-mine text-on-mine" : "rounded-bl-md border border-line bg-surface"}`}>
+                  <p className={`mb-0.5 text-[11px] font-semibold ${mine ? "text-on-mine/65" : "text-muted"}`}>
                     {mine ? t("cmt.you") : t(c.side === "client" ? "cmt.client" : "cmt.menuisier")} · {new Date(c.at).toLocaleString(DATE_LOCALE[locale], { dateStyle: "short", timeStyle: "short" })}
                   </p>
                   <p className="whitespace-pre-line break-words">{c.body}</p>

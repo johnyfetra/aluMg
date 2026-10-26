@@ -30,6 +30,9 @@
   --c4: #7d8596;
   --accent: #f2555c; /* touche chaude : appels à l'action et mises en avant, à utiliser avec parcimonie */
   --on-accent: #1a0809;
+  /* bulles « moi » de la messagerie : bordeaux sourd, pas de rouge vif */
+  --mine: #f1dcde;
+  --on-mine: #2a1315;
   --hero-from: #141416;
   --hero-to: #2a1315;
   --good: #0ca30c;
@@ -52,6 +55,8 @@
   --danger: #ff9a8f;
   --ok: #4ade80;
   --warn: #fbbf24;
+  --mine: #3a2327;
+  --on-mine: #f4eaeb;
   --c1: #f2555c;
   --c2: #34b58a;
   --c3: #ef9250;
@@ -71,6 +76,8 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-on-primary: var(--on-primary);
+  --color-mine: var(--mine);
+  --color-on-mine: var(--on-mine);
   --color-danger: var(--danger);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
