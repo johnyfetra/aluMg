@@ -19,7 +19,8 @@ export const messageSchema = z
   })
   .refine((m) => m.body.length > 0 || m.files.length > 0 || !!m.quoteId, { message: "empty" });
 export type MessageInput = z.infer<typeof messageSchema>;
-export const startSchema = z.union([z.object({ menuisier: z.string().min(1).max(80) }), z.object({ client: z.uuid() })]);
+// menuisier : profil public (annuaire) ; menuisierId : le menuisier d'un de mes devis (sans profil publié) ; client : un client qui a reçu ou demandé un de mes devis.
+export const startSchema = z.union([z.object({ menuisier: z.string().min(1).max(80) }), z.object({ menuisierId: z.uuid() }), z.object({ client: z.uuid() })]);
 
 export { ATTACH, isAudioMime, isImageMime };
 export type Role = "client" | "menuisier" | "admin";
@@ -53,7 +54,12 @@ export async function startConversation(user: { id: string; role: Role }, target
   const db = await getDb();
   let clientId: string;
   let menuisierId: string;
-  if ("menuisier" in target) {
+  if ("menuisierId" in target) {
+    if (user.role !== "client") return { ok: false, error: "forbidden" };
+    const [q] = await db.select({ id: schema.quotes.id }).from(schema.quotes).where(and(eq(schema.quotes.userId, target.menuisierId), eq(schema.quotes.clientId, user.id))).limit(1);
+    if (!q) return { ok: false, error: "forbidden" };
+    [clientId, menuisierId] = [user.id, target.menuisierId];
+  } else if ("menuisier" in target) {
     if (user.role !== "client") return { ok: false, error: "forbidden" };
     const [p] = await db.select({ userId: schema.menuisierProfiles.userId }).from(schema.menuisierProfiles).where(and(eq(schema.menuisierProfiles.slug, target.menuisier), eq(schema.menuisierProfiles.published, true)));
     if (!p) return { ok: false, error: "not_found" };

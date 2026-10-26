@@ -4,18 +4,17 @@ import Link from "next/link";
 import { useState } from "react";
 import { mutate } from "swr";
 import ChatButton from "./ChatButton";
+import ClientLineCard from "./ClientLineCard";
 import Timeline from "./Timeline";
 import { Avatar, Field, Progress, StarInput, StatusBadge } from "./ui";
-import { fmt, lineTotal } from "@/lib/calc";
+import { fmt } from "@/lib/calc";
 import { ApiError, request, useClientQuote } from "@/lib/client";
-import { lineDetails, lineTitle } from "@/lib/describe";
-import { drawingSvg } from "@/lib/drawing";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
-import { REPORT_REASONS } from "@/lib/model";
+import { REPORT_REASONS, lineMarks } from "@/lib/model";
+import { MVP } from "@/lib/mvp";
 import { totals } from "@/lib/totals";
 import Select from "./Select";
 
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const STEPS = ["requested", "sent", "accepted", "in_progress", "completed"] as const;
 const stepOf = (s: string) => (s === "draft" ? 0 : s === "negotiation" ? 1 : Math.max(0, STEPS.indexOf(s as (typeof STEPS)[number])));
 
@@ -31,6 +30,8 @@ export default function ClientQuoteView({ id }: { id: string }) {
   const [comment, setComment] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  // lien profond d'une notification : ?ligne=<ouvrage>
+  const [focus] = useState(() => (typeof location === "undefined" ? null : new URLSearchParams(location.search).get("ligne")));
 
   if (isLoading) return null;
   if (!data) {
@@ -49,19 +50,21 @@ export default function ClientQuoteView({ id }: { id: string }) {
   const cur = t("common.currency");
   const step = stepOf(q.status);
   const rejected = q.status === "rejected";
+  const marks = lineMarks(q.lines);
 
   const act = async (body: Record<string, unknown>, ok: string) => {
     setBusy(true);
     setMsg(null);
     try {
-      await request("POST", `/api/quotes/${id}/actions`, body);
-      await Promise.all([mutate(`/api/client/quotes/${id}`), mutate(`/api/quotes/${id}/events`), mutate("/api/client/quotes")]);
+      // la décision porte sur la révision affichée : si le menuisier a modifié le devis entre-temps, elle est refusée
+      await request("POST", `/api/quotes/${id}/actions`, ["accept", "reject", "request_change"].includes(String(body.type)) ? { ...body, rev: q.rev ?? 0 } : body);
+      await Promise.all([mutate(`/api/client/quotes/${id}`), mutate(`/api/quotes/${id}/comments`), mutate(`/api/quotes/${id}/events`), mutate("/api/client/quotes")]);
       setMsg({ ok: true, text: ok });
       setPanel(null);
       setMessage("");
       setDiscount("");
     } catch (e) {
-      setMsg({ ok: false, text: e instanceof ApiError && e.code === "invalid_transition" ? t("act.invalid") : e instanceof ApiError && e.code === "already_reviewed" ? t("act.alreadyReviewed") : t("common.error") });
+      setMsg({ ok: false, text: e instanceof ApiError && e.code === "quote_changed" ? t("act.changed") : e instanceof ApiError && e.code === "invalid_transition" ? t("act.invalid") : e instanceof ApiError && e.code === "already_reviewed" ? t("act.alreadyReviewed") : t("common.error") });
     } finally {
       setBusy(false);
     }
@@ -86,6 +89,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
           <div className="min-w-0 flex-1">
             <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
               {q.number}
+              {(q.rev ?? 0) > 0 && <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold text-muted">{t("editor.revision")} {q.rev}</span>}
               <StatusBadge status={q.status} label={t(`cstatus.${q.status}`)} />
             </h1>
             <p className="text-muted">
@@ -93,7 +97,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
               {new Date(q.date).toLocaleDateString(DATE_LOCALE[locale])}
             </p>
             <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              {m.slug ? (
+              {m.slug && !MVP ? (
                 <Link href={`/menuisiers/${m.slug}`} className="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
                   {m.name}
                   {m.verified && <BadgeCheck size={14} aria-label={t("dir.verified")} />}
@@ -142,34 +146,9 @@ export default function ClientQuoteView({ id }: { id: string }) {
             <h2 id="h-lines" className="text-lg font-semibold">
               {t("editor.lines")}
             </h2>
-            <ul className="divide-y divide-line">
+            <ul className="space-y-4">
               {q.lines.map((l, i) => (
-                <li key={l.id} className="grid gap-4 py-4 first:pt-0 last:pb-0 sm:grid-cols-[11rem_1fr_auto]">
-                  <div role="img" aria-label={lineTitle(l, t)} className="rounded-lg bg-white p-2" dangerouslySetInnerHTML={{ __html: drawingSvg(l, `c${i}`, 220, 160).svg }} />
-                  <div>
-                    <p className="font-semibold">
-                      {i + 1}. {cap(lineTitle(l, t))}
-                    </p>
-                    <p className="text-sm text-muted">
-                      {l.width} × {l.height} {t("common.mm")} · ×{l.qty}
-                    </p>
-                    <ul className="mt-1 space-y-0.5 text-sm text-muted">
-                      {lineDetails(l, t).map((d) => (
-                        <li key={d}>{d}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  {priced && (
-                    <div className="text-right text-sm">
-                      <p className="text-muted">
-                        {fmt(l.unit)} {cur} × {l.qty}
-                      </p>
-                      <p className="text-base font-bold">
-                        {fmt(lineTotal(l))} {cur}
-                      </p>
-                    </div>
-                  )}
-                </li>
+                <ClientLineCard key={l.id} quoteId={q.id} line={l} index={i} mark={marks[i]} priced={priced} focused={focus === l.id} canComment={priced} />
               ))}
             </ul>
           </section>
@@ -187,7 +166,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-20">
-          {m.slug && <ChatButton target={{ menuisier: m.slug }} label={t("msg.contactJoiner")} />}
+          {<ChatButton target={{ menuisierId: m.id }} label={t("msg.contactJoiner")} />}
           {priced && (
             <section className="card space-y-2" aria-label={t("editor.totalTtc")}>
               {tot.discount > 0 && (

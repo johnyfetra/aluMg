@@ -122,7 +122,7 @@ export async function listEvents(quoteId: string): Promise<EventView[]> {
   }));
 }
 
-export type ClientQuote = { quote: Quote; menuisier: { name: string; slug: string; logo: string; phone: string; email: string; verified: boolean }; issuer: Issuer; reviewed: boolean };
+export type ClientQuote = { quote: Quote; menuisier: { id: string; name: string; slug: string; logo: string; phone: string; email: string; verified: boolean }; issuer: Issuer; reviewed: boolean };
 
 async function toClientQuote(row: typeof schema.quotes.$inferSelect): Promise<ClientQuote> {
   const db = await getDb();
@@ -136,7 +136,7 @@ async function toClientQuote(row: typeof schema.quotes.$inferSelect): Promise<Cl
   return {
     quote: clientView({ ...row.data, status: row.status as Status, progress: row.progress }),
     issuer: Object.fromEntries(ISSUER_KEYS.map((k) => [k, settings[k]])) as Issuer,
-    menuisier: { name: p?.displayName || m?.name || "", slug: p?.slug ?? "", logo: p?.logo ?? "", phone: m?.phone ?? "", email: m?.email ?? "", verified: p?.verified ?? false },
+    menuisier: { id: row.userId, name: p?.displayName || m?.name || "", slug: p?.slug ?? "", logo: p?.logo ?? "", phone: m?.phone ?? "", email: m?.email ?? "", verified: p?.verified ?? false },
     reviewed: !!r,
   };
 }

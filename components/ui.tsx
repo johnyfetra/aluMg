@@ -72,7 +72,7 @@ export function Choice<V extends string | number>({
         {options.map((o) => (
           <label key={String(o.value)} className="cursor-pointer">
             <input type="radio" name={name} className="peer sr-only" checked={o.value === value} onChange={() => onChange(o.value)} />
-            <span className={`flex items-center rounded-lg border border-line bg-surface text-sm font-medium ${dense ? "min-h-9 px-2.5" : "min-h-11 px-3"} peer-checked:border-primary peer-checked:bg-primary peer-checked:text-on-primary peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary hover:bg-surface-2 peer-checked:hover:bg-primary`}>
+            <span className={`flex items-center rounded-lg border border-line bg-surface text-sm font-medium ${dense ? "min-h-9 px-2.5" : "min-h-11 px-3"} peer-checked:border-primary peer-checked:bg-primary peer-checked:text-on-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-primary hover:bg-surface-2 peer-checked:hover:bg-primary`}>
               {o.label}
             </span>
           </label>
@@ -109,7 +109,7 @@ export function FinishPicker({ name, legend, value, onChange, t, dense = false, 
               {shown.filter((f) => f.group === group).map((f) => (
                 <label key={f.id} className="cursor-pointer" title={t(f.label)}>
                   <input type="radio" name={name} className="peer sr-only" checked={f.id === value} onChange={() => onChange(f.id)} />
-                  <span className="grid size-8 place-items-center rounded-full border border-transparent peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/40 peer-focus-visible:outline-3 peer-focus-visible:outline-primary hover:bg-surface-2">
+                  <span className="grid size-8 place-items-center rounded-full border border-transparent peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary/40 peer-focus-visible:outline-2 peer-focus-visible:outline-primary hover:bg-surface-2">
                     <span className="size-5 rounded-full border border-black/20" style={{ background: f.hex }} />
                     <span className="sr-only">{t(f.label)}</span>
                   </span>
@@ -130,7 +130,7 @@ export function FinishPicker({ name, legend, value, onChange, t, dense = false, 
             {shown.filter((f) => f.group === group).map((f) => (
               <label key={f.id} className="cursor-pointer">
                 <input type="radio" name={name} className="peer sr-only" checked={f.id === value} onChange={() => onChange(f.id)} />
-                <span className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-sm peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary hover:bg-surface-2">
+                <span className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-sm peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-primary hover:bg-surface-2">
                   <span aria-hidden className="size-5 rounded-full border border-black/20" style={{ background: f.hex }} />
                   {t(f.label)}
                 </span>

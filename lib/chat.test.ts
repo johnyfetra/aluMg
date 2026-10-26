@@ -37,6 +37,9 @@ describe("messagerie", () => {
     await repo.createQuote(m1, quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "draft", client: { name: "Noro", phone: "", address: "" }, project: "", delay: "", notes: "", lines: [line], terms: { tva: 20, deposit: 50, validityDays: 30 } }), { clientId: c2 });
     const r = await chat.startConversation({ id: m1, role: "menuisier" }, { client: c2 });
     expect(r.ok).toBe(true);
+    // le client d'un devis écrit au menuisier de ce devis même sans profil publié ; pas à un menuisier sans lien
+    expect(await chat.startConversation({ id: c2, role: "client" }, { menuisierId: m1 })).toEqual({ ok: true, id: (r as { id: string }).id });
+    expect(await chat.startConversation({ id: c2, role: "client" }, { menuisierId: m2 })).toEqual({ ok: false, error: "forbidden" });
     // les rôles ne se croisent pas : un client ne passe pas par « client », un menuisier pas par « menuisier »
     expect(await chat.startConversation({ id: c1, role: "client" }, { client: c2 })).toEqual({ ok: false, error: "forbidden" });
     expect(await chat.startConversation({ id: m1, role: "menuisier" }, { menuisier: slug1 })).toEqual({ ok: false, error: "forbidden" });

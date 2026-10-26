@@ -3,7 +3,8 @@ import useSWR from "swr";
 import type { SessionUser } from "./auth";
 import { type Market, type Quote, type Settings } from "./model";
 import type { DirectoryEntry, PortfolioInput, PortfolioItem, Profile, ProfileInput, PublicMenuisier } from "./profiles";
-import type { ClientQuote, EventView } from "./workflow";
+import type { ClientQuote, EventView, LineComment } from "./workflow";
+import type { NotificationView } from "./notifications";
 import type { ConversationView, MessageView } from "./chat";
 
 class ApiError extends Error {
@@ -86,7 +87,7 @@ export const useDirectory = (params: Record<string, string>) => {
 export const useMenuisier = (slug: string) => useSWR<PublicMenuisier>(`/api/public/menuisiers/${slug}`, fetcher, { revalidateOnFocus: false });
 
 export const useClientQuotes = () => useSWR<ClientQuote[]>("/api/client/quotes", fetcher, { revalidateOnFocus: false });
-export const useClientQuote = (id: string) => useSWR<ClientQuote>(`/api/client/quotes/${id}`, fetcher, { revalidateOnFocus: false });
+export const useClientQuote = (id: string) => useSWR<ClientQuote>(`/api/client/quotes/${id}`, fetcher, { refreshInterval: 10000 });
 export const useEvents = (quoteId: string) => useSWR<EventView[]>(`/api/quotes/${quoteId}/events`, fetcher, { revalidateOnFocus: false });
 
 export function useProfile() {
@@ -128,4 +129,15 @@ export function useUnread() {
 }
 
 // Ouvre (ou crée) la conversation avec un menuisier (par son adresse publique) ou un client (par son identifiant) et renvoie son id.
-export const openConversation = (target: { menuisier: string } | { client: string }) => request<{ id: string }>("POST", "/api/conversations", target).then((r) => r.id);
+export const openConversation = (target: { menuisier: string } | { menuisierId: string } | { client: string }) => request<{ id: string }>("POST", "/api/conversations", target).then((r) => r.id);
+
+// ---------- Commentaires par ouvrage et notifications ----------
+export const useLineComments = (quoteId: string | undefined) => useSWR<LineComment[]>(quoteId ? `/api/quotes/${quoteId}/comments` : null, fetcher, { refreshInterval: 8000 });
+export function useNotifications() {
+  const { data: me } = useSession();
+  const on = me?.role === "client" || me?.role === "menuisier";
+  return useSWR<{ items: NotificationView[]; unread: number }>(on ? "/api/notifications" : null, fetcher, { refreshInterval: 10000 });
+}
+// Page où mène une notification : le devis, et l'ouvrage visé s'il y en a un (?ligne=).
+export const notificationHref = (role: SessionInfo["role"] | undefined, n: Pick<NotificationView, "quoteId" | "lineId">) =>
+  `${role === "client" ? "/espace-client/devis/" : "/devis/"}${n.quoteId}${n.lineId ? `?ligne=${n.lineId}` : ""}`;

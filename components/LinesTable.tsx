@@ -9,15 +9,16 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 // Vue tableau des ouvrages : une ligne par ouvrage, pour comparer et chiffrer d'un coup d'œil.
 export default function LinesTable({ lines, t, marks, validIds, onEdit, onDuplicate, onRemove, locked }: { lines: Line[]; t: T; marks: string[]; validIds: Set<string>; onEdit: (i: number) => void; onDuplicate: (i: number) => void; onRemove?: (i: number) => void; locked: boolean }) {
   const total = lines.reduce((s, l) => s + (validIds.has(l.id) ? lineTotal(l) : 0), 0);
-  const th = "whitespace-nowrap px-2 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted";
+  // En-tête, repère (1re colonne) et total restent visibles : le tableau défile dans les deux sens sans perdre ses repères.
+  const th = "sticky top-0 z-10 whitespace-nowrap bg-surface-2 px-2 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted";
   const num = "whitespace-nowrap px-2 py-3 text-right tabular-nums";
   return (
     <div className="card overflow-hidden !p-0">
-      <div className="overflow-x-auto">
+      <div className="max-h-[70vh] overflow-auto overscroll-contain" tabIndex={0} role="region" aria-label={t("editor.lines")}>
         <table className="w-full min-w-[42rem] border-collapse text-sm">
-          <thead className="border-b border-line bg-surface-2">
+          <thead className="shadow-[0_1px_0_var(--border)]">
             <tr>
-              <th scope="col" className={`${th} w-16`}>{t("editor.mark")}</th>
+              <th scope="col" className={`${th} left-0 z-20 w-16`}>{t("editor.mark")}</th>
               <th scope="col" className={th}>{t("editor.colDesignation")}</th>
               <th scope="col" className={th}>{t("editor.colSize")}</th>
               <th scope="col" className={th}>{t("editor.leafSummary")}</th>
@@ -34,7 +35,7 @@ export default function LinesTable({ lines, t, marks, validIds, onEdit, onDuplic
               const f = FINISHES.find((x) => x.id === l.finish);
               return (
                 <tr key={l.id} className="hover:bg-surface-2/60">
-                  <td className="whitespace-nowrap px-2 py-3 font-semibold tabular-nums">{marks[i]}</td>
+                  <td className="sticky left-0 z-[1] whitespace-nowrap bg-surface px-2 py-3 font-semibold tabular-nums">{marks[i]}</td>
                   <td className="min-w-[8rem] px-2 py-3 font-medium">{cap(lineTitle(l, t))}</td>
                   <td className="whitespace-nowrap px-2 py-3">
                     {ok ? `${l.width} × ${l.height} mm` : <span className="font-medium text-danger">{t("editor.invalidSize")}</span>}
@@ -70,7 +71,7 @@ export default function LinesTable({ lines, t, marks, validIds, onEdit, onDuplic
               );
             })}
           </tbody>
-          <tfoot className="border-t border-line bg-surface-2">
+          <tfoot className="sticky bottom-0 z-10 bg-surface-2 shadow-[0_-1px_0_var(--border)]">
             <tr>
               <th scope="row" colSpan={7} className="px-2 py-3 text-right text-sm font-semibold">{t("editor.totalHt")}</th>
               <td className={`${num} font-bold text-primary`}>{fmt(total)} {t("common.currency")}</td>

@@ -1,5 +1,6 @@
 "use client";
 import ChatWidget from "./ChatWidget";
+import NotificationBell from "./NotificationBell";
 import { FilePlus2, MessageCircle, FileText, LayoutDashboard, Menu as MenuIcon, Ruler, Settings, UserCircle, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -10,11 +11,11 @@ import type { Messages } from "@/lib/messages/fr";
 
 import { Boxes, Briefcase, ClipboardList, Images, Search, Store, Users } from "lucide-react";
 import { useSession, useUnread } from "@/lib/client";
-import { HIDDEN, MVP } from "@/lib/mvp";
+import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
 type Item = { href: string; key: keyof Messages; Icon: typeof Settings; match: (p: string) => boolean };
 type Group = { label: keyof Messages; items: Item[] };
-type Nav = { home: string; cta: Item; groups: Group[] };
+type Nav = { home: string; cta?: Item; groups: Group[] }; // pas de bouton d'action principal en MVP côté client (la demande passe par l'annuaire, masqué)
 
 const starts = (...prefix: string[]) => (p: string) => prefix.some((x) => p === x || p.startsWith(`${x}/`));
 
@@ -50,7 +51,7 @@ const MENUISIER: Nav = MVP
   ? { ...FULL_MENUISIER, groups: FULL_MENUISIER.groups.map((g) => ({ ...g, items: g.items.filter((i) => !HIDDEN.some((h) => i.href === h)) })).filter((g) => g.items.length) }
   : FULL_MENUISIER;
 
-const CLIENT: Nav = {
+const FULL_CLIENT: Nav = {
   home: "/espace-client",
   cta: { href: "/espace-client/nouvelle", key: "cl.newRequest", Icon: FilePlus2, match: starts("/espace-client/nouvelle") },
   groups: [
@@ -66,23 +67,29 @@ const CLIENT: Nav = {
   ],
 };
 
+const CLIENT: Nav = MVP
+  ? { home: FULL_CLIENT.home, groups: FULL_CLIENT.groups.map((g) => ({ ...g, items: g.items.filter((i) => !HIDDEN_CLIENT.includes(i.href)) })) }
+  : FULL_CLIENT;
+
 // usePathname() est lu à l'exécution : isolé dans Suspense pour garder le reste du layout prérendu.
 function NavLinks({ nav, onNavigate }: { nav: Nav; onNavigate: () => void }) {
   const { t } = useI18n();
   const path = usePathname();
-  const creating = nav.cta.match(path);
+  const creating = !!nav.cta?.match(path);
   const unread = useUnread();
   return (
     <nav aria-label={t("nav.main")} className="flex flex-1 flex-col gap-6 px-4">
-      <Link
-        href={nav.cta.href}
-        onClick={onNavigate}
-        aria-current={creating ? "page" : undefined}
-        className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-(--side-bg) shadow-sm transition hover:bg-white/90"
-      >
-        <FilePlus2 size={18} aria-hidden />
-        {t(nav.cta.key)}
-      </Link>
+      {nav.cta && (
+        <Link
+          href={nav.cta.href}
+          onClick={onNavigate}
+          aria-current={creating ? "page" : undefined}
+          className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-(--side-bg) shadow-sm transition hover:bg-white/90"
+        >
+          <FilePlus2 size={18} aria-hidden />
+          {t(nav.cta.key)}
+        </Link>
+      )}
       {nav.groups.map((g) => (
         <div key={g.label}>
           <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-(--side-muted)">{t(g.label)}</p>
@@ -119,7 +126,7 @@ function NavLinks({ nav, onNavigate }: { nav: Nav; onNavigate: () => void }) {
 function PageTitle({ nav }: { nav: Nav }) {
   const { t } = useI18n();
   const path = usePathname();
-  const cur = [nav.cta, ...nav.groups.flatMap((g) => g.items)].find((i) => i.match(path));
+  const cur = [...(nav.cta ? [nav.cta] : []), ...nav.groups.flatMap((g) => g.items)].find((i) => i.match(path));
   return cur ? <p className="hidden truncate text-sm font-semibold text-muted sm:block">{t(cur.key)}</p> : null;
 }
 
@@ -169,17 +176,16 @@ export default function Shell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-2">
             <LangMenu />
             <ThemeSwitch />
+            <NotificationBell />
             <UserMenu />
           </div>
         </header>
         <main id="main" className="mx-auto w-full max-w-[110rem] px-4 pb-20 pt-6 sm:px-8 xl:px-10">
           {children}
         </main>
-        {!MVP && (
-          <Suspense fallback={null}>
-            <ChatWidget />
-          </Suspense>
-        )}
+        <Suspense fallback={null}>
+          <ChatWidget />
+        </Suspense>
       </div>
     </div>
   );

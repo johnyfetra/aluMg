@@ -6,7 +6,7 @@ import { openConversation } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 
 // Ouvre (ou crée) la conversation puis y va ; l'API refuse si l'échange n'est pas permis.
-export default function ChatButton({ target, label, className = "btn-secondary w-full" }: { target: { menuisier: string } | { client: string }; label: string; className?: string }) {
+export default function ChatButton({ target, label, className = "btn-secondary w-full" }: { target: { menuisier: string } | { menuisierId: string } | { client: string }; label: string; className?: string }) {
   const { t } = useI18n();
   const router = useRouter();
   const [busy, setBusy] = useState(false);

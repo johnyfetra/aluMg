@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Avatar, Progress, StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
 import { useClientQuotes, useMe } from "@/lib/client";
+import { MVP } from "@/lib/mvp";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import type { Status } from "@/lib/model";
 import { totals } from "@/lib/totals";
@@ -42,10 +43,10 @@ export default function ClientDashboard() {
           </h1>
           <p className="text-muted">{t("cl.subtitle")}</p>
         </div>
-        <Link href="/espace-client/nouvelle" className="btn-primary">
+        {!MVP && <Link href="/espace-client/nouvelle" className="btn-primary">
           <Plus size={18} aria-hidden />
           {t("cl.newRequest")}
-        </Link>
+        </Link>}
       </div>
 
       <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -65,9 +66,11 @@ export default function ClientDashboard() {
       {!isLoading && list.length === 0 ? (
         <div className="card py-14 text-center">
           <p className="mb-4 text-muted">{t("cl.empty")}</p>
-          <Link href="/menuisiers" className="btn-primary">
-            {t("cl.findJoiner")}
-          </Link>
+          {!MVP && (
+            <Link href="/menuisiers" className="btn-primary">
+              {t("cl.findJoiner")}
+            </Link>
+          )}
         </div>
       ) : (
         <>

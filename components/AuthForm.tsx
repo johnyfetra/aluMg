@@ -8,7 +8,6 @@ import { LangMenu, ThemeSwitch } from "./Controls";
 import { Field } from "./ui";
 import { ApiError, homeFor, request } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
-import { MVP } from "@/lib/mvp";
 
 // Seuls les chemins internes sont acceptés comme destination (pas de redirection vers un autre site).
 const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith("//") ? n : null);
@@ -18,7 +17,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
-  const [role, setRole] = useState<"client" | "menuisier">(MVP || params.get("role") === "menuisier" ? "menuisier" : "client");
+  const [role, setRole] = useState<"client" | "menuisier">(params.get("role") === "client" ? "client" : "menuisier");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const signup = mode === "signup";
@@ -49,7 +48,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const roleCard = (value: "client" | "menuisier", Icon: typeof UserRound, title: string, desc: string) => (
     <label key={value} className="cursor-pointer">
       <input type="radio" name="role" className="peer sr-only" checked={role === value} onChange={() => setRole(value)} />
-      <span className="flex h-full flex-col gap-1 rounded-xl border border-line bg-surface p-3 peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
+      <span className="flex h-full flex-col gap-1 rounded-xl border border-line bg-surface p-3 peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-primary">
         <Icon size={20} aria-hidden className="text-primary" />
         <span className="text-sm font-semibold">{title}</span>
         <span className="text-xs text-muted">{desc}</span>
@@ -71,12 +70,12 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <p className="text-muted">{t("auth.tagline")}</p>
       <form onSubmit={submit} className="card space-y-4">
         <h1 className="text-xl font-bold">{signup ? t("auth.signupTitle") : t("auth.loginTitle")}</h1>
-        {signup && !MVP && (
+        {signup && (
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">{t("auth.role")}</legend>
             <div className="grid grid-cols-2 gap-3">
-              {roleCard("client", UserRound, t("auth.role.client"), t("auth.role.clientDesc"))}
               {roleCard("menuisier", HardHat, t("auth.role.menuisier"), t("auth.role.menuisierDesc"))}
+              {roleCard("client", UserRound, t("auth.role.client"), t("auth.role.clientDesc"))}
             </div>
           </fieldset>
         )}
@@ -104,7 +103,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <button type="submit" disabled={busy} className="btn-primary w-full">
           {signup ? t("auth.signup") : t("auth.login")}
         </button>
-        {!signup && process.env.NODE_ENV !== "production" && (MVP ? ["menuisier"] as const : ["client", "menuisier"] as const).map((r) => (
+        {!signup && process.env.NODE_ENV !== "production" && (["menuisier", "client"] as const).map((r) => (
           <button key={r} type="button" disabled={busy} className="btn-secondary w-full" onClick={async () => { setBusy(true); try { const me = await request<{ role: "client" | "menuisier" }>("POST", `/api/auth/demo-${r}`); router.replace(next ?? homeFor(me.role)); } catch { setError(t("common.error")); setBusy(false); } }}>
             {t(r === "client" ? "auth.demoClient" : "auth.demoMenuisier")}
           </button>

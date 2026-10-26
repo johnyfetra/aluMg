@@ -9,6 +9,7 @@ import { Avatar, StatusBadge } from "./ui";
 import { MicButton, type Recorded, RecorderBar, VoicePlayer } from "./Voice";
 import { ATTACH, ATTACH_MIME, isAudioMime, isImageMime, mimeOfName, sizeLabel } from "@/lib/attach";
 import { fmt } from "@/lib/calc";
+import type { Messages } from "@/lib/messages/fr";
 import { ApiError, request, useCitableQuotes, useMessages, useTyping } from "@/lib/client";
 import { DATE_LOCALE, type T, useI18n } from "@/lib/i18n";
 import { compressImage } from "@/lib/image";
@@ -303,6 +304,18 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
       </div>
 
       <form onSubmit={send} className={`relative border-t border-line bg-surface ${compact ? "px-3 pb-3.5 pt-3" : "px-5 pb-5 pt-4"}`}>
+        {!text.trim() && !pending.length && (
+          <div role="group" aria-label={t("msg.qr.title")} className="no-scrollbar -mx-1 mb-2 flex gap-1.5 overflow-x-auto px-1">
+            {([1, 2, 3, 4] as const).map((n) => {
+              const label = t(`msg.qr.${conv.other.role === "client" ? "menuisier" : "client"}${n}` as keyof Messages);
+              return (
+                <button key={n} type="button" onClick={() => { setText(label); input.current?.focus(); }} className="shrink-0 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-muted hover:border-primary hover:text-ink">
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
         {replyTo && (
           <div className="mb-2 flex items-start gap-2 rounded-lg border-l-4 border-primary bg-surface-2 px-3 py-2 text-sm">
             <div className="min-w-0 flex-1">

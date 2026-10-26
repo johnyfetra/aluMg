@@ -2,11 +2,11 @@
 import { Box, ChevronDown, Copy, Eye, FileDown, Image as ImageIcon, Inbox, LayoutGrid, Rows3, Ruler, Save, Send, Table2, Trash2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { mutate } from "swr";
 import ProfileNeeds from "./ProfileNeeds";
 import ChatButton from "./ChatButton";
-import { MVP } from "@/lib/mvp";
+import LineComments from "./LineComments";
 import LinesTable from "./LinesTable";
 import Timeline from "./Timeline";
 import Viewer3DLoader from "./Viewer3DLoader";
@@ -117,7 +117,10 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const [layout, setLayout] = useState<"cards" | "table">("cards");
   const [openIds, setOpenIds] = useState<Set<string>>(() => new Set((existing ?? { lines: [first] }).lines.length > 1 ? [] : (existing ?? { lines: [first] }).lines.map((l) => l.id)));
   // devis d'un client déjà envoyé, accepté ou refusé : en lecture seule (le client doit toujours voir ce qu'il a accepté)
-  const locked = !!existing && !["requested", "draft", "negotiation"].includes(existing.status);
+  // Envoyé au client qui n'a pas encore répondu : encore modifiable (chaque modification crée une révision).
+  const revisable = !!existing?.clientId && existing.status === "sent";
+  const locked = !!existing && !["requested", "draft", "negotiation"].includes(existing.status) && !revisable;
+  const [focusId, setFocusId] = useState<string | null>(null);
   const [q, setQ] = useState<Quote>(
     () =>
       existing ?? {
@@ -161,6 +164,16 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     setQ((c) => ({ ...c, lines: [...c.lines.slice(0, i + 1), copy, ...c.lines.slice(i + 1)] }));
     setOpenIds((o) => new Set(o).add(copy.id));
   };
+  // Lien profond d'une notification (?ligne=…) : on déplie l'ouvrage visé et on s'y rend.
+  const deepLinked = useRef(false);
+  useEffect(() => {
+    const id = new URLSearchParams(location.search).get("ligne");
+    if (deepLinked.current || !id || !existing?.lines.some((l) => l.id === id)) return;
+    deepLinked.current = true;
+    setOpenIds(new Set([id]));
+    setFocusId(id);
+    requestAnimationFrame(() => document.getElementById(`line-${id}`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }, [existing]);
   const setClient = (patch: Partial<Quote["client"]>) => setQ((c) => ({ ...c, client: { ...c.client, ...patch } }));
   const num = (v: string) => Number(v) || 0;
 
@@ -191,7 +204,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const submit = async (withPdf: boolean) => {
     const saved = await persist();
     if (!saved) return;
-    setMsg({ ok: true, text: t("editor.saved") });
+    setMsg({ ok: true, text: revisable ? t("editor.revSaved") : t("editor.saved") });
     try {
       if (withPdf) {
         const { quotePdf } = await import("@/lib/pdf");
@@ -206,10 +219,12 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   };
 
   // Demande d'un client : le menuisier vérifie les prix puis envoie le devis (ou décline la demande).
-  const canAct = !!q.clientId && persisted && ["requested", "draft", "negotiation"].includes(q.status);
+  // Un devis saisi par le menuisier s'envoie au compte client retrouvé par e-mail ; une demande de client est déjà liée.
+  const canAct = persisted && ["requested", "draft", "negotiation"].includes(q.status);
   const [note, setNote] = useState("");
   const act = async (type: "send" | "decline") => {
     if (type === "decline" && !confirm(t("editor.confirmDecline"))) return;
+    if (type === "send" && !q.clientId && !q.client.email.trim()) return setMsg({ ok: false, text: t("editor.needEmail") });
     const saved = await persist();
     if (!saved) return;
     try {
@@ -217,7 +232,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       await mutate("/api/quotes");
       router.push("/devis");
     } catch (e) {
-      setMsg({ ok: false, text: e instanceof ApiError && e.code === "incomplete" ? t("editor.incompletePrices") : t("common.error") });
+      setMsg({ ok: false, text: e instanceof ApiError && e.code === "incomplete" ? t("editor.incompletePrices") : e instanceof ApiError && e.code === "no_client_account" ? t("editor.noClientAccount") : t("common.error") });
     }
   };
 
@@ -263,6 +278,11 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         </p>
       )}
 
+      {revisable && (
+        <p role="note" className="card border-primary text-sm">
+          {t("editor.revisable")} ({t("editor.revision")} {q.rev ?? 0})
+        </p>
+      )}
       {locked && (
         <p role="note" className="card border-primary text-sm">
           {t("editor.locked")}
@@ -298,6 +318,9 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               </Field>
               <Field htmlFor="cp" label={t("editor.clientPhone")}>
                 <input id="cp" className="input" type="tel" autoComplete="tel" maxLength={40} value={q.client.phone} onChange={(e) => setClient({ phone: e.target.value })} />
+              </Field>
+              <Field htmlFor="ce" label={t("editor.clientEmail")} hint={q.clientId ? undefined : t("editor.clientEmailHint")}>
+                <input id="ce" className="input" type="email" autoComplete="email" maxLength={160} value={q.client.email ?? ""} disabled={!!q.clientId} onChange={(e) => setClient({ email: e.target.value })} />
               </Field>
               <Field htmlFor="ca" label={t("editor.clientAddress")}>
                 <input id="ca" className="input" maxLength={200} value={q.client.address} onChange={(e) => setClient({ address: e.target.value })} />
@@ -362,6 +385,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                   valid={valid(l)}
                   locked={locked}
                   mark={marks[i]}
+                  quoteId={q.clientId && persisted ? q.id : undefined}
+                  focused={focusId === l.id}
                   open={openIds.has(l.id)}
                   onToggle={() => toggleOpen(l.id)}
                   onChange={(p) => setLine(i, p)}
@@ -390,7 +415,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
           <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
             <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
-            {!MVP && q.clientId && persisted && <ChatButton target={{ client: q.clientId }} label={t("msg.contactClient")} />}
+            {q.clientId && persisted && <ChatButton target={{ client: q.clientId }} label={t("msg.contactClient")} />}
             {q.clientId && persisted && <Timeline quoteId={q.id} />}
           </fieldset>
         </div>
@@ -451,7 +476,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 <Send size={16} aria-hidden />
                 {t("editor.sendClient")}
               </button>
-              {q.status !== "negotiation" && (
+              {q.clientId && q.status !== "negotiation" && (
                 <button type="button" className="btn-danger w-full" onClick={() => act("decline")}>
                   <XCircle size={16} aria-hidden />
                   {t("editor.decline")}
@@ -479,7 +504,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               {!locked && (
                 <button type="button" className="btn-secondary" onClick={() => submit(false)}>
                   <Save size={18} aria-hidden />
-                  {t("editor.saveDraft")}
+                  {revisable ? t("editor.saveRevision") : t("editor.saveDraft")}
                 </button>
               )}
             </div>
@@ -494,7 +519,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 }
 
 export function LineCard({
-  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark,
+  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark, quoteId, focused = false,
 }: {
   l: Line;
   i: number;
@@ -511,6 +536,8 @@ export function LineCard({
   onToggle?: () => void; // fourni : la carte est dépliable, avec un en-tête résumé
   locked?: boolean;
   mark?: string; // repère d'ouvrage (F-01…)
+  quoteId?: string; // devis lié à un client : affiche le fil de commentaires de l'ouvrage
+  focused?: boolean; // ouvrage visé par une notification
 }) {
   const [view, setView] = useState<"2d" | "3d">("2d");
   const cat = l.category;
@@ -686,7 +713,7 @@ export function LineCard({
   const thumb = valid && !open ? drawingSvg(l, `th${l.id}`, 76, 58) : null;
   const leafList = valid && (cat === "fenetre" || cat === "porte" || cat === "cloison") && l.leaves > 1 ? leafMarks(l).join(" · ") : "";
   return (
-    <div id={`line-${l.id}`} className={`card scroll-mt-20 !p-0 ${valid ? "" : "border-danger"}`}>
+    <div id={`line-${l.id}`} className={`card scroll-mt-20 !p-0 ${valid ? "" : "border-danger"} ${focused ? "ring-2 ring-primary" : ""}`}>
       <h3 className="m-0">
         <button type="button" aria-expanded={open} aria-controls={`${l.id}-body`} onClick={onToggle} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left hover:bg-surface-2/60 sm:px-6">
           <ChevronDown size={18} aria-hidden className={`shrink-0 text-muted transition-transform ${open ? "" : "-rotate-90"}`} />
@@ -721,6 +748,11 @@ export function LineCard({
         <fieldset id={`${l.id}-body`} disabled={locked} className={`m-0 border-0 border-t border-line p-4 sm:p-6 ${grid}`}>
           {body}
         </fieldset>
+      )}
+      {open && quoteId && (
+        <div className="border-t border-line p-4 sm:p-6">
+          <LineComments quoteId={quoteId} lineId={l.id} me="menuisier" />
+        </div>
       )}
     </div>
   );
