@@ -248,7 +248,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
   // Demande d'un client : le menuisier vérifie les prix puis envoie le devis (ou décline la demande).
   // Un devis saisi par le menuisier s'envoie au compte client retrouvé par e-mail ; une demande de client est déjà liée.
-  const canAct = persisted && ["requested", "draft", "negotiation"].includes(q.status);
+  // (disponible dès la création : l'envoi enregistre d'abord le devis)
+  const canAct = ["requested", "draft", "negotiation"].includes(q.status);
   const [note, setNote] = useState("");
   const act = async (type: "send" | "decline") => {
     if (type === "decline" && !(await ask({ message: t("editor.confirmDecline"), tone: "danger", confirmLabel: t("editor.decline") }))) return;
