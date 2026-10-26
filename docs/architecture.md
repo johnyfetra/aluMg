@@ -36,6 +36,7 @@ lib/repo.ts            accès aux données, toujours borné à un utilisateur
 lib/auth.ts, password.ts   sessions et hachage scrypt
 lib/profiles.ts        profil public, portfolio, annuaire et avis (public)
 lib/chat.ts            messagerie : conversations client/menuisier, messages, non-lus
+lib/notifications.ts   notifications des devis (liste, lu)
 lib/workflow.ts        demandes de clients, machine d'états des devis, historique, évaluations, signalements
 lib/procure.ts         plan d'achat des profilés selon le marché (longueurs et prix)
 lib/client.ts          hooks SWR (useSettings, useQuotes, useMe)
@@ -65,11 +66,18 @@ requested ─(menuisier prépare)→ draft ─send→ sent ─accept→ accepted
 
 - `lib/workflow.ts` : `transition(statut, action, rôle)` est une fonction pure (testée) ; `applyAction` l'applique en transaction et écrit l'historique.
 - Le rôle sur un devis vient du devis lui-même (menuisier propriétaire ou client demandeur), jamais du corps de la requête. Un tiers reçoit « introuvable ».
-- Tant que le devis est `requested` ou `draft`, le client ne voit **aucun prix**. Dès `sent`, le devis est **verrouillé** pour le menuisier (lignes, prix, remise figés) : le client voit toujours ce qu'il accepte. Seule la négociation rouvre l'édition.
+- Tant que le devis est `requested` ou `draft`, le client ne voit **aucun prix** (lignes, remise et prestations mis à zéro par `clientView`).
+- **Révisions** : un devis `sent` reste modifiable par le menuisier tant que le client n'a pas répondu. Chaque modification de contenu fait `rev + 1`, écrit un événement `revised` et prévient le client. Accepter, refuser ou demander une modification porte sur une `rev` précise (`quote_changed` si elle est périmée). Une fois le client répondu (accepté, négociation, refusé…), le devis est figé ; seule la négociation rouvre l'édition.
+- **Envoi à un client** : un devis créé par le menuisier porte l'e-mail du client (`client.email`) ; l'action `send` retrouve le compte client correspondant et lie le devis (`no_client_account` sinon).
+- **Commentaires par ouvrage** : événements `line_comment` (`data.lineId`), lus/écrits via `/api/quotes/[id]/comments`, absents de l'historique général. Chaque événement notable crée une **notification** (`notifications`, `/api/notifications`) pour l'autre partie ; un clic mène au devis et à l'ouvrage (`?ligne=`).
 - Un devis déjà remis à un client ne peut plus être supprimé.
 - Une évaluation n'existe qu'après `completed`, une seule par devis ; l'annuaire n'affiche que le prénom du client.
 - Un signalement n'apparaît pas dans l'historique que voit le menuisier.
 - Un devis sans compte client (saisi par le menuisier) se gère par son statut libre, comme avant.
+
+## Mode MVP
+
+`lib/mvp.ts` : `NEXT_PUBLIC_MVP` (actif par défaut ; `0` pour tout réafficher). En MVP l'app se limite au devis, côté menuisier (tableau de bord, devis, fournisseurs, réglages, compte) et côté client (devis reçus, décisions, ouvrages détaillés avec plan/3D et commentaires, devis imprimable), avec messagerie et notifications. L'annuaire, les profils publics, les réalisations, les chantiers et la liste de clients sont masqués (redirection par `proxy.ts`, menus filtrés). Le client écrit au menuisier d'un de ses devis via `{ menuisierId }`, sans profil public.
 
 ## Annuaire public
 
