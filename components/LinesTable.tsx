@@ -36,7 +36,7 @@ export default function LinesTable({ lines, t, marks, validIds, onEdit, onDuplic
               return (
                 <tr key={l.id} className="hover:bg-surface-2/60">
                   <td className="sticky left-0 z-[1] whitespace-nowrap bg-surface px-2 py-3 font-semibold tabular-nums">{marks[i]}</td>
-                  <td className="min-w-[8rem] px-2 py-3 font-medium">{cap(lineTitle(l, t))}</td>
+                  <td className="min-w-[8rem] px-2 py-3 font-medium">{cap(lineTitle(l, t))}{l.room && <span className="block text-xs font-normal text-muted">{l.room}</span>}</td>
                   <td className="whitespace-nowrap px-2 py-3">
                     {ok ? `${l.width} × ${l.height} mm` : <span className="font-medium text-danger">{t("editor.invalidSize")}</span>}
                   </td>

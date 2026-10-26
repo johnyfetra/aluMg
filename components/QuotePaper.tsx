@@ -4,7 +4,8 @@ import { lineDetails, lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { DATE_LOCALE, type T } from "@/lib/i18n";
 import type { Issuer, Quote } from "@/lib/model";
-import { totals } from "@/lib/totals";
+import { serviceTotal, totals } from "@/lib/totals";
+import { amountInWords } from "@/lib/words";
 
 const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 
@@ -92,10 +93,12 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
                           <div aria-hidden className="h-24 w-32 shrink-0 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: sk.svg }} />
                           <div className="min-w-0 space-y-0.5">
                             <p className="font-bold">{cap(lineTitle(l, t))}</p>
+                            {l.room && <p className="text-sm font-semibold text-slate-700">{l.room}</p>}
                             <p className={small}>{l.width} × {l.height} {t("common.mm")}  ·  {t("pdf.area")} {fmt(Math.round(billedArea(l, s.minArea) * 100) / 100)} m²</p>
                             {lineDetails(l, t).map((x) => (
                               <p key={x} className={small}>{x}</p>
                             ))}
+                            {l.note && <p className={`${small} italic`}>{l.note}</p>}
                           </div>
                         </div>
                       </td>
@@ -105,6 +108,14 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
                     </tr>
                   );
                 })}
+                {(q.services ?? []).map((v) => (
+                  <tr key={v.id} className="break-inside-avoid border-b border-slate-200 align-top">
+                    <td className="px-3 py-2.5 font-semibold">{v.label || t(`svc.${v.kind}`)}</td>
+                    <td className="px-3 py-2.5 text-center tabular-nums">{v.qty}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{fmt(v.price)}</td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right font-bold tabular-nums">{fmt(serviceTotal(v))}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -117,8 +128,10 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
             <ul className="space-y-1 text-sm text-slate-600">
               <li>{t("pdf.deposit")} : <strong className="text-slate-900">{q.terms.deposit} %</strong> ({fmt(deposit)} {cur})</li>
               <li>{t("pdf.balance")} : <strong className="text-slate-900">{fmt(ttc - deposit)} {cur}</strong></li>
+              {(q.warranty ?? 0) > 0 && <li>{t("svc.warrantyLine")} : <strong className="text-slate-900">{q.warranty} {t("svc.months")}</strong></li>}
               {s.paymentInfo && <li>{t("pdf.payment")} : {s.paymentInfo}</li>}
               {q.notes && <li>{t("pdf.notes")} : {q.notes}</li>}
+              {locale === "fr" && <li className="pt-1 italic">{t("pdf.words").replace("{w}", amountInWords(ttc))}</li>}
             </ul>
           </div>
           <dl className="space-y-1.5 text-sm">

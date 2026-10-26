@@ -4,7 +4,8 @@ import { lineDetails, lineTitle } from "./describe";
 import { drawingSvg, svgToPng } from "./drawing";
 import { DATE_LOCALE, type Locale, type T } from "./i18n";
 import type { Quote, Settings } from "./model";
-import { totals } from "./totals";
+import { serviceTotal, totals } from "./totals";
+import { amountInWords } from "./words";
 
 const M = 15; // marge
 const R = 195; // bord droit
@@ -103,7 +104,8 @@ export async function quotePdf(q: Quote, s: Settings, t: T, locale: Locale, with
     doc.setFont("helvetica", "bold").setFontSize(10).text(doc.splitTextToSize(lineTitle(l, t).replace(/^./, (c) => c.toUpperCase()), 82), M + 48, y + 7);
     gray();
     doc.setFont("helvetica", "normal").setFontSize(8.3);
-    const info = [`${l.width} × ${l.height} ${t("common.mm")}  ·  ${t("pdf.area")} ${fmt(Math.round(billedArea(l, s.minArea) * 100) / 100)} m²`, ...lineDetails(l, t)];
+    const size = `${l.width} × ${l.height} ${t("common.mm")}  ·  ${t("pdf.area")} ${fmt(Math.round(billedArea(l, s.minArea) * 100) / 100)} m²`;
+    const info = [...(l.room ? [l.room] : []), size, ...(l.note ? [`« ${l.note} »`] : []), ...lineDetails(l, t)];
     info.slice(0, 6).forEach((ln, i) => doc.text(doc.splitTextToSize(ln, 82)[0], M + 48, y + 12 + i * 4.2));
     dark();
     doc.setFontSize(9.5).setFont("helvetica", "normal");
@@ -111,6 +113,22 @@ export async function quotePdf(q: Quote, s: Settings, t: T, locale: Locale, with
     doc.text(fmt(l.unit), 168, y + 7, { align: "right" });
     doc.setFont("helvetica", "bold").text(fmt(lineTotal(l)), R - 3, y + 7, { align: "right" });
     y += ROW;
+    doc.setDrawColor(222, 227, 238).setLineWidth(0.2).line(M, y, R, y);
+  }
+  // prestations hors ouvrage : une ligne compacte chacune
+  for (const v of q.services ?? []) {
+    if (y + 10 > 268) {
+      doc.addPage();
+      y = 15;
+      header(y);
+      y += 7.5;
+    }
+    dark();
+    doc.setFont("helvetica", "bold").setFontSize(9.5).text(doc.splitTextToSize(v.label || t(`svc.${v.kind}`), 100)[0], M + 3, y + 6.5);
+    doc.setFont("helvetica", "normal").text(String(v.qty), 138, y + 6.5, { align: "center" });
+    doc.text(fmt(v.price), 168, y + 6.5, { align: "right" });
+    doc.setFont("helvetica", "bold").text(fmt(serviceTotal(v)), R - 3, y + 6.5, { align: "right" });
+    y += 10;
     doc.setDrawColor(222, 227, 238).setLineWidth(0.2).line(M, y, R, y);
   }
 
@@ -150,8 +168,10 @@ export async function quotePdf(q: Quote, s: Settings, t: T, locale: Locale, with
     `${t("pdf.deposit")} : ${q.terms.deposit} % (${fmt(dep)} Ar)`,
     `${t("pdf.balance")} : ${fmt(ttc - dep)} Ar`,
     q.delay && `${t("pdf.delay")} : ${q.delay}`,
+    (q.warranty ?? 0) > 0 && `${t("svc.warrantyLine")} : ${q.warranty} ${t("svc.months")}`,
     s.paymentInfo && `${t("pdf.payment")} : ${s.paymentInfo}`,
     q.notes && `${t("pdf.notes")} : ${q.notes}`,
+    locale === "fr" && t("pdf.words").replace("{w}", amountInWords(ttc)), // montant en lettres (français seulement)
   ].filter(Boolean) as string[];
   doc.text(doc.splitTextToSize(cond.join("\n"), 100), M, y + 5);
 

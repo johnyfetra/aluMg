@@ -31,11 +31,12 @@ export default function ClientLineCard({ quoteId, line: l, index, mark, priced, 
       <div className="grid gap-4 p-4 sm:grid-cols-[10rem_1fr_auto] sm:p-5">
         <div role="img" aria-label={lineTitle(l, t)} className="rounded-xl bg-white p-2 [&>svg]:mx-auto [&>svg]:max-h-40" dangerouslySetInnerHTML={{ __html: drawingSvg(l, `c${index}`, 220, 160).svg }} />
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-wider text-primary">{mark}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-primary">{mark}{l.room ? <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 normal-case tracking-normal text-ink">{l.room}</span> : null}</p>
           <p className="text-lg font-semibold leading-snug">{cap(lineTitle(l, t))}</p>
           <p className="text-sm text-muted">
             {l.width} × {l.height} {t("common.mm")} · ×{l.qty}
           </p>
+          {l.note && <p className="mt-1 text-sm italic text-muted">« {l.note} »</p>}
           <ul className="mt-1.5 space-y-0.5 text-sm text-muted">
             {lineDetails(l, t).slice(0, 2).map((d) => (
               <li key={d}>{d}</li>

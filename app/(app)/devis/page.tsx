@@ -1,7 +1,7 @@
 "use client";
-import { Download, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Copy, Download, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
@@ -23,6 +23,7 @@ export default function QuotesPage() {
 function QuotesView() {
   const { t, locale } = useI18n();
   const ask = useConfirm();
+  const router = useRouter();
   const params = useSearchParams();
   const { quotes = [], loading, save, remove } = useQuotes();
   const { settings } = useSettings();
@@ -50,6 +51,11 @@ function QuotesView() {
       options={STATUSES.filter((s) => s !== "requested").map((s) => ({ value: s, label: t(`status.${s}`) }))}
     />
   );
+  // Copie en brouillon, sans lien client ni numéro : point de départ d'un devis voisin (même client, autre chantier…).
+  const duplicate = async (q: Quote) => {
+    const copy = await save({ ...q, id: crypto.randomUUID(), number: "", status: "draft", date: new Date().toISOString(), progress: 0, rev: 0, clientId: null, request: null }, true);
+    router.push(`/devis/${copy.id}`);
+  };
   const actions = (q: Quote) => (
     <div className="flex gap-2">
       <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => pdf(q)} aria-label={`${t("quotes.pdf")} ${q.number}`}>
@@ -63,6 +69,9 @@ function QuotesView() {
       <Link href={`/devis/${q.id}`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("common.edit")} ${q.number}`}>
         <Pencil size={16} aria-hidden />
       </Link>
+      <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => duplicate(q)} aria-label={`${t("quotes.duplicate")} ${q.number}`} title={t("quotes.duplicate")}>
+        <Copy size={16} aria-hidden />
+      </button>
       <button type="button" className="btn-danger !min-h-9 !px-3" aria-label={`${t("common.delete")} ${q.number}`} onClick={async () => (await ask({ message: t("common.confirmDelete"), tone: "danger", confirmLabel: t("common.delete") })) && remove(q.id)}>
         <Trash2 size={16} aria-hidden />
       </button>

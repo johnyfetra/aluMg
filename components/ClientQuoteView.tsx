@@ -8,6 +8,7 @@ import ClientLineCard from "./ClientLineCard";
 import Timeline from "./Timeline";
 import { Avatar, Field, Progress, StarInput, StatusBadge } from "./ui";
 import { fmt } from "@/lib/calc";
+import { serviceTotal } from "@/lib/totals";
 import { ApiError, request, useClientQuote } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import { REPORT_REASONS, lineMarks } from "@/lib/model";
@@ -155,6 +156,20 @@ export default function ClientQuoteView({ id }: { id: string }) {
             </ul>
           </section>
 
+          {priced && (q.services?.length ?? 0) > 0 && (
+            <section className="card space-y-3" aria-labelledby="h-svc">
+              <h2 id="h-svc" className="text-lg font-semibold">{t("svc.client")}</h2>
+              <ul className="divide-y divide-line text-sm">
+                {q.services!.map((v) => (
+                  <li key={v.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2 first:pt-0 last:pb-0">
+                    <span className="font-medium">{v.label || t(`svc.${v.kind}`)}</span>
+                    <span className="text-muted tabular-nums">{v.qty} × {fmt(v.price)} {cur} = <strong className="text-ink">{fmt(serviceTotal(v))} {cur}</strong></span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {q.request?.message && (
             <section className="card" aria-labelledby="h-msg">
               <h2 id="h-msg" className="mb-2 text-lg font-semibold">
@@ -201,6 +216,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
                 {t("pdf.deposit")} : {q.terms.deposit} % ({fmt(Math.round((tot.ttc * q.terms.deposit) / 100))} {cur}) · {t("pdf.validUntil")} {new Date(new Date(q.date).getTime() + q.terms.validityDays * 864e5).toLocaleDateString(DATE_LOCALE[locale])}
               </p>
               {q.delay && <p className="text-xs text-muted">{t("pdf.delay")} : {q.delay}</p>}
+              {(q.warranty ?? 0) > 0 && <p className="text-xs text-muted">{t("svc.warrantyLine")} : {q.warranty} {t("svc.months")}</p>}
               {q.notes && <p className="text-xs text-muted">{q.notes}</p>}
             </section>
           )}

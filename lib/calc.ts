@@ -24,6 +24,8 @@ export function normalize(l: Line): Line {
   const glassy = next.category === "fenetre" || next.category === "porte" || next.category === "cloison" || (next.category === "garde-corps" && next.guard === "verre");
   if (!glassy || !PATTERN_GLASSES.includes(next.glassType)) next.pattern = "none";
   if (next.category !== "fenetre" && next.category !== "porte") next.extras = [];
+  // « double sens » (B) n'a de sens que sur une porte battante
+  if (next.leafCfg?.includes("B") && !(next.category === "porte" && next.opening === "ouvrant")) delete next.leafCfg;
   if (next.leafCfg && (next.leafCfg.length !== next.leaves || !hasLeafConfig(next))) delete next.leafCfg;
   return next;
 }

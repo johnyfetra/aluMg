@@ -12,6 +12,15 @@ const base: Line = {
 const { tariffs, surcharges, minArea } = DEFAULT_SETTINGS;
 const price = (l: Partial<Line>) => unitPrice({ ...base, ...l }, tariffs, surcharges, minArea);
 
+describe("double sens (va-et-vient)", () => {
+  const door: Line = { ...(lineSchema.parse({ id: "d", category: "porte", opening: "ouvrant", leaves: 2, leafCfg: ["B", "B"], shutter: "roulant", control: "manuel", guard: "barreaudage", range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1600, height: 2100, qty: 1, unit: 0 })) };
+  it("conservé sur une porte battante", () => expect(normalize(door).leafCfg).toEqual(["B", "B"]));
+  it("retiré dès que l'ouvrage n'est plus une porte battante", () => {
+    expect(normalize({ ...door, category: "fenetre" }).leafCfg).toBeUndefined();
+    expect(normalize({ ...door, opening: "coulissant" }).leafCfg).toBeUndefined();
+  });
+});
+
 describe("cutList", () => {
   it("coulissant 2 vantaux 1200x1000", () => {
     const { pieces, glass } = cutList(base);

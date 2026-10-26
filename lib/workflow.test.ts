@@ -231,6 +231,15 @@ describe("annuaire public et profils", () => {
   });
 });
 
+describe("prix cachés au client avant l'envoi", () => {
+  it("clientView met à zéro lignes, remise et prestations d'un brouillon", () => {
+    const q = quoteSchema.parse({ id: crypto.randomUUID(), number: "n", date: "", status: "draft", client: { name: "", phone: "", address: "" }, project: "", delay: "", notes: "", lines: [{ ...line, unit: 5000 }], services: [{ id: "s", kind: "pose", label: "Pose", qty: 1, price: 9000 }], discount: 10, terms: { tva: 0, deposit: 0, validityDays: 30 } });
+    const v = wf.clientView(q);
+    expect([v.lines[0].unit, v.services![0].price, v.discount]).toEqual([0, 0, 0]);
+    expect(wf.clientView({ ...q, status: "sent" }).services![0].price).toBe(9000);
+  });
+});
+
 describe("devis envoyé : révisions, commentaires d'ouvrage et notifications", () => {
   let q: Quote;
   it("envoi à un client retrouvé par e-mail ; sans compte correspondant, refus", async () => {

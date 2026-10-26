@@ -1,5 +1,5 @@
 "use client";
-import { Box, ChevronDown, Copy, Eye, FileDown, Image as ImageIcon, Inbox, LayoutGrid, Rows3, Ruler, Save, Send, Table2, Trash2, XCircle } from "lucide-react";
+import { Box, ChevronDown, Copy, Minus, Plus, Eye, FileDown, Image as ImageIcon, Inbox, LayoutGrid, Rows3, Ruler, Save, Send, Table2, Trash2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -7,6 +7,7 @@ import { mutate } from "swr";
 import ProfileNeeds from "./ProfileNeeds";
 import ChatButton from "./ChatButton";
 import LineComments from "./LineComments";
+import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
 import Timeline from "./Timeline";
 import Viewer3DLoader from "./Viewer3DLoader";
@@ -135,6 +136,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         delay: "",
         notes: "",
         lines: [first],
+        services: [],
+        warranty: 12,
         discount: 0,
         progress: 0,
         rev: 0,
@@ -181,7 +184,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
   const valid = (l: Line) => lineSchema.safeParse(l).success;
   const validLines = q.lines.filter(valid);
-  const { discount, ht, tva, ttc } = totals({ lines: validLines, terms: q.terms, discount: q.discount });
+  const { discount, ht, tva, ttc } = totals({ lines: validLines, terms: q.terms, discount: q.discount, services: q.services });
   const plan = planTotals(cuttingPlan(allPieces(validLines), settings.barLength, settings.kerf));
 
   // Enregistre le devis (création ou mise à jour) ; renvoie le devis enregistré, ou null si une ligne est invalide / si l'envoi échoue.
@@ -314,28 +317,49 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             <h2 id="h-client" className="text-lg font-semibold">
               {t("editor.client")}
             </h2>
-            <fieldset disabled={locked} className="m-0 grid min-w-0 gap-4 border-0 p-0 sm:grid-cols-2 lg:grid-cols-3">
-              <Field htmlFor="cn" label={t("editor.clientName")}>
-                <input id="cn" className="input" autoComplete="name" maxLength={120} value={q.client.name} onChange={(e) => setClient({ name: e.target.value })} />
-              </Field>
-              <Field htmlFor="cp" label={t("editor.clientPhone")}>
-                <input id="cp" className="input" type="tel" autoComplete="tel" maxLength={40} value={q.client.phone} onChange={(e) => setClient({ phone: e.target.value })} />
-              </Field>
-              <Field htmlFor="ce" label={t("editor.clientEmail")} hint={q.clientId ? undefined : t("editor.clientEmailHint")}>
-                <input id="ce" className="input" type="email" autoComplete="email" maxLength={160} value={q.client.email ?? ""} disabled={!!q.clientId} onChange={(e) => setClient({ email: e.target.value })} />
-              </Field>
-              <Field htmlFor="ca" label={t("editor.clientAddress")}>
-                <input id="ca" className="input" maxLength={200} value={q.client.address} onChange={(e) => setClient({ address: e.target.value })} />
-              </Field>
-              <Field htmlFor="pj" label={t("editor.project")}>
-                <input id="pj" className="input" maxLength={200} value={q.project} onChange={(e) => setQ({ ...q, project: e.target.value })} />
-              </Field>
-              <Field htmlFor="dl" label={t("editor.delay")}>
-                <input id="dl" className="input" maxLength={120} placeholder={t("editor.delayPlaceholder")} value={q.delay} onChange={(e) => setQ({ ...q, delay: e.target.value })} />
-              </Field>
-              <Field htmlFor="nt" label={t("editor.notes")}>
-                <input id="nt" className="input" maxLength={600} value={q.notes} onChange={(e) => setQ({ ...q, notes: e.target.value })} />
-              </Field>
+            <fieldset disabled={locked} className="m-0 min-w-0 space-y-4 border-0 p-0">
+              <div>
+                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">{t("editor.groupClient")}</h3>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <Field htmlFor="cn" label={t("editor.clientName")}>
+                    <input id="cn" className="input" autoComplete="name" maxLength={120} value={q.client.name} onChange={(e) => setClient({ name: e.target.value })} />
+                  </Field>
+                  <Field htmlFor="cp" label={t("editor.clientPhone")}>
+                    <input id="cp" className="input" type="tel" autoComplete="tel" maxLength={40} value={q.client.phone} onChange={(e) => setClient({ phone: e.target.value })} />
+                  </Field>
+                  <Field htmlFor="ce" label={t("editor.clientEmail")}>
+                    <input id="ce" className="input" type="email" autoComplete="email" maxLength={160} title={t("editor.clientEmailHint")} placeholder={q.clientId ? "" : "client@exemple.mg"} value={q.client.email ?? ""} disabled={!!q.clientId} onChange={(e) => setClient({ email: e.target.value })} />
+                  </Field>
+                </div>
+                {!q.clientId && <p className="mt-1.5 text-xs text-muted">{t("editor.clientEmailHint")}</p>}
+              </div>
+              <div>
+                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">{t("editor.groupSite")}</h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field htmlFor="pj" label={t("editor.project")}>
+                    <input id="pj" className="input" maxLength={200} value={q.project} onChange={(e) => setQ({ ...q, project: e.target.value })} />
+                  </Field>
+                  <Field htmlFor="ca" label={t("editor.clientAddress")}>
+                    <input id="ca" className="input" maxLength={200} value={q.client.address} onChange={(e) => setClient({ address: e.target.value })} />
+                  </Field>
+                </div>
+              </div>
+              <div>
+                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">{t("editor.groupTerms")}</h3>
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem] lg:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1.4fr)]">
+                  <Field htmlFor="dl" label={t("editor.delay")}>
+                    <input id="dl" className="input" maxLength={120} placeholder={t("editor.delayPlaceholder")} value={q.delay} onChange={(e) => setQ({ ...q, delay: e.target.value })} />
+                  </Field>
+                  <Field htmlFor="wr" label={t("svc.warranty")}>
+                    <input id="wr" className="input" type="number" inputMode="numeric" min={0} max={240} title={t("svc.warrantyHint")} value={q.warranty ?? ""} onChange={(e) => setQ({ ...q, warranty: e.target.value === "" ? undefined : Math.min(240, Math.max(0, Math.round(Number(e.target.value) || 0))) })} />
+                  </Field>
+                  <div className="sm:col-span-2 lg:col-span-1">
+                    <Field htmlFor="nt" label={t("editor.notes")}>
+                      <input id="nt" className="input" maxLength={600} value={q.notes} onChange={(e) => setQ({ ...q, notes: e.target.value })} />
+                    </Field>
+                  </div>
+                </div>
+              </div>
             </fieldset>
           </section>
 
@@ -414,6 +438,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               </button>
             )}
           </section>
+
+          <ServicesEditor services={q.services ?? []} onChange={(services) => setQ((c) => ({ ...c, services }))} t={t} locked={locked} />
 
           <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
             <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
@@ -553,115 +579,14 @@ export function LineCard({
   const p = (k: string) => `${l.id}-${k}`;
 
   const title = `${mark ?? `${t("editor.line")} ${i + 1}`} — ${cap(lineTitle(l, t))}`;
-  const grid = "grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] 2xl:grid-cols-[minmax(0,1fr)_23rem]";
+  // Une colonne jusqu'à 2xl (l'illustration passe au-dessus), puis formulaire + illustration fixe à droite.
+  const grid = "min-w-0";
   const body = (
     <>
-      <div className="min-w-0 space-y-4">
-        <Section title={t("editor.sectionConfig")}>
-          <Choice dense name={p("cat")} legend={t("editor.category")} value={cat} options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))} onChange={(category) => onChange({ category })} />
-
-          {cat === "volet" && (
-            <div className="flex flex-wrap gap-x-6 gap-y-3">
-              <Choice dense name={p("sh")} legend={t("editor.shutter")} value={l.shutter} options={SHUTTERS.map((s) => ({ value: s, label: t(`shutter.${s}`) }))} onChange={(shutter) => onChange({ shutter })} />
-              <Choice dense name={p("ct")} legend={t("editor.control")} value={l.control} options={CONTROLS.map((c) => ({ value: c, label: cap(t(`control.${c}`)) }))} onChange={(control) => onChange({ control })} />
-            </div>
-          )}
-          {cat === "garde-corps" && <Choice dense name={p("gd")} legend={t("editor.guard")} value={l.guard} options={GUARDS.map((g) => ({ value: g, label: cap(t(`guard.${g}`)) }))} onChange={(guard) => onChange({ guard })} />}
-          {openable && <Choice dense name={p("op")} legend={t("editor.opening")} value={l.opening} options={OPENINGS_BY_CATEGORY[cat].map((o) => ({ value: o, label: cap(t(`opening.${o}`)) }))} onChange={(opening) => onChange({ opening })} />}
-
-          {spec && spec.max > spec.min && (
-            <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
-              <Choice
-                dense
-                name={p("lv")}
-                legend={cat === "cloison" ? t("editor.panels") : t("editor.leaves")}
-                value={l.leaves}
-                options={spec.presets.map((n) => ({ value: n, label: n === 1 ? t("editor.oneLeaf") : String(n) }))}
-                onChange={(leaves) => onChange({ leaves })}
-              />
-              <Field htmlFor={p("lc")} label={t("editor.leavesCustom")} hint={t("editor.leavesRange").replace("{min}", String(spec.min)).replace("{max}", String(spec.max))}>
-                <input id={p("lc")} className="input !min-h-9 !w-24 !py-1" type="number" inputMode="numeric" min={spec.min} max={spec.max} value={l.leaves} onChange={(e) => onChange({ leaves: num(e.target.value) })} />
-              </Field>
-            </div>
-          )}
-
-          {hasLeafConfig(l) && <LeafConfig l={l} t={t} onChange={onChange} id={l.id} />}
-          {cat === "porte" && <Choice dense name={p("in")} legend={t("editor.infill")} value={l.infill} options={INFILLS.map((x) => ({ value: x, label: t(`infill.${x}`) }))} onChange={(infill) => onChange({ infill })} />}
-        </Section>
-
-        <Section title={t("editor.sectionSize")}>
-          <div className="grid grid-cols-3 gap-3">
-            <Field htmlFor={p("w")} label={cat === "garde-corps" ? t("editor.length") : t("editor.width")}>
-              <input id={p("w")} className="input !min-h-10" type="number" inputMode="numeric" value={l.width || ""} aria-invalid={!valid} onChange={(e) => onChange({ width: num(e.target.value) })} />
-            </Field>
-            <Field htmlFor={p("h")} label={t("editor.height")}>
-              <input id={p("h")} className="input !min-h-10" type="number" inputMode="numeric" value={l.height || ""} aria-invalid={!valid} onChange={(e) => onChange({ height: num(e.target.value) })} />
-            </Field>
-            <Field htmlFor={p("q")} label={t("editor.qty")}>
-              <input id={p("q")} className="input !min-h-10" type="number" inputMode="numeric" min={1} value={l.qty || ""} onChange={(e) => onChange({ qty: num(e.target.value) })} />
-            </Field>
-          </div>
-          {!valid && <p role="alert" className="text-sm font-medium text-danger">{t("editor.invalidSize")}</p>}
-          {tooLong && <p role="alert" className="text-sm font-medium text-danger">{t("editor.tooLong")}</p>}
-        </Section>
-
-        <Section title={t("editor.sectionFinish")}>
-          <Choice dense name={p("rg")} legend={t("editor.range")} value={l.range} options={RANGES.filter((r) => r === l.range || rangeOn(settings.market, r)).map((r) => ({ value: r, label: t(`range.${r}`) }))} onChange={(range) => onChange({ range })} />
-          <FinishPicker dense name={p("fn")} legend={t("editor.finish")} value={l.finish} onChange={(finish) => onChange({ finish })} t={t} hide={settings.market.off?.finishes} />
-
-          {hasGlass && (
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field htmlFor={p("gt")} label={t("editor.glassType")}>
-                <Select id={p("gt")} className="!min-h-10" value={l.glassType} onChange={(v) => onChange({ glassType: v as Line["glassType"] })} options={GLASSES.map((g) => ({ value: g.id, label: t(g.label) }))} />
-              </Field>
-              <Field htmlFor={p("th")} label={t("editor.thickness")}>
-                <Select id={p("th")} className="!min-h-10" value={l.thickness} onChange={(v) => onChange({ thickness: v as Line["thickness"] })} options={THICKNESSES.map((x) => ({ value: x, label: t(`thickness.${x}`) }))} />
-              </Field>
-              <Field htmlFor={p("pt")} label={t("editor.pattern")}>
-                <Select id={p("pt")} className="!min-h-10" disabled={!canPattern} value={canPattern ? l.pattern : "none"} onChange={(v) => onChange({ pattern: v as Line["pattern"] })} options={PATTERNS.map((x) => ({ value: x, label: t(`pattern.${x}`) }))} />
-              </Field>
-            </div>
-          )}
-
-          {openable && (
-            <fieldset>
-              <legend className="mb-1 text-sm font-medium">{t("editor.extras")}</legend>
-              <div className="flex flex-wrap gap-x-5">
-                {EXTRAS.map((x) => (
-                  <label key={x} className="flex min-h-9 items-center gap-2 text-sm">
-                    <input type="checkbox" className="size-4" checked={l.extras.includes(x)} onChange={(e) => onChange({ extras: e.target.checked ? [...l.extras, x] : l.extras.filter((y) => y !== x) })} />
-                    {t(`extra.${x}`)}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          )}
-        </Section>
-
-        {!clientMode && (
-          <Section title={t("editor.sectionPrice")}>
-            <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-              <div className="w-44">
-                <Field htmlFor={p("u")} label={t("editor.unit")} hint={t("editor.unitHint")}>
-                  <input id={p("u")} className="input !min-h-10" type="number" inputMode="numeric" min={0} value={l.unit || ""} onChange={(e) => onChange({ unit: num(e.target.value) })} />
-                </Field>
-              </div>
-              <div>
-                <p className="text-sm text-muted">{t("editor.lineTotal")}</p>
-                <p className="text-xl font-bold tabular-nums">{fmt(lineTotal(l))} {t("common.currency")}</p>
-                {valid && <p className="text-xs text-muted">{t("editor.area")} : {fmt(Math.round(billedArea(l, settings.minArea) * 100) / 100)} m²</p>}
-              </div>
-              {auto !== l.unit && (
-                <button type="button" className="btn-secondary !min-h-9" onClick={() => onChange({ unit: auto })}>
-                  {t("editor.recalc")}
-                </button>
-              )}
-            </div>
-          </Section>
-        )}
-      </div>
-
-      <div className="space-y-3 lg:sticky lg:top-20 lg:self-start">
+      <div className="@container min-w-0">
+       <div className="grid gap-3 @2xl:grid-cols-[1.15fr_1fr]">
+        <div className="order-first min-w-0 space-y-3 @2xl:order-none @2xl:col-start-2 @2xl:row-start-1 @2xl:self-start">
+        <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs text-muted">{view === "3d" ? t("viewer.title") : t("editor.preview")}</p>
           <div role="group" aria-label={t("editor.preview")} className="flex gap-0.5 rounded-full border border-line p-0.5">
@@ -682,6 +607,8 @@ export function LineCard({
         ) : (
           <div className="h-44 rounded-xl bg-surface-2" />
         )}
+        </div>
+        <div className="space-y-3">
         {!clientMode && (
           <button type="button" className="btn-secondary w-full" onClick={onNeeds} disabled={!valid}>
             <Ruler size={16} aria-hidden />
@@ -699,7 +626,125 @@ export function LineCard({
             </button>
           )}
         </div>
+        </div>
       </div>
+        <Panel title={t("editor.sectionConfig")} className="@2xl:col-start-1 @2xl:row-start-1">
+          <Choice dense name={p("cat")} legend={t("editor.category")} value={cat} options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))} onChange={(category) => onChange({ category })} />
+
+          {cat === "volet" && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Choice dense name={p("sh")} legend={t("editor.shutter")} value={l.shutter} options={SHUTTERS.map((s) => ({ value: s, label: t(`shutter.${s}`) }))} onChange={(shutter) => onChange({ shutter })} />
+              <Choice dense name={p("ct")} legend={t("editor.control")} value={l.control} options={CONTROLS.map((c) => ({ value: c, label: cap(t(`control.${c}`)) }))} onChange={(control) => onChange({ control })} />
+            </div>
+          )}
+          {cat === "garde-corps" && <Choice dense name={p("gd")} legend={t("editor.guard")} value={l.guard} options={GUARDS.map((g) => ({ value: g, label: cap(t(`guard.${g}`)) }))} onChange={(guard) => onChange({ guard })} />}
+          {openable && <Choice dense name={p("op")} legend={t("editor.opening")} value={l.opening} options={OPENINGS_BY_CATEGORY[cat].map((o) => ({ value: o, label: cap(t(`opening.${o}`)) }))} onChange={(opening) => onChange({ opening })} />}
+
+          {(spec && spec.max > spec.min) || cat === "porte" ? (
+            <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
+              {spec && spec.max > spec.min && (
+                <Stepper
+                  id={p("lv")}
+                  label={cat === "cloison" ? t("editor.panels") : t("editor.leaves")}
+                  value={l.leaves}
+                  min={spec.min}
+                  max={spec.max}
+                  hint={t("editor.leavesRange").replace("{min}", String(spec.min)).replace("{max}", String(spec.max))}
+                  onChange={(leaves) => onChange({ leaves })}
+                />
+              )}
+              {cat === "porte" && <Choice dense name={p("in")} legend={t("editor.infill")} value={l.infill} options={INFILLS.map((x) => ({ value: x, label: t(`infill.${x}`) }))} onChange={(infill) => onChange({ infill })} />}
+            </div>
+          ) : null}
+
+          {hasLeafConfig(l) && <LeafConfig l={l} t={t} onChange={onChange} id={l.id} />}
+        </Panel>
+
+        <Panel title={t("editor.sectionSizePlace")}>
+          <div className="grid grid-cols-3 gap-3">
+            <Field htmlFor={p("w")} label={cat === "garde-corps" ? t("editor.length") : t("editor.width")}>
+              <input id={p("w")} className="input" type="number" inputMode="numeric" value={l.width || ""} aria-invalid={!valid} onChange={(e) => onChange({ width: num(e.target.value) })} />
+            </Field>
+            <Field htmlFor={p("h")} label={t("editor.height")}>
+              <input id={p("h")} className="input" type="number" inputMode="numeric" value={l.height || ""} aria-invalid={!valid} onChange={(e) => onChange({ height: num(e.target.value) })} />
+            </Field>
+            <Field htmlFor={p("q")} label={t("editor.qty")}>
+              <input id={p("q")} className="input" type="number" inputMode="numeric" min={1} value={l.qty || ""} onChange={(e) => onChange({ qty: num(e.target.value) })} />
+            </Field>
+          </div>
+          {!valid && <p role="alert" className="text-sm font-medium text-danger">{t("editor.invalidSize")}</p>}
+          {tooLong && <p role="alert" className="text-sm font-medium text-danger">{t("editor.tooLong")}</p>}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field htmlFor={p("room")} label={t("editor.room")}>
+              <input id={p("room")} className="input" maxLength={60} placeholder={t("editor.roomPlaceholder")} value={l.room ?? ""} onChange={(e) => onChange({ room: e.target.value })} />
+            </Field>
+            <Field htmlFor={p("note")} label={t("editor.lineNote")}>
+              <input id={p("note")} className="input" maxLength={300} value={l.note ?? ""} onChange={(e) => onChange({ note: e.target.value })} />
+            </Field>
+          </div>
+        </Panel>
+
+        <Panel title={t("editor.sectionFinish")} className="@2xl:col-start-2 @2xl:row-span-2 @2xl:row-start-2">
+          <Choice dense name={p("rg")} legend={t("editor.range")} value={l.range} options={RANGES.filter((r) => r === l.range || rangeOn(settings.market, r)).map((r) => ({ value: r, label: t(`range.${r}`) }))} onChange={(range) => onChange({ range })} />
+          <FinishPicker dense name={p("fn")} legend={t("editor.finish")} value={l.finish} onChange={(finish) => onChange({ finish })} t={t} hide={settings.market.off?.finishes} />
+
+          {hasGlass && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+              <Field htmlFor={p("gt")} label={t("editor.glassType")}>
+                <Select id={p("gt")} value={l.glassType} onChange={(v) => onChange({ glassType: v as Line["glassType"] })} options={GLASSES.map((g) => ({ value: g.id, label: t(g.label) }))} />
+              </Field>
+              </div>
+              <Field htmlFor={p("th")} label={t("editor.thickness")}>
+                <Select id={p("th")} value={l.thickness} onChange={(v) => onChange({ thickness: v as Line["thickness"] })} options={THICKNESSES.map((x) => ({ value: x, label: t(`thickness.${x}`) }))} />
+              </Field>
+              <Field htmlFor={p("pt")} label={t("editor.pattern")}>
+                <Select id={p("pt")} disabled={!canPattern} value={canPattern ? l.pattern : "none"} onChange={(v) => onChange({ pattern: v as Line["pattern"] })} options={PATTERNS.map((x) => ({ value: x, label: t(`pattern.${x}`) }))} />
+              </Field>
+            </div>
+          )}
+
+          {openable && (
+            <fieldset>
+              <legend className="mb-1 text-sm font-medium">{t("editor.extras")}</legend>
+              <div className="flex flex-wrap gap-2">
+                {EXTRAS.map((x) => (
+                  <label key={x} className="cursor-pointer">
+                    <input type="checkbox" className="peer sr-only" checked={l.extras.includes(x)} onChange={(e) => onChange({ extras: e.target.checked ? [...l.extras, x] : l.extras.filter((y) => y !== x) })} />
+                    <span className="flex min-h-9 items-center rounded-lg border border-line bg-surface px-2.5 text-sm font-medium peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-primary">{t(`extra.${x}`)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+        </Panel>
+
+        {!clientMode && (
+          <Panel title={t("editor.sectionPrice")}>
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="w-44">
+                  <Field htmlFor={p("u")} label={t("editor.unit")}>
+                    <input id={p("u")} className="input" type="number" inputMode="numeric" min={0} value={l.unit || ""} onChange={(e) => onChange({ unit: num(e.target.value) })} />
+                  </Field>
+                </div>
+                {auto !== l.unit && (
+                  <button type="button" className="btn-secondary" onClick={() => onChange({ unit: auto })}>
+                    {t("editor.recalc")} ({fmt(auto)})
+                  </button>
+                )}
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted">{t("editor.lineTotal")}{valid ? ` · ${fmt(Math.round(billedArea(l, settings.minArea) * 100) / 100)} m²` : ""}</p>
+                <p className="text-xl font-bold tabular-nums">{fmt(lineTotal(l))} {t("common.currency")}</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted">{t("editor.unitHint")}</p>
+          </Panel>
+        )}
+       </div>
+      </div>
+
     </>
   );
 
@@ -761,12 +806,34 @@ export function LineCard({
 }
 
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// Bloc de formulaire d'un ouvrage : cadre discret, titre en capitales.
+function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className="space-y-3 border-t border-line pt-3 first:border-t-0 first:pt-0">
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted">{title}</h4>
+    <section className={`min-w-0 space-y-3 rounded-xl border border-line bg-surface-2/30 p-3.5 sm:p-4 ${className}`}>
+      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted">{title}</h4>
       {children}
     </section>
+  );
+}
+
+// Nombre entier borné avec − / + (remplace les puces + champ « autre nombre »).
+function Stepper({ id, label, value, min, max, hint, onChange }: { id: string; label: string; value: number; min: number; max: number; hint?: string; onChange: (n: number) => void }) {
+  const set = (n: number) => onChange(Math.min(max, Math.max(min, Math.round(n) || min)));
+  const btn = "grid size-10 place-items-center text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent";
+  return (
+    <div className="space-y-1">
+      <label htmlFor={id} className="block text-sm font-medium">{label}</label>
+      <div className="inline-flex items-center overflow-hidden rounded-lg border border-line bg-surface">
+        <button type="button" className={btn} onClick={() => set(value - 1)} disabled={value <= min} aria-label={`${label} −`}>
+          <Minus size={16} aria-hidden />
+        </button>
+        <input id={id} type="number" inputMode="numeric" min={min} max={max} value={value} onChange={(e) => set(Number(e.target.value))} className="h-10 w-12 border-x border-line bg-transparent text-center text-sm font-semibold tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" />
+        <button type="button" className={btn} onClick={() => set(value + 1)} disabled={value >= max} aria-label={`${label} +`}>
+          <Plus size={16} aria-hidden />
+        </button>
+      </div>
+      {hint && <p className="text-xs text-muted">{hint}</p>}
+    </div>
   );
 }
 

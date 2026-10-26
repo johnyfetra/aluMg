@@ -167,12 +167,26 @@ export const lineSchema = z.object({
   width: z.number().min(200).max(6000),
   height: z.number().min(200).max(6000),
   qty: z.number().int().min(1).max(999),
+  room: text(60).optional(), // où l'ouvrage se pose (« Chambre 1, façade sud »)
+  note: text(300).optional(), // remarque libre sur l'ouvrage (visible du client)
   unit: z.number().min(0).max(1e10), // prix unitaire en Ar : calculé puis modifiable à la main
 });
 export type Line = z.infer<typeof lineSchema>;
 
 const requestSchema = z.object({ message: text(1500), siteAddress: text(200), wantedDate: text(40) });
 export type QuoteRequest = z.infer<typeof requestSchema>;
+
+// Prestations hors ouvrage (pose, dépose, déplacement…) : lignes libres chiffrées en Ar, comptées dans le total avant remise.
+export const SERVICE_KINDS = ["pose", "depose", "deplacement", "autre"] as const;
+export type ServiceKind = (typeof SERVICE_KINDS)[number];
+export const serviceSchema = z.object({
+  id: z.string().min(1).max(64),
+  kind: z.enum(SERVICE_KINDS),
+  label: text(120),
+  qty: z.number().min(0).max(9999),
+  price: z.number().min(0).max(1e10), // prix unitaire en Ar
+});
+export type Service = z.infer<typeof serviceSchema>;
 
 export const quoteSchema = z.object({
   id: z.uuid(),
@@ -184,6 +198,8 @@ export const quoteSchema = z.object({
   delay: text(120),
   notes: text(600),
   lines: z.array(lineSchema).min(1).max(50),
+  services: z.array(serviceSchema).max(20).optional(),
+  warranty: z.number().int().min(0).max(240).optional(), // garantie en mois (absent ou 0 : non indiquée)
   discount: z.number().min(0).max(100).default(0), // remise en % sur le total HT
   // champs gérés par le serveur : ignorés quand le client de l'API les envoie
   clientId: z.uuid().nullable().optional(),

@@ -56,7 +56,7 @@ export function transition(status: Status, a: Action, side: Side): Status | null
 
 // Le client ne voit les prix qu'une fois le devis envoyé.
 export const clientView = (q: Quote): Quote =>
-  q.status === "requested" || q.status === "draft" ? { ...q, discount: 0, lines: q.lines.map((l) => ({ ...l, unit: 0 })) } : q;
+  q.status === "requested" || q.status === "draft" ? { ...q, discount: 0, lines: q.lines.map((l) => ({ ...l, unit: 0 })), services: q.services?.map((s) => ({ ...s, price: 0 })) } : q;
 
 // ---------- Demande de devis d'un client ----------
 export const requestSchema = z.object({

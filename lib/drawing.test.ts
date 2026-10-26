@@ -94,6 +94,9 @@ describe("sens d'ouverture", () => {
   });
 
   it("battant : un vantail fixe n'a pas de mouvement ni de charnière dessinée", () => {
+    // double sens (va-et-vient) : vantail mobile, deux triangles d'ouverture dans le schéma
+    const door = { category: "porte", opening: "ouvrant", leaves: 2, leafCfg: ["B", "B"] as LeafMode[] } as const;
+    expect(leafMotion(door).map((m) => [m.fixed, m.both])).toEqual([[false, true], [false, true]]);
     const l = { category: "fenetre", opening: "ouvrant", leaves: 2, leafCfg: ["F", "R"] as LeafMode[] } as const;
     expect(leafMotion(l).map((m) => m.fixed)).toEqual([true, false]);
     expect(leafMarks(l)).toEqual(["F1", "V1"]);

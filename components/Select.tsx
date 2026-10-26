@@ -120,7 +120,7 @@ export default function Select({
           disabled={disabled}
           onClick={() => (open ? close() : show())}
           onKeyDown={onKey}
-          className={`input flex items-center justify-between gap-2 text-left disabled:cursor-not-allowed ${open ? "!border-primary ring-2 ring-primary/30" : ""} ${className}`}
+          className={`input flex items-center justify-between gap-2 text-left disabled:cursor-not-allowed ${open ? "!border-primary ring-[3px] ring-primary/15" : ""} ${className}`}
         >
           <span className="min-w-0 flex-1 truncate">{options[current]?.label ?? ""}</span>
           <ChevronDown size={16} aria-hidden className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />

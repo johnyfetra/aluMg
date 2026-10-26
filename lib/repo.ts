@@ -66,7 +66,7 @@ export const EDITABLE = ["requested", "draft", "negotiation"];
 const REVISABLE = ["sent"];
 // Comparaison indépendante de l'ordre des clés (le JSONB de la base les réordonne).
 const canon = (v: unknown): unknown => (Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)).map(([k, x]) => [k, canon(x)])) : v);
-const content = (q: Quote) => JSON.stringify(canon([{ ...q.client, email: q.client.email ?? "" }, q.project, q.delay, q.notes, q.lines, q.discount ?? 0]));
+const content = (q: Quote) => JSON.stringify(canon([{ ...q.client, email: q.client.email ?? "" }, q.project, q.delay, q.notes, q.lines, q.discount ?? 0, q.services ?? [], q.warranty ?? 0]));
 
 export async function updateQuote(userId: string, id: string, q: Quote): Promise<Quote | null | "locked"> {
   const existing = await getQuote(userId, id);
