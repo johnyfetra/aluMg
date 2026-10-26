@@ -324,6 +324,17 @@ export const marketSchema = z.object({
   off: z.object({ ranges: z.array(z.enum(RANGES)).max(RANGES.length).optional(), finishes: z.array(z.enum(FINISH_IDS)).max(FINISHES.length).optional(), profiles: z.array(z.string().max(40)).max(40).optional() }).optional(),
 });
 
+// Chiffrage au prix de revient : temps de travail (minutes) par ouvrage et taux horaire, frais généraux et marge en %.
+export const laborSchema = z.object({
+  rate: z.number().min(0).max(1e6), // Ar / heure
+  fixedMin: z.number().min(0).max(600), // préparation, assemblage, finition : par ouvrage
+  cutMin: z.number().min(0).max(30), // par coupe de profilé
+  leafMin: z.number().min(0).max(300), // par vantail (montage, quincaillerie)
+  glazingMin: z.number().min(0).max(120), // par m² de verre posé
+});
+export type Labor = z.infer<typeof laborSchema>;
+export const PRICING_MODES = ["m2", "cost"] as const;
+
 export const settingsSchema = z.object({
   company: text(120),
   address: text(200),
@@ -343,6 +354,11 @@ export const settingsSchema = z.object({
   deposit: z.number().min(0).max(100),
   validityDays: z.number().int().min(1).max(365),
   minArea: z.number().min(0).max(10),
+  pricing: z.enum(PRICING_MODES), // m2 : tarif au m² ; cost : matière + main-d'œuvre + frais + marge
+  labor: laborSchema,
+  overheadPct: z.number().min(0).max(200), // frais généraux, en % du déboursé sec
+  marginPct: z.number().min(0).max(300), // marge visée, en % du prix de revient
+  minMarginPct: z.number().min(0).max(100), // sous ce seuil, l'éditeur alerte
   tariffs: z.record(z.string(), z.number().min(0).max(1e9)),
   surcharges: z.record(z.string(), z.number().min(-90).max(500)),
   market: marketSchema,
@@ -371,6 +387,11 @@ export const DEFAULT_SETTINGS: Settings = {
   deposit: 50,
   validityDays: 30,
   minArea: 1,
+  pricing: "m2",
+  labor: { rate: 5000, fixedMin: 30, cutMin: 1.5, leafMin: 45, glazingMin: 20 }, // valeurs d'exemple à calibrer sur l'atelier
+  overheadPct: 15,
+  marginPct: 30,
+  minMarginPct: 15,
   // valeurs d'exemple : chaque menuisier règle ses propres prix au m²
   tariffs: {
     "fenetre.coulissant": 450000,
@@ -395,6 +416,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export const withDefaults = (s: Partial<Settings> | null | undefined): Settings => ({
   ...DEFAULT_SETTINGS,
   ...s,
+  labor: { ...DEFAULT_SETTINGS.labor, ...s?.labor },
   tariffs: { ...DEFAULT_SETTINGS.tariffs, ...s?.tariffs },
   surcharges: { ...SURCHARGE_DEFAULTS, ...s?.surcharges },
   market: {

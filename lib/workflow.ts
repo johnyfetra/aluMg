@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, ne } from "drizzle-orm";
 import { z } from "zod";
-import { normalize, unitPrice } from "./calc";
+import { normalize } from "./calc";
+import { salePrice } from "./costing";
 import { getDb, schema } from "./db";
 import { type Issuer, ISSUER_KEYS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
 import { notify } from "./notifications";
@@ -78,7 +79,7 @@ export async function createRequest(clientId: string, input: z.infer<typeof requ
   const settings = await getSettings(profile.userId);
   const lines = input.lines.map((l) => {
     const n = normalize(l);
-    return { ...n, id: crypto.randomUUID(), unit: unitPrice(n, settings.tariffs, settings.surcharges, settings.minArea) };
+    return { ...n, id: crypto.randomUUID(), unit: salePrice(n, settings) };
   });
   const request: QuoteRequest = { message: input.message, siteAddress: input.siteAddress, wantedDate: input.wantedDate };
   const quote = await createQuote(

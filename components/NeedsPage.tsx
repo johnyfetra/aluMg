@@ -130,7 +130,7 @@ function QuoteView({ quote, base, settings, market, specific, catalog, t }: { qu
       <MarketSim sim={sim} setSim={setSim} lines={quote.lines} kerf={settings.kerf} baseCost={base.allCost} cost={plan.allCost} saved={market} onSave={applySim} t={t} />
       <p role="status" className={`text-sm font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>{msg?.text}</p>
 
-      <Budget quote={quote} plan={plan} t={t} />
+      <Budget quote={quote} plan={plan} settings={settings} t={t} />
 
       <section className="card !p-0 overflow-hidden" aria-labelledby="h-lines">
         <h2 id="h-lines" className="border-b border-line px-4 py-3 font-semibold">

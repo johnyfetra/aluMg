@@ -12,7 +12,8 @@ import LinesTable from "./LinesTable";
 import Timeline from "./Timeline";
 import Viewer3DLoader from "./Viewer3DLoader";
 import { Choice, Field, FinishPicker } from "./ui";
-import { allPieces, billedArea, cutList, cuttingPlan, fmt, lineTotal, meters, normalize, planTotals, unitPrice } from "@/lib/calc";
+import { allPieces, billedArea, cutList, cuttingPlan, fmt, lineTotal, meters, normalize, planTotals } from "@/lib/calc";
+import { costLine, marginOf, salePrice } from "@/lib/costing";
 import { ApiError, request, useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
 import { lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
@@ -59,7 +60,7 @@ const DEFAULT_SIZE: Record<Category, [number, number]> = {
   cloison: [2400, 2400],
 };
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-const price = (l: Line, s: Settings) => unitPrice(l, s.tariffs, s.surcharges, s.minArea);
+const price = (l: Line, s: Settings) => salePrice(l, s);
 
 export function newLine(s: Settings): Line {
   const base: Line = {
@@ -575,6 +576,10 @@ export function LineCard({
   const sk = valid ? drawingSvg(l, l.id, 360, 280) : null;
   const tooLong = valid && cuttingPlan(cutList(l).pieces).some((p) => p.tooLong.length > 0);
   const auto = valid ? price(l, settings) : l.unit;
+  // coût de revient d'un ouvrage (jamais montré au client)
+  const cost = open && !clientMode && valid ? costLine(l, settings) : null;
+  const margin = cost ? marginOf(l.unit, cost.full) : 0;
+  const tone = margin < 0 ? "text-danger" : margin < settings.minMarginPct ? "text-warn" : "text-ok";
   const spec = leavesSpec(l);
   const p = (k: string) => `${l.id}-${k}`;
 
@@ -662,6 +667,21 @@ export function LineCard({
                 <p className="text-xl font-bold tabular-nums">{fmt(lineTotal(l))} {t("common.currency")}</p>
               </div>
             </div>
+            {cost && (
+              <div className="space-y-2 rounded-lg border border-line bg-surface p-3">
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+                  <div><dt className="text-xs text-muted">{t("cost.material")}</dt><dd className="font-semibold tabular-nums">{fmt(cost.material)}</dd></div>
+                  <div><dt className="text-xs text-muted">{t("cost.labor")}</dt><dd className="font-semibold tabular-nums">{fmt(cost.labor)}</dd></div>
+                  <div><dt className="text-xs text-muted">{t("cost.full")}</dt><dd className="font-semibold tabular-nums">{fmt(cost.full)}</dd></div>
+                  <div><dt className="text-xs text-muted">{t("cost.margin")}</dt><dd className={`font-bold tabular-nums ${tone}`}>{margin > 0 ? "+" : ""}{margin} %</dd></div>
+                </dl>
+                <p role="status" className={`text-xs font-medium ${tone}`}>
+                  {margin < 0 ? t("cost.loss") : margin < settings.minMarginPct ? t("cost.low") : t("cost.ok")}
+                </p>
+                {cost.incomplete && <p role="alert" className="text-xs font-medium text-warn">{t("cost.incomplete")}</p>}
+                <p className="text-[11px] text-muted">{t("cost.shared")}</p>
+              </div>
+            )}
             <p className="text-xs text-muted">{t("editor.unitHint")}</p>
           </Panel>
         )}

@@ -1,15 +1,19 @@
 import { Banknote, Layers, PackageCheck, PiggyBank } from "lucide-react";
 import { fmt, meters } from "@/lib/calc";
+import { laborTotal } from "@/lib/costing";
 import type { T } from "@/lib/i18n";
-import { ACCESSORIES, FINISHES, GLASSES, type Quote } from "@/lib/model";
+import { ACCESSORIES, FINISHES, GLASSES, type Quote, type Settings } from "@/lib/model";
 import type { Plan } from "@/lib/procure";
 import { totals } from "@/lib/totals";
 
 // Budget d'un devis en une page : besoin de profilés et de vitrage, coût d'achat, prix de vente, marge, TVA, acompte, et la part de chaque profilé dans le budget.
-export default function Budget({ quote, plan, t }: { quote: Quote; plan: Plan; t: T }) {
+export default function Budget({ quote, plan, settings, t }: { quote: Quote; plan: Plan; settings: Settings; t: T }) {
   const cur = t("common.currency");
   const { gross, discount, ht, tva, ttc } = totals(quote);
-  const margin = ht - plan.allCost;
+  const labor = laborTotal(quote.lines, settings);
+  const overhead = Math.round(((plan.allCost + labor) * settings.overheadPct) / 100);
+  const totalCost = plan.allCost + labor + overhead;
+  const margin = ht - totalCost;
   const area = plan.glassArea;
   const pct = (n: number, of: number) => (of ? Math.round((n / of) * 100) : 0);
   const deposit = Math.round((ttc * quote.terms.deposit) / 100);
@@ -44,7 +48,9 @@ export default function Budget({ quote, plan, t }: { quote: Quote; plan: Plan; t
             {row(t("budget.profileCost"), `${fmt(plan.totalCost)} ${cur}`)}
             {row(t("budget.accessories"), `${fmt(plan.accCost)} ${cur}`)}
             {row(t("budget.glassCost"), `${fmt(plan.glassCost)} ${cur}`)}
-            {row(t("budget.totalCost"), `${fmt(plan.allCost)} ${cur}`, true)}
+            {row(t("budget.labor"), `${fmt(labor)} ${cur}`)}
+            {row(`${t("budget.overhead")} ${settings.overheadPct} %`, `${fmt(overhead)} ${cur}`)}
+            {row(t("budget.totalCost"), `${fmt(totalCost)} ${cur}`, true)}
             {row(t("budget.marginAmount"), `${fmt(margin)} ${cur}`, true, margin < 0 ? "text-danger" : "text-ok")}
             {row(t("budget.marginPct"), `${pct(margin, ht)} %`, true, margin < 0 ? "text-danger" : "text-ok")}
                       </dl>

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import SignaturePad from "@/components/SignaturePad";
-import { Field } from "@/components/ui";
+import { Choice, Field } from "@/components/ui";
 import { useSettings } from "@/lib/client";
 import { type T, useI18n } from "@/lib/i18n";
 import { fileToDataUrl } from "@/lib/image";
@@ -126,6 +126,31 @@ function Form({ initial }: { initial: Settings }) {
         <Field htmlFor="sgu" label={t("settings.signatureUpload")}>
           {upload("sgu", "signature")}
         </Field>
+      </section>
+
+      <section className="card space-y-4 xl:col-span-2" aria-labelledby="h-mode">
+        <h2 id="h-mode" className="text-lg font-semibold">
+          {t("cost.title")}
+        </h2>
+        <p className="text-sm text-muted">{t("cost.hint")}</p>
+        <Choice name="pricing" legend={t("cost.mode")} value={s.pricing} options={[{ value: "m2", label: t("cost.m2") }, { value: "cost", label: t("cost.cost") }]} onChange={(pricing) => set({ pricing })} />
+        {s.pricing === "cost" && (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {([["rate", "cost.rate"], ["fixedMin", "cost.fixedMin"], ["cutMin", "cost.cutMin"], ["leafMin", "cost.leafMin"], ["glazingMin", "cost.glazingMin"]] as const).map(([k, label]) => (
+                <Field key={k} htmlFor={`lb-${k}`} label={t(label)}>
+                  <input id={`lb-${k}`} type="number" inputMode="decimal" min={0} className="input" value={s.labor[k]} onChange={(e) => set({ labor: { ...s.labor, [k]: Number(e.target.value) || 0 } })} />
+                </Field>
+              ))}
+              {([["overheadPct", "cost.overheadPct"], ["marginPct", "cost.marginPct"], ["minMarginPct", "cost.minMarginPct"]] as const).map(([k, label]) => (
+                <Field key={k} htmlFor={`cs-${k}`} label={t(label)}>
+                  <input id={`cs-${k}`} type="number" inputMode="decimal" min={0} className="input" value={s[k]} onChange={(e) => set({ [k]: Number(e.target.value) || 0 })} />
+                </Field>
+              ))}
+            </div>
+            <p className="text-xs text-muted">{t("cost.note")}</p>
+          </>
+        )}
       </section>
 
       <section className="card space-y-4" aria-labelledby="h-pr">
