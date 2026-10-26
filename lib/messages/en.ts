@@ -700,6 +700,7 @@ export const en: Messages = {
   "msg.contactJoiner": "Message the joiner",
   "msg.loginToWrite": "Sign in to message",
   "auth.demoClient": "Test client account (1 click)",
+  "auth.demoMenuisier": "Test carpenter account (1 click)",
   "editor.direction": "Opening direction",
   "dir.both.slide": "Both sides",
   "editor.sectionConfig": "Configuration",

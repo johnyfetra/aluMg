@@ -702,6 +702,7 @@ export const mg: Messages = {
   "msg.contactJoiner": "Hanoratra ho an'ny mpanao",
   "msg.loginToWrite": "Hiditra hanoratra",
   "auth.demoClient": "Kaonty mpanjifa fanandramana (1 tsindry)",
+  "auth.demoMenuisier": "Kaonty mpanamboatra fanandramana (1 tsindry)",
   "editor.direction": "Lalana fanokafana",
   "dir.both.slide": "Roa tonta",
   "editor.sectionConfig": "Fandrafetana",

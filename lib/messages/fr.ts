@@ -699,6 +699,7 @@ export const fr = {
   "msg.contactJoiner": "Écrire au menuisier",
   "msg.loginToWrite": "Se connecter pour écrire",
   "auth.demoClient": "Compte client de test (1 clic)",
+  "auth.demoMenuisier": "Compte menuisier de test (1 clic)",
   "editor.direction": "Sens d'ouverture",
   "dir.both.slide": "Les deux côtés",
   "editor.sectionConfig": "Configuration",
