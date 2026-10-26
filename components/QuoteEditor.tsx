@@ -319,7 +319,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             </h2>
             <fieldset disabled={locked} className="m-0 min-w-0 space-y-4 border-0 p-0">
               <div>
-                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">{t("editor.groupClient")}</h3>
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><span aria-hidden className="h-4 w-1 rounded-full bg-primary" />{t("editor.groupClient")}</h3>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <Field htmlFor="cn" label={t("editor.clientName")}>
                     <input id="cn" className="input" autoComplete="name" maxLength={120} value={q.client.name} onChange={(e) => setClient({ name: e.target.value })} />
@@ -334,7 +334,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 {!q.clientId && <p className="mt-1.5 text-xs text-muted">{t("editor.clientEmailHint")}</p>}
               </div>
               <div>
-                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">{t("editor.groupSite")}</h3>
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><span aria-hidden className="h-4 w-1 rounded-full bg-primary" />{t("editor.groupSite")}</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field htmlFor="pj" label={t("editor.project")}>
                     <input id="pj" className="input" maxLength={200} value={q.project} onChange={(e) => setQ({ ...q, project: e.target.value })} />
@@ -345,7 +345,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 </div>
               </div>
               <div>
-                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">{t("editor.groupTerms")}</h3>
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><span aria-hidden className="h-4 w-1 rounded-full bg-primary" />{t("editor.groupTerms")}</h3>
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem] lg:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1.4fr)]">
                   <Field htmlFor="dl" label={t("editor.delay")}>
                     <input id="dl" className="input" maxLength={120} placeholder={t("editor.delayPlaceholder")} value={q.delay} onChange={(e) => setQ({ ...q, delay: e.target.value })} />
@@ -810,7 +810,10 @@ export function LineCard({
 function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
     <section className={`min-w-0 space-y-3 rounded-xl border border-line bg-surface-2/30 p-3.5 sm:p-4 ${className}`}>
-      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted">{title}</h4>
+      <h4 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
+        {title}
+      </h4>
       {children}
     </section>
   );
