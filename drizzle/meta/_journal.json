@@ -50,6 +50,13 @@
       "when": 1792683971247,
       "tag": "0006_messagerie_saisie_vocaux_accuses",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793038778659,
+      "tag": "0007_notifications",
+      "breakpoints": true
     }
   ]
 }

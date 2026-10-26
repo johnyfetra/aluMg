@@ -719,6 +719,7 @@ export const mg: Messages = {
   "leaf.hingeL": "Rohy eo ankavia",
   "leaf.hingeR": "Rohy eo ankavanana",
   "leaf.mobile": "Misokatra",
+  "leaf.B": "Roa lalana (miditra sy mivoaka)",
   "editor.colQty": "Isa",
   "editor.colUnit": "Vidiny iray",
   "editor.colTotal": "Fitambarany",

@@ -50,8 +50,9 @@ export const leavesSpec = (l: { category: Category; opening: Opening }): Spec | 
   l.category === "cloison" ? PANELS_SPEC : l.category === "fenetre" || l.category === "porte" ? LEAVES_SPEC[l.opening] : null;
 
 // ---------- Configuration des vantaux ----------
-// Chaque vantail a un mode : F = fixe, L / R = coulisse vers la gauche / la droite (coulissant) ou charnières à gauche / à droite (battant).
-export const LEAF_MODES = ["F", "L", "R"] as const;
+// Chaque vantail a un mode : F = fixe, L / R = coulisse vers la gauche / la droite (coulissant) ou charnières à gauche / à droite (battant),
+// B = double sens (va-et-vient : la porte s'ouvre dans les deux sens, réservé aux portes battantes).
+export const LEAF_MODES = ["F", "L", "R", "B"] as const;
 export type LeafMode = (typeof LEAF_MODES)[number];
 // Raccourcis : côté d'ouverture. « both » (coulissant) : les deux vantaux d'une paire s'ouvrent l'un vers l'autre, chacun de moitié.
 export const DIRECTIONS = ["left", "right", "both"] as const;
@@ -84,6 +85,7 @@ export function leafMotion(l: Cfg) {
     travel: slide[i] && slide[i + slide[i]] === -slide[i] ? 0.5 : 1,
     front: i % 2 === 1,
     hingeLeft: m !== "R",
+    both: m === "B",
     fixed: l.opening === "fixe" || (sliding ? slide[i] === 0 : m === "F"),
   }));
 }
@@ -177,7 +179,7 @@ export const quoteSchema = z.object({
   number: text(32),
   date: z.string().max(40),
   status: z.enum(STATUSES),
-  client: z.object({ name: text(120), phone: text(40), address: text(200) }),
+  client: z.object({ name: text(120), phone: text(40), address: text(200), email: text(160).default("") }), // e-mail : sert à retrouver le compte client à l'envoi
   project: text(200),
   delay: text(120),
   notes: text(600),
@@ -186,6 +188,7 @@ export const quoteSchema = z.object({
   // champs gérés par le serveur : ignorés quand le client de l'API les envoie
   clientId: z.uuid().nullable().optional(),
   progress: z.number().int().min(0).max(100).default(0),
+  rev: z.number().int().min(0).default(0), // révision : +1 à chaque modification d'un devis déjà envoyé ; le client répond à une révision précise
   request: requestSchema.nullable().optional(),
   // figés à la création : modifier les réglages ne change pas un devis déjà émis
   terms: z.object({ tva: z.number().min(0).max(100), deposit: z.number().min(0).max(100), validityDays: z.number().int().min(1).max(365) }),

@@ -1,5 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "./db";
+import { notify } from "./notifications";
 import { type Market, type Quote, type QuoteRequest, type Role, type Settings, withDefaults } from "./model";
 
 // Accès aux données, toujours borné à un utilisateur (userId) : un compte ne lit ni n'écrit les données d'un autre.
@@ -61,14 +62,16 @@ export async function createQuote(userId: string, q: Quote, opts: { clientId?: s
 // voie toujours ce qu'il a reçu ou accepté. Pour le changer : négociation (devis lié à un client) ou nouvelle version (devis sans compte).
 // Un devis sans compte client garde seulement son menu de statut libre.
 export const EDITABLE = ["requested", "draft", "negotiation"];
+// Envoyé mais pas encore tranché par le client : le menuisier peut encore corriger (chaque correction crée une révision, le client en est averti).
+const REVISABLE = ["sent"];
 // Comparaison indépendante de l'ordre des clés (le JSONB de la base les réordonne).
 const canon = (v: unknown): unknown => (Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)).map(([k, x]) => [k, canon(x)])) : v);
-const content = (q: Quote) => JSON.stringify(canon([q.client, q.project, q.delay, q.notes, q.lines, q.discount ?? 0]));
+const content = (q: Quote) => JSON.stringify(canon([{ ...q.client, email: q.client.email ?? "" }, q.project, q.delay, q.notes, q.lines, q.discount ?? 0]));
 
 export async function updateQuote(userId: string, id: string, q: Quote): Promise<Quote | null | "locked"> {
   const existing = await getQuote(userId, id);
   if (!existing) return null;
-  if (!EDITABLE.includes(existing.status)) {
+  if (!EDITABLE.includes(existing.status) && !(existing.clientId && REVISABLE.includes(existing.status))) {
     if (existing.clientId) return "locked";
     if (content(existing) !== content(q)) return "locked"; // seul le statut peut changer
   }
@@ -77,9 +80,16 @@ export async function updateQuote(userId: string, id: string, q: Quote): Promise
   let status = q.status;
   if (existing.clientId) status = existing.status === "requested" ? "draft" : existing.status;
   else if (status === "requested") status = "draft";
-  const saved: Quote = { ...q, id, number: existing.number, date: existing.date, terms: existing.terms, clientId: existing.clientId ?? null, request: existing.request ?? null, progress: existing.progress ?? 0, status };
+  const revised = !!existing.clientId && existing.status === "sent" && content(existing) !== content(q);
+  const saved: Quote = { ...q, id, number: existing.number, date: existing.date, terms: existing.terms, clientId: existing.clientId ?? null, request: existing.request ?? null, progress: existing.progress ?? 0, rev: (existing.rev ?? 0) + (revised ? 1 : 0), status };
   const db = await getDb();
-  await db.update(schema.quotes).set({ status: saved.status, data: saved }).where(and(eq(schema.quotes.id, id), eq(schema.quotes.userId, userId)));
+  await db.transaction(async (tx) => {
+    await tx.update(schema.quotes).set({ status: saved.status, data: saved }).where(and(eq(schema.quotes.id, id), eq(schema.quotes.userId, userId)));
+    if (revised && existing.clientId) {
+      await tx.insert(schema.quoteEvents).values({ quoteId: id, actorId: userId, kind: "revised", message: "", data: { rev: saved.rev } });
+      await notify(tx, { userId: existing.clientId, quoteId: id, kind: "revised" });
+    }
+  });
   return saved;
 }
 

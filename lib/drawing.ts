@@ -184,6 +184,7 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
         if (l.opening === "soufflet") body += dashed(`${f(x + t)},${f(iy + ih - t)} ${f(x + vw / 2)},${f(iy + t)} ${f(x + vw - t)},${f(iy + ih - t)}`);
         else {
           body += dashed(`${f(a)},${f(iy + t)} ${f(b)},${f(iy + ih / 2)} ${f(a)},${f(iy + ih - t)}`);
+          if (m.both) body += dashed(`${f(b)},${f(iy + t)} ${f(a)},${f(iy + ih / 2)} ${f(b)},${f(iy + ih - t)}`); // double sens : les deux triangles
           if (l.opening === "oscillo") body += dashed(`${f(x + t)},${f(iy + t)} ${f(x + vw / 2)},${f(iy + ih - t)} ${f(x + vw - t)},${f(iy + t)}`);
         }
         const hx = l.opening === "soufflet" ? x + vw / 2 - 8 : hingeLeft ? x + vw - t * 1.8 : x + t * 1.2;

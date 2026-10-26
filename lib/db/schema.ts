@@ -217,3 +217,24 @@ export const quoteCatalogs = pgTable("quote_catalogs", {
   data: jsonb("data").$type<Market>().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Notifications : un événement du devis qui concerne l'autre partie (commentaire sur un ouvrage, décision, devis modifié…).
+// Un clic mène au devis, et à l'ouvrage précis quand `lineId` est renseigné.
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    quoteId: uuid("quote_id")
+      .notNull()
+      .references(() => quotes.id, { onDelete: "cascade" }),
+    lineId: text("line_id"),
+    kind: text("kind").notNull(),
+    message: text("message").notNull().default(""),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("notifications_user_idx").on(t.userId, t.createdAt)],
+);

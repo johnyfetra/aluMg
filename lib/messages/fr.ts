@@ -716,6 +716,7 @@ export const fr = {
   "leaf.hingeL": "Charnières à gauche",
   "leaf.hingeR": "Charnières à droite",
   "leaf.mobile": "Mobile",
+  "leaf.B": "Double sens (va-et-vient)",
   "editor.colQty": "Qté",
   "editor.colUnit": "P.U.",
   "editor.colTotal": "Total",

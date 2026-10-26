@@ -1,8 +1,9 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 import { normalize, unitPrice } from "./calc";
 import { getDb, schema } from "./db";
 import { type Issuer, ISSUER_KEYS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
+import { notify } from "./notifications";
 import { createQuote, findUserById, getSettings } from "./repo";
 
 // ---------- Actions possibles sur un devis lié à un client ----------
@@ -12,9 +13,10 @@ export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("send"), message: msg.optional() }),
   z.object({ type: z.literal("decline"), message: msg.optional() }),
   z.object({ type: z.literal("progress"), progress: z.number().int().min(0).max(100), message: msg.optional() }),
-  z.object({ type: z.literal("accept"), message: msg.optional() }),
-  z.object({ type: z.literal("reject"), message: msg.optional() }),
-  z.object({ type: z.literal("request_change"), message: msg.min(1), discountPercent: z.number().min(0).max(90).optional() }),
+  // rev : révision du devis que le client a sous les yeux ; si le menuisier l'a modifié entre-temps, la décision est refusée (quote_changed).
+  z.object({ type: z.literal("accept"), message: msg.optional(), rev: z.number().int().optional() }),
+  z.object({ type: z.literal("reject"), message: msg.optional(), rev: z.number().int().optional() }),
+  z.object({ type: z.literal("request_change"), message: msg.min(1), discountPercent: z.number().min(0).max(90).optional(), rev: z.number().int().optional() }),
   z.object({ type: z.literal("review"), rating: z.number().int().min(1).max(5), comment: msg.default("") }),
   z.object({ type: z.literal("report"), reason: z.enum(REPORT_REASONS), details: z.string().trim().max(1500).default("") }),
   z.object({ type: z.literal("message"), message: msg.min(1) }),
@@ -82,8 +84,8 @@ export async function createRequest(clientId: string, input: z.infer<typeof requ
   const quote = await createQuote(
     profile.userId,
     {
-      id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: client.name, phone: client.phone, address: input.siteAddress },
-      project: input.project, delay: "", notes: "", lines, discount: 0, progress: 0,
+      id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: client.name, phone: client.phone, address: input.siteAddress, email: client.email },
+      project: input.project, delay: "", notes: "", lines, discount: 0, progress: 0, rev: 0,
       terms: { tva: settings.tva, deposit: settings.deposit, validityDays: settings.validityDays },
     },
     { clientId, request },
@@ -112,7 +114,7 @@ export async function listEvents(quoteId: string): Promise<EventView[]> {
     .select({ e: schema.quoteEvents, name: schema.users.name })
     .from(schema.quoteEvents)
     .leftJoin(schema.users, eq(schema.users.id, schema.quoteEvents.actorId))
-    .where(eq(schema.quoteEvents.quoteId, quoteId))
+    .where(and(eq(schema.quoteEvents.quoteId, quoteId), ne(schema.quoteEvents.kind, "line_comment"))) // les commentaires d'ouvrage vivent avec leur ouvrage
     .orderBy(asc(schema.quoteEvents.createdAt));
   return rows.map(({ e, name }) => ({
     id: e.id, kind: e.kind, message: e.message, data: e.data, at: e.createdAt.toISOString(),
@@ -151,7 +153,7 @@ export async function getClientQuote(clientId: string, id: string): Promise<Clie
 }
 
 // ---------- Appliquer une action ----------
-export type ActionResult = { ok: true; quote: Quote } | { ok: false; error: "not_found" | "invalid_transition" | "incomplete" | "already_reviewed" };
+export type ActionResult = { ok: true; quote: Quote } | { ok: false; error: "not_found" | "invalid_transition" | "incomplete" | "already_reviewed" | "no_client_account" | "quote_changed" };
 
 export async function applyAction(actorId: string, quoteId: string, a: Action): Promise<ActionResult> {
   const found = await sideOf(actorId, quoteId);
@@ -161,21 +163,33 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
   if (!next) return { ok: false, error: "invalid_transition" };
   const db = await getDb();
 
+  let clientId = row.clientId;
   if (a.type === "send") {
-    if (!row.clientId) return { ok: false, error: "invalid_transition" }; // un devis sans compte client se gère par le statut
     if (row.data.lines.some((l) => !(l.unit > 0))) return { ok: false, error: "incomplete" };
+    if (!clientId) {
+      // devis créé par le menuisier : on retrouve le compte client par l'e-mail saisi
+      const email = (row.data.client.email ?? "").trim().toLowerCase();
+      const [c] = email ? await db.select({ id: schema.users.id }).from(schema.users).where(and(eq(schema.users.email, email), eq(schema.users.role, "client"))) : [];
+      if (!c) return { ok: false, error: "no_client_account" };
+      clientId = c.id;
+    }
   }
+  if (side === "client" && "rev" in a && a.rev !== undefined && a.rev !== (row.data.rev ?? 0)) return { ok: false, error: "quote_changed" };
   if (a.type === "review") {
     const [done] = await db.select({ id: schema.reviews.id }).from(schema.reviews).where(eq(schema.reviews.quoteId, quoteId));
     if (done) return { ok: false, error: "already_reviewed" };
   }
 
   const progress = a.type === "progress" ? a.progress : row.progress;
-  const quote: Quote = { ...row.data, status: next, progress };
+  const quote: Quote = { ...row.data, status: next, progress, clientId };
   await db.transaction(async (tx) => {
-    if (next !== row.status || progress !== row.progress) {
-      await tx.update(schema.quotes).set({ status: next, progress, data: quote }).where(eq(schema.quotes.id, quoteId));
+    if (next !== row.status || progress !== row.progress || clientId !== row.clientId) {
+      await tx.update(schema.quotes).set({ status: next, progress, clientId, data: quote }).where(eq(schema.quotes.id, quoteId));
     }
+    // l'autre partie est prévenue des étapes du devis
+    const other = side === "menuisier" ? clientId : row.userId;
+    const told = ["send", "decline", "accept", "reject", "request_change", "review"].includes(a.type) || (a.type === "progress" && progress !== row.progress);
+    if (other && told) await notify(tx, { userId: other, quoteId, kind: a.type, message: "message" in a ? a.message : "comment" in a ? a.comment : "" });
     const log = (kind: string, message = "", data: Record<string, unknown> = {}) => tx.insert(schema.quoteEvents).values({ quoteId, actorId, kind, message, data });
     switch (a.type) {
       case "send": return void (await log("sent", a.message));
@@ -199,6 +213,35 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
     }
   });
   return { ok: true, quote };
+}
+
+// ---------- Commentaires par ouvrage ----------
+// Le client et le menuisier discutent d'un ouvrage précis. Stockés comme événements « line_comment » (data.lineId) ; l'autre partie est notifiée, le clic mène à l'ouvrage.
+export const commentSchema = z.object({ lineId: z.string().min(1).max(64), body: z.string().trim().min(1).max(1000) });
+export type LineComment = { id: string; lineId: string; body: string; at: string; side: Side };
+
+export async function listLineComments(userId: string, quoteId: string): Promise<LineComment[] | null> {
+  const found = await sideOf(userId, quoteId);
+  if (!found) return null;
+  const db = await getDb();
+  const rows = await db.select().from(schema.quoteEvents).where(and(eq(schema.quoteEvents.quoteId, quoteId), eq(schema.quoteEvents.kind, "line_comment"))).orderBy(asc(schema.quoteEvents.createdAt));
+  return rows.map((e) => ({ id: e.id, lineId: String(e.data.lineId ?? ""), body: e.message, at: e.createdAt.toISOString(), side: e.actorId === found.row.userId ? "menuisier" : "client" }));
+}
+
+export async function addLineComment(userId: string, quoteId: string, input: z.infer<typeof commentSchema>): Promise<LineComment | "not_found" | "not_allowed"> {
+  const found = await sideOf(userId, quoteId);
+  if (!found) return "not_found";
+  const { side, row } = found;
+  if (!row.clientId || !row.data.lines.some((l) => l.id === input.lineId)) return "not_found";
+  if (side === "client" && ["requested", "draft"].includes(row.status)) return "not_allowed"; // le client ne voit pas encore le devis
+  const db = await getDb();
+  const other = side === "menuisier" ? row.clientId : row.userId;
+  const [e] = await db.transaction(async (tx) => {
+    const ev = await tx.insert(schema.quoteEvents).values({ quoteId, actorId: userId, kind: "line_comment", message: input.body, data: { lineId: input.lineId } }).returning();
+    await notify(tx, { userId: other, quoteId, lineId: input.lineId, kind: "line_comment", message: input.body });
+    return ev;
+  });
+  return { id: e.id, lineId: input.lineId, body: input.body, at: e.createdAt.toISOString(), side };
 }
 
 export type { Role };

@@ -717,6 +717,7 @@ export const en: Messages = {
   "leaf.hingeL": "Hinges on the left",
   "leaf.hingeR": "Hinges on the right",
   "leaf.mobile": "Opening",
+  "leaf.B": "Double action (swings both ways)",
   "editor.colQty": "Qty",
   "editor.colUnit": "Unit",
   "editor.colTotal": "Total",

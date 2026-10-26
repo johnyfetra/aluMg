@@ -6,6 +6,7 @@ process.env.PGLITE_DIR = "memory://";
 const repo = await import("./repo");
 const wf = await import("./workflow");
 const pf = await import("./profiles");
+const notif = await import("./notifications");
 
 const line: Line = lineSchema.parse({
   id: "x", category: "fenetre", opening: "coulissant", leaves: 2, shutter: "roulant", control: "manuel", guard: "barreaudage", range: "asiatique",
@@ -115,9 +116,9 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
     expect((await wf.getClientQuote(c1, q.id))!.quote.lines[0].unit).toBeGreaterThan(0);
   });
 
-  it("une fois envoyé, le devis est verrouillé pour le menuisier (prix figés)", async () => {
-    expect(await repo.updateQuote(m1, q.id, quoteSchema.parse({ ...q, discount: 50 }))).toBe("locked");
-    expect((await repo.getQuote(m1, q.id))!.discount).toBe(0);
+  it("envoyé mais pas encore tranché : le menuisier peut corriger (révision), puis revenir en arrière", async () => {
+    expect(await repo.updateQuote(m1, q.id, quoteSchema.parse({ ...q, discount: 50 }))).toMatchObject({ discount: 50, rev: 1, status: "sent" });
+    expect(await repo.updateQuote(m1, q.id, quoteSchema.parse({ ...q, discount: 0 }))).toMatchObject({ discount: 0, rev: 2 });
   });
 
   it("les rôles sont respectés : le client ne peut pas envoyer, le menuisier ne peut pas accepter", async () => {
@@ -136,8 +137,8 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
     const sent = await wf.applyAction(m1, q.id, A({ type: "send", message: "Remise de 10 % accordée" }));
     expect(sent.ok && sent.quote.status).toBe("sent");
     const ev = await wf.listEvents(q.id);
-    expect(ev.map((e) => e.kind)).toEqual(["created", "sent", "change_requested", "sent"]);
-    expect(ev[2]).toMatchObject({ side: "client", message: "Une remise possible ?", data: { discountPercent: 10 } });
+    expect(ev.map((e) => e.kind)).toEqual(["created", "sent", "revised", "revised", "change_requested", "sent"]);
+    expect(ev[4]).toMatchObject({ side: "client", message: "Une remise possible ?", data: { discountPercent: 10 } });
   });
 
   it("acceptation puis chantier : l'avancement fait évoluer le statut", async () => {
@@ -183,7 +184,7 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
   it("un devis saisi pour un client sans compte ne s'envoie pas par l'action « send »", async () => {
     const walk = await repo.createQuote(m1, quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: "Sans compte", phone: "", address: "" }, project: "", delay: "", notes: "", lines: [{ ...line, unit: 1000 }], terms: { tva: 20, deposit: 50, validityDays: 30 } }));
     expect(walk.status).toBe("draft"); // « requested » est réservé aux demandes de clients
-    expect(await wf.applyAction(m1, walk.id, A({ type: "send" }))).toEqual({ ok: false, error: "invalid_transition" });
+    expect(await wf.applyAction(m1, walk.id, A({ type: "send" }))).toEqual({ ok: false, error: "no_client_account" });
     expect(await repo.deleteQuote(m1, walk.id)).toBe(true);
   });
 });
@@ -227,5 +228,53 @@ describe("annuaire public et profils", () => {
     expect((await pf.getPublicMenuisier(slug1))!.items).toHaveLength(1);
     expect((await pf.listPublicMenuisiers()).find((e) => e.name === "Rabe Alu")!.cover).toBe(img);
     expect(await pf.deletePortfolioItem(m1, item.id)).toBe(true);
+  });
+});
+
+describe("devis envoyé : révisions, commentaires d'ouvrage et notifications", () => {
+  let q: Quote;
+  it("envoi à un client retrouvé par e-mail ; sans compte correspondant, refus", async () => {
+    const base = quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "draft", client: { name: "Hery", phone: "", address: "", email: "C1@ex.mg" }, project: "Villa", delay: "", notes: "", lines: [{ ...line, unit: 100000 }], terms: { tva: 20, deposit: 30, validityDays: 30 } });
+    q = await repo.createQuote(m1, base);
+    expect(q.clientId).toBeNull();
+    const unknown = await repo.createQuote(m1, { ...base, id: crypto.randomUUID(), client: { ...base.client, email: "inconnu@ex.mg" } });
+    expect(await wf.applyAction(m1, unknown.id, A({ type: "send" }))).toEqual({ ok: false, error: "no_client_account" });
+    const r = await wf.applyAction(m1, q.id, A({ type: "send" }));
+    expect(r).toMatchObject({ ok: true, quote: { status: "sent", clientId: c1 } });
+    expect((await notif.listNotifications(c1)).items.some((n) => n.kind === "send" && n.quoteId === q.id)).toBe(true);
+  });
+  it("le menuisier peut corriger tant que le client n'a pas répondu : révision +1, client prévenu", async () => {
+    const cur = (await repo.getQuote(m1, q.id))!;
+    const saved = await upd(m1, q.id, { ...cur, notes: "Livraison incluse" });
+    expect(saved.rev).toBe(1);
+    expect((await upd(m1, q.id, saved)).rev).toBe(1); // rien de changé : pas de nouvelle révision
+    expect((await notif.listNotifications(c1)).items.some((n) => n.kind === "revised")).toBe(true);
+  });
+  it("décision du client sur une révision périmée refusée ; sur la bonne révision acceptée", async () => {
+    expect(await wf.applyAction(c1, q.id, A({ type: "accept", rev: 0 }))).toEqual({ ok: false, error: "quote_changed" });
+    expect((await wf.applyAction(c1, q.id, A({ type: "accept", rev: 1 }))).ok).toBe(true);
+  });
+  it("après la réponse du client, le devis est figé", async () => {
+    const cur = (await repo.getQuote(m1, q.id))!;
+    expect(await repo.updateQuote(m1, q.id, { ...cur, notes: "trop tard" })).toBe("locked");
+  });
+  it("commentaires d'ouvrage : chaque partie écrit, l'autre est notifiée avec l'ouvrage visé ; un tiers ne voit rien", async () => {
+    const lineId = line.id;
+    expect(await wf.addLineComment(c1, q.id, { lineId, body: "Vitrage dépoli possible ?" })).toMatchObject({ side: "client" });
+    expect(await wf.addLineComment(m1, q.id, { lineId, body: "Oui, +5 %" })).toMatchObject({ side: "menuisier" });
+    expect(await wf.addLineComment(c1, q.id, { lineId: "inexistant", body: "x" })).toBe("not_found");
+    expect(await wf.addLineComment(c2, q.id, { lineId, body: "intrus" })).toBe("not_found");
+    expect(await wf.listLineComments(c2, q.id)).toBeNull();
+    expect((await wf.listLineComments(m1, q.id))!.map((c) => c.body)).toEqual(["Vitrage dépoli possible ?", "Oui, +5 %"]);
+    expect((await wf.listEvents(q.id)).some((e) => e.kind === "line_comment")).toBe(false);
+    const n = (await notif.listNotifications(m1)).items.find((x) => x.kind === "line_comment");
+    expect(n).toMatchObject({ quoteId: q.id, lineId, read: false });
+    await notif.markNotificationsRead(m1, n!.id);
+    expect((await notif.listNotifications(m1)).items.find((x) => x.id === n!.id)!.read).toBe(true);
+    expect((await notif.listNotifications(c2)).items).toEqual([]);
+  });
+  it("le client ne peut pas commenter un devis pas encore envoyé", async () => {
+    const d = await repo.createQuote(m1, quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: "", phone: "", address: "", email: "" }, project: "", delay: "", notes: "", lines: [line], terms: { tva: 0, deposit: 0, validityDays: 30 } }), { clientId: c1 });
+    expect(await wf.addLineComment(c1, d.id, { lineId: line.id, body: "?" })).toBe("not_allowed");
   });
 });

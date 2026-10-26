@@ -125,13 +125,14 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         number: "",
         date: new Date().toISOString(),
         status: "draft",
-        client: { name: "", phone: "", address: "" },
+        client: { name: "", phone: "", address: "", email: "" },
         project: "",
         delay: "",
         notes: "",
         lines: [first],
         discount: 0,
         progress: 0,
+        rev: 0,
         terms: { tva: settings.tva, deposit: settings.deposit, validityDays: settings.validityDays },
       },
   );
@@ -540,7 +541,7 @@ export function LineCard({
           {openable && <Choice dense name={p("op")} legend={t("editor.opening")} value={l.opening} options={OPENINGS_BY_CATEGORY[cat].map((o) => ({ value: o, label: cap(t(`opening.${o}`)) }))} onChange={(opening) => onChange({ opening })} />}
 
           {spec && spec.max > spec.min && (
-            <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+            <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
               <Choice
                 dense
                 name={p("lv")}
@@ -741,8 +742,8 @@ function LeafConfig({ l, t, onChange, id }: { l: Line; t: T; onChange: (p: Parti
   const marks = leafMarks(l);
   const sliding = l.opening === "coulissant";
   const n = l.leaves;
-  const label = (m: LeafMode) => t(m === "F" ? "leaf.F" : l.opening === "soufflet" ? "leaf.mobile" : sliding ? (m === "L" ? "leaf.slideL" : "leaf.slideR") : m === "L" ? "leaf.hingeL" : "leaf.hingeR");
-  const allowed = (i: number): LeafMode[] => (sliding ? (["F", ...(i > 0 ? ["L"] : []), ...(i < n - 1 ? ["R"] : [])] as LeafMode[]) : l.opening === "soufflet" ? ["F", "L"] : ["F", "L", "R"]);
+  const label = (m: LeafMode) => t(m === "F" ? "leaf.F" : m === "B" ? "leaf.B" : l.opening === "soufflet" ? "leaf.mobile" : sliding ? (m === "L" ? "leaf.slideL" : "leaf.slideR") : m === "L" ? "leaf.hingeL" : "leaf.hingeR");
+  const allowed = (i: number): LeafMode[] => (sliding ? (["F", ...(i > 0 ? ["L"] : []), ...(i < n - 1 ? ["R"] : [])] as LeafMode[]) : l.opening === "soufflet" ? ["F", "L"] : l.category === "porte" ? ["F", "L", "R", "B"] : ["F", "L", "R"]);
   const same = (a: LeafMode[], b: LeafMode[]) => a.join() === b.join();
   const set = (i: number, m: LeafMode) => onChange({ leafCfg: modes.map((x, j) => (j === i ? m : x)) });
   return (
