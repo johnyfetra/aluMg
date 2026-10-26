@@ -980,4 +980,8 @@ export const en: Messages = {
   "msg.qr.menuisier2": "Your quote is ready; I am sending it in the app.",
   "msg.qr.menuisier3": "Deposit received, manufacturing starts.",
   "msg.qr.menuisier4": "Could you confirm the sizes and the colour?",
+  "dlg.title": "Confirm the action",
+  "dlg.titleDanger": "This cannot be undone",
+  "dlg.confirm": "Confirm",
+  "dlg.cancel": "Cancel",
 };

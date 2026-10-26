@@ -48,6 +48,7 @@ import {
 } from "@/lib/model";
 import Select from "./Select";
 import { totals } from "@/lib/totals";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 const DEFAULT_SIZE: Record<Category, [number, number]> = {
   fenetre: [1200, 1000],
@@ -105,6 +106,7 @@ export default function QuoteEditor({ id }: { id?: string }) {
 function Form({ existing, settings }: { existing?: Quote; settings: Settings }) {
   const { t, locale } = useI18n();
   const router = useRouter();
+  const ask = useConfirm();
   const { save } = useQuotes();
   // gammes et couleurs proposées : celles du catalogue de ce devis s'il en a un, sinon du catalogue général
   const catalog = useQuoteCatalog(existing?.id);
@@ -223,7 +225,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const canAct = persisted && ["requested", "draft", "negotiation"].includes(q.status);
   const [note, setNote] = useState("");
   const act = async (type: "send" | "decline") => {
-    if (type === "decline" && !confirm(t("editor.confirmDecline"))) return;
+    if (type === "decline" && !(await ask({ message: t("editor.confirmDecline"), tone: "danger", confirmLabel: t("editor.decline") }))) return;
     if (type === "send" && !q.clientId && !q.client.email.trim()) return setMsg({ ok: false, text: t("editor.needEmail") });
     const saved = await persist();
     if (!saved) return;

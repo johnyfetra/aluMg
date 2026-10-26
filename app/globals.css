@@ -165,28 +165,35 @@ body {
 }
 
 @layer components {
+  /* Surfaces et champs : rayons modestes, ombre à peine visible, bordures fines. */
   .card {
-    @apply rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6;
+    @apply rounded-xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.06)] sm:p-5;
   }
   .input {
-    @apply min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2 text-ink placeholder:text-muted;
+    @apply min-h-10 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink transition-colors placeholder:text-muted hover:border-[color-mix(in_srgb,var(--muted)_55%,var(--border))] disabled:cursor-not-allowed disabled:opacity-60;
   }
+  /* Boutons : une base commune, trois tons (primaire plein, secondaire filet, danger discret) et un bouton d'accent. */
   .btn-primary,
   .btn-secondary,
-  .btn-danger {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50;
+  .btn-danger,
+  .btn-ghost,
+  .btn-accent {
+    @apply inline-flex min-h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold tracking-[-0.005em] transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-primary text-on-primary hover:bg-primary-hover;
+    @apply bg-primary text-on-primary shadow-[0_1px_2px_rgb(0_0_0/0.25),inset_0_1px_0_rgb(255_255_255/0.14)] hover:bg-primary-hover;
   }
   .btn-secondary {
-    @apply border border-line bg-surface text-ink hover:bg-surface-2;
+    @apply border border-line bg-surface text-ink shadow-[0_1px_1px_rgb(0_0_0/0.05)] hover:border-[color-mix(in_srgb,var(--muted)_50%,var(--border))] hover:bg-surface-2;
+  }
+  .btn-ghost {
+    @apply text-muted hover:bg-surface-2 hover:text-ink;
   }
   .btn-accent {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-bold text-on-accent shadow-sm transition hover:brightness-95;
+    @apply bg-accent text-on-accent shadow-[0_1px_2px_rgb(0_0_0/0.25)] hover:brightness-105;
   }
   .btn-danger {
-    @apply border border-line bg-surface text-danger hover:bg-surface-2;
+    @apply border border-danger/30 bg-danger/5 text-danger hover:border-danger/60 hover:bg-danger/10;
   }
 }
 

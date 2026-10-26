@@ -982,4 +982,8 @@ export const mg: Messages = {
   "msg.qr.menuisier2": "Vonona ny tombanao, alefako ao amin'ny application.",
   "msg.qr.menuisier3": "Voaray ny avance, manomboka ny fanamboarana.",
   "msg.qr.menuisier4": "Afaka manamafy ny refy sy ny loko voafidy ve ianao?",
+  "dlg.title": "Hamafiso ny asa",
+  "dlg.titleDanger": "Tsy azo averina intsony",
+  "dlg.confirm": "Ekena",
+  "dlg.cancel": "Foana",
 };

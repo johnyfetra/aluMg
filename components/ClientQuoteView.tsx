@@ -14,6 +14,7 @@ import { REPORT_REASONS, lineMarks } from "@/lib/model";
 import { MVP } from "@/lib/mvp";
 import { totals } from "@/lib/totals";
 import Select from "./Select";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 const STEPS = ["requested", "sent", "accepted", "in_progress", "completed"] as const;
 const stepOf = (s: string) => (s === "draft" ? 0 : s === "negotiation" ? 1 : Math.max(0, STEPS.indexOf(s as (typeof STEPS)[number])));
@@ -22,6 +23,7 @@ const stepOf = (s: string) => (s === "draft" ? 0 : s === "negotiation" ? 1 : Mat
 export default function ClientQuoteView({ id }: { id: string }) {
   const { t, locale } = useI18n();
   const { data, isLoading } = useClientQuote(id);
+  const ask = useConfirm();
   const [panel, setPanel] = useState<null | "change" | "reject" | "report">(null);
   const [message, setMessage] = useState("");
   const [discount, setDiscount] = useState("");
@@ -82,12 +84,12 @@ export default function ClientQuoteView({ id }: { id: string }) {
       <header className="card space-y-5">
         <div className="flex flex-wrap items-start gap-4">
           <Avatar name={m.name} src={m.logo} size={64} />
-          <Link href={`/espace-client/devis/${q.id}/apercu`} className="btn-primary order-last ml-auto">
+          <Link href={`/espace-client/devis/${q.id}/apercu`} className="btn-primary order-last w-full sm:ml-auto sm:w-auto">
             <FileText size={18} aria-hidden />
             {t("preview.full")}
           </Link>
-          <div className="min-w-0 flex-1">
-            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
+          <div className="min-w-0 flex-1 basis-52">
+            <h1 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xl font-bold sm:text-2xl">
               {q.number}
               {(q.rev ?? 0) > 0 && <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold text-muted">{t("editor.revision")} {q.rev}</span>}
               <StatusBadge status={q.status} label={t(`cstatus.${q.status}`)} />
@@ -208,7 +210,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
               <h2 id="h-dec" className="font-semibold">
                 {t("act.decide")}
               </h2>
-              <button type="button" className="btn-primary w-full" disabled={busy} onClick={() => confirm(t("act.confirmAccept")) && act({ type: "accept" }, t("act.accepted"))}>
+              <button type="button" className="btn-primary w-full" disabled={busy} onClick={async () => (await ask({ message: t("act.confirmAccept"), confirmLabel: t("act.accept") })) && act({ type: "accept" }, t("act.accepted"))}>
                 <ThumbsUp size={16} aria-hidden />
                 {t("act.accept")}
               </button>

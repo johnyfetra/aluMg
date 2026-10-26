@@ -99,9 +99,12 @@ export default function ClientLineCard({ quoteId, line: l, index, mark, priced, 
                       {finish ? t(finish.label) : l.finish}
                     </dd>
                   </div>
-                  {lineDetails(l, t).map((d, i) => (
+                  <div className="flex justify-between gap-4 px-3 py-2">
+                    <dt className="text-muted">{t("editor.range")}</dt>
+                    <dd className="font-medium">{t(`range.${l.range}`)}</dd>
+                  </div>
+                  {lineDetails(l, t).slice(1).map((d) => (
                     <div key={d} className="px-3 py-2">
-                      <dt className="sr-only">{i}</dt>
                       <dd>{d}</dd>
                     </div>
                   ))}

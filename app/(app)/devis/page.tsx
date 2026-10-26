@@ -10,6 +10,7 @@ import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import { STATUSES, type Quote, type Status } from "@/lib/model";
 import { totals } from "@/lib/totals";
 import Select from "@/components/Select";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 export default function QuotesPage() {
   return (
@@ -21,6 +22,7 @@ export default function QuotesPage() {
 
 function QuotesView() {
   const { t, locale } = useI18n();
+  const ask = useConfirm();
   const params = useSearchParams();
   const { quotes = [], loading, save, remove } = useQuotes();
   const { settings } = useSettings();
@@ -61,7 +63,7 @@ function QuotesView() {
       <Link href={`/devis/${q.id}`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("common.edit")} ${q.number}`}>
         <Pencil size={16} aria-hidden />
       </Link>
-      <button type="button" className="btn-danger !min-h-9 !px-3" aria-label={`${t("common.delete")} ${q.number}`} onClick={() => confirm(t("common.confirmDelete")) && remove(q.id)}>
+      <button type="button" className="btn-danger !min-h-9 !px-3" aria-label={`${t("common.delete")} ${q.number}`} onClick={async () => (await ask({ message: t("common.confirmDelete"), tone: "danger", confirmLabel: t("common.delete") })) && remove(q.id)}>
         <Trash2 size={16} aria-hidden />
       </button>
     </div>

@@ -5,6 +5,7 @@ import { useState } from "react";
 import CatalogEditor from "./CatalogEditor";
 import type { T } from "@/lib/i18n";
 import type { Market } from "@/lib/model";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 // D'où viennent les prix d'achat de ce devis : le catalogue général (par défaut, pour tous les devis) ou un catalogue réglé pour ce devis seulement.
 export default function CatalogSource({ specific, market, general, onSave, onReset, t }: { specific: boolean; market: Market; general: Market; onSave: (m: Market) => Promise<void>; onReset: () => Promise<void>; t: T }) {
@@ -23,10 +24,11 @@ export default function CatalogSource({ specific, market, general, onSave, onRes
       setBusy(false);
     }
   };
-  const choose = (wantSpecific: boolean) => {
+  const ask = useConfirm();
+  const choose = async (wantSpecific: boolean) => {
     if (wantSpecific === specific) return;
     if (wantSpecific) void run(() => onSave(general)); // on part d'une copie du catalogue général
-    else if (confirm(t("catsrc.confirmReset"))) void run(async () => { setDraft(null); await onReset(); });
+    else if (await ask({ message: t("catsrc.confirmReset"), tone: "danger" })) void run(async () => { setDraft(null); await onReset(); });
   };
 
   return (

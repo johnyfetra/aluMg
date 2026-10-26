@@ -979,6 +979,10 @@ export const fr = {
   "msg.qr.menuisier2": "Votre devis est prêt, je vous l'envoie dans l'application.",
   "msg.qr.menuisier3": "Acompte bien reçu, la fabrication démarre.",
   "msg.qr.menuisier4": "Pouvez-vous me confirmer les cotes et la couleur choisies ?",
+  "dlg.title": "Confirmer l'action",
+  "dlg.titleDanger": "Action irréversible",
+  "dlg.confirm": "Confirmer",
+  "dlg.cancel": "Annuler",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

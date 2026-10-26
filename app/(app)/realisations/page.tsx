@@ -8,12 +8,14 @@ import { useI18n } from "@/lib/i18n";
 import { SPECIALTIES } from "@/lib/model";
 import type { PortfolioItem } from "@/lib/profiles";
 import Select from "@/components/Select";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 type Draft = { id?: string; title: string; description: string; category: PortfolioItem["category"]; year: number | null; images: string[] };
 const EMPTY: Draft = { title: "", description: "", category: "", year: new Date().getFullYear(), images: [] };
 
 export default function PortfolioPage() {
   const { t } = useI18n();
+  const ask = useConfirm();
   const { items = [], loading, save, remove } = usePortfolio();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -145,7 +147,7 @@ export default function PortfolioPage() {
                     <Pencil size={14} aria-hidden />
                     {t("common.edit")}
                   </button>
-                  <button type="button" className="btn-danger !min-h-9" aria-label={`${t("common.delete")} ${it.title}`} onClick={() => confirm(t("port.confirmDelete")) && remove(it.id)}>
+                  <button type="button" className="btn-danger !min-h-9" aria-label={`${t("common.delete")} ${it.title}`} onClick={async () => (await ask({ message: t("port.confirmDelete"), tone: "danger", confirmLabel: t("common.delete") })) && remove(it.id)}>
                     <Trash2 size={14} aria-hidden />
                   </button>
                 </div>

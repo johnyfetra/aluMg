@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { ConfirmProvider } from "@/components/ConfirmDialog";
 import { I18nProvider } from "@/lib/i18n";
 
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -27,7 +28,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>
       <body className="min-h-full">
-        <I18nProvider>{children}</I18nProvider>
+        <I18nProvider>
+          <ConfirmProvider>{children}</ConfirmProvider>
+        </I18nProvider>
       </body>
     </html>
   );
