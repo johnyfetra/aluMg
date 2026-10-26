@@ -8,6 +8,7 @@ import { useMe, useQuotes } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import { STATUSES, type Quote, type Status } from "@/lib/model";
 import { totals } from "@/lib/totals";
+import { MVP } from "@/lib/mvp";
 
 const STATUS_COLOR: Record<Status, string> = {
   requested: "var(--c3)",
@@ -158,7 +159,7 @@ export default function Dashboard() {
             </section>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className={`grid gap-6 ${MVP ? "" : "xl:grid-cols-2"}`}>
             <section className="card" aria-labelledby="h-req">
               <div className="mb-3 flex items-center justify-between">
                 <h2 id="h-req" className="font-semibold">
@@ -186,6 +187,7 @@ export default function Dashboard() {
               )}
             </section>
 
+            {!MVP && (
             <section className="card" aria-labelledby="h-sites">
               <div className="mb-3 flex items-center justify-between">
                 <h2 id="h-sites" className="font-semibold">
@@ -214,6 +216,7 @@ export default function Dashboard() {
                 </ul>
               )}
             </section>
+            )}
           </div>
 
           <section className="card" aria-labelledby="h-recent">

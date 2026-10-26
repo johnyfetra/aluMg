@@ -8,6 +8,7 @@ import { LangMenu, ThemeSwitch } from "./Controls";
 import { Field } from "./ui";
 import { ApiError, homeFor, request } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
+import { MVP } from "@/lib/mvp";
 
 // Seuls les chemins internes sont acceptés comme destination (pas de redirection vers un autre site).
 const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith("//") ? n : null);
@@ -17,7 +18,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
-  const [role, setRole] = useState<"client" | "menuisier">(params.get("role") === "menuisier" ? "menuisier" : "client");
+  const [role, setRole] = useState<"client" | "menuisier">(MVP || params.get("role") === "menuisier" ? "menuisier" : "client");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const signup = mode === "signup";
@@ -70,7 +71,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <p className="text-muted">{t("auth.tagline")}</p>
       <form onSubmit={submit} className="card space-y-4">
         <h1 className="text-xl font-bold">{signup ? t("auth.signupTitle") : t("auth.loginTitle")}</h1>
-        {signup && (
+        {signup && !MVP && (
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">{t("auth.role")}</legend>
             <div className="grid grid-cols-2 gap-3">
@@ -103,7 +104,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <button type="submit" disabled={busy} className="btn-primary w-full">
           {signup ? t("auth.signup") : t("auth.login")}
         </button>
-        {!signup && process.env.NODE_ENV !== "production" && (["client", "menuisier"] as const).map((r) => (
+        {!signup && process.env.NODE_ENV !== "production" && (MVP ? ["menuisier"] as const : ["client", "menuisier"] as const).map((r) => (
           <button key={r} type="button" disabled={busy} className="btn-secondary w-full" onClick={async () => { setBusy(true); try { const me = await request<{ role: "client" | "menuisier" }>("POST", `/api/auth/demo-${r}`); router.replace(next ?? homeFor(me.role)); } catch { setError(t("common.error")); setBusy(false); } }}>
             {t(r === "client" ? "auth.demoClient" : "auth.demoMenuisier")}
           </button>

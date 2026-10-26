@@ -10,6 +10,7 @@ import type { Messages } from "@/lib/messages/fr";
 
 import { Boxes, Briefcase, ClipboardList, Images, Search, Store, Users } from "lucide-react";
 import { useSession, useUnread } from "@/lib/client";
+import { HIDDEN, MVP } from "@/lib/mvp";
 
 type Item = { href: string; key: keyof Messages; Icon: typeof Settings; match: (p: string) => boolean };
 type Group = { label: keyof Messages; items: Item[] };
@@ -17,7 +18,7 @@ type Nav = { home: string; cta: Item; groups: Group[] };
 
 const starts = (...prefix: string[]) => (p: string) => prefix.some((x) => p === x || p.startsWith(`${x}/`));
 
-const MENUISIER: Nav = {
+const FULL_MENUISIER: Nav = {
   home: "/tableau-de-bord",
   cta: { href: "/devis/nouveau", key: "nav.new", Icon: FilePlus2, match: (p) => p === "/devis/nouveau" },
   groups: [
@@ -43,6 +44,11 @@ const MENUISIER: Nav = {
     },
   ],
 };
+
+// En MVP, on retire du menu les pages masquées (et les groupes devenus vides).
+const MENUISIER: Nav = MVP
+  ? { ...FULL_MENUISIER, groups: FULL_MENUISIER.groups.map((g) => ({ ...g, items: g.items.filter((i) => !HIDDEN.some((h) => i.href === h)) })).filter((g) => g.items.length) }
+  : FULL_MENUISIER;
 
 const CLIENT: Nav = {
   home: "/espace-client",
@@ -169,9 +175,11 @@ export default function Shell({ children }: { children: ReactNode }) {
         <main id="main" className="mx-auto w-full max-w-[110rem] px-4 pb-20 pt-6 sm:px-8 xl:px-10">
           {children}
         </main>
-        <Suspense fallback={null}>
-          <ChatWidget />
-        </Suspense>
+        {!MVP && (
+          <Suspense fallback={null}>
+            <ChatWidget />
+          </Suspense>
+        )}
       </div>
     </div>
   );

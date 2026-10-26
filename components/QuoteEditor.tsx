@@ -6,6 +6,7 @@ import { useState } from "react";
 import { mutate } from "swr";
 import ProfileNeeds from "./ProfileNeeds";
 import ChatButton from "./ChatButton";
+import { MVP } from "@/lib/mvp";
 import LinesTable from "./LinesTable";
 import Timeline from "./Timeline";
 import Viewer3DLoader from "./Viewer3DLoader";
@@ -388,7 +389,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
           <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
             <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
-            {q.clientId && persisted && <ChatButton target={{ client: q.clientId }} label={t("msg.contactClient")} />}
+            {!MVP && q.clientId && persisted && <ChatButton target={{ client: q.clientId }} label={t("msg.contactClient")} />}
             {q.clientId && persisted && <Timeline quoteId={q.id} />}
           </fieldset>
         </div>
