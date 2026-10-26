@@ -1,5 +1,5 @@
 "use client";
-import { Box, ChevronDown, Copy, Minus, Plus, Eye, FileDown, Image as ImageIcon, Inbox, LayoutGrid, Rows3, Ruler, Save, Send, Table2, Trash2, XCircle } from "lucide-react";
+import { Box, Check, ChevronDown, Copy, Mail, Minus, Pencil, Phone, Plus, UserCheck, Eye, FileDown, Image as ImageIcon, Inbox, LayoutGrid, Rows3, Ruler, Save, Send, Table2, Trash2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -13,7 +13,7 @@ import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
 import Timeline from "./Timeline";
 import Viewer3DLoader from "./Viewer3DLoader";
-import { Choice, Field, FinishPicker } from "./ui";
+import { Avatar, Choice, Field, FinishPicker } from "./ui";
 import { allPieces, billedArea, cutList, cuttingPlan, fmt, lineTotal, meters, normalize, planTotals } from "@/lib/calc";
 import { costLine, marginOf, salePrice } from "@/lib/costing";
 import { useContacts } from "@/lib/client";
@@ -195,13 +195,20 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     const c = contacts.find((x) => x.id === id);
     if (c) setQ((cur) => ({ ...cur, client: { ...cur.client, name: c.name, phone: c.phone, email: c.email } }));
   };
+  // fiche client : formulaire ouvert seulement pour ajouter ou modifier
+  const [editClient, setEditClient] = useState(() => !(existing && existing.client.name.trim()));
   const prefilled = useRef(false);
   useEffect(() => {
     const id = new URLSearchParams(location.search).get("contact");
     if (prefilled.current || existing || !id || !contacts.length) return;
     prefilled.current = true;
     pickContact(id);
+    setEditClient(false); // client connu : on affiche sa fiche compacte
   }, [contacts, existing]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Fiche client : résumé compact une fois renseignée ; le formulaire ne s'ouvre que pour ajouter ou modifier.
+  const clientReady = q.client.name.trim().length > 0;
+  const linked = contacts.some((c) => c.account && c.email && c.email === q.client.email.trim().toLowerCase());
+  const facts = ([[t("editor.project"), q.project], [t("editor.clientAddress"), q.client.address], [t("editor.delay"), q.delay], [t("svc.warranty"), q.warranty ? `${q.warranty} ${t("svc.months")}` : ""], [t("editor.notes"), q.notes]] as [string, string][]).filter(([, v]) => v.trim());
   const setClient = (patch: Partial<Quote["client"]>) => setQ((c) => ({ ...c, client: { ...c.client, ...patch } }));
   const num = (v: string) => Number(v) || 0;
 
@@ -299,7 +306,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       </div>
 
       {!settings.company && (
-        <p className="card border-warn text-sm" role="note">
+        <p className="rounded-lg border border-warn/50 bg-warn/10 px-3 py-2 text-[13px]" role="note">
           {t("editor.setupHint")}{" "}
           <Link href="/reglages" className="font-semibold text-primary underline">
             {t("editor.setupLink")}
@@ -308,12 +315,12 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       )}
 
       {revisable && (
-        <p role="note" className="card border-primary text-sm">
+        <p role="note" className="rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-[13px]">
           {t("editor.revisable")} ({t("editor.revision")} {q.rev ?? 0})
         </p>
       )}
       {locked && (
-        <p role="note" className="card border-primary text-sm">
+        <p role="note" className="rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-[13px]">
           {t("editor.locked")}
         </p>
       )}
@@ -337,11 +344,26 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] 2xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-6">
-          <section className="card space-y-4" aria-labelledby="h-client">
-            <h2 id="h-client" className="text-lg font-semibold">
-              {t("editor.client")}
-            </h2>
-            <fieldset disabled={locked} className="m-0 min-w-0 space-y-4 border-0 p-0">
+          <section className="card space-y-3 !p-4" aria-labelledby="h-client">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="h-client" className="text-base font-semibold">
+                {t("editor.client")}
+              </h2>
+              {!editClient && !locked && (
+                <button type="button" className="btn-secondary !min-h-8 !px-2.5 text-xs" onClick={() => setEditClient(true)}>
+                  <Pencil size={14} aria-hidden />
+                  {t("editor.clientEdit")}
+                </button>
+              )}
+              {editClient && clientReady && (
+                <button type="button" className="btn-primary !min-h-8 !px-3 text-xs" onClick={() => setEditClient(false)}>
+                  <Check size={14} aria-hidden />
+                  {t("editor.clientDone")}
+                </button>
+              )}
+            </div>
+            {editClient ? (
+              <fieldset disabled={locked} className="m-0 min-w-0 space-y-4 border-0 p-0">
               <div>
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><span aria-hidden className="h-4 w-1 rounded-full bg-primary" />{t("editor.groupClient")}</h3>
                 {!q.clientId && contacts.length > 0 && (
@@ -392,6 +414,38 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 </div>
               </div>
             </fieldset>
+            ) : (
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-3">
+                  <Avatar name={q.client.name} src="" size={40} />
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className="truncate text-sm font-semibold">{q.client.name}</span>
+                      {(q.clientId || linked) && <span className="inline-flex items-center gap-1 rounded-full bg-ok/15 px-2 py-0.5 text-[11px] font-semibold text-ok"><UserCheck size={11} aria-hidden />{t("editor.clientLinked")}</span>}
+                    </p>
+                    <p className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] text-muted">
+                      {q.client.phone && <a href={`tel:${q.client.phone.replace(/[^+\d]/g, "")}`} className="inline-flex items-center gap-1 hover:underline"><Phone size={12} aria-hidden />{q.client.phone}</a>}
+                      {q.client.email && <span className="inline-flex items-center gap-1"><Mail size={12} aria-hidden />{q.client.email}</span>}
+                    </p>
+                  </div>
+                </div>
+                {!q.project.trim() && !locked && (
+                  <button type="button" className="text-[13px] font-medium text-primary hover:underline" onClick={() => setEditClient(true)}>
+                    + {t("editor.addSite")}
+                  </button>
+                )}
+                {facts.length > 0 && (
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 rounded-lg bg-surface-2/50 px-3 py-2 text-[13px] md:grid-cols-4">
+                    {facts.map(([k, v]) => (
+                      <div key={k} className="min-w-0">
+                        <dt className="text-[11px] uppercase tracking-wide text-muted">{k}</dt>
+                        <dd className="truncate font-medium" title={v}>{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </div>
+            )}
           </section>
 
           <section className="space-y-4" aria-labelledby="h-lines">
@@ -480,71 +534,66 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         </div>
 
         {/* Colonne de synthèse : reste visible pendant la saisie sur grand écran */}
-        <aside className="space-y-4 xl:sticky xl:top-20" aria-label="Total">
-          {persisted && (
-            <Link href={`/devis/${q.id}/apercu`} className="btn-primary w-full">
-              <Eye size={18} aria-hidden />
-              {t("preview.full")}
-            </Link>
-          )}
-          <section className="card space-y-2">
-            <div className="flex items-end justify-between gap-3 text-sm">
-              <label className="flex items-center gap-2 text-muted">
-                {t("editor.discount")}
-                <input type="number" inputMode="decimal" min={0} max={100} className="input !min-h-9 !w-20 !py-1" value={q.discount || ""} placeholder="0" onChange={(e) => setQ({ ...q, discount: Math.min(100, Math.max(0, num(e.target.value))) })} />
-              </label>
-              {discount > 0 && <span>− {fmt(discount)} {t("common.currency")}</span>}
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted">{t("editor.totalHt")}</span>
-              <span>{fmt(ht)} {t("common.currency")}</span>
-            </div>
-            {q.terms.tva > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted">{t("editor.totalTva")} {q.terms.tva} %</span>
-                <span>{fmt(tva)} {t("common.currency")}</span>
+        <aside className="space-y-3 xl:sticky xl:top-20" aria-label="Total">
+          <section className="card space-y-2 !p-3.5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted">{t("editor.totalTtc")}</p>
+                <p className="text-2xl font-bold leading-tight tabular-nums text-primary">{fmt(ttc)} <span className="text-sm font-semibold">{t("common.currency")}</span></p>
               </div>
-            )}
-            <div className="flex items-baseline justify-between border-t border-line pt-2">
-              <span className="font-semibold">{t("editor.totalTtc")}</span>
-              <span className="text-2xl font-bold text-primary">{fmt(ttc)} <span className="text-sm">{t("common.currency")}</span></span>
+              {persisted && (
+                <Link href={`/devis/${q.id}/apercu`} className="btn-secondary !min-h-8 !px-2.5 text-xs">
+                  <Eye size={14} aria-hidden />
+                  {t("preview.open")}
+                </Link>
+              )}
             </div>
+            <dl className="space-y-1 border-t border-line pt-2 text-[13px]">
+              <div className="flex items-center justify-between gap-3">
+                <dt>
+                  <label htmlFor="q-disc" className="text-muted">{t("editor.discount")}</label>
+                </dt>
+                <dd className="flex items-center gap-2 tabular-nums">
+                  {discount > 0 && <span className="text-muted">− {fmt(discount)}</span>}
+                  <input id="q-disc" type="number" inputMode="decimal" min={0} max={100} className="input !min-h-7 !w-16 !px-2 !py-0.5 text-right text-[13px]" value={q.discount || ""} placeholder="0" onChange={(e) => setQ({ ...q, discount: Math.min(100, Math.max(0, num(e.target.value))) })} />
+                </dd>
+              </div>
+              <div className="flex justify-between"><dt className="text-muted">{t("editor.totalHt")}</dt><dd className="tabular-nums">{fmt(ht)} {t("common.currency")}</dd></div>
+              {q.terms.tva > 0 && <div className="flex justify-between"><dt className="text-muted">{t("editor.totalTva")} {q.terms.tva} %</dt><dd className="tabular-nums">{fmt(tva)} {t("common.currency")}</dd></div>}
+            </dl>
           </section>
 
-          <section className="card space-y-1 text-sm">
-            <h3 className="font-semibold">{t("editor.materials")}</h3>
-            <button type="button" className="btn-secondary mb-2 w-full" onClick={() => openNeeds()}>
-              <Ruler size={16} aria-hidden />
-              {t("needsPage.open")}
+          <section className="card flex items-center justify-between gap-3 !p-3.5 text-[13px]" aria-label={t("editor.materials")}>
+            <div className="min-w-0">
+              <p className="font-semibold">{t("editor.materials")}</p>
+              <p className="text-muted tabular-nums">{plan.bars} {t("needs.barsShort")} · {meters(plan.usedLen)}<br />{t("needs.wasteShort")} {plan.wastePct} %</p>
+            </div>
+            <button type="button" className="btn-secondary !min-h-8 !px-2.5 text-xs" onClick={() => openNeeds()}>
+              <Ruler size={14} aria-hidden />
+              {t("needsPage.openShort")}
             </button>
-            <p className="flex justify-between"><span className="text-muted">{t("needs.totalBars")}</span><span className="font-semibold">{plan.bars}</span></p>
-            <p className="flex justify-between"><span className="text-muted">{t("needs.totalUsed")}</span><span className="font-semibold">{meters(plan.usedLen)}</span></p>
-            <p className="flex justify-between"><span className="text-muted">{t("needs.totalWaste")}</span><span className="font-semibold">{meters(plan.wasteLen)} ({plan.wastePct} %)</span></p>
           </section>
 
           {canAct && (
-            <section className="card space-y-3 border-primary" aria-labelledby="h-act">
-              <h3 id="h-act" className="font-semibold">
-                {t("editor.sendClient")}
-              </h3>
-              <label className="block text-sm font-medium">
-                {t("editor.noteToClient")}
-                <textarea className="input mt-1 min-h-20 font-normal" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
-              </label>
-              <button type="button" className="btn-primary w-full" onClick={() => act("send")}>
-                <Send size={16} aria-hidden />
-                {t("editor.sendClient")}
-              </button>
-              {q.clientId && q.status !== "negotiation" && (
-                <button type="button" className="btn-danger w-full" onClick={() => act("decline")}>
-                  <XCircle size={16} aria-hidden />
-                  {t("editor.decline")}
+            <section className="card space-y-2 border-primary/50 !p-3.5" aria-labelledby="h-act">
+              <h3 id="h-act" className="text-sm font-semibold">{t("editor.sendClient")}</h3>
+              <label className="sr-only" htmlFor="q-note">{t("editor.noteToClient")}</label>
+              <textarea id="q-note" rows={2} className="input min-h-14 text-[13px]" placeholder={t("editor.noteToClient")} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
+              <div className="flex gap-2">
+                <button type="button" className="btn-primary flex-1" onClick={() => act("send")}>
+                  <Send size={15} aria-hidden />
+                  {t("editor.sendShort")}
                 </button>
-              )}
+                {q.clientId && q.status !== "negotiation" && (
+                  <button type="button" className="btn-danger !px-3" onClick={() => act("decline")} aria-label={t("editor.decline")} title={t("editor.decline")}>
+                    <XCircle size={15} aria-hidden />
+                  </button>
+                )}
+              </div>
             </section>
           )}
 
-          <section className="card space-y-2">
+          <section className="card space-y-2.5 !p-3.5">
             <Field htmlFor="q-design" label={t("editor.pdfDesign")}>
               <Select
                 id="q-design"
@@ -553,32 +602,29 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 options={[{ value: "", label: t("editor.pdfDesignDefault") }, ...(Object.keys(DOC_PRESETS) as DocPreset[]).map((k) => ({ value: k, label: t(`doc.tpl.${k}` as keyof Messages) }))]}
               />
             </Field>
-          </section>
-
-          <section className="card space-y-3">
-            <label className="flex min-h-11 items-center gap-2 text-sm">
-              <input type="checkbox" className="size-5" checked={attachCut} onChange={(e) => setAttachCut(e.target.checked)} />
+            <label className="flex min-h-8 items-center gap-2 text-[13px]">
+              <input type="checkbox" className="size-4" checked={attachCut} onChange={(e) => setAttachCut(e.target.checked)} />
               {t("editor.attachCut")}
             </label>
-            <div className="flex flex-col gap-2">
+            <div className="grid gap-2">
               <button type="button" className="btn-primary" onClick={() => submit(true)}>
-                <FileDown size={18} aria-hidden />
+                <FileDown size={16} aria-hidden />
                 {locked ? t("editor.pdfOnly") : t("editor.savePdf")}
               </button>
               {locked && !q.clientId && (
                 <button type="button" className="btn-secondary" onClick={newVersion}>
-                  <Copy size={18} aria-hidden />
+                  <Copy size={16} aria-hidden />
                   {t("editor.newVersion")}
                 </button>
               )}
               {!locked && (
                 <button type="button" className="btn-secondary" onClick={() => submit(false)}>
-                  <Save size={18} aria-hidden />
+                  <Save size={16} aria-hidden />
                   {revisable ? t("editor.saveRevision") : t("editor.saveDraft")}
                 </button>
               )}
             </div>
-            <p role="status" className={`text-sm font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>
+            <p role="status" className={`text-[13px] font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>
               {msg?.text}
             </p>
           </section>

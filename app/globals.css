@@ -174,10 +174,10 @@ body {
 @layer components {
   /* Surfaces et champs : rayons modestes, ombre à peine visible, bordures fines. */
   .card {
-    @apply rounded-xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.06)] sm:p-5;
+    @apply rounded-xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.06)];
   }
   .input {
-    @apply min-h-10 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink transition-colors placeholder:text-muted hover:border-[color-mix(in_srgb,var(--muted)_55%,var(--border))] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply min-h-10 w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm md:min-h-9 text-ink transition-colors placeholder:text-muted hover:border-[color-mix(in_srgb,var(--muted)_55%,var(--border))] disabled:cursor-not-allowed disabled:opacity-60;
   }
   /* Boutons : une base commune, trois tons (primaire plein, secondaire filet, danger discret) et un bouton d'accent. */
   .btn-primary,
@@ -185,7 +185,7 @@ body {
   .btn-danger,
   .btn-ghost,
   .btn-accent {
-    @apply inline-flex min-h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold tracking-[-0.005em] transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex min-h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm md:min-h-9 font-semibold tracking-[-0.005em] transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-primary {
     @apply bg-primary text-on-primary shadow-[0_1px_2px_rgb(0_0_0/0.25),inset_0_1px_0_rgb(255_255_255/0.14)] hover:bg-primary-hover;

@@ -1124,4 +1124,12 @@ export const en: Messages = {
   "ct.error": "Could not save, check the fields.",
   "editor.pdfDesign": "Quote template (PDF and sheet)",
   "editor.pdfDesignDefault": "My template (settings)",
+  "needsPage.openShort": "Details",
+  "editor.sendShort": "Send to client",
+  "editor.clientEdit": "Edit",
+  "editor.clientDone": "Done",
+  "editor.clientLinked": "Linked account",
+  "needs.barsShort": "bars",
+  "needs.wasteShort": "waste",
+  "editor.addSite": "Add the site details (project, address, lead time)",
 };

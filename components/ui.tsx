@@ -6,7 +6,7 @@ import type { T } from "@/lib/i18n";
 export function Field({ label, hint, children, htmlFor }: { label: string; hint?: string; children: ReactNode; htmlFor: string }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={htmlFor} className="block text-sm font-medium">
+      <label htmlFor={htmlFor} className="block text-[13px] font-medium text-ink/90">
         {label}
       </label>
       {children}

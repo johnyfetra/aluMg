@@ -1126,4 +1126,12 @@ export const mg: Messages = {
   "ct.error": "Tsy voatahiry, hamarino ny saha.",
   "editor.pdfDesign": "Modely ny tombana (PDF sy taratasy)",
   "editor.pdfDesignDefault": "Ny modeliko (fanamboarana)",
+  "needsPage.openShort": "Antsipiriany",
+  "editor.sendShort": "Alefa amin'ny mpanjifa",
+  "editor.clientEdit": "Ovay",
+  "editor.clientDone": "Ekena",
+  "editor.clientLinked": "Kaonty mifandray",
+  "needs.barsShort": "bara",
+  "needs.wasteShort": "very",
+  "editor.addSite": "Fenoy ny toerana (tetikasa, adiresy, fe-potoana)",
 };

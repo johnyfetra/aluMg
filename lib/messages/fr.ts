@@ -1123,6 +1123,14 @@ export const fr = {
   "ct.error": "Enregistrement impossible, vérifiez les champs.",
   "editor.pdfDesign": "Modèle du devis (PDF et feuille)",
   "editor.pdfDesignDefault": "Mon modèle (réglages)",
+  "needsPage.openShort": "Détail",
+  "editor.sendShort": "Envoyer au client",
+  "editor.clientEdit": "Modifier",
+  "editor.clientDone": "Valider",
+  "editor.clientLinked": "Compte lié",
+  "needs.barsShort": "barres",
+  "needs.wasteShort": "perte",
+  "editor.addSite": "Renseigner le chantier (projet, adresse, délai)",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;
