@@ -29,7 +29,7 @@ const toBase64 = (file: Blob) =>
 // Accusé d'un message envoyé : ✓ envoyé, ✓✓ reçu, ✓✓ en couleur lu. Dit aussi en toutes lettres pour les lecteurs d'écran.
 export function Ticks({ receipt, t, onPrimary = true }: { receipt: Receipt; t: T; onPrimary?: boolean }) {
   const Icon = receipt === "sent" ? Check : CheckCheck;
-  const tone = receipt === "read" ? (onPrimary ? "text-sky-200" : "text-primary") : onPrimary ? "text-on-primary/65" : "text-muted";
+  const tone = receipt === "read" ? (onPrimary ? "text-white" : "text-primary") : onPrimary ? "text-on-primary/65" : "text-muted";
   return (
     <span className={`inline-flex items-center ${tone}`} title={t(`msg.receipt.${receipt}`)}>
       <Icon size={14} aria-hidden strokeWidth={2.4} />

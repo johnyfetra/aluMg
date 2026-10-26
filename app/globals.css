@@ -4,60 +4,60 @@
 
 /* Jetons de design : tout le thème passe par ces variables (voir docs/architecture.md). */
 :root {
-  --bg: #f4f6fb;
+  --bg: #f2f2f3;
   --surface: #ffffff;
-  --surface-2: #eef1f8;
-  --text: #0f172a;
-  --muted: #4b5a75;
-  --border: #d5dbe8;
-  --primary: #1d4ed8;
-  --primary-hover: #1e40af;
+  --surface-2: #e9e9eb;
+  --text: #1c1d20;
+  --muted: #5a5d66;
+  --border: #d6d7db;
+  --primary: #c81e2b;
+  --primary-hover: #a51822;
   --on-primary: #ffffff;
-  --danger: #b91c1c;
+  --danger: #b42318;
   --ok: #047857;
   --warn: #92400e;
   /* barre latérale : volontairement identique en clair et en sombre */
-  --side-bg: #0e1a3a;
-  --side-fg: #d5ddf3;
-  --side-muted: #8ea0cc;
+  --side-bg: #1a1b1e;
+  --side-fg: #e2e3e6;
+  --side-muted: #9a9da6;
   --side-hover: rgba(255, 255, 255, 0.08);
   --side-active: rgba(255, 255, 255, 0.16);
-  --side-accent: #8fb0ff;
+  --side-accent: #f2555c;
   /* palette du tableau de bord (catégorielle validée : bleu, aqua, orange, violet) */
-  --c1: #2a78d6;
-  --c2: #1baf7a;
-  --c3: #eb6834;
-  --c4: #4a3aa7;
-  --accent: #f5a524; /* touche chaude : appels à l'action et mises en avant, à utiliser avec parcimonie */
-  --on-accent: #1f1300;
-  --hero-from: #0b1533;
-  --hero-to: #14275a;
+  --c1: #d93a43;
+  --c2: #2fa37a;
+  --c3: #e8833a;
+  --c4: #7d8596;
+  --accent: #f2555c; /* touche chaude : appels à l'action et mises en avant, à utiliser avec parcimonie */
+  --on-accent: #1a0809;
+  --hero-from: #141416;
+  --hero-to: #2a1315;
   --good: #0ca30c;
   --critical: #d03b3b;
-  --bar-neutral: #98a2b8;
-  --grid: #e1e5ee;
+  --bar-neutral: #8a8d96;
+  --grid: #e1e2e5;
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bg: #0b1020;
-  --surface: #131b33;
-  --surface-2: #1a2442;
-  --text: #e8ecf8;
-  --muted: #a6b1cf;
-  --border: #2a3558;
-  --primary: #7aa2ff;
-  --primary-hover: #9db9ff;
-  --on-primary: #0b1020;
-  --danger: #ff8a8a;
+  --bg: #121214;
+  --surface: #1b1c1f;
+  --surface-2: #25262a;
+  --text: #ececee;
+  --muted: #a0a3ab;
+  --border: #34363c;
+  --primary: #f2555c;
+  --primary-hover: #f77b80;
+  --on-primary: #1a0809;
+  --danger: #ff9a8f;
   --ok: #4ade80;
   --warn: #fbbf24;
-  --c1: #3987e5;
-  --c2: #199e70;
-  --c3: #d95926;
-  --c4: #9085e9;
-  --bar-neutral: #66718f;
-  --grid: #2a3558;
+  --c1: #f2555c;
+  --c2: #34b58a;
+  --c3: #ef9250;
+  --c4: #9aa1b2;
+  --bar-neutral: #6b6e78;
+  --grid: #34363c;
   color-scheme: dark;
 }
 

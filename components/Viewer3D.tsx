@@ -631,7 +631,7 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
 
   return (
     <div className={bare ? "h-full w-full" : "space-y-3"}>
-      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line bg-gradient-to-b from-sky-100 to-slate-200 dark:from-slate-700 dark:to-slate-900"}`} style={bare ? undefined : { height: 380 }}>
+      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line bg-gradient-to-b from-zinc-100 to-zinc-300 dark:from-zinc-700 dark:to-zinc-900"}`} style={bare ? undefined : { height: 380 }}>
         <Canvas shadows="percentage" scene={stage ? { environmentIntensity: 0.5 } : undefined} dpr={bare ? 1 : [1, 2]} frameloop="demand" camera={{ position: cam, fov: 32, near: 0.05, far: 80 }} aria-label={t("viewer.aria")} role="img" gl={{ antialias: true, preserveDrawingBuffer: bare }}>
           <SceneCtx.Provider value={ctx}>
             <Env />

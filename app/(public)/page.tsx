@@ -54,17 +54,17 @@ export default function Landing() {
     <>
       {/* ---------- héros : toujours sombre (comme la barre latérale), halos de couleur ---------- */}
       <section className="relative isolate overflow-hidden bg-gradient-to-br from-(--hero-from) to-(--hero-to) text-white">
-        <div aria-hidden className="absolute -left-24 top-10 -z-10 size-96 rounded-full bg-blue-500/30 blur-3xl" />
-        <div aria-hidden className="absolute right-0 top-0 -z-10 size-[28rem] rounded-full bg-violet-500/25 blur-3xl" />
+        <div aria-hidden className="absolute -left-24 top-10 -z-10 size-96 rounded-full bg-red-600/25 blur-3xl" />
+        <div aria-hidden className="absolute right-0 top-0 -z-10 size-[28rem] rounded-full bg-rose-500/20 blur-3xl" />
         <div aria-hidden className="absolute bottom-0 left-1/3 -z-10 size-80 rounded-full bg-teal-400/20 blur-3xl" />
         <div className="mx-auto grid max-w-[110rem] items-center gap-12 px-4 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.1fr_1fr] xl:px-10">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-blue-100 backdrop-blur">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-200 backdrop-blur">
               <Sparkles size={14} aria-hidden style={{ color: "#f5a524" }} />
               {t("land2.eyebrow")}
             </p>
             <h1 className="mt-6 max-w-3xl text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-6xl">{t("land2.title")}</h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-blue-100/80">{t("land2.subtitle")}</p>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-200/80">{t("land2.subtitle")}</p>
 
             <form onSubmit={go} role="search" className="mt-8 flex max-w-2xl items-center gap-2 rounded-full bg-white p-1.5 pl-5 text-slate-900 shadow-2xl shadow-black/30 focus-within:ring-4 focus-within:ring-blue-400/50">
               <Search size={20} aria-hidden className="text-slate-400" />
@@ -83,7 +83,7 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-blue-100/80">
+            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-zinc-200/80">
               {(["land2.badge1", "land2.badge2", "land2.badge3"] as const).map((k) => (
                 <li key={k} className="inline-flex items-center gap-2">
                   <Check size={16} aria-hidden className="text-teal-300" />
@@ -109,7 +109,7 @@ export default function Landing() {
                   { o: demo({ opening: "ouvrant", leaves: 2, finish: "anthracite", width: 1400, height: 1400, glassType: "teinte-bronze" }), cls: "right-0 top-32 w-[62%] rotate-3" },
                 ].map(({ o, cls }, i) => <div key={i} className={`absolute rounded-2xl bg-white p-3 shadow-2xl ${cls}`} dangerouslySetInnerHTML={{ __html: drawingSvg(o, `hero${i}`, 440, 300).svg }} />))}
             <div className="absolute -right-2 bottom-24 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-slate-900 shadow-2xl">
-              <span className="grid size-10 place-items-center rounded-xl bg-amber-100 text-amber-600">
+              <span className="grid size-10 place-items-center rounded-xl bg-red-100 text-red-600">
                 <Star size={20} fill="currentColor" />
               </span>
               <span>
@@ -208,16 +208,16 @@ export default function Landing() {
 
       {/* ---------- bandeau menuisiers ---------- */}
       <section className="px-4 pb-16 sm:px-8 xl:px-10">
-        <div className="relative mx-auto max-w-[110rem] overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-indigo-700 to-violet-700 p-8 text-white sm:p-14">
+        <div className="relative mx-auto max-w-[110rem] overflow-hidden rounded-3xl bg-gradient-to-br from-red-800 via-red-900 to-zinc-900 p-8 text-white sm:p-14">
           <div aria-hidden className="absolute -right-20 -top-20 size-80 rounded-full bg-white/10 blur-2xl" />
           <div className="relative grid items-center gap-10 lg:grid-cols-[1.2fr_1fr]">
             <div>
-              <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-blue-100">
+              <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-200">
                 <TrendingUp size={16} aria-hidden />
                 {t("land.proSteps")}
               </p>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">{t("land2.pro.title")}</h2>
-              <p className="mt-4 max-w-xl text-blue-100/90">{t("land2.pro.sub")}</p>
+              <p className="mt-4 max-w-xl text-zinc-200/90">{t("land2.pro.sub")}</p>
               <Link href="/inscription?role=menuisier" className="btn-accent mt-7 !min-h-12 !px-6 !text-base">
                 {t("land2.pro.cta")}
                 <ArrowRight size={18} aria-hidden />
