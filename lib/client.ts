@@ -19,6 +19,8 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   const res = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
   if (res.status === 401 && !url.startsWith("/api/auth/") && typeof location !== "undefined") location.replace("/connexion");
   const data = await res.json().catch(() => ({}));
+  // compte pas encore vérifié : toute action est refusée, on renvoie vers l'écran de vérification
+  if (res.status === 403 && data.error === "unverified" && typeof location !== "undefined" && !location.pathname.startsWith("/verification")) location.replace("/verification");
   if (!res.ok) throw new ApiError(res.status, data.error ?? "error");
   return data as T;
 }
@@ -26,7 +28,7 @@ export const fetcher = <T,>(url: string) => request<T>("GET", url);
 
 export { ApiError, request };
 
-export const useMe = () => useSWR<Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role">>("/api/me", fetcher, { revalidateOnFocus: false });
+export const useMe = () => useSWR<Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role" | "verified">>("/api/me", fetcher, { revalidateOnFocus: false });
 
 export function useSettings() {
   const { data, mutate, isLoading } = useSWR<Settings>("/api/settings", fetcher, { revalidateOnFocus: false });
@@ -67,7 +69,7 @@ export function useQuotes() {
 }
 
 // Session pour les pages publiques : jamais de redirection, renvoie null si personne n'est connecté.
-export type SessionInfo = Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role">;
+export type SessionInfo = Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role" | "verified">;
 export const useSession = () =>
   useSWR<SessionInfo | null>(
     "session",
@@ -124,7 +126,7 @@ export const useCitableQuotes = (id: string, enabled: boolean) => useSWR<{ id: s
 // Nombre de messages non lus (pastille de la navigation) ; rien n'est demandé si personne n'est connecté.
 export function useUnread() {
   const { data: me } = useSession();
-  const on = me?.role === "client" || me?.role === "menuisier";
+  const on = !!me?.verified && (me.role === "client" || me.role === "menuisier");
   const { data } = useSWR<{ count: number }>(on ? "/api/messages/unread" : null, fetcher, { refreshInterval: 12000 });
   return on ? (data?.count ?? 0) : 0;
 }
@@ -139,7 +141,7 @@ export const useContacts = (enabled = true) => useSWR<ContactView[]>(enabled ? "
 export const useLineComments = (quoteId: string | undefined) => useSWR<LineComment[]>(quoteId ? `/api/quotes/${quoteId}/comments` : null, fetcher, { refreshInterval: 8000 });
 export function useNotifications() {
   const { data: me } = useSession();
-  const on = me?.role === "client" || me?.role === "menuisier";
+  const on = !!me?.verified && (me.role === "client" || me.role === "menuisier");
   return useSWR<{ items: NotificationView[]; unread: number }>(on ? "/api/notifications" : null, fetcher, { refreshInterval: 10000 });
 }
 // Page où mène une notification : le devis, et l'ouvrage visé s'il y en a un (?ligne=).

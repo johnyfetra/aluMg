@@ -18,9 +18,19 @@ class Client {
     const set = res.headers.getSetCookie().find((c) => c.startsWith("alumg_session="));
     if (set) this.cookie = set.startsWith("alumg_session=;") || /Max-Age=0|expires=Thu, 01 Jan 1970/i.test(set) ? "" : set.split(";")[0];
     const type = res.headers.get("content-type") ?? "";
-    return { status: res.status, body: type.includes("json") ? await res.json() : null };
+    const out = { status: res.status, body: type.includes("json") ? await res.json() : null };
+    // un compte tout juste inscrit doit être vérifié avant d'utiliser l'API : on passe par la vraie vérification (envoi « dev » du serveur)
+    if (path === "/api/auth/signup" && res.status === 201 && !(body as { skipVerify?: boolean })?.skipVerify) await this.verify();
+    return out;
+  }
+  async verify() {
+    const sent = await this.call("POST", "/api/auth/verify/send", { channel: "sms", lang: "fr" });
+    expect(sent.status).toBe(200);
+    expect((await this.call("POST", "/api/auth/verify/confirm", { code: sent.body.devCode })).status).toBe(200);
   }
 }
+// numéro unique par compte (le téléphone est unique)
+const phone = () => `033${String(1_000_000 + Math.floor(Math.random() * 8_999_999))}`;
 
 const line = {
   id: "l1", category: "fenetre", opening: "coulissant", leaves: 3, shutter: "roulant", control: "manuel", range: "europeen",
@@ -35,7 +45,7 @@ const quote = (n: number, over: object = {}) => ({
 });
 const pw = "longpassword1";
 // contact obligatoire : e-mail et téléphone ; le rôle se choisit à l'inscription
-const acct = (name: string, email: string, role: "client" | "menuisier" = "menuisier", password = pw) => ({ name, email, role, phone: "034 12 345 67", password });
+const acct = (name: string, email: string, role: "client" | "menuisier" = "menuisier", password = pw) => ({ name, email, role, phone: phone(), password });
 
 describe("accès", () => {
   it("API et pages protégées refusent un visiteur sans session", async () => {
@@ -53,10 +63,11 @@ describe("comptes", () => {
     const a = new Client();
     expect((await a.call("POST", "/api/auth/signup", acct("Alice", email, "menuisier", "short"))).status).toBe(400);
     expect((await a.call("POST", "/api/auth/signup", acct("Alice", "pas-un-mail"))).status).toBe(400);
-    expect((await a.call("POST", "/api/auth/signup", acct("Alice", email))).status).toBe(201);
+    const aliceAcct = acct("Alice", email);
+    expect((await a.call("POST", "/api/auth/signup", aliceAcct)).status).toBe(201);
     expect((await new Client().call("POST", "/api/auth/signup", acct("X", email.toUpperCase()))).status).toBe(409);
     const me = await a.call("GET", "/api/me");
-    expect(me.body).toMatchObject({ email, role: "menuisier", phone: "034 12 345 67" });
+    expect(me.body).toMatchObject({ email, role: "menuisier", phone: aliceAcct.phone, verified: true });
     expect((await new Client().call("POST", "/api/auth/login", { email, password: "mauvais-mdp" })).status).toBe(401);
     expect((await new Client().call("POST", "/api/auth/login", { email: `inconnu-${RUN}@ex.mg`, password: "mauvais-mdp" })).status).toBe(401);
     const a2 = new Client();
@@ -69,7 +80,7 @@ describe("comptes", () => {
 
     await a.call("POST", "/api/auth/logout");
     expect((await a.call("GET", "/api/me")).status).toBe(401);
-    expect((await a2.call("GET", "/api/me")).status).toBe(200); // l'autre session reste valide
+    expect((await a2.call("GET", "/api/me")).status).toBe(401); // changer de mot de passe a coupé l'autre session
   });
 });
 
@@ -119,7 +130,7 @@ describe("réglages et devis", () => {
     const multi = await a.call("POST", "/api/quotes", quote(2, { lines: extra }));
     expect(multi.status).toBe(201);
     expect(multi.body.lines.map((l: { category: string }) => l.category)).toEqual(["garde-corps", "cloison", "fenetre", "fenetre"]);
-    expect((await a.call("POST", "/api/quotes", quote(3, { lines: [{ ...line, leaves: 9 }] }))).status).toBe(400);
+    expect((await a.call("POST", "/api/quotes", quote(3, { lines: [{ ...line, leaves: 11 }] }))).status).toBe(400); // au plus 10 vantaux/panneaux
     expect((await a.call("POST", "/api/quotes", quote(3, { lines: [{ ...line, category: "escalier" }] }))).status).toBe(400);
     // un devis ancien, sans le champ « guard », reste enregistrable (valeur par défaut)
     const legacy: Record<string, unknown> = { ...line };
@@ -142,11 +153,13 @@ describe("réglages et devis", () => {
 describe("plateforme : rôles, annuaire, demandes, suivi, évaluation", () => {
   const phoneless = { name: "Sans tel", email: `nophone-${RUN}@ex.mg`, role: "client", password: pw };
 
-  it("l'inscription exige un contact (e-mail et téléphone) et un type de compte valide", async () => {
+  it("l'inscription exige le téléphone (l'e-mail est facultatif) et un type de compte valide", async () => {
     expect((await new Client().call("POST", "/api/auth/signup", phoneless)).status).toBe(400);
     expect((await new Client().call("POST", "/api/auth/signup", { ...phoneless, phone: "abc" })).status).toBe(400);
-    expect((await new Client().call("POST", "/api/auth/signup", { ...phoneless, phone: "034 11 222 33", role: "admin" })).status).toBe(400);
-    expect((await new Client().call("POST", "/api/auth/signup", { ...phoneless, phone: "034 11 222 33" })).status).toBe(201);
+    expect((await new Client().call("POST", "/api/auth/signup", { ...phoneless, phone: phone(), role: "admin" })).status).toBe(400);
+    expect((await new Client().call("POST", "/api/auth/signup", { ...phoneless, phone: phone() })).status).toBe(201);
+    // sans e-mail du tout
+    expect((await new Client().call("POST", "/api/auth/signup", { name: "Sans mail", role: "client", phone: phone(), password: pw })).status).toBe(201);
   });
 
   it("annuaire public sans compte ; publication, requêtes réservées à chaque rôle, droits d'accès", async () => {
@@ -187,9 +200,10 @@ describe("plateforme : rôles, annuaire, demandes, suivi, évaluation", () => {
     // demande d'un client
     const rq = await c.call("POST", "/api/requests", { menuisier: prof.slug, project: "Villa", message: "Bonjour", siteAddress: "Tana", wantedDate: "", lines: [{ ...line, unit: 1 }] });
     expect(rq.status).toBe(201);
-    expect(rq.body).toMatchObject({ status: "requested", client: { name: "Hery Rakoto", phone: "034 12 345 67" } });
+    expect(rq.body).toMatchObject({ status: "requested", client: { name: "Hery Rakoto", phone: expect.any(String) } });
     expect(rq.body.lines[0].unit).toBeGreaterThan(1); // prix du menuisier, pas celui envoyé par le client
-    expect((await c.call("POST", "/api/requests", { menuisier: slug2, lines: [line] })).status).toBe(404); // profil non publié
+    expect((await c.call("POST", "/api/requests", { menuisier: slug2, lines: [line] })).status).toBe(201); // profil non publié : son lien de demande vaut invitation
+    expect((await c.call("POST", "/api/requests", { menuisier: "slug-inconnu", lines: [line] })).status).toBe(404);
     const id = rq.body.id;
 
     // visibilité : le client voit sa demande sans prix ; les autres comptes ne voient rien
@@ -208,13 +222,16 @@ describe("plateforme : rôles, annuaire, demandes, suivi, évaluation", () => {
     expect(seen.status).toBe("sent");
     expect(seen.lines[0].unit).toBeGreaterThan(1);
 
-    // verrouillé : le menuisier ne modifie ni ne supprime un devis envoyé
+    // envoyé mais pas encore tranché : le menuisier peut corriger (révision), jamais supprimer
     const mine = (await m.call("GET", `/api/quotes/${id}`)).body;
-    expect((await m.call("PUT", `/api/quotes/${id}`, { ...mine, discount: 90 })).status).toBe(409);
+    expect((await m.call("PUT", `/api/quotes/${id}`, { ...mine, discount: 90 })).body).toMatchObject({ discount: 90, rev: 1 });
+    expect((await m.call("PUT", `/api/quotes/${id}`, { ...mine, discount: 0 })).body).toMatchObject({ discount: 0, rev: 2 });
     expect((await m.call("DELETE", `/api/quotes/${id}`)).status).toBe(409);
+    // le client décide sur la révision qu'il a vue : une révision périmée est refusée
+    expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "accept", rev: 0 })).body).toMatchObject({ error: "quote_changed" });
 
     // le client accepte, le chantier avance, l'évaluation n'est possible qu'à la fin
-    expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "accept" })).body.status).toBe("accepted");
+    expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "accept", rev: 2 })).body.status).toBe("accepted");
     expect((await c.call("POST", `/api/quotes/${id}/actions`, { type: "review", rating: 5, comment: "" })).status).toBe(409);
     expect((await m.call("POST", `/api/quotes/${id}/actions`, { type: "progress", progress: 150 })).status).toBe(400);
     expect((await m.call("POST", `/api/quotes/${id}/actions`, { type: "progress", progress: 60, message: "Fabrication" })).body).toMatchObject({ status: "in_progress", progress: 60 });
@@ -263,5 +280,88 @@ describe("messagerie", () => {
     const me = (await c.call("GET", "/api/session")).body;
     expect((await m.call("POST", "/api/conversations", { client: me.id })).status).toBe(403); // pas de devis demandé : pas de démarchage
     expect((await m2.call("POST", "/api/conversations", { client: me.id })).status).toBe(403);
+  });
+});
+
+describe("identité et vérification du compte", () => {
+  const pass = "café-au-lait-9";
+  const mk = () => ({ name: "Vérif", role: "client" as const, phone: phone(), password: pass, skipVerify: true });
+
+  it("un compte non vérifié ne peut rien faire, sauf se vérifier ; la vérification par SMS, appel ou e-mail l'ouvre", async () => {
+    for (const channel of ["sms", "call", "email"] as const) {
+      const c = new Client();
+      const body = { ...mk(), ...(channel === "email" ? { email: `verif-${RUN}-${Math.random().toString(36).slice(2, 7)}@ex.mg` } : {}) };
+      expect((await c.call("POST", "/api/auth/signup", body)).status).toBe(201);
+      expect((await c.call("GET", "/api/client/quotes")).body).toMatchObject({ error: "unverified" });
+      expect((await c.call("GET", "/api/me")).body).toMatchObject({ verified: false });
+      const sent = await c.call("POST", "/api/auth/verify/send", { channel, lang: "fr" });
+      expect(sent.status).toBe(200);
+      expect(sent.body).toMatchObject({ ok: true, channel });
+      expect((await c.call("POST", "/api/auth/verify/send", { channel })).status).toBe(429); // délai entre deux envois
+      expect((await c.call("POST", "/api/auth/verify/confirm", { code: sent.body.devCode === "000000" ? "111111" : "000000" })).body).toMatchObject({ error: "wrong_code" });
+      expect((await c.call("POST", "/api/auth/verify/confirm", { code: sent.body.devCode })).body).toMatchObject({ verified: true, channel });
+      expect((await c.call("GET", "/api/client/quotes")).status).toBe(200);
+    }
+  });
+
+  it("l'e-mail n'est proposé que s'il existe ; le code se tape en 6 chiffres", async () => {
+    const c = new Client();
+    await c.call("POST", "/api/auth/signup", mk());
+    expect((await c.call("GET", "/api/auth/verify/channels")).body.channels).toEqual(["sms", "call"]);
+    expect((await c.call("POST", "/api/auth/verify/send", { channel: "email" })).status).toBe(400);
+    expect((await c.call("POST", "/api/auth/verify/confirm", { code: "12" })).status).toBe(400);
+    expect((await new Client().call("POST", "/api/auth/verify/send", { channel: "sms" })).status).toBe(401); // sans session
+  });
+
+  it("5 mauvais codes verrouillent le code ; un nouvel envoi est alors nécessaire", async () => {
+    const c = new Client();
+    await c.call("POST", "/api/auth/signup", mk());
+    const sent = await c.call("POST", "/api/auth/verify/send", { channel: "sms" });
+    const bad = sent.body.devCode === "000000" ? "111111" : "000000";
+    for (let i = 0; i < 4; i++) expect((await c.call("POST", "/api/auth/verify/confirm", { code: bad })).body).toMatchObject({ error: "wrong_code" });
+    expect((await c.call("POST", "/api/auth/verify/confirm", { code: bad })).body).toMatchObject({ error: "locked" });
+    expect((await c.call("POST", "/api/auth/verify/confirm", { code: sent.body.devCode })).status).toBe(429);
+  });
+
+  it("connexion par téléphone (toute écriture) ou par e-mail ; téléphone et e-mail uniques", async () => {
+    const p = phone();
+    const email = `login-${RUN}-${Math.random().toString(36).slice(2, 6)}@ex.mg`;
+    const a = new Client();
+    expect((await a.call("POST", "/api/auth/signup", { ...mk(), phone: p, email })).status).toBe(201);
+    const intl = `+261 ${p.slice(1, 3)} ${p.slice(3, 5)} ${p.slice(5, 8)} ${p.slice(8)}`;
+    for (const identifier of [p, intl, email, email.toUpperCase()]) expect((await new Client().call("POST", "/api/auth/login", { identifier, password: pass })).status, identifier).toBe(200);
+    expect((await new Client().call("POST", "/api/auth/signup", { ...mk(), phone: intl })).body).toMatchObject({ error: "phone_taken" });
+    expect((await new Client().call("POST", "/api/auth/signup", { ...mk(), email })).body).toMatchObject({ error: "email_taken" });
+  });
+
+  it("mots de passe courants refusés ; corps trop gros refusé ; origine étrangère refusée", async () => {
+    expect((await new Client().call("POST", "/api/auth/signup", { ...mk(), password: "motdepasse123" })).status).toBe(400);
+    const big = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier: "a@b.mg", password: "x".repeat(2_500_000) }) });
+    expect(big.status).toBe(413);
+    const csrf = await fetch(`${BASE}/api/auth/logout`, { method: "POST", headers: { Origin: "https://evil.example" } });
+    expect(csrf.status).toBe(403);
+  });
+
+  it("en-têtes de sécurité sur les pages et l'API", async () => {
+    for (const path of ["/connexion", "/api/session"]) {
+      const res = await fetch(BASE + path);
+      expect(res.headers.get("x-frame-options"), path).toBe("DENY");
+      expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(res.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+      expect(res.headers.get("x-powered-by")).toBeNull();
+    }
+  });
+
+  it("changer de mot de passe coupe les autres sessions", async () => {
+    const email = `sess-${RUN}-${Math.random().toString(36).slice(2, 6)}@ex.mg`;
+    const a = new Client();
+    await a.call("POST", "/api/auth/signup", { ...mk(), email });
+    await a.verify();
+    const b = new Client();
+    expect((await b.call("POST", "/api/auth/login", { identifier: email, password: pass })).status).toBe(200);
+    expect((await b.call("GET", "/api/me")).status).toBe(200);
+    expect((await a.call("PATCH", "/api/me", { currentPassword: pass, newPassword: "nouveau-mdp-solide-7" })).status).toBe(200);
+    expect((await a.call("GET", "/api/me")).status).toBe(200); // la session courante reste ouverte
+    expect((await b.call("GET", "/api/me")).status).toBe(401); // l'autre appareil est déconnecté
   });
 });

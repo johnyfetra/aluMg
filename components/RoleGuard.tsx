@@ -8,11 +8,12 @@ import { homeFor, useSession } from "@/lib/client";
 export default function RoleGuard({ allow, children }: { allow: ("client" | "menuisier" | "admin")[]; children: ReactNode }) {
   const { data: me, isLoading } = useSession();
   const router = useRouter();
-  const ok = !!me && allow.includes(me.role);
+  const ok = !!me && me.verified && allow.includes(me.role);
   useEffect(() => {
     if (isLoading) return;
     // le chemin est lu ici (navigateur seulement) pour que le layout reste prérendu
     if (!me) router.replace(`/connexion?next=${encodeURIComponent(location.pathname + location.search)}`);
+    else if (!me.verified) router.replace("/verification"); // téléphone ou e-mail à confirmer d'abord
     else if (!ok) router.replace(homeFor(me.role));
   }, [isLoading, me, ok, router]);
   // la page est rendue dès le départ (chargement plus rapide, navigation instantanée) mais masquée tant que le rôle n'est pas confirmé

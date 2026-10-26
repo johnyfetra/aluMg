@@ -60,8 +60,9 @@ export const LOGOS = {
   sambava: { kind: "shield", a: "#475569", b: "#0f172a", text: "SM" },
 };
 
-const pwd = "motdepasse123";
-export const PASSWORD = pwd;
+// mot de passe des comptes de démonstration (accepté par la politique de mot de passe) ; l'ancien reste reconnu pour les bases déjà remplies
+export const PASSWORD = "Demo-AluMg-2026";
+export const LEGACY_PASSWORD = "motdepasse123";
 
 export const MENUISIERS = [
   { email: "test@alumada.mg", name: "Rija Andriamanana", display: "Alu Mada", city: "Antananarivo", avatar: "rija", logo: "alumada", phone: "034 12 345 67", verified: true,

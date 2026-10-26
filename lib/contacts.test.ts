@@ -23,7 +23,8 @@ describe("carnet de clients", () => {
     const r = await ct.saveContact(m1, { name: "Hery", phone: "033 33 333 33", email: "HERY@ex.mg", note: "" });
     const list = await ct.listContacts(m1);
     expect(list).toHaveLength(1);
-    expect(list[0]).toMatchObject({ id: r!.id, email: "hery@ex.mg", account: { id: c1, name: "Hery Rakoto" } });
+    // vie privée : tant qu'aucun devis n'a été échangé, on sait seulement qu'un compte existe (ni nom ni photo)
+    expect(list[0]).toMatchObject({ id: r!.id, email: "hery@ex.mg", account: { id: "", name: "", avatar: "" } });
   });
   it("même e-mail : mise à jour, pas de doublon ; sans compte : account null", async () => {
     await ct.saveContact(m1, { name: "Hery R.", phone: "", email: "hery@ex.mg", note: "VIP" });

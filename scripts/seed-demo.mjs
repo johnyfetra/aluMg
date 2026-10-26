@@ -7,9 +7,11 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import sharp from "sharp";
-import { CLIENTS, MENUISIERS, PASSWORD } from "./demo-data.mjs";
+import { CLIENTS, LEGACY_PASSWORD, MENUISIERS, PASSWORD } from "./demo-data.mjs";
 
 const BASE = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+// garde-fou : ce script crée des comptes à mot de passe connu, il ne doit viser qu'un serveur local
+if (!/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(BASE)) throw new Error(`seed:demo refuse de viser ${BASE} (serveur local uniquement)`);
 class Api {
   cookie = "";
   async call(method, path, body) {
@@ -29,10 +31,20 @@ const png = async (file, size) => dataUrl(await sharp(readFileSync(file)).resize
 const jpg = async (file, size) => dataUrl(await sharp(readFileSync(file)).resize(size, size).flatten({ background: "#fff" }).jpeg({ quality: 85 }).toBuffer(), "image/jpeg");
 const file = (f) => dataUrl(readFileSync(f), "image/jpeg");
 
+// Création (ou reconnexion) d'un compte de démonstration. L'inscription exige maintenant un compte vérifié : on passe par la vraie vérification,
+// l'envoi « dev » du serveur renvoyant le code (serveur de développement, idéalement lancé avec RATE_LIMIT=off).
 async function account(a, role, name, email, phone) {
   const s = await a.call("POST", "/api/auth/signup", { role, name, email, phone, password: PASSWORD });
-  if (s.status === 409) await a.must("POST", "/api/auth/login", { email, password: PASSWORD });
-  else if (s.status >= 300) throw new Error(`signup ${email}: ${s.status} ${JSON.stringify(s.body)}`);
+  if (s.status === 409) {
+    let l = await a.call("POST", "/api/auth/login", { identifier: email, password: PASSWORD });
+    if (l.status === 401) l = await a.call("POST", "/api/auth/login", { identifier: email, password: LEGACY_PASSWORD });
+    if (l.status >= 300) throw new Error(`login ${email}: ${l.status} (compte existant avec un autre mot de passe ?)`);
+    return;
+  }
+  if (s.status >= 300) throw new Error(`signup ${email}: ${s.status} ${JSON.stringify(s.body)}`);
+  const sent = await a.must("POST", "/api/auth/verify/send", { channel: "sms", lang: "fr" });
+  if (!sent.devCode) throw new Error("pas de code « dev » : lancez le serveur de développement (npm run dev)");
+  await a.must("POST", "/api/auth/verify/confirm", { code: sent.devCode });
 }
 
 // ---------- menuisiers ----------

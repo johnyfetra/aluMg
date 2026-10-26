@@ -17,6 +17,8 @@ export const getDb = () =>
 
 async function init(): Promise<Db> {
   const migrationsFolder = "drizzle";
+  // jamais de base locale éphémère par accident en production : DATABASE_URL (ou PGLITE_DIR explicite) est obligatoire
+  if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL && !process.env.PGLITE_DIR) throw new Error("DATABASE_URL manquant en production");
   if (process.env.DATABASE_URL) {
     const { Pool } = await import("pg");
     const { drizzle } = await import("drizzle-orm/node-postgres");

@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "./db";
 import { notify } from "./notifications";
+import { normalizePhone } from "./phone";
 import { type Market, type Quote, type QuoteRequest, type Role, type Settings, withDefaults } from "./model";
 
 // Accès aux données, toujours borné à un utilisateur (userId) : un compte ne lit ni n'écrit les données d'un autre.
@@ -135,11 +136,21 @@ export async function deleteQuote(userId: string, id: string): Promise<boolean |
   return r.length > 0;
 }
 
-export async function createUser(email: string, name: string, passwordHash: string, role: Role = "client", phone = "") {
+// email facultatif (chaîne vide = aucun) ; le téléphone est normalisé (+261…) et unique. `verified` : compte déjà vérifié (démo, admin).
+export async function createUser(email: string, name: string, passwordHash: string, role: Role = "client", phone = "", opts: { verified?: boolean } = {}) {
   const db = await getDb();
-  const [u] = await db.insert(schema.users).values({ email: email.toLowerCase(), name, passwordHash, role, phone }).onConflictDoNothing().returning({ id: schema.users.id });
+  const [u] = await db
+    .insert(schema.users)
+    .values({ email: email.trim().toLowerCase() || null, name, passwordHash, role, phone: phone.trim(), phoneNorm: normalizePhone(phone), ...(opts.verified ? { phoneVerifiedAt: new Date() } : {}) })
+    .onConflictDoNothing()
+    .returning({ id: schema.users.id });
   if (u && role === "menuisier") await db.insert(schema.settings).values({ userId: u.id }).onConflictDoNothing();
-  return u?.id ?? null; // null : e-mail déjà utilisé
+  return u?.id ?? null; // null : e-mail ou téléphone déjà utilisé
+}
+
+export async function setPasswordHash(userId: string, passwordHash: string) {
+  const db = await getDb();
+  await db.update(schema.users).set({ passwordHash }).where(eq(schema.users.id, userId));
 }
 
 export async function findUserById(id: string) {
@@ -147,6 +158,17 @@ export async function findUserById(id: string) {
   const [u] = await db.select().from(schema.users).where(eq(schema.users.id, id));
   return u ?? null;
 }
+
+export async function findUserByPhone(phone: string) {
+  const norm = normalizePhone(phone);
+  if (!norm) return null;
+  const db = await getDb();
+  const [u] = await db.select().from(schema.users).where(eq(schema.users.phoneNorm, norm));
+  return u ?? null;
+}
+
+// Identifiant de connexion : une adresse e-mail (contient @) ou un numéro de téléphone.
+export const findUserByIdentifier = (id: string) => (id.includes("@") ? findUserByEmail(id.trim()) : findUserByPhone(id));
 
 export async function findUserByEmail(email: string) {
   const db = await getDb();

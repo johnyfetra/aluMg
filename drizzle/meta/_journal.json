@@ -64,6 +64,20 @@
       "when": 1793041322605,
       "tag": "0008_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793042638227,
+      "tag": "0009_rate_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793042811561,
+      "tag": "0010_verification",
+      "breakpoints": true
     }
   ]
 }

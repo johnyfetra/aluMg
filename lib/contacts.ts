@@ -1,6 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "./db";
+import { normalizePhone } from "./phone";
 
 // Carnet de clients : toujours borné au menuisier (userId). Le compte client est retrouvé par l'e-mail, jamais choisi par l'appelant.
 export const contactSchema = z.object({
@@ -14,10 +15,17 @@ export type ContactView = { id: string; name: string; phone: string; email: stri
 
 const norm = (e: string) => e.trim().toLowerCase();
 
-async function accountByEmail(email: string) {
-  if (!email) return null;
+// Compte client correspondant à un contact : par e-mail, sinon par numéro de téléphone normalisé.
+export async function clientAccountFor({ email, phone }: { email?: string; phone?: string }) {
   const db = await getDb();
-  const [u] = await db.select({ id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar }).from(schema.users).where(and(eq(schema.users.email, norm(email)), eq(schema.users.role, "client")));
+  const pick = { id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar };
+  if (email) {
+    const [u] = await db.select(pick).from(schema.users).where(and(eq(schema.users.email, norm(email)), eq(schema.users.role, "client")));
+    if (u) return u;
+  }
+  const pn = phone ? normalizePhone(phone) : null;
+  if (!pn) return null;
+  const [u] = await db.select(pick).from(schema.users).where(and(eq(schema.users.phoneNorm, pn), eq(schema.users.role, "client")));
   return u ?? null;
 }
 
@@ -29,9 +37,10 @@ export async function listContacts(userId: string): Promise<ContactView[]> {
     .leftJoin(schema.users, eq(schema.users.id, schema.contacts.clientUserId))
     .where(eq(schema.contacts.userId, userId))
     .orderBy(asc(schema.contacts.name));
+  // Vie privée : le nom et la photo du compte ne sont révélés qu'une fois une relation établie (devis échangé) ; avant, seul le fait qu'il existe l'est.
   return rows.map(({ c, aName, aAvatar, quotes }) => ({
     id: c.id, name: c.name, phone: c.phone, email: c.email, note: c.note, quotes: Number(quotes), at: c.createdAt.toISOString(),
-    account: c.clientUserId ? { id: c.clientUserId, name: aName ?? "", avatar: aAvatar ?? "" } : null,
+    account: c.clientUserId ? (Number(quotes) > 0 ? { id: c.clientUserId, name: aName ?? "", avatar: aAvatar ?? "" } : { id: "", name: "", avatar: "" }) : null,
   }));
 }
 
@@ -39,7 +48,7 @@ export async function listContacts(userId: string): Promise<ContactView[]> {
 export async function saveContact(userId: string, input: ContactInput, id?: string): Promise<{ id: string } | null> {
   const db = await getDb();
   const email = norm(input.email);
-  const acc = await accountByEmail(email);
+  const acc = await clientAccountFor({ email, phone: input.phone });
   const values = { name: input.name, phone: input.phone, email, note: input.note, clientUserId: acc?.id ?? null };
   if (id) {
     const [u] = await db.update(schema.contacts).set(values).where(and(eq(schema.contacts.id, id), eq(schema.contacts.userId, userId))).returning({ id: schema.contacts.id });

@@ -4,7 +4,7 @@ import { normalize } from "./calc";
 import { salePrice } from "./costing";
 import { getDb, schema } from "./db";
 import { type Issuer, ISSUER_KEYS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
-import { ensureContact } from "./contacts";
+import { clientAccountFor, ensureContact } from "./contacts";
 import { notify } from "./notifications";
 import { StaleQuote, createQuote, findUserById, getSettings, unchanged } from "./repo";
 
@@ -87,7 +87,7 @@ export async function createRequest(clientId: string, input: z.infer<typeof requ
   const quote = await createQuote(
     profile.userId,
     {
-      id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: client.name, phone: client.phone, address: input.siteAddress, email: client.email },
+      id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: client.name, phone: client.phone, address: input.siteAddress, email: client.email ?? "" },
       project: input.project, delay: "", notes: "", lines, discount: 0, progress: 0, rev: 0,
       terms: { tva: settings.tva, deposit: settings.deposit, validityDays: settings.validityDays },
     },
@@ -95,7 +95,7 @@ export async function createRequest(clientId: string, input: z.infer<typeof requ
   );
   await db.insert(schema.quoteEvents).values({ quoteId: quote.id, actorId: clientId, kind: "created", message: input.message });
   // le client entre dans le carnet du menuisier, qui est prévenu de la demande
-  await ensureContact(profile.userId, { name: client.name, phone: client.phone, email: client.email, clientUserId: clientId });
+  await ensureContact(profile.userId, { name: client.name, phone: client.phone, email: client.email ?? "", clientUserId: clientId });
   await notify(db, { userId: profile.userId, quoteId: quote.id, kind: "request", message: input.project || input.message });
   return quote;
 }
@@ -173,9 +173,8 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
   if (a.type === "send") {
     if (row.data.lines.some((l) => !(l.unit > 0))) return { ok: false, error: "incomplete" };
     if (!clientId) {
-      // devis créé par le menuisier : on retrouve le compte client par l'e-mail saisi
-      const email = (row.data.client.email ?? "").trim().toLowerCase();
-      const [c] = email ? await db.select({ id: schema.users.id }).from(schema.users).where(and(eq(schema.users.email, email), eq(schema.users.role, "client"))) : [];
+      // devis créé par le menuisier : on retrouve le compte client par l'e-mail saisi, sinon par son téléphone
+      const c = await clientAccountFor({ email: row.data.client.email ?? "", phone: row.data.client.phone });
       if (!c) return { ok: false, error: "no_client_account" };
       clientId = c.id;
     }
@@ -227,7 +226,7 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
     throw e;
   }
   if (a.type === "send" && clientId) await ensureContact(row.userId, { name: row.data.client.name, phone: row.data.client.phone, email: row.data.client.email ?? "", clientUserId: clientId });
-  return { ok: true, quote };
+  return { ok: true, quote: side === "client" ? clientView(quote) : quote }; // le client ne reçoit jamais les prix avant l'envoi
 }
 
 // ---------- Commentaires par ouvrage ----------

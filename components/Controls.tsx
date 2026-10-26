@@ -102,7 +102,7 @@ export function UserMenu() {
             <Avatar name={me?.name ?? "?"} src={me?.avatar} size={40} round />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{me?.name}</p>
-              <p className="truncate text-xs text-muted">{me?.email}</p>
+              <p className="truncate text-xs text-muted">{me?.email || me?.phone}</p>
               {me?.role === "admin" && (
                 <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
                   <ShieldCheck size={11} aria-hidden /> Admin

@@ -6,7 +6,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 const BASE = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 const CHROME = process.env.CHROME_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const RUN = Date.now().toString(36);
-const PASSWORD = "motdepasse123";
+const PASSWORD = "Atelier-Alu-2026"; // doit passer la politique de mot de passe
+let PHONE_N = 0;
+const phone = () => `034 ${String(10 + (++PHONE_N % 80))} ${String(100 + Math.floor(Math.random() * 899))} ${String(10 + Math.floor(Math.random() * 89))}`;
 
 let browser: Browser;
 beforeAll(async () => {
@@ -29,21 +31,35 @@ const click = async (page: Page, selector: string, label: string) => {
   await page.evaluate((s, l) => ([...document.querySelectorAll(s)].find((e) => (e.textContent ?? "").trim().includes(l)) as HTMLElement).click(), selector, label);
 };
 
+// Inscription par le formulaire, puis vérification du compte par SMS via l'écran dédié (le serveur de test affiche le code « dev »).
 async function signup(page: Page, role: "client" | "menuisier", name: string, email: string) {
   await page.goto(`${BASE}/inscription`, { waitUntil: "networkidle0" });
   await click(page, "label", role === "client" ? "Je suis client" : "Je suis menuisier");
   await page.type("#name", name);
   await page.type("#email", email);
-  await page.type("#phone", "034 12 345 67");
+  await page.type("#phone", phone());
   await page.type("#password", PASSWORD);
   await page.click("button[type=submit]");
+  await page.waitForFunction(() => location.pathname === "/verification", { timeout: 20_000 });
+  await verifyOnScreen(page);
+}
+
+async function verifyOnScreen(page: Page) {
+  await click(page, "button", "Envoyer le code");
+  await waitText(page, "Mode test : votre code est");
+  const code = (await text(page)).match(/votre code est\s*(\d{6})/)![1];
+  await page.click('input[aria-label^="Saisissez le code à 6 chiffres 1"]');
+  await page.keyboard.type(code, { delay: 20 });
+  await page.waitForFunction(() => location.pathname !== "/verification", { timeout: 20_000 });
 }
 
 // Menuisier publié créé par l'API (pour que le client ait quelqu'un à qui demander un devis).
 async function publishedJoiner() {
-  const res = await fetch(`${BASE}/api/auth/signup`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "menuisier", name: `Atelier UI ${RUN}`, email: `ui-pro-${RUN}@ex.mg`, phone: "034 99 888 77", password: PASSWORD }) });
+  const res = await fetch(`${BASE}/api/auth/signup`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "menuisier", name: `Atelier UI ${RUN}`, email: `ui-pro-${RUN}@ex.mg`, phone: phone(), password: PASSWORD }) });
   const cookie = res.headers.getSetCookie()[0].split(";")[0];
   const h = { "Content-Type": "application/json", Cookie: cookie };
+  const sent = await (await fetch(`${BASE}/api/auth/verify/send`, { method: "POST", headers: h, body: JSON.stringify({ channel: "sms" }) })).json();
+  await fetch(`${BASE}/api/auth/verify/confirm`, { method: "POST", headers: h, body: JSON.stringify({ code: sent.devCode }) });
   const prof = await (await fetch(`${BASE}/api/profile`, { headers: h })).json();
   await fetch(`${BASE}/api/profile`, { method: "PUT", headers: h, body: JSON.stringify({ displayName: `Atelier UI ${RUN}`, slug: prof.slug, city: "Nosy Be", bio: "Test", specialties: ["portes"], logo: "", published: true }) });
   return { slug: prof.slug as string, name: `Atelier UI ${RUN}` };
@@ -115,14 +131,14 @@ describe("parcours dans le navigateur", () => {
     await cp.goto(`${BASE}/menuisiers/${joiner.slug}`, { waitUntil: "networkidle0" });
     await click(cp, "button", "Envoyer un message");
     await cp.waitForFunction(() => location.pathname === "/messages", { timeout: 20_000 });
-    await cp.waitForSelector("#chat-input");
-    await cp.type("#chat-input", "Bonjour, disponible en décembre ?");
+    await cp.waitForSelector("textarea[id^=chat-input]");
+    await cp.type("textarea[id^=chat-input]", "Bonjour, disponible en décembre ?");
     await cp.keyboard.press("Enter");
     await waitText(cp, "Bonjour, disponible en décembre ?");
 
     const mp = await newPage();
     await mp.goto(`${BASE}/connexion`, { waitUntil: "networkidle0" });
-    await mp.type("#email", `ui-pro-${RUN}@ex.mg`);
+    await mp.type("#identifier", `ui-pro-${RUN}@ex.mg`);
     await mp.type("#password", PASSWORD);
     await mp.click("button[type=submit]");
     await mp.waitForFunction(() => location.pathname === "/tableau-de-bord", { timeout: 20_000 });
@@ -130,7 +146,7 @@ describe("parcours dans le navigateur", () => {
     await mp.goto(`${BASE}/messages`, { waitUntil: "networkidle0" });
     await click(mp, "button", "Client Chat");
     await waitText(mp, "Bonjour, disponible en décembre ?");
-    await mp.type("#chat-input", "Oui, le 10 décembre.");
+    await mp.type("textarea[id^=chat-input]", "Oui, le 10 décembre.");
     await mp.keyboard.press("Enter");
     await cp.bringToFront(); // SWR ne relance pas les requêtes d'un onglet masqué
     await waitText(cp, "Oui, le 10 décembre.", 20_000); // le client reçoit la réponse (interrogation régulière)

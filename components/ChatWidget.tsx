@@ -28,7 +28,7 @@ export default function ChatWidget() {
   const path = usePathname();
   const unread = useUnread();
   const [state, setState] = useState(read);
-  const enabled = me?.role === "client" || me?.role === "menuisier";
+  const enabled = !!me?.verified && (me.role === "client" || me.role === "menuisier");
   const { open, id, big } = state;
   const { data: convs = [], isLoading } = useConversations(enabled && open);
   const current = convs.find((c) => c.id === id) ?? null;

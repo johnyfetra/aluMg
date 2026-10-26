@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "./db";
+import { dataImage } from "./image-schema";
 import { SPECIALTIES } from "./model";
 import { getSettings } from "./repo";
 
@@ -9,7 +10,7 @@ export { SPECIALTIES };
 // ---------- Profil public du menuisier ----------
 
 const text = (n: number) => z.string().trim().max(n);
-const image = z.string().max(700_000).refine((s) => s.startsWith("data:image/"), "image");
+const image = dataImage(700_000).refine((s) => s !== "", "image");
 
 export const profileSchema = z.object({
   displayName: text(120).min(1),

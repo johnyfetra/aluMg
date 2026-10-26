@@ -8,7 +8,7 @@ const EMAIL = "menuisier.demo@alumg.local";
 
 export async function POST() {
   if (process.env.NODE_ENV === "production") return fail(404, "not_found");
-  const id = (await findUserByEmail(SEEDED))?.id ?? (await findUserByEmail(EMAIL))?.id ?? (await createUser(EMAIL, "Menuiserie Démo", await hashPassword("motdepasse123"), "menuisier", "034 00 000 01"));
+  const id = (await findUserByEmail(SEEDED))?.id ?? (await findUserByEmail(EMAIL))?.id ?? (await createUser(EMAIL, "Menuiserie Démo", await hashPassword("motdepasse123"), "menuisier", "034 00 000 01", { verified: true }));
   if (!id) return fail(500, "demo_failed");
   await createSession(id);
   return json({ id, role: "menuisier" });

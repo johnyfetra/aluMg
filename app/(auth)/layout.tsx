@@ -1,3 +1,4 @@
+// Écrans d'accès : plein écran, sans barre de navigation (le découpage présentation / formulaire est dans AuthForm).
 export default function AuthLayout({ children }: LayoutProps<"/">) {
-  return <main className="grid min-h-screen place-items-center px-4 py-10">{children}</main>;
+  return <main className="min-h-screen bg-bg">{children}</main>;
 }

@@ -1,17 +1,24 @@
 import { type AnyPgColumn, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { Market, Quote, Settings } from "../model";
 
-export const users = pgTable("users", {
+export const users = pgTable(
+  "users",
+  {
   id: uuid("id").primaryKey().defaultRandom(),
-  email: text("email").notNull().unique(),
+  email: text("email").unique(), // facultatif : le téléphone est l'identifiant obligatoire ; plusieurs NULL autorisés
   name: text("name").notNull(),
   passwordHash: text("password_hash").notNull(),
   // client : demande des devis ; menuisier : crée des devis et un profil public ; admin : plateforme
   role: text("role", { enum: ["client", "menuisier", "admin"] }).notNull().default("client"),
   phone: text("phone").notNull().default(""),
+  phoneNorm: text("phone_norm"), // numéro normalisé (+261…) : unique, sert à la connexion et à la vérification
+  phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   avatar: text("avatar").notNull().default(""), // photo de profil (data URL réduite), facultative
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+},
+  (t) => [uniqueIndex("users_phone_norm_idx").on(t.phoneNorm)],
+);
 
 // L'identifiant est l'empreinte SHA-256 du jeton du cookie : une fuite de la base ne donne pas de session utilisable.
 export const sessions = pgTable("sessions", {
@@ -256,4 +263,30 @@ export const contacts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("contacts_user_idx").on(t.userId)],
+);
+
+// Limitation de débit : un compteur par clé (« login:ip:1.2.3.4 ») et par fenêtre. En base pour rester juste avec plusieurs instances.
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Codes de vérification à usage unique (SMS, appel vocal, e-mail). Seule l'empreinte du code est stockée.
+export const verifications = pgTable(
+  "verifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channel: text("channel", { enum: ["sms", "call", "email"] }).notNull(),
+    target: text("target").notNull(), // numéro normalisé ou e-mail visé
+    codeHash: text("code_hash").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("verifications_user_idx").on(t.userId, t.createdAt)],
 );

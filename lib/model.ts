@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dataImage } from "./image-schema";
 import type { Messages } from "./messages/fr";
 
 type Label = keyof Messages;
@@ -391,8 +392,8 @@ export const settingsSchema = z.object({
   barLength: z.number().int().min(3000).max(8000),
   kerf: z.number().min(0).max(20),
   accent: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  logo: z.string().max(700_000).refine((s) => s === "" || s.startsWith("data:image/"), "image"),
-  signature: z.string().max(700_000).refine((s) => s === "" || s.startsWith("data:image/"), "image"),
+  logo: dataImage(700_000),
+  signature: dataImage(700_000),
   signer: text(120),
   tva: z.number().min(0).max(100),
   deposit: z.number().min(0).max(100),

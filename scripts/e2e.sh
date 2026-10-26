@@ -4,7 +4,9 @@
 set -euo pipefail
 PORT="${PORT:-3100}"
 WORK="$(mktemp -d)"
-export PGLITE_DIR="$WORK/pg" NEXT_DIST_DIR=".next-e2e"
+# base jetable ; RATE_LIMIT=off (beaucoup d'inscriptions depuis la même IP) ; ALUMG_DEV_SENDER=1 (codes de vérification renvoyés par l'API, jamais en vrai déploiement) ;
+# NEXT_PUBLIC_MVP=0 : le test couvre aussi l'annuaire et le reste, masqués en mode MVP
+export PGLITE_DIR="$WORK/pg" NEXT_DIST_DIR=".next-e2e" RATE_LIMIT=off ALUMG_DEV_SENDER=1 NEXT_PUBLIC_MVP=0
 trap 'kill "${PID:-0}" 2>/dev/null || true; rm -rf "$WORK" .next-e2e' EXIT
 
 npx next build >"$WORK/build.log" 2>&1 || { cat "$WORK/build.log"; exit 1; }
