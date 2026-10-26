@@ -22,7 +22,7 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
   const small = "text-xs text-slate-500";
   const label = "text-[10px] font-bold uppercase tracking-wider";
   // personnalisation cadrée : seule la mise en page varie, jamais les mentions (voir lib/docStyle.ts)
-  const st = { ...DOC_PRESETS.classique, ...s.docStyle };
+  const st = { ...DOC_PRESETS.classique, ...(q.docStyle ?? s.docStyle) };
   const compact = st.density === "compact";
   const cell = compact ? "px-3 py-2" : "px-3 py-4";
   const th = `px-3 ${compact ? "py-2" : "py-2.5"}`;

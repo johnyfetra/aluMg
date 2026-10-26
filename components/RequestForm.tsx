@@ -2,12 +2,12 @@
 import { Send } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { mutate } from "swr";
+import { useEffect, useState } from "react";
+import useSWR, { mutate } from "swr";
 import { LineCard, newLine } from "./QuoteEditor";
 import { Avatar, Field, Stars } from "./ui";
 import { normalize } from "@/lib/calc";
-import { ApiError, request, useDirectory } from "@/lib/client";
+import { ApiError, fetcher, request, useDirectory } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { DEFAULT_SETTINGS, type Line, lineSchema } from "@/lib/model";
 import Select from "./Select";
@@ -23,10 +23,17 @@ export default function RequestForm() {
   const [message, setMessage] = useState("");
   const [siteAddress, setSiteAddress] = useState("");
   const [wantedDate, setWantedDate] = useState("");
-  const [lines, setLines] = useState<Line[]>(() => [newLine(DEFAULT_SETTINGS)]);
+  // l'ouvrage initial reçoit un identifiant aléatoire : créé après le montage pour que le rendu serveur et client concordent
+  const [lines, setLines] = useState<Line[]>([]);
+  useEffect(() => {
+    const id = setTimeout(() => setLines((cur) => (cur.length ? cur : [newLine(DEFAULT_SETTINGS)])), 0);
+    return () => clearTimeout(id);
+  }, []);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const chosen = directory.find((m) => m.slug === slug);
+  // lien de demande d'un menuisier hors annuaire (MVP) : on affiche seulement son nom et son logo
+  const { data: target } = useSWR<{ name: string; logo: string }>(slug && !chosen ? `/api/requests/target?slug=${encodeURIComponent(slug)}` : null, fetcher, { shouldRetryOnError: false });
 
   const valid = (l: Line) => lineSchema.safeParse(l).success;
   const setLine = (i: number, patch: Partial<Line>) => setLines((cur) => cur.map((l, j) => (j === i ? normalize({ ...l, ...patch }) : l)));
@@ -35,7 +42,7 @@ export default function RequestForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!slug) return setError(t("req.pickJoiner"));
-    if (!lines.every(valid)) return setError(t("editor.needLine"));
+    if (!lines.length || !lines.every(valid)) return setError(t("editor.needLine"));
     setBusy(true);
     setError("");
     try {
@@ -60,9 +67,15 @@ export default function RequestForm() {
           {t("req.joiner")}
         </h2>
         <div className="grid items-start gap-4 lg:grid-cols-2">
-          <Field htmlFor="rq-m" label={t("req.joiner")}>
+          {(directory.length > 0 || !preset) && <Field htmlFor="rq-m" label={t("req.joiner")}>
             <Select id="rq-m" required value={slug} onChange={setSlug} options={[{ value: "", label: t("req.pickJoiner") }, ...directory.map((m) => ({ value: m.slug, label: `${m.name}${m.city ? ` — ${m.city}` : ""}` }))]} />
-          </Field>
+          </Field>}
+          {!chosen && target && (
+            <div className="flex items-center gap-3 rounded-xl border border-line p-3">
+              <Avatar name={target.name} src={target.logo} size={48} />
+              <span className="min-w-0 truncate font-semibold">{target.name}</span>
+            </div>
+          )}
           {chosen && (
             <Link href={`/menuisiers/${chosen.slug}`} target="_blank" className="flex items-center gap-3 rounded-xl border border-line p-3 hover:bg-surface-2">
               <Avatar name={chosen.name} src={chosen.logo} size={48} />

@@ -3,6 +3,8 @@ import { Box, ChevronDown, Copy, Minus, Plus, Eye, FileDown, Image as ImageIcon,
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { presetOf } from "@/lib/docStyle";
+import type { Messages } from "@/lib/messages/fr";
 import { mutate } from "swr";
 import ProfileNeeds from "./ProfileNeeds";
 import ChatButton from "./ChatButton";
@@ -14,6 +16,7 @@ import Viewer3DLoader from "./Viewer3DLoader";
 import { Choice, Field, FinishPicker } from "./ui";
 import { allPieces, billedArea, cutList, cuttingPlan, fmt, lineTotal, meters, normalize, planTotals } from "@/lib/calc";
 import { costLine, marginOf, salePrice } from "@/lib/costing";
+import { useContacts } from "@/lib/client";
 import { ApiError, request, useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
 import { lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
@@ -22,6 +25,8 @@ import {
   CATEGORIES,
   BOXES,
   CONTROLS,
+  DOC_PRESETS,
+  type DocPreset,
   SLATS_RIDEAU,
   SLATS_ROULANT,
   type Slat,
@@ -184,6 +189,19 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     setFocusId(id);
     requestAnimationFrame(() => document.getElementById(`line-${id}`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
   }, [existing]);
+  // Carnet de clients : choisir un client remplit nom, téléphone et e-mail ; ?contact=<id> préremplit un nouveau devis.
+  const { data: contacts = [] } = useContacts();
+  const pickContact = (id: string) => {
+    const c = contacts.find((x) => x.id === id);
+    if (c) setQ((cur) => ({ ...cur, client: { ...cur.client, name: c.name, phone: c.phone, email: c.email } }));
+  };
+  const prefilled = useRef(false);
+  useEffect(() => {
+    const id = new URLSearchParams(location.search).get("contact");
+    if (prefilled.current || existing || !id || !contacts.length) return;
+    prefilled.current = true;
+    pickContact(id);
+  }, [contacts, existing]); // eslint-disable-line react-hooks/exhaustive-deps
   const setClient = (patch: Partial<Quote["client"]>) => setQ((c) => ({ ...c, client: { ...c.client, ...patch } }));
   const num = (v: string) => Number(v) || 0;
 
@@ -325,6 +343,13 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             <fieldset disabled={locked} className="m-0 min-w-0 space-y-4 border-0 p-0">
               <div>
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><span aria-hidden className="h-4 w-1 rounded-full bg-primary" />{t("editor.groupClient")}</h3>
+                {!q.clientId && contacts.length > 0 && (
+                  <div className="mb-3 max-w-sm">
+                    <Field htmlFor="ct-pick" label={t("ct.pick")}>
+                      <Select id="ct-pick" value="" onChange={pickContact} options={[{ value: "", label: t("ct.pickNone") }, ...contacts.map((c) => ({ value: c.id, label: `${c.name}${c.phone ? ` · ${c.phone}` : ""}` }))]} />
+                    </Field>
+                  </div>
+                )}
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <Field htmlFor="cn" label={t("editor.clientName")}>
                     <input id="cn" className="input" autoComplete="name" maxLength={120} value={q.client.name} onChange={(e) => setClient({ name: e.target.value })} />
@@ -517,6 +542,17 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               )}
             </section>
           )}
+
+          <section className="card space-y-2">
+            <Field htmlFor="q-design" label={t("editor.pdfDesign")}>
+              <Select
+                id="q-design"
+                value={q.docStyle ? presetOf(q.docStyle) : ""}
+                onChange={(v) => setQ((c) => ({ ...c, docStyle: v && v in DOC_PRESETS ? { ...DOC_PRESETS[v as DocPreset], footer: settings.docStyle.footer } : undefined }))}
+                options={[{ value: "", label: t("editor.pdfDesignDefault") }, ...(Object.keys(DOC_PRESETS) as DocPreset[]).map((k) => ({ value: k, label: t(`doc.tpl.${k}` as keyof Messages) }))]}
+              />
+            </Field>
+          </section>
 
           <section className="card space-y-3">
             <label className="flex min-h-11 items-center gap-2 text-sm">

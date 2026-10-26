@@ -4,6 +4,7 @@ import { normalize } from "./calc";
 import { salePrice } from "./costing";
 import { getDb, schema } from "./db";
 import { type Issuer, ISSUER_KEYS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
+import { ensureContact } from "./contacts";
 import { notify } from "./notifications";
 import { StaleQuote, createQuote, findUserById, getSettings, unchanged } from "./repo";
 
@@ -72,7 +73,8 @@ export const requestSchema = z.object({
 // Crée un devis « requested » chez le menuisier : ses tarifs et majorations remplissent déjà les prix (le client ne les voit pas encore).
 export async function createRequest(clientId: string, input: z.infer<typeof requestSchema>): Promise<Quote | "no_menuisier" | "no_client"> {
   const db = await getDb();
-  const [profile] = await db.select().from(schema.menuisierProfiles).where(and(eq(schema.menuisierProfiles.slug, input.menuisier), eq(schema.menuisierProfiles.published, true)));
+  // profil publié (annuaire) ou lien de demande du menuisier : le slug suffit
+  const [profile] = await db.select().from(schema.menuisierProfiles).where(eq(schema.menuisierProfiles.slug, input.menuisier));
   if (!profile) return "no_menuisier";
   const client = await findUserById(clientId);
   if (!client) return "no_client";
@@ -92,6 +94,9 @@ export async function createRequest(clientId: string, input: z.infer<typeof requ
     { clientId, request },
   );
   await db.insert(schema.quoteEvents).values({ quoteId: quote.id, actorId: clientId, kind: "created", message: input.message });
+  // le client entre dans le carnet du menuisier, qui est prévenu de la demande
+  await ensureContact(profile.userId, { name: client.name, phone: client.phone, email: client.email, clientUserId: clientId });
+  await notify(db, { userId: profile.userId, quoteId: quote.id, kind: "request", message: input.project || input.message });
   return quote;
 }
 
@@ -221,6 +226,7 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
     if (e instanceof StaleQuote) return { ok: false, error: "quote_changed" };
     throw e;
   }
+  if (a.type === "send" && clientId) await ensureContact(row.userId, { name: row.data.client.name, phone: row.data.client.phone, email: row.data.client.email ?? "", clientUserId: clientId });
   return { ok: true, quote };
 }
 

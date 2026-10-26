@@ -5,6 +5,7 @@ import { type Market, type Quote, type Settings } from "./model";
 import type { DirectoryEntry, PortfolioInput, PortfolioItem, Profile, ProfileInput, PublicMenuisier } from "./profiles";
 import type { ClientQuote, EventView, LineComment } from "./workflow";
 import type { NotificationView } from "./notifications";
+import type { ContactView } from "./contacts";
 import type { ConversationView, MessageView } from "./chat";
 
 class ApiError extends Error {
@@ -130,6 +131,9 @@ export function useUnread() {
 
 // Ouvre (ou crée) la conversation avec un menuisier (par son adresse publique) ou un client (par son identifiant) et renvoie son id.
 export const openConversation = (target: { menuisier: string } | { menuisierId: string } | { client: string }) => request<{ id: string }>("POST", "/api/conversations", target).then((r) => r.id);
+
+// ---------- Carnet de clients ----------
+export const useContacts = (enabled = true) => useSWR<ContactView[]>(enabled ? "/api/contacts" : null, fetcher, { revalidateOnFocus: false });
 
 // ---------- Commentaires par ouvrage et notifications ----------
 export const useLineComments = (quoteId: string | undefined) => useSWR<LineComment[]>(quoteId ? `/api/quotes/${quoteId}/comments` : null, fetcher, { refreshInterval: 8000 });

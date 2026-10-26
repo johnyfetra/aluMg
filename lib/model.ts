@@ -187,6 +187,31 @@ export type Line = z.infer<typeof lineSchema>;
 const requestSchema = z.object({ message: text(1500), siteAddress: text(200), wantedDate: text(40) });
 export type QuoteRequest = z.infer<typeof requestSchema>;
 
+// Modèle du devis (feuille et PDF). Personnalisation CADRÉE : le menuisier choisit la mise en page et le style, jamais le fond.
+// Les mentions obligatoires (identité, NIF/STAT, numéro, date, validité, client, détail, totaux HT/TVA/TTC, conditions de paiement, signatures)
+// sont toujours imprimées, quel que soit le modèle (voir docs/architecture.md).
+export const DOC_HEADERS = ["split", "center", "banner"] as const;
+export const DOC_TABLES = ["zebra", "lines", "boxed"] as const;
+export const DOC_FONTS = ["sans", "serif"] as const;
+export const DOC_DENSITIES = ["comfortable", "compact"] as const;
+export const docStyleSchema = z.object({
+  header: z.enum(DOC_HEADERS), // split : logo + société à gauche, devis à droite ; center : tout centré ; banner : bandeau de couleur
+  table: z.enum(DOC_TABLES), // zebra : lignes alternées ; lines : filets ; boxed : grille complète
+  font: z.enum(DOC_FONTS),
+  density: z.enum(DOC_DENSITIES),
+  drawings: z.boolean(), // schéma de chaque ouvrage
+  footer: text(300), // message libre en pied de devis (remerciement, conditions particulières)
+});
+export type DocStyle = z.infer<typeof docStyleSchema>;
+// Modèles prêts à l'emploi ; le menuisier part de l'un d'eux puis ajuste (alors « personnalisé »).
+export const DOC_PRESETS = {
+  classique: { header: "split", table: "zebra", font: "sans", density: "comfortable", drawings: true, footer: "" },
+  moderne: { header: "banner", table: "lines", font: "sans", density: "comfortable", drawings: true, footer: "" },
+  elegant: { header: "center", table: "boxed", font: "serif", density: "comfortable", drawings: true, footer: "" },
+  compact: { header: "split", table: "lines", font: "sans", density: "compact", drawings: false, footer: "" },
+} as const satisfies Record<string, DocStyle>;
+export type DocPreset = keyof typeof DOC_PRESETS;
+
 // Prestations hors ouvrage (pose, dépose, déplacement…) : lignes libres chiffrées en Ar, comptées dans le total avant remise.
 export const SERVICE_KINDS = ["pose", "depose", "deplacement", "autre"] as const;
 export type ServiceKind = (typeof SERVICE_KINDS)[number];
@@ -211,6 +236,7 @@ export const quoteSchema = z.object({
   lines: z.array(lineSchema).min(1).max(50),
   services: z.array(serviceSchema).max(20).optional(),
   warranty: z.number().int().min(0).max(240).optional(), // garantie en mois (absent ou 0 : non indiquée)
+  docStyle: docStyleSchema.optional(), // modèle propre à ce devis ; absent : le modèle des réglages
   discount: z.number().min(0).max(100).default(0), // remise en % sur le total HT
   // champs gérés par le serveur : ignorés quand le client de l'API les envoie
   clientId: z.uuid().nullable().optional(),
@@ -341,30 +367,6 @@ export const marketSchema = z.object({
   off: z.object({ ranges: z.array(z.enum(RANGES)).max(RANGES.length).optional(), finishes: z.array(z.enum(FINISH_IDS)).max(FINISHES.length).optional(), profiles: z.array(z.string().max(40)).max(40).optional() }).optional(),
 });
 
-// Modèle du devis (feuille et PDF). Personnalisation CADRÉE : le menuisier choisit la mise en page et le style, jamais le fond.
-// Les mentions obligatoires (identité, NIF/STAT, numéro, date, validité, client, détail, totaux HT/TVA/TTC, conditions de paiement, signatures)
-// sont toujours imprimées, quel que soit le modèle (voir docs/architecture.md).
-export const DOC_HEADERS = ["split", "center", "banner"] as const;
-export const DOC_TABLES = ["zebra", "lines", "boxed"] as const;
-export const DOC_FONTS = ["sans", "serif"] as const;
-export const DOC_DENSITIES = ["comfortable", "compact"] as const;
-export const docStyleSchema = z.object({
-  header: z.enum(DOC_HEADERS), // split : logo + société à gauche, devis à droite ; center : tout centré ; banner : bandeau de couleur
-  table: z.enum(DOC_TABLES), // zebra : lignes alternées ; lines : filets ; boxed : grille complète
-  font: z.enum(DOC_FONTS),
-  density: z.enum(DOC_DENSITIES),
-  drawings: z.boolean(), // schéma de chaque ouvrage
-  footer: text(300), // message libre en pied de devis (remerciement, conditions particulières)
-});
-export type DocStyle = z.infer<typeof docStyleSchema>;
-// Modèles prêts à l'emploi ; le menuisier part de l'un d'eux puis ajuste (alors « personnalisé »).
-export const DOC_PRESETS = {
-  classique: { header: "split", table: "zebra", font: "sans", density: "comfortable", drawings: true, footer: "" },
-  moderne: { header: "banner", table: "lines", font: "sans", density: "comfortable", drawings: true, footer: "" },
-  elegant: { header: "center", table: "boxed", font: "serif", density: "comfortable", drawings: true, footer: "" },
-  compact: { header: "split", table: "lines", font: "sans", density: "compact", drawings: false, footer: "" },
-} as const satisfies Record<string, DocStyle>;
-export type DocPreset = keyof typeof DOC_PRESETS;
 
 // Chiffrage au prix de revient : temps de travail (minutes) par ouvrage et taux horaire, frais généraux et marge en %.
 export const laborSchema = z.object({

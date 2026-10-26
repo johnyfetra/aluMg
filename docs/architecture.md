@@ -79,6 +79,19 @@ requested ─(menuisier prépare)→ draft ─send→ sent ─accept→ accepted
 
 `lib/mvp.ts` : `NEXT_PUBLIC_MVP` (actif par défaut ; `0` pour tout réafficher). En MVP l'app se limite au devis, côté menuisier (tableau de bord, devis, fournisseurs, réglages, compte) et côté client (devis reçus, décisions, ouvrages détaillés avec plan/3D et commentaires, devis imprimable), avec messagerie et notifications. L'annuaire, les profils publics, les réalisations, les chantiers et la liste de clients sont masqués (redirection par `proxy.ts`, menus filtrés). Le client écrit au menuisier d'un de ses devis via `{ menuisierId }`, sans profil public.
 
+## Carnet de clients et envoi ciblé
+
+- `contacts` (nom, téléphone, e-mail, note, `client_user_id`) : le carnet du menuisier, toujours borné à son `userId`. Le compte client est retrouvé par l'e-mail (jamais choisi par l'appelant). Un client entre automatiquement dans le carnet quand il demande un devis ou reçoit un devis (`ensureContact`).
+- Page `/clients` : liste, recherche, ajout/modification, « Nouveau devis » (préremplit nom, téléphone, e-mail via `?contact=`), « Écrire », invitation à copier pour un client sans compte, et **lien de demande** (`/espace-client/nouvelle?menuisier=<slug>`) à envoyer à un client.
+- Le lien de demande vaut invitation : `createRequest` accepte un profil **non publié** désigné par son slug (le slug n'est pas un secret : au pire, un client inscrit peut envoyer une demande à un menuisier, qui est notifié). `GET /api/requests/target` ne renvoie que nom et logo.
+- Chaque devis peut porter son propre modèle (`Quote.docStyle`, choisi dans l'éditeur) ; sans lui, c'est le modèle des réglages (`/modele-devis`).
+
+## Chiffrage et modèles de document
+
+- **Chiffrage** (`lib/costing.ts`) : mode `m2` (tarif × surface × majorations) ou `cost` (matière via l'achat optimisé + main-d'œuvre par minutes + frais généraux + marge). La marge d'un ouvrage s'affiche dans l'éditeur ; le budget déduit main-d'œuvre et frais. Valeurs par défaut à calibrer avec l'atelier.
+- **Modèles de devis** (`Settings.docStyle`, `DOC_PRESETS`) : en-tête, tableau, police, densité, schémas, pied libre. Personnalisation cadrée : les mentions obligatoires (identité, NIF/STAT, numéro, date, validité, client, détail, totaux HT/TVA/TTC, conditions, signatures) sont toujours imprimées, testé pour chaque modèle (`lib/pdf.test.ts`). `missingMentions` signale ce qu'il faut renseigner.
+- **Volets** : coffre (apparent/encastré/tunnel), lames, moustiquaire intégrée, avec majorations réglables et débit adapté.
+
 ## Annuaire public
 
 `GET /api/public/menuisiers` (filtres : texte, ville, spécialité, note minimale, vérifiés, tri) et `/[slug]` ne renvoient que les profils publiés et **jamais de coordonnées**. Les coordonnées du menuisier ne sont visibles que dans le suivi d'un devis, par le client concerné. Un profil ne peut être publié qu'avec nom et ville. Le filtrage se fait en mémoire (shortcut pour quelques centaines de profils) : à passer en SQL paginé ensuite.

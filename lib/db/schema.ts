@@ -238,3 +238,22 @@ export const notifications = pgTable(
   },
   (t) => [index("notifications_user_idx").on(t.userId, t.createdAt)],
 );
+
+// Carnet de clients du menuisier : un contact = nom, téléphone, e-mail, et le compte client AluMg s'il existe (retrouvé par l'e-mail).
+// Alimenté à la main, ou automatiquement quand un client demande un devis / reçoit un devis.
+export const contacts = pgTable(
+  "contacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull().default(""),
+    phone: text("phone").notNull().default(""),
+    email: text("email").notNull().default(""),
+    note: text("note").notNull().default(""),
+    clientUserId: uuid("client_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("contacts_user_idx").on(t.userId)],
+);

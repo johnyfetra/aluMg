@@ -73,9 +73,9 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
   let q: Quote;
   const req = { menuisier: "", project: "Villa", message: "Je voudrais 2 fenêtres", siteAddress: "Ivandry", wantedDate: "2026-12-01", lines: [{ ...line, width: 1500, height: 1200 }] };
 
-  it("un profil non publié ne reçoit pas de demande", async () => {
+  it("le lien de demande d'un menuisier (profil non publié) vaut invitation ; un lien inconnu est refusé", async () => {
     const p2 = await pf.getOwnProfile(m2, "x");
-    expect(await wf.createRequest(c1, { ...req, menuisier: p2.slug })).toBe("no_menuisier");
+    expect(typeof (await wf.createRequest(c1, { ...req, menuisier: p2.slug }))).toBe("object");
     expect(await wf.createRequest(c1, { ...req, menuisier: "inconnu" })).toBe("no_menuisier");
   });
 

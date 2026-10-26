@@ -28,7 +28,7 @@ export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale,
   const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const accent = rgb(s.accent);
   // personnalisation cadrée (lib/docStyle.ts) : mise en page variable, mentions toujours imprimées
-  const st = { ...DOC_PRESETS.classique, ...s.docStyle };
+  const st = { ...DOC_PRESETS.classique, ...(q.docStyle ?? s.docStyle) };
   const F = st.font === "serif" ? "times" : "helvetica";
   const oy = st.header === "center" ? 12 : 0; // décalage des blocs sous l'entête centré
   const date = new Date(q.date);

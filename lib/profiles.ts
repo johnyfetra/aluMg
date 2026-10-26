@@ -170,6 +170,13 @@ export type PublicMenuisier = DirectoryEntry & {
   distribution: number[]; // nombre d'avis pour 1 à 5 étoiles
 };
 
+// Menuisier désigné par un lien de demande, publié ou non : le lien du menuisier fait office d'invitation.
+export async function getRequestTarget(slug: string): Promise<{ name: string; logo: string } | null> {
+  const db = await getDb();
+  const [p] = await db.select({ name: schema.menuisierProfiles.displayName, logo: schema.menuisierProfiles.logo }).from(schema.menuisierProfiles).where(eq(schema.menuisierProfiles.slug, slug));
+  return p ?? null;
+}
+
 export async function getPublicMenuisier(slug: string): Promise<PublicMenuisier | null> {
   const db = await getDb();
   const [p] = await db.select().from(schema.menuisierProfiles).where(and(eq(schema.menuisierProfiles.slug, slug), eq(schema.menuisierProfiles.published, true)));
