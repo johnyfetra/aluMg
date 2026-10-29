@@ -4,7 +4,7 @@ import { type ReactNode, useState } from "react";
 import { Switch } from "./ui";
 import { fmt } from "@/lib/calc";
 import type { T } from "@/lib/i18n";
-import { ACCESSORIES, GLASSES, GLASS_PRICE_DEFAULTS, type Market, type Offer, PROFILE_KEYS, profileOn } from "@/lib/model";
+import { ACCESSORIES, DEFAULT_MARKET, GLASSES, GLASS_PRICE_DEFAULTS, type Market, type Offer, PROFILE_KEYS, profileOn } from "@/lib/model";
 
 // Champ numérique avec son unité à droite : on sait toujours ce qu'on saisit.
 export function NumField({ value, onChange, unit, label, width = "w-full" }: { value: number | string; onChange: (v: number) => void; unit: string; label: string; width?: string }) {
@@ -124,6 +124,12 @@ export function AccessoriesEditor({ market, onChange, t }: { market: Market; onC
           <NumField label={`${t(a.key)} — ${t("cat.price")}`} unit={a.unit === "ml" ? "Ar/m" : "Ar"} value={market.accessories?.[a.key] ?? a.def} onChange={(v) => onChange({ ...market, accessories: { ...market.accessories, [a.key]: v } })} />
         </PriceRow>
       ))}
+      <PriceRow title={t("cat.panel")} hint={t("cat.panel.hint")}>
+        <NumField label={`${t("cat.panel")} — ${t("cat.price")}`} unit="Ar/m²" value={market.panel ?? DEFAULT_MARKET.panel ?? 0} onChange={(v) => onChange({ ...market, panel: v })} />
+      </PriceRow>
+      <PriceRow title={t("cat.glassWaste")} hint={t("cat.glassWaste.hint")}>
+        <NumField label={t("cat.glassWaste")} unit="%" value={market.glassWaste ?? DEFAULT_MARKET.glassWaste ?? 0} onChange={(v) => onChange({ ...market, glassWaste: Math.min(100, v) })} />
+      </PriceRow>
     </ul>
   );
 }

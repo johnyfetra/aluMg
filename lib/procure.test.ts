@@ -116,7 +116,7 @@ describe("accessoires et verre dans le budget", () => {
     expect(e.acc.find((a) => a.key === "acc.roller")?.qty).toBe(4);
     expect(e.accCost).toBeGreaterThan(0);
     expect(e.glassArea).toBeGreaterThan(1);
-    expect(e.glassCost).toBeCloseTo(e.glassArea * 70000, -3);
+    expect(e.glassCost).toBeCloseTo(e.glassArea * 70000 * 1.1, -3); // 10 % de chute de découpe par défaut
   });
   it("le double vitrage coûte le double ; une variation de prix touche aussi les accessoires", () => {
     const single = extrasCost([line], DEFAULT_MARKET).glassCost;
@@ -125,6 +125,20 @@ describe("accessoires et verre dans le budget", () => {
   });
   it("le coût total additionne profilés, accessoires et verre", () => {
     const p = simulate([line], initSim(DEFAULT_MARKET), 5);
-    expect(p.allCost).toBe(p.totalCost + p.accCost + p.glassCost);
+    expect(p.allCost).toBe(p.totalCost + p.accCost + p.glassCost + p.panelCost);
+  });
+  it("une porte pleine coûte son panneau, avec la chute de découpe ; sans panneau plein, rien", () => {
+    const pleine: Line = { ...line, category: "porte", opening: "ouvrant", leaves: 1, infill: "pleine", width: 900, height: 2100, qty: 1 };
+    const e = extrasCost([pleine], DEFAULT_MARKET);
+    expect(e.panelArea).toBeCloseTo((770 * 1970) / 1e6, 2);
+    expect(e.panelCost).toBe(Math.round(((770 * 1970) / 1e6) * 1.1 * 90000));
+    expect(e.glassCost).toBe(0);
+    expect(extrasCost([line], DEFAULT_MARKET).panelCost).toBe(0);
+    expect(extrasCost([pleine], { ...DEFAULT_MARKET, glassWaste: 0, panel: 100000 }).panelCost).toBe(Math.round(((770 * 1970) / 1e6) * 100000));
+  });
+  it("sépare la chute réutilisable (≥ 500 mm) de la perte sèche", () => {
+    const p = simulate([line], initSim(DEFAULT_MARKET), 5);
+    expect(p.reusableLen).toBeGreaterThanOrEqual(0);
+    expect(p.reusableLen).toBeLessThanOrEqual(p.wasteLen);
   });
 });

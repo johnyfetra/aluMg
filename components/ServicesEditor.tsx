@@ -20,12 +20,12 @@ export default function ServicesEditor({ services, onChange, t, locked }: { serv
           <Wrench size={18} aria-hidden className="text-primary" />
           {t("svc.title")}
         </h2>
-        <p className="text-sm text-muted">{t("svc.hint")}</p>
+        <p className="text-sm text-muted">{t("svc.hint")} {t("svc.costHint")}</p>
       </div>
       {services.length > 0 && (
         <ul className="space-y-3">
           {services.map((s, i) => (
-            <li key={s.id} className="grid gap-2 rounded-lg border border-line bg-surface-2/40 p-3 sm:grid-cols-[9rem_minmax(0,1fr)_5rem_9rem_auto] sm:items-end">
+            <li key={s.id} className="grid gap-2 rounded-lg border border-line bg-surface-2/40 p-3 sm:grid-cols-[9rem_minmax(0,1fr)_5rem_8rem_8rem_auto] sm:items-end">
               <label className="space-y-1 text-xs font-medium text-muted">
                 <span className="sr-only sm:not-sr-only">Type</span>
                 <Select value={s.kind} disabled={locked} className="!min-h-10" onChange={(v) => set(i, { kind: v as ServiceKind })} options={SERVICE_KINDS.map((k) => ({ value: k, label: t(`svc.${k}`) }))} />
@@ -41,6 +41,10 @@ export default function ServicesEditor({ services, onChange, t, locked }: { serv
               <label className="space-y-1 text-xs font-medium text-muted">
                 {t("svc.price")}
                 <input className="input" type="number" inputMode="numeric" min={0} disabled={locked} value={s.price || ""} onChange={(e) => set(i, { price: n(e.target.value) })} />
+              </label>
+              <label className="space-y-1 text-xs font-medium text-muted" title={t("svc.costHint")}>
+                {t("svc.cost")}
+                <input className="input" type="number" inputMode="numeric" min={0} disabled={locked} value={s.cost ?? ""} placeholder="0" onChange={(e) => set(i, { cost: e.target.value === "" ? undefined : n(e.target.value) })} />
               </label>
               <div className="flex items-center justify-between gap-3 sm:justify-end">
                 <span className="text-sm font-semibold tabular-nums sm:hidden">{fmt(serviceTotal(s))} {t("common.currency")}</span>

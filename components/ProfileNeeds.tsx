@@ -19,6 +19,8 @@ export default function ProfileNeeds({ lines, barLen, kerf, t }: { lines: Line[]
     [t("needs.totalLength"), meters(tot.totalLen)],
     [t("needs.totalUsed"), meters(tot.usedLen)],
     [t("needs.totalWaste"), `${meters(tot.wasteLen)} (${tot.wastePct} %)`, tot.wastePct > 40 ? "text-warn" : undefined],
+    [t("needs.reusable"), meters(tot.reusableLen)],
+    [t("needs.lostReal"), meters(tot.wasteLen - tot.reusableLen)],
   ];
 
   return (
@@ -32,7 +34,7 @@ export default function ProfileNeeds({ lines, barLen, kerf, t }: { lines: Line[]
         </p>
       </div>
 
-      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         {stats.map(([k, v, cls]) => (
           <div key={k} className="card !p-3">
             <dt className="text-xs text-muted">{k}</dt>

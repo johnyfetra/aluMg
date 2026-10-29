@@ -1,12 +1,50 @@
 import { describe, expect, it } from "vitest";
 import { unitPrice } from "./calc";
-import { costLine, laborMinutes, laborTotal, marginOf, salePrice } from "./costing";
+import { calibration, costLine, laborMinutes, laborTotal, marginOf, quoteMargin, salePrice, servicesCost } from "./costing";
 import { type Line, type Settings, lineSchema, withDefaults } from "./model";
 
 const S = withDefaults({});
 const win = (p: Partial<Line> = {}): Line =>
   lineSchema.parse({ id: "x", category: "fenetre", opening: "coulissant", leaves: 2, shutter: "roulant", control: "manuel", guard: "barreaudage", range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1200, height: 1200, qty: 1, unit: 0, ...p });
 const withS = (p: Partial<Settings>): Settings => ({ ...S, ...p });
+
+describe("marge du devis entier", () => {
+  const terms = { tva: 20, deposit: 30, validityDays: 30 };
+  it("compte le coût des prestations, la remise et donne les deux bases", () => {
+    const lines = [{ ...win(), unit: 1_000_000 }];
+    const q = { lines, terms, discount: 10, services: [{ id: "s", kind: "pose" as const, label: "Pose", qty: 1, price: 200_000, cost: 120_000 }] };
+    const m = quoteMargin(q, S, 400_000);
+    expect(m.ht).toBe(1_080_000); // (1 000 000 + 200 000) − 10 %
+    expect(m.servicesCost).toBe(120_000);
+    expect(m.cost).toBe(400_000 + m.labor + m.overhead + 120_000);
+    expect(m.margin).toBe(m.ht - m.cost);
+    expect(m.pct).toBe(Math.round((m.margin / m.cost) * 100));
+    expect(m.ofSale).toBe(Math.round((m.margin / m.ht) * 100));
+    expect(m.servicesUnknown).toBe(false);
+  });
+  it("signale une prestation facturée sans coût saisi", () => {
+    expect(servicesCost([{ qty: 2, price: 50_000 }]).unknown).toBe(true);
+    expect(servicesCost([{ qty: 2, price: 50_000, cost: 0 }]).unknown).toBe(false);
+    expect(servicesCost([{ qty: 0, price: 0 }]).unknown).toBe(false);
+  });
+  it("le panneau plein entre dans le prix de revient d'un ouvrage", () => {
+    const pleine = win({ category: "porte", opening: "ouvrant", leaves: 1, infill: "pleine", width: 900, height: 2100 });
+    const cheap = costLine(pleine, withS({ market: { ...S.market, panel: 0 } }));
+    expect(costLine(pleine, S).material).toBeGreaterThan(cheap.material);
+  });
+});
+
+describe("étalonnage des réglages", () => {
+  it("signale les valeurs d'exemple, puis les prix non datés ou anciens", () => {
+    expect(calibration(S)).toEqual(["market", "tariffs"]);
+    expect(calibration(withS({ pricing: "cost" }))).toEqual(["market", "labor"]);
+    const own = withS({ market: { ...S.market, offers: { ...S.market.offers, "pf.dormant": [{ length: 6000, price: 99000 }] } } });
+    expect(calibration(own)).toContain("stale"); // personnalisé mais jamais daté
+    const now = Date.parse("2026-10-29");
+    expect(calibration({ ...own, market: { ...own.market, priceDate: "2026-10-01" } }, now)).not.toContain("stale");
+    expect(calibration({ ...own, market: { ...own.market, priceDate: "2026-05-01" } }, now)).toContain("stale");
+  });
+});
 
 describe("chiffrage au prix de revient", () => {
   it("minutes de main-d'œuvre = fixe + coupes + vantaux + verre", () => {

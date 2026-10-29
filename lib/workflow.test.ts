@@ -52,6 +52,8 @@ describe("transition (machine d'états)", () => {
     expect(t("negotiation", A({ type: "request_change", message: "m" }), "client")).toBeNull();
     expect(t("negotiation", A({ type: "reject" }), "client")).toBe("rejected");
     expect(t("accepted", A({ type: "reject" }), "client")).toBeNull();
+    expect(wf.actionSchema.safeParse({ type: "reject", reason: "price" }).success).toBe(true);
+    expect(wf.actionSchema.safeParse({ type: "reject", reason: "pas-un-motif" }).success).toBe(false);
   });
   it("avancement : 0 → accepté, 1 à 99 → en cours, 100 → terminé ; seulement après acceptation", () => {
     expect(t("accepted", A({ type: "progress", progress: 40 }), "menuisier")).toBe("in_progress");
@@ -188,6 +190,20 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
     expect(walk.status).toBe("draft"); // « requested » est réservé aux demandes de clients
     expect(await wf.applyAction(m1, walk.id, A({ type: "send" }))).toEqual({ ok: false, error: "no_client_account" });
     expect(await repo.deleteQuote(m1, walk.id)).toBe(true);
+  });
+
+  it("le coût interne des prestations ne sort jamais vers le client ; le motif de refus est conservé", async () => {
+    const r = (await wf.createRequest(c1, { ...req, menuisier: slug1 })) as Quote;
+    const priced = quoteSchema.parse({ ...r, services: [{ id: "s1", kind: "pose", label: "Pose", qty: 1, price: 150000, cost: 90000 }] });
+    expect((await upd(m1, r.id, priced)).services?.[0].cost).toBe(90000); // le menuisier le garde
+    expect(JSON.stringify((await wf.getClientQuote(c1, r.id))!.quote)).not.toContain("90000");
+    const sent = await wf.applyAction(m1, r.id, A({ type: "send" }));
+    expect(sent.ok && sent.quote.services?.[0].cost).toBe(90000);
+    expect((await wf.getClientQuote(c1, r.id))!.quote.services?.[0]).toEqual({ id: "s1", kind: "pose", label: "Pose", qty: 1, price: 150000 });
+    const rejected = await wf.applyAction(c1, r.id, A({ type: "reject", reason: "price", rev: await revOf(m1, r.id) }));
+    expect(rejected.ok && rejected.quote.lostReason).toBe("price");
+    expect((await repo.getQuote(m1, r.id))?.lostReason).toBe("price");
+    expect((await wf.listEvents(r.id)).find((e) => e.kind === "rejected")?.data).toEqual({ reason: "price" });
   });
 });
 

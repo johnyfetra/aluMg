@@ -1,6 +1,6 @@
 import { Banknote, Layers, PackageCheck, PiggyBank } from "lucide-react";
 import { fmt, meters } from "@/lib/calc";
-import { laborTotal } from "@/lib/costing";
+import { quoteMargin } from "@/lib/costing";
 import type { T } from "@/lib/i18n";
 import { ACCESSORIES, FINISHES, GLASSES, type Quote, type Settings } from "@/lib/model";
 import type { Plan } from "@/lib/procure";
@@ -10,10 +10,8 @@ import { totals } from "@/lib/totals";
 export default function Budget({ quote, plan, settings, t }: { quote: Quote; plan: Plan; settings: Settings; t: T }) {
   const cur = t("common.currency");
   const { gross, discount, ht, tva, ttc } = totals(quote);
-  const labor = laborTotal(quote.lines, settings);
-  const overhead = Math.round(((plan.allCost + labor) * settings.overheadPct) / 100);
-  const totalCost = plan.allCost + labor + overhead;
-  const margin = ht - totalCost;
+  const { labor, overhead, servicesCost, servicesUnknown, cost: totalCost, margin, pct: marginPct, ofSale } = quoteMargin(quote, settings, plan.allCost);
+  const marginTone = margin < 0 ? "text-danger" : marginPct < settings.minMarginPct ? "text-warn" : "text-ok";
   const area = plan.glassArea;
   const pct = (n: number, of: number) => (of ? Math.round((n / of) * 100) : 0);
   const deposit = Math.round((ttc * quote.terms.deposit) / 100);
@@ -48,12 +46,17 @@ export default function Budget({ quote, plan, settings, t }: { quote: Quote; pla
             {row(t("budget.profileCost"), `${fmt(plan.totalCost)} ${cur}`)}
             {row(t("budget.accessories"), `${fmt(plan.accCost)} ${cur}`)}
             {row(t("budget.glassCost"), `${fmt(plan.glassCost)} ${cur}`)}
+            {plan.panelCost > 0 && row(t("budget.panel"), `${fmt(plan.panelCost)} ${cur}`)}
             {row(t("budget.labor"), `${fmt(labor)} ${cur}`)}
             {row(`${t("budget.overhead")} ${settings.overheadPct} %`, `${fmt(overhead)} ${cur}`)}
+            {servicesCost > 0 && row(t("budget.servicesCost"), `${fmt(servicesCost)} ${cur}`)}
             {row(t("budget.totalCost"), `${fmt(totalCost)} ${cur}`, true)}
-            {row(t("budget.marginAmount"), `${fmt(margin)} ${cur}`, true, margin < 0 ? "text-danger" : "text-ok")}
-            {row(t("budget.marginPct"), `${pct(margin, ht)} %`, true, margin < 0 ? "text-danger" : "text-ok")}
-                      </dl>
+            {row(t("budget.marginAmount"), `${fmt(margin)} ${cur}`, true, marginTone)}
+            {row(t("budget.marginPct"), `${marginPct} %`, true, marginTone)}
+            {row("", `${ofSale} ${t("budget.ofSale")}`)}
+          </dl>
+          {servicesUnknown && <p role="alert" className="mt-2 text-xs font-medium text-warn">{t("budget.servicesUnknown")}</p>}
+          {quote.discount > 0 && <p className="mt-2 text-xs text-muted">{t("budget.discountNote")}</p>}
           <p className="mt-2 text-xs text-muted">{t("budget.marginNote")}</p>
         </article>
 
@@ -64,7 +67,10 @@ export default function Budget({ quote, plan, settings, t }: { quote: Quote; pla
             {row(t("budget.bought"), meters(bought))}
             {row(t("needs.used"), meters(plan.usedLen))}
             {row(t("needs.waste"), `${meters(plan.wasteLen)} · ${plan.wastePct} %`, false, plan.wastePct > 40 ? "text-warn" : "")}
+            {row(t("budget.reusable"), meters(plan.reusableLen))}
+            {row(t("budget.lost"), meters(plan.wasteLen - plan.reusableLen))}
             {row(t("budget.glass"), `${fmt(Math.round(area * 100) / 100)} m²`)}
+            {plan.panelArea > 0 && row(t("budget.panel"), `${fmt(plan.panelArea)} m²`)}
           </dl>
         </article>
       </div>

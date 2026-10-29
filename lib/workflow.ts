@@ -3,7 +3,7 @@ import { z } from "zod";
 import { normalize } from "./calc";
 import { salePrice } from "./costing";
 import { getDb, schema } from "./db";
-import { type Issuer, ISSUER_KEYS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
+import { type Issuer, ISSUER_KEYS, LOSS_REASONS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
 import { clientAccountFor, ensureContact } from "./contacts";
 import { notify } from "./notifications";
 import { StaleQuote, createQuote, findUserById, getSettings, unchanged } from "./repo";
@@ -17,7 +17,7 @@ export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("progress"), progress: z.number().int().min(0).max(100), message: msg.optional() }),
   // rev : révision du devis que le client a sous les yeux ; si le menuisier l'a modifié entre-temps, la décision est refusée (quote_changed).
   z.object({ type: z.literal("accept"), message: msg.optional(), rev: z.number().int().optional() }),
-  z.object({ type: z.literal("reject"), message: msg.optional(), rev: z.number().int().optional() }),
+  z.object({ type: z.literal("reject"), message: msg.optional(), reason: z.enum(LOSS_REASONS).optional(), rev: z.number().int().optional() }),
   z.object({ type: z.literal("request_change"), message: msg.min(1), discountPercent: z.number().min(0).max(90).optional(), rev: z.number().int().optional() }),
   z.object({ type: z.literal("review"), rating: z.number().int().min(1).max(5), comment: msg.default("") }),
   z.object({ type: z.literal("report"), reason: z.enum(REPORT_REASONS), details: z.string().trim().max(1500).default("") }),
@@ -56,9 +56,11 @@ export function transition(status: Status, a: Action, side: Side): Status | null
   }
 }
 
-// Le client ne voit les prix qu'une fois le devis envoyé.
-export const clientView = (q: Quote): Quote =>
-  q.status === "requested" || q.status === "draft" ? { ...q, discount: 0, lines: q.lines.map((l) => ({ ...l, unit: 0 })), services: q.services?.map((s) => ({ ...s, price: 0 })) } : q;
+// Le client ne voit les prix qu'une fois le devis envoyé, et jamais les coûts internes (prestations).
+export const clientView = (q: Quote): Quote => {
+  const services = q.services?.map((s) => ({ ...s, cost: undefined }));
+  return q.status === "requested" || q.status === "draft" ? { ...q, discount: 0, lines: q.lines.map((l) => ({ ...l, unit: 0 })), services: services?.map((s) => ({ ...s, price: 0 })) } : { ...q, services };
+};
 
 // ---------- Demande de devis d'un client ----------
 export const requestSchema = z.object({
@@ -187,7 +189,7 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
   }
 
   const progress = a.type === "progress" ? a.progress : row.progress;
-  const quote: Quote = { ...row.data, status: next, progress, clientId };
+  const quote: Quote = { ...row.data, status: next, progress, clientId, ...(a.type === "reject" && a.reason ? { lostReason: a.reason } : {}), ...(a.type === "decline" ? { lostReason: "declined" as const } : {}) };
   try {
   await db.transaction(async (tx) => {
     if (next !== row.status || progress !== row.progress || clientId !== row.clientId) {
@@ -204,7 +206,7 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
       case "send": return void (await log("sent", a.message));
       case "decline": return void (await log("declined", a.message));
       case "accept": return void (await log("accepted", a.message));
-      case "reject": return void (await log("rejected", a.message));
+      case "reject": return void (await log("rejected", a.message, a.reason ? { reason: a.reason } : {}));
       case "request_change": return void (await log("change_requested", a.message, a.discountPercent ? { discountPercent: a.discountPercent } : {}));
       case "message": return void (await log("message", a.message));
       case "progress": {

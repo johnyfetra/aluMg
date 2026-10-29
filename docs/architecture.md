@@ -169,3 +169,12 @@ Lien d'évitement, un `h1` par page, champs avec `label`, cibles tactiles de 44 
 - Formules de débit non calibrées ; listes d'options à valider avec des menuisiers.
 - Le graphique du tableau de bord range les montants par date de création du devis (la date d'acceptation n'est pas encore enregistrée).
 - Pas de contrôle de concurrence : deux onglets qui modifient le même devis, le dernier enregistrement l'emporte.
+
+## Chiffrage et marge
+
+- **Une seule base de marge : le prix de revient.** `marginPct` (marge visée), `minMarginPct` (alerte) et la marge du devis (`quoteMargin` dans `lib/costing.ts`) se lisent tous en % du coût complet ; le % du prix de vente est donné à côté. Le coût complet = achats (profilés, accessoires, verre, panneaux pleins) + main-d'œuvre + frais généraux + coût interne des prestations ; le prix est celui **après remise**.
+- `Service.cost` (coût interne) n'est jamais envoyé au client : `clientView` le retire, un test le vérifie.
+- Le verre et les panneaux se commandent en plaques : `Market.glassWaste` (%) s'ajoute à la surface achetée. `Market.panel` : prix du panneau plein au m².
+- `Quote.lostReason` : posé par le serveur, motif de refus du client (`LOSS_REASONS`) ou `declined` (demande écartée par le menuisier, exclue du taux d'acceptation et des devis perdus).
+- `calibration(settings)` signale les prix d'exemple et les prix fournisseurs non datés ou de plus de 90 jours.
+- Le carnet de clients reste actif en MVP (la liste « masqués » plus haut ne le concerne pas).

@@ -2,9 +2,12 @@
 import { ArrowRight, Hourglass, Inbox, Percent, Plus, Wallet } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import Calibration from "@/components/Calibration";
+import { FollowUp, LostQuotes } from "@/components/DashboardInsights";
+import { LoadingState, ErrorState } from "@/components/Feedback";
 import { Progress, StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
-import { useMe, useQuotes } from "@/lib/client";
+import { useMe, useQuotes, useSettings } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import { STATUSES, type Quote, type Status } from "@/lib/model";
 import { totals } from "@/lib/totals";
@@ -22,9 +25,9 @@ const STATUS_COLOR: Record<Status, string> = {
 };
 const WON: Status[] = ["accepted", "in_progress", "completed"];
 
-function Kpi({ label, value, Icon, color, href }: { label: string; value: ReactNode; Icon: typeof Wallet; color: string; href?: string }) {
+function Kpi({ label, value, Icon, color, href, title }: { label: string; value: ReactNode; Icon: typeof Wallet; color: string; href?: string; title?: string }) {
   const body = (
-    <div className="card flex items-center gap-4 !p-4 transition-shadow hover:shadow-md">
+    <div title={title} className="card flex items-center gap-4 !p-4 transition-shadow hover:shadow-md">
       <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-xl" style={{ background: `color-mix(in srgb, ${color} 16%, transparent)`, color }}>
         <Icon size={22} />
       </span>
@@ -89,21 +92,25 @@ function MonthlyChart({ quotes, locale, title, empty }: { quotes: Quote[]; local
 export default function Dashboard() {
   const { t, locale } = useI18n();
   const { data: me } = useMe();
-  const { quotes = [], loading } = useQuotes();
+  const { quotes = [], loading, error, retry } = useQuotes();
+  const { settings } = useSettings();
 
   const inStatus = (...s: Status[]) => quotes.filter((q) => s.includes(q.status));
   const sum = (list: Quote[]) => list.reduce((a, q) => a + totals(q).ttc, 0);
   const count = (s: Status) => quotes.filter((q) => q.status === s).length;
   const requests = inStatus("requested");
+  const priorities = inStatus("requested", "negotiation");
   const sites = inStatus("accepted", "in_progress");
-  const decided = inStatus("sent", "negotiation", ...WON, "rejected").length;
+  // taux d'acceptation : devis tranchés seulement (acceptés ou refusés par le client) ; les devis en attente ou écartés par le menuisier n'y comptent pas
+  const refused = inStatus("rejected").filter((q) => q.lostReason !== "declined").length;
+  const decided = inStatus(...WON).length + refused;
   const rate = decided ? `${Math.round((inStatus(...WON).length / decided) * 100)} %` : "—";
   const recent = [...quotes].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   const cur = t("common.currency");
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="page-heading flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">
             {t("dash.hello")}
@@ -117,7 +124,7 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {loading ? null : quotes.length === 0 ? (
+      {error ? <ErrorState retry={retry} /> : loading ? <LoadingState /> : quotes.length === 0 ? (
         <div className="card py-12 text-center">
           <p className="mb-4 text-muted">{t("dash.empty")}</p>
           <Link href="/devis/nouveau" className="btn-primary">
@@ -126,15 +133,39 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
+          {settings && <Calibration settings={settings} t={t} />}
+          <section className="card border-l-4 border-l-primary" aria-labelledby="priority-title">
+            <h2 id="priority-title" className="font-semibold">
+              {t("ui.priority")} <span className="ml-2 text-muted">{priorities.length}</span>
+            </h2>
+            <p className="mt-1 text-sm text-muted">{t("ui.prioritySub")}</p>
+            {priorities.length ? (
+              <ul className="mt-4 divide-y divide-line">
+                {priorities.slice(0, 4).map((q) => (
+                  <li key={q.id}>
+                    <Link href={`/devis/${q.id}`} className="flex flex-wrap items-center gap-3 rounded-lg py-3 hover:bg-surface-2">
+                      <span className="font-semibold">{q.number}</span>
+                      <span className="min-w-0 flex-1 text-sm">{q.client.name || t("quotes.noClient")}</span>
+                      <StatusBadge status={q.status} label={t(`status.${q.status}`)} />
+                      <ArrowRight size={16} aria-hidden />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-4 text-sm text-muted">{t("ui.noPriority")}</p>
+            )}
+          </section>
+          <FollowUp quotes={quotes} t={t} />
           <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Kpi label={t("dash.revenue")} value={`${fmt(sum(inStatus(...WON)))} ${cur}`} Icon={Wallet} color="var(--c2)" />
             <Kpi label={t("dash.pipeline")} value={`${fmt(sum(inStatus("sent", "negotiation")))} ${cur}`} Icon={Hourglass} color="var(--c3)" />
             <Kpi label={t("dash.requests")} value={requests.length} Icon={Inbox} color="var(--c1)" href="/devis" />
-            <Kpi label={t("dash.conversion")} value={rate} Icon={Percent} color="var(--c4)" />
+            <Kpi label={t("dash.conversion")} value={rate} Icon={Percent} color="var(--c4)" title={t("dash.conversionHint")} />
           </dl>
 
           <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-            <MonthlyChart quotes={quotes} locale={locale} title={t("dash.chartTitle")} empty={t("dash.noData")} />
+            <div><MonthlyChart quotes={quotes} locale={locale} title={t("dash.chartTitle")} empty={t("dash.noData")} /><p className="mt-2 px-1 text-xs text-muted">{t("ui.monthBasis")}</p></div>
 
             <section className="card" aria-labelledby="h-status">
               <h2 id="h-status" className="mb-3 font-semibold">
@@ -158,6 +189,8 @@ export default function Dashboard() {
               </ul>
             </section>
           </div>
+
+          <LostQuotes quotes={quotes} t={t} />
 
           <div className={`grid gap-6 ${MVP ? "" : "xl:grid-cols-2"}`}>
             <section className="card" aria-labelledby="h-req">

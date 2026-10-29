@@ -27,6 +27,10 @@ export const PATTERNS = ["none", "granite", "martele", "cathedrale", "cannele"] 
 export const STATUSES = ["requested", "draft", "sent", "negotiation", "accepted", "in_progress", "completed", "rejected"] as const;
 // Constantes partagées par le navigateur et le serveur : ne jamais les définir dans un module qui touche à la base de données.
 export const SPECIALTIES = ["fenetres", "portes", "volets", "garde-corps", "cloisons", "vitrerie", "renovation", "sur-mesure"] as const;
+// Motif de refus donné par le client : sert au menuisier à comprendre pourquoi il perd un devis (jamais montré aux autres clients).
+export const LOSS_REASONS = ["price", "delay", "competitor", "changed_mind", "other"] as const;
+export type LossReason = (typeof LOSS_REASONS)[number];
+export const CLOSE_REASONS = [...LOSS_REASONS, "declined"] as const; // « declined » : le menuisier a lui-même écarté la demande, ce n'est pas un devis perdu
 export const REPORT_REASONS = ["quality", "no_response", "price", "behavior", "fraud", "other"] as const;
 export const ROLES = ["client", "menuisier", "admin"] as const;
 export type Role = (typeof ROLES)[number];
@@ -222,6 +226,7 @@ export const serviceSchema = z.object({
   label: text(120),
   qty: z.number().min(0).max(9999),
   price: z.number().min(0).max(1e10), // prix unitaire en Ar
+  cost: z.number().min(0).max(1e10).optional(), // coût interne unitaire en Ar : sert à la marge, jamais transmis au client (voir clientView)
 });
 export type Service = z.infer<typeof serviceSchema>;
 
@@ -239,6 +244,7 @@ export const quoteSchema = z.object({
   warranty: z.number().int().min(0).max(240).optional(), // garantie en mois (absent ou 0 : non indiquée)
   docStyle: docStyleSchema.optional(), // modèle propre à ce devis ; absent : le modèle des réglages
   discount: z.number().min(0).max(100).default(0), // remise en % sur le total HT
+  lostReason: z.enum(CLOSE_REASONS).optional(), // motif de clôture, posé par le serveur : refus du client (avec son motif) ou demande écartée par le menuisier
   // champs gérés par le serveur : ignorés quand le client de l'API les envoie
   clientId: z.uuid().nullable().optional(),
   progress: z.number().int().min(0).max(100).default(0),
@@ -331,6 +337,10 @@ export type Market = {
   finishPct?: Partial<Record<FinishId, number>>; // majoration propre à une couleur : remplace celle de son groupe
   accessories?: Record<string, number>; // prix par accessoire (Ar, à la pièce ou au mètre)
   glass?: Record<string, number>; // prix du verre au m², par type
+  panel?: number; // prix d'un panneau plein (porte pleine ou semi-vitrée) au m²
+  glassWaste?: number; // % de chute de découpe ajouté à la surface de verre et de panneau achetée
+  supplier?: string; // fournisseur de référence de ces prix
+  priceDate?: string; // date (AAAA-MM-JJ) de la dernière mise à jour des prix : un prix ancien est signalé
   off?: { ranges?: Line["range"][]; finishes?: FinishId[]; profiles?: string[] }; // ce que les fournisseurs n'ont pas (tout est disponible par défaut)
 };
 
@@ -355,6 +365,8 @@ export const DEFAULT_MARKET: Market = {
   finishMarkup: { anodise: 12, fauxbois: 30 },
   accessories: Object.fromEntries(ACCESSORIES.map((a) => [a.key, a.def])),
   glass: GLASS_PRICE_DEFAULTS,
+  panel: 90000,
+  glassWaste: 10,
 };
 
 const offerSchema = z.object({ length: z.number().int().min(500).max(12000), price: z.number().min(0).max(1e8), off: z.boolean().optional() });
@@ -364,6 +376,10 @@ export const marketSchema = z.object({
   finishMarkup: z.object({ anodise: z.number().min(-90).max(500), fauxbois: z.number().min(-90).max(500) }),
   accessories: z.record(z.string(), z.number().min(0).max(1e8)).optional(),
   glass: z.record(z.string(), z.number().min(0).max(1e8)).optional(),
+  panel: z.number().min(0).max(1e8).optional(),
+  glassWaste: z.number().min(0).max(100).optional(),
+  supplier: text(120).optional(),
+  priceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
   finishPct: z.partialRecord(z.enum(FINISH_IDS), z.number().min(-90).max(500)).optional(),
   off: z.object({ ranges: z.array(z.enum(RANGES)).max(RANGES.length).optional(), finishes: z.array(z.enum(FINISH_IDS)).max(FINISHES.length).optional(), profiles: z.array(z.string().max(40)).max(40).optional() }).optional(),
 });
@@ -474,6 +490,10 @@ export const withDefaults = (s: Partial<Settings> | null | undefined): Settings 
     finishPct: s?.market?.finishPct,
     accessories: { ...DEFAULT_MARKET.accessories, ...s?.market?.accessories },
     glass: { ...DEFAULT_MARKET.glass, ...s?.market?.glass },
+    panel: s?.market?.panel ?? DEFAULT_MARKET.panel,
+    glassWaste: s?.market?.glassWaste ?? DEFAULT_MARKET.glassWaste,
+    supplier: s?.market?.supplier,
+    priceDate: s?.market?.priceDate,
     off: s?.market?.off,
   },
 });

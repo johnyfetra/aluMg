@@ -33,6 +33,17 @@ export default function CatalogEditor({ market: m, onChange, t }: { market: Mark
 
   return (
     <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:max-w-3xl">
+        <label className="space-y-1 text-sm font-medium">
+          {t("cat.supplier")}
+          <input className="input" maxLength={120} value={m.supplier ?? ""} onChange={(e) => setM({ ...m, supplier: e.target.value })} />
+        </label>
+        <label className="space-y-1 text-sm font-medium">
+          {t("cat.priceDate")}
+          <input className="input" type="date" value={m.priceDate ?? ""} onChange={(e) => setM({ ...m, priceDate: e.target.value })} />
+        </label>
+        <p className="text-xs text-muted sm:col-span-2">{t("cat.priceHint")}</p>
+      </div>
       <div role="tablist" aria-label={t("market.title")} className="flex flex-wrap gap-1 rounded-2xl border border-line bg-surface p-1">
         {TABS.map(([id, label, Icon]) => (
           <button key={id} type="button" role="tab" id={`tab-${id}`} aria-selected={tab === id} aria-controls={`panel-${id}`} onClick={() => setTab(id)} className={`flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold sm:flex-none ${tab === id ? "bg-primary text-on-primary shadow-sm" : "text-muted hover:bg-surface-2 hover:text-ink"}`}>

@@ -1,6 +1,9 @@
 import { lineTotal } from "./calc";
 import type { Quote, Service } from "./model";
 
+// Jours restants avant la fin de validité du devis (négatif : dépassée). La validité court depuis la date de création du devis.
+export const daysLeft = (q: Pick<Quote, "date" | "terms">, now = Date.now()) => Math.ceil((Date.parse(q.date) + q.terms.validityDays * 864e5 - now) / 864e5);
+
 export const serviceTotal = (s: Pick<Service, "qty" | "price">) => Math.round(s.qty * s.price);
 
 // gross : somme des ouvrages et des prestations ; discount : remise accordée ; ht : après remise ; ttc : avec TVA.

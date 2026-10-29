@@ -10,6 +10,7 @@ export type Dims = Pick<Line, "category" | "opening" | "leaves" | "shutter" | "g
 
 export const BAR_LEN = 6000;
 export const KERF = 5;
+export const REUSE_MIN = 500; // un reste de barre d'au moins 500 mm sert encore (traverse, barreau, petit ouvrant) : ce n'est pas une perte sèche
 
 // Ramène une ligne à une combinaison valide (ex. une porte n'est jamais « naco », le nombre de vantaux reste dans sa plage).
 export function normalize(l: Line): Line {
@@ -117,6 +118,7 @@ export type ProfilePlan = {
   usedLen: number; // somme des pièces coupées
   totalLen: number; // barres achetées × longueur
   wasteLen: number; // chutes + traits de scie
+  reusableLen: number; // part des chutes d'au moins REUSE_MIN, à garder
   wastePct: number;
   tooLong: number[]; // pièces plus longues qu'une barre : impossibles à couper
 };
@@ -161,6 +163,7 @@ export function cuttingPlan(pieces: Piece[], barLen = BAR_LEN, kerf = KERF): Pro
       usedLen,
       totalLen,
       wasteLen,
+      reusableLen: bars.reduce((s, b) => s + (b.left >= REUSE_MIN ? b.left : 0), 0),
       wastePct: totalLen ? Math.round((wasteLen / totalLen) * 100) : 0,
       tooLong,
     };
@@ -172,7 +175,8 @@ export function planTotals(plans: ProfilePlan[]) {
   const totalLen = plans.reduce((s, p) => s + p.totalLen, 0);
   const usedLen = plans.reduce((s, p) => s + p.usedLen, 0);
   const wasteLen = totalLen - usedLen;
-  return { bars, totalLen, usedLen, wasteLen, wastePct: totalLen ? Math.round((wasteLen / totalLen) * 100) : 0 };
+  const reusableLen = plans.reduce((s, p) => s + p.reusableLen, 0);
+  return { bars, totalLen, usedLen, wasteLen, reusableLen, wastePct: totalLen ? Math.round((wasteLen / totalLen) * 100) : 0 };
 }
 
 // ---------- Prix ----------

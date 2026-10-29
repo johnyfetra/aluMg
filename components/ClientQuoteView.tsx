@@ -1,4 +1,5 @@
 "use client";
+import { LoadingState, ErrorState } from "./Feedback";
 import { ArrowLeft, BadgeCheck, FileText, Flag, Mail, MessageSquareWarning, Phone, ThumbsDown, ThumbsUp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -11,7 +12,7 @@ import { fmt } from "@/lib/calc";
 import { serviceTotal } from "@/lib/totals";
 import { ApiError, request, useClientQuote } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
-import { REPORT_REASONS, lineMarks } from "@/lib/model";
+import { LOSS_REASONS, type LossReason, REPORT_REASONS, lineMarks } from "@/lib/model";
 import { MVP } from "@/lib/mvp";
 import { totals } from "@/lib/totals";
 import Select from "./Select";
@@ -23,12 +24,13 @@ const stepOf = (s: string) => (s === "draft" ? 0 : s === "negotiation" ? 1 : Mat
 // Suivi d'un devis côté client : état, devis reçu, décisions (accepter, refuser, demander une modification ou une remise), avancement, évaluation, signalement.
 export default function ClientQuoteView({ id }: { id: string }) {
   const { t, locale } = useI18n();
-  const { data, isLoading } = useClientQuote(id);
+  const { data, isLoading, error, mutate: reload } = useClientQuote(id);
   const ask = useConfirm();
   const [panel, setPanel] = useState<null | "change" | "reject" | "report">(null);
   const [message, setMessage] = useState("");
   const [discount, setDiscount] = useState("");
   const [reason, setReason] = useState<(typeof REPORT_REASONS)[number]>("quality");
+  const [lossReason, setLossReason] = useState<"" | LossReason>("");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -36,7 +38,8 @@ export default function ClientQuoteView({ id }: { id: string }) {
   // lien profond d'une notification : ?ligne=<ouvrage>
   const [focus] = useState(() => (typeof location === "undefined" ? null : new URLSearchParams(location.search).get("ligne")));
 
-  if (isLoading) return null;
+  if (error) return <ErrorState retry={() => { void reload(); }} />;
+  if (isLoading) return <LoadingState />;
   if (!data) {
     return (
       <p className="card">
@@ -271,9 +274,12 @@ export default function ClientQuoteView({ id }: { id: string }) {
               className="card space-y-3"
               onSubmit={(e) => {
                 e.preventDefault();
-                act({ type: "reject", ...(message.trim() ? { message: message.trim() } : {}) }, t("act.rejected"));
+                act({ type: "reject", ...(lossReason ? { reason: lossReason } : {}), ...(message.trim() ? { message: message.trim() } : {}) }, t("act.rejected"));
               }}
             >
+              <Field htmlFor="rj-why" label={t("act.lossReason")} hint={t("act.lossHint")}>
+                <Select id="rj-why" value={lossReason} onChange={(v) => setLossReason(v as "" | LossReason)} options={[{ value: "", label: t("loss.none") }, ...LOSS_REASONS.map((r) => ({ value: r, label: t(`loss.${r}`) }))]} />
+              </Field>
               <Field htmlFor="rj-msg" label={t("act.rejectReason")}>
                 <textarea id="rj-msg" className="input min-h-20" maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
               </Field>

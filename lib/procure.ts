@@ -1,5 +1,5 @@
-import { type ElementUse, type Piece, KERF, accessoriesFor, allPieces, glassOf } from "./calc";
-import { ACCESSORIES, type AccessoryKey, type FinishId, GLASS_PRICE_DEFAULTS, type Line, type Market, type Offer, finishMarkup, finishOn, profileOn, rangeOn } from "./model";
+import { type ElementUse, type Piece, KERF, REUSE_MIN, accessoriesFor, allPieces, cutList, glassOf } from "./calc";
+import { ACCESSORIES, type AccessoryKey, DEFAULT_MARKET, type FinishId, GLASS_PRICE_DEFAULTS, type Line, type Market, type Offer, finishMarkup, finishOn, profileOn, rangeOn } from "./model";
 import type { Messages } from "./messages/fr";
 
 type Label = keyof Messages;
@@ -19,6 +19,7 @@ export type GroupPlan = {
   usedLen: number;
   totalLen: number;
   wasteLen: number;
+  reusableLen: number; // part de la chute qui reste utilisable (morceaux d'au moins REUSE_MIN)
   wastePct: number;
   cost: number;
   tooLong: number[]; // pièces plus longues que toutes les barres du marché
@@ -72,6 +73,9 @@ export function planGroup(lens: number[], offers: Offer[], kerf: number) {
   return { bars: best, tooLong };
 }
 
+// Chute que l'on peut garder : les restes de barre d'au moins REUSE_MIN mm.
+const reusable = (bars: BuyBar[]) => bars.reduce((s, b) => s + (b.left >= REUSE_MIN ? b.left : 0), 0);
+
 export type Procurement = {
   groups: GroupPlan[];
   totalCost: number;
@@ -79,6 +83,7 @@ export type Procurement = {
   totalLen: number;
   usedLen: number;
   wasteLen: number;
+  reusableLen: number; // chute qui reste utilisable : à garder en réserve, pas une perte sèche
   wastePct: number;
   byLine: Record<number, { cost: number; usedLen: number }>;
 };
@@ -118,7 +123,7 @@ export function procure(pieces: Piece[], market: Market, kerf = KERF): Procureme
 
     return {
       key, profile, range, finish, elements: [...uses.values()], lines: [...new Set(list.flatMap((p) => (p.line !== undefined ? [p.line] : [])))].sort((a, b) => a - b),
-      bars, purchase, usedLen, totalLen, wasteLen: totalLen - usedLen, wastePct: totalLen ? Math.round(((totalLen - usedLen) / totalLen) * 100) : 0,
+      bars, purchase, usedLen, totalLen, wasteLen: totalLen - usedLen, reusableLen: reusable(bars), wastePct: totalLen ? Math.round(((totalLen - usedLen) / totalLen) * 100) : 0,
       cost, tooLong, noOffer: offers.length === 0, unavailable: !rangeOn(market, range as Line["range"]) || !finishOn(market, finish as FinishId), share,
     };
   });
@@ -138,6 +143,7 @@ export function procure(pieces: Piece[], market: Market, kerf = KERF): Procureme
     totalLen,
     usedLen,
     wasteLen: totalLen - usedLen,
+    reusableLen: groups.reduce((s, g) => s + g.reusableLen, 0),
     wastePct: totalLen ? Math.round(((totalLen - usedLen) / totalLen) * 100) : 0,
     byLine,
   };
@@ -155,12 +161,17 @@ export type Extras = {
   glass: { id: string; area: number; price: number; cost: number }[];
   glassArea: number;
   glassCost: number;
+  panelArea: number;
+  panelCost: number;
 };
 export function extrasCost(lines: Line[], market: Market, pct = 0): Extras {
   const k = 1 + pct / 100;
   const qty = new Map<AccessoryKey, number>();
   const area = new Map<string, { area: number; weighted: number }>();
+  const waste = 1 + (market.glassWaste ?? DEFAULT_MARKET.glassWaste ?? 0) / 100; // le verre et les panneaux se commandent en plaques : la chute de découpe se paie
+  let panelArea = 0;
   for (const l of lines) {
+    panelArea += cutList(l).panels.reduce((s, p) => s + (p.w * p.h * p.qty) / 1e6, 0) * l.qty;
     for (const a of accessoriesFor(l)) qty.set(a.key, (qty.get(a.key) ?? 0) + a.qty * l.qty);
     const g = glassOf(l);
     if (g.area > 0) {
@@ -174,12 +185,16 @@ export function extrasCost(lines: Line[], market: Market, pct = 0): Extras {
   });
   const glass = [...area].map(([id, v]) => {
     const price = Math.round((market.glass?.[id] ?? GLASS_PRICE_DEFAULTS[id] ?? 0) * k);
-    return { id, area: Math.round(v.area * 100) / 100, price, cost: Math.round(v.weighted * price) };
+    return { id, area: Math.round(v.area * 100) / 100, price, cost: Math.round(v.weighted * waste * price) };
   });
-  return { acc, accCost: acc.reduce((s, a) => s + a.cost, 0), glass, glassArea: glass.reduce((s, g) => s + g.area, 0), glassCost: glass.reduce((s, g) => s + g.cost, 0) };
+  const panelPrice = Math.round((market.panel ?? DEFAULT_MARKET.panel ?? 0) * k);
+  return {
+    acc, accCost: acc.reduce((s, a) => s + a.cost, 0), glass, glassArea: glass.reduce((s, g) => s + g.area, 0), glassCost: glass.reduce((s, g) => s + g.cost, 0),
+    panelArea: Math.round(panelArea * 100) / 100, panelCost: Math.round(panelArea * waste * panelPrice),
+  };
 }
 
-export type Plan = Procurement & Extras & { allCost: number }; // allCost = profilés + accessoires + verre (hors main-d'œuvre)
+export type Plan = Procurement & Extras & { allCost: number }; // allCost = profilés + accessoires + verre + panneaux (hors main-d'œuvre)
 
 export function simulate(lines: Line[], sim: Sim, kerf: number, finish: "" | FinishId = sim.finish) {
   const k = 1 + sim.pct / 100;
@@ -188,5 +203,5 @@ export function simulate(lines: Line[], sim: Sim, kerf: number, finish: "" | Fin
   const market = { ...sim.market, offers };
   const p = procure(allPieces(set), market, kerf);
   const e = extrasCost(lines, sim.market, sim.pct);
-  return { ...p, ...e, allCost: p.totalCost + e.accCost + e.glassCost };
+  return { ...p, ...e, allCost: p.totalCost + e.accCost + e.glassCost + e.panelCost };
 }

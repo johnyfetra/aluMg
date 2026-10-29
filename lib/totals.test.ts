@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type Line, lineSchema, quoteSchema } from "./model";
-import { serviceTotal, totals } from "./totals";
+import { daysLeft, serviceTotal, totals } from "./totals";
 
 const line: Line = lineSchema.parse({
   id: "x", category: "fenetre", opening: "ouvrant", leaves: 2, shutter: "roulant", control: "manuel", guard: "barreaudage", range: "asiatique",
@@ -24,5 +24,13 @@ describe("totaux avec prestations", () => {
     expect(quoteSchema.safeParse(base).success).toBe(true);
     expect(quoteSchema.safeParse({ ...base, services: [{ id: "a", kind: "pose", label: "", qty: 1, price: -1 }] }).success).toBe(false);
     expect(quoteSchema.safeParse({ ...base, services: [{ id: "a", kind: "inconnu", label: "", qty: 1, price: 1 }] }).success).toBe(false);
+  });
+});
+
+describe("validité du devis", () => {
+  it("compte les jours restants depuis la création, négatif une fois dépassée", () => {
+    const now = Date.parse("2026-10-10T00:00:00Z");
+    expect(daysLeft({ date: "2026-10-01T00:00:00Z", terms }, now)).toBe(21); // 30 jours − 9 écoulés
+    expect(daysLeft({ date: "2026-08-01T00:00:00Z", terms }, now)).toBeLessThan(0);
   });
 });
