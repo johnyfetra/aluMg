@@ -1,6 +1,6 @@
 "use client";
 import { Box, ChevronDown, Copy, Minus, Plus, Image as ImageIcon, Ruler, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import LineComments from "../LineComments";
 import Viewer3DLoader from "../Viewer3DLoader";
 import { Choice, Field, FinishPicker } from "../ui";
@@ -215,12 +215,12 @@ export function LineCard({
           </button>
         )}
         <div className="flex gap-2">
-          <button type="button" className="btn-secondary flex-1" onClick={onDuplicate}>
+          <button type="button" className="btn-secondary flex-1" onClick={onDuplicate} disabled={locked}>
             <Copy size={16} aria-hidden />
             {t("editor.duplicateLine")}
           </button>
           {onRemove && (
-            <button type="button" className="btn-danger" onClick={onRemove} aria-label={t("editor.removeLine")} title={t("editor.removeLine")}>
+            <button type="button" className="btn-danger" onClick={onRemove} disabled={locked} aria-label={t("editor.removeLine")} title={t("editor.removeLine")}>
               <Trash2 size={16} aria-hidden />
             </button>
           )}
@@ -287,7 +287,7 @@ export function LineCard({
           <ChevronDown size={18} aria-hidden className={`shrink-0 text-muted transition-transform ${open ? "" : "-rotate-90"}`} />
           {thumb && <span aria-hidden className="hidden h-14 w-[4.75rem] shrink-0 place-items-center rounded-lg bg-white sm:grid p-0.5 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: thumb.svg }} />}
           <span className="min-w-0 flex-1">
-            <span className="block truncate font-semibold">{title}</span>
+            <span className="block break-words font-semibold leading-snug sm:truncate">{title}</span>
             <span className="flex flex-wrap items-center gap-x-2 text-sm font-normal text-muted">
               <span>{valid ? `${l.width} × ${l.height} mm` : t("editor.invalidSize")}</span>
               <span aria-hidden>·</span>
@@ -313,9 +313,12 @@ export function LineCard({
         </button>
       </h3>
       {open && (
-        <fieldset id={`${l.id}-body`} disabled={locked} className={`m-0 border-0 border-t border-line p-4 sm:p-6 ${grid}`}>
-          {body}
-        </fieldset>
+        // seuls les champs de saisie (les blocs « Panel ») sont verrouillés : l'aperçu 2D/3D et le détail des profilés restent consultables
+        <LockedCtx.Provider value={locked}>
+          <div id={`${l.id}-body`} className={`border-t border-line p-4 sm:p-6 ${grid}`}>
+            {body}
+          </div>
+        </LockedCtx.Provider>
       )}
       {open && quoteId && (
         <div className="border-t border-line p-4 sm:p-6">
@@ -328,15 +331,17 @@ export function LineCard({
 
 
 // Bloc de formulaire d'un ouvrage : cadre discret, titre en capitales.
+const LockedCtx = createContext(false);
 function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
+  const locked = useContext(LockedCtx);
   return (
-    <section className={`min-w-0 space-y-3 rounded-xl border border-line bg-surface-2/30 p-3.5 sm:p-4 ${className}`}>
+    <fieldset disabled={locked} className={`m-0 min-w-0 space-y-3 rounded-xl border border-line bg-surface-2/30 p-3.5 sm:p-4 ${className}`}>
       <h4 className="flex items-center gap-2 text-sm font-semibold text-ink">
         <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
         {title}
       </h4>
       {children}
-    </section>
+    </fieldset>
   );
 }
 

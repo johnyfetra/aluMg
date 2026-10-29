@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { mutate } from "swr";
 import ProfileNeeds from "./ProfileNeeds";
+import QuoteStatusBar from "./QuoteStatusBar";
 import ChatButton from "./ChatButton";
 import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
@@ -236,6 +237,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
           </Link>
         </div>
       </div>
+
+      {existing && <QuoteStatusBar quote={{ number: q.number, status: q.status, rev: q.rev, progress: q.progress }} total={ttc} side="menuisier" />}
 
       {!settings.company && (
         <p className="rounded-lg border border-warn/50 bg-warn/10 px-3 py-2 text-[13px]" role="note">

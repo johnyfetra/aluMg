@@ -1268,4 +1268,9 @@ export const mg: Messages = {
   "editor.marginLine": "Tombony vinavina",
   "editor.marginLoss": "Mandany: avereno jerena ny vidiny na ny fihenam-bidy.",
   "editor.marginLow": "Tombony ambanin'ny tokonao.",
+  "msg.quotesBar": "Tolotra ao amin'ity resaka ity",
+  "msg.cite": "Hanonona ny tolotra",
+  "msg.noQuotes": "Tsy mbola misy tolotra nifantakalo",
+  "msg.askQuote": "Hangataka tolotra",
+  "msg.newQuote": "Tolotra vaovao",
 };

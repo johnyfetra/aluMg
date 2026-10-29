@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { mutate } from "swr";
 import CameraDialog from "./CameraDialog";
+import ChatQuotes from "./ChatQuotes";
 import Lightbox from "./Lightbox";
 import { Avatar, StatusBadge } from "./ui";
 import { MicButton, type Recorded, RecorderBar, VoicePlayer } from "./Voice";
@@ -206,9 +207,9 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
       }}
     >
       {header && (
-        <header className="flex items-center gap-3 border-b border-line px-4 py-3">
+        <header className="flex items-center gap-2 border-b border-line bg-surface px-2 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:gap-3 sm:px-4 sm:py-3">
           {onBack && (
-            <button type="button" className="grid size-10 place-items-center rounded-lg hover:bg-surface-2 lg:hidden" onClick={onBack} aria-label={t("common.back")}>
+            <button type="button" className="grid size-10 shrink-0 place-items-center rounded-full hover:bg-surface-2 lg:hidden" onClick={onBack} aria-label={t("common.back")}>
               <ArrowLeft size={18} aria-hidden />
             </button>
           )}
@@ -224,6 +225,8 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
           )}
         </header>
       )}
+
+      {header && <ChatQuotes conv={conv} onCite={pickQuote} t={t} />}
 
       <div ref={box} className={`min-h-0 flex-1 space-y-1 overflow-y-auto bg-surface-2/40 ${compact ? "px-3 py-3" : "px-4 py-4"}`} role="log" aria-live="polite" aria-label={t("msg.thread")}>
         {msgs.length === 0 && <p className="py-10 text-center text-sm text-muted">{t("msg.startHint")}</p>}
@@ -303,7 +306,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
         <div ref={end} />
       </div>
 
-      <form onSubmit={send} className={`relative border-t border-line bg-surface ${compact ? "px-3 pb-3.5 pt-3" : "px-5 pb-5 pt-4"}`}>
+      <form onSubmit={send} className={`relative border-t border-line bg-surface ${compact ? "px-3 pb-3.5 pt-3" : "px-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-5 sm:pt-4"}`}>
         {!text.trim() && !pending.length && (
           <div role="group" aria-label={t("msg.qr.title")} className="no-scrollbar -mx-1 mb-2 flex gap-1.5 overflow-x-auto px-1">
             {([1, 2, 3, 4] as const).map((n) => {
@@ -422,7 +425,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                 rows={1}
                 maxLength={2000}
                 value={text}
-                placeholder={t(compact ? "msg.writeShort" : "msg.write")}
+                placeholder={t("msg.writeShort")}
                 onChange={(e) => onText(e.target.value)}
                 onPaste={(e) => {
                   const files = [...e.clipboardData.files].filter((f) => isImageMime(f.type));
@@ -439,7 +442,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                     else send();
                   }
                 }}
-                className={`bare-focus max-h-32 flex-1 resize-none bg-transparent px-2 text-sm leading-5 text-ink outline-none placeholder:text-muted ${compact ? "min-h-8 py-1.5" : "min-h-9 py-2"}`}
+                className={`bare-focus max-h-32 min-w-0 flex-1 resize-none bg-transparent px-2 text-base leading-5 text-ink sm:text-sm outline-none placeholder:text-muted ${compact ? "min-h-8 py-1.5" : "min-h-9 py-2"}`}
               />
               <button type="button" className={ghost} onClick={() => photoInput.current?.click()} aria-label={t("msg.gallery")} title={t("msg.gallery")}>
                 <ImageIcon size={18} aria-hidden />

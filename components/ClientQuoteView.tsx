@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { mutate } from "swr";
 import ChatButton from "./ChatButton";
+import QuoteStatusBar from "./QuoteStatusBar";
 import ClientLineCard from "./ClientLineCard";
 import Timeline from "./Timeline";
 import { Avatar, Field, Progress, StarInput, StatusBadge } from "./ui";
@@ -84,6 +85,8 @@ export default function ClientQuoteView({ id }: { id: string }) {
         <ArrowLeft size={16} aria-hidden />
         {t("cl.myRequests")}
       </Link>
+
+      <QuoteStatusBar quote={q} total={priced ? tot.ttc : null} side="client" />
 
       <header className="card space-y-5">
         <div className="flex flex-wrap items-start gap-4">

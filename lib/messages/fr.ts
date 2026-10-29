@@ -1266,6 +1266,11 @@ export const fr = {
   "editor.marginLine": "Marge estimée",
   "editor.marginLoss": "Vente à perte : revoyez les prix ou la remise.",
   "editor.marginLow": "Marge sous votre seuil d'alerte.",
+  "msg.quotesBar": "Devis de cette conversation",
+  "msg.cite": "Citer le devis",
+  "msg.noQuotes": "Aucun devis échangé pour l'instant",
+  "msg.askQuote": "Demander un devis",
+  "msg.newQuote": "Nouveau devis",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

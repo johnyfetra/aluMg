@@ -1266,4 +1266,9 @@ export const en: Messages = {
   "editor.marginLine": "Estimated margin",
   "editor.marginLoss": "Selling at a loss: review prices or the discount.",
   "editor.marginLow": "Margin below your alert threshold.",
+  "msg.quotesBar": "Quotes in this conversation",
+  "msg.cite": "Cite quote",
+  "msg.noQuotes": "No quote exchanged yet",
+  "msg.askQuote": "Request a quote",
+  "msg.newQuote": "New quote",
 };
