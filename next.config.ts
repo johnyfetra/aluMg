@@ -40,6 +40,8 @@ const nextConfig: NextConfig = {
     ];
   },
   // PGlite charge un binaire WASM : à ne pas empaqueter
+  // les migrations SQL sont lues à l'exécution (lib/db) : à embarquer dans les fonctions serverless
+  outputFileTracingIncludes: { "/**": ["./drizzle/**/*"] },
   serverExternalPackages: ["@electric-sql/pglite", "pg"],
   partialPrefetching: true,
   turbopack: {

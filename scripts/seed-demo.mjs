@@ -111,12 +111,15 @@ for (const [i, [ce, me, set, kind, extra]] of SCENARIOS.entries()) {
   const m = pros[me];
   const project = `Démo ${i + 1} — ${MENUISIERS.find((x) => x.email === me).display}`;
   const mine = await c.must("GET", "/api/client/quotes");
-  if (mine.some((x) => x.quote.project === project)) continue;
-  const q = await c.must("POST", "/api/requests", { menuisier: slugs[me], project, message: "Bonjour, je souhaite un devis pour ces ouvrages. Merci de me contacter pour fixer un rendez-vous.", siteAddress: "Antananarivo", wantedDate: "", lines: SETS[set] });
+  const old = mine.find((x) => x.quote.project === project);
+  // déjà traité jusqu'au bout → rien à faire ; resté à « envoyé » (exécution interrompue) → on reprend à l'acceptation
+  if (old && !(old.quote.status === "sent" && (kind === "done" || kind === "running"))) continue;
+  const q = old?.quote ?? await c.must("POST", "/api/requests", { menuisier: slugs[me], project, message: "Bonjour, je souhaite un devis pour ces ouvrages. Merci de me contacter pour fixer un rendez-vous.", siteAddress: "Antananarivo", wantedDate: "", lines: SETS[set] });
   const act = (who, body) => who.must("POST", `/api/quotes/${q.id}/actions`, body);
-  if (kind !== "requested") await act(m, { type: "send", message: "Bonjour, voici mon devis détaillé. Je reste disponible pour toute question." });
+  if (kind !== "requested" && !old) await act(m, { type: "send", message: "Bonjour, voici mon devis détaillé. Je reste disponible pour toute question." });
   if (kind === "done" || kind === "running") {
-    await act(c, { type: "accept" });
+    // le client accepte la révision qu'il a sous les yeux (rev)
+    await act(c, { type: "accept", rev: (await c.must("GET", `/api/client/quotes/${q.id}`)).quote.rev ?? 0 });
     await act(m, { type: "progress", progress: kind === "running" ? extra : 40, message: "Fabrication lancée, profilés coupés et vitrage commandé." });
     if (kind === "done") {
       await act(m, { type: "progress", progress: 100, message: "Pose terminée, merci pour votre confiance !" });
