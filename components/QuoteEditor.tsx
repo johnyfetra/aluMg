@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { mutate } from "swr";
-import IntakePanel from "./IntakePanel";
 import ProfileNeeds from "./ProfileNeeds";
 import QuoteDiscussion from "./QuoteDiscussion";
 import QuoteStatusBar from "./QuoteStatusBar";
@@ -18,7 +17,7 @@ import { Avatar, Field } from "./ui";
 import { allPieces, cuttingPlan, normalize, planTotals } from "@/lib/calc";
 import { quoteMargin } from "@/lib/costing";
 import { initSim, simulate } from "@/lib/procure";
-import { useContacts, useMessages } from "@/lib/client";
+import { useContacts } from "@/lib/client";
 import { ApiError, request, useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { type EditMode, editMode, type Line, lineMarks, type Quote, type Settings, lineSchema } from "@/lib/model";
@@ -124,16 +123,6 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     setFocusId(id);
     requestAnimationFrame(() => document.getElementById(`line-${id}`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
   }, [existing]);
-  // « Nouveau devis depuis la conversation » : les messages du client servent de texte de départ à l'assistant
-  const convId = typeof location === "undefined" ? null : new URLSearchParams(location.search).get("conv");
-  const { data: convMsgs = [] } = useMessages(convId);
-  const convText = convMsgs.filter((m) => !m.mine && m.body).map((m) => m.body).join("\n");
-  const addGenerated = (ls: Line[], replace: boolean) => {
-    // sur un devis neuf, la ligne de départ intacte est remplacée par les ouvrages générés
-    setQ((cur) => ({ ...cur, lines: replace || (!existing && cur.lines.length === 1 && JSON.stringify(cur.lines[0]) === JSON.stringify(first)) ? ls : [...cur.lines, ...ls] }));
-    setOpenIds(new Set(ls.map((l) => l.id)));
-    toast.success(t("toast.linesGenerated"), `${ls.length} ${t("intake.pro.added")}`);
-  };
   // Carnet de clients : choisir un client remplit nom, téléphone et e-mail ; ?contact=<id> préremplit un nouveau devis.
   const { data: contacts = [] } = useContacts();
   const pickContact = (id: string) => {
@@ -430,16 +419,6 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               </div>
             )}
           </section>
-
-          {!locked && (
-            <IntakePanel
-              initial={q.request?.message || convText}
-              settings={eff}
-              t={t}
-              onAdd={(ls) => addGenerated(ls, false)}
-              onReplace={(ls) => addGenerated(ls, true)}
-            />
-          )}
 
           <section className="space-y-4" aria-labelledby="h-lines">
             <div className="flex flex-wrap items-center justify-between gap-3">
