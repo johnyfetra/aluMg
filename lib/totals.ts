@@ -6,9 +6,13 @@ export const daysLeft = (q: Pick<Quote, "date" | "terms">, now = Date.now()) => 
 
 export const serviceTotal = (s: Pick<Service, "qty" | "price">) => Math.round(s.qty * s.price);
 
+// Ouvrages qui comptent : une fois le devis accepté, ceux que le client a mis en attente sont hors chantier (ni prix, ni matière, ni acompte).
+export const activeLines = <L extends { id: string }>(q: { lines: L[]; status?: string; lineReviews?: Quote["lineReviews"] }): L[] =>
+  q.status && ["accepted", "in_progress", "completed"].includes(q.status) ? q.lines.filter((l) => q.lineReviews?.[l.id]?.state !== "hold") : q.lines;
+
 // gross : somme des ouvrages et des prestations ; discount : remise accordée ; ht : après remise ; ttc : avec TVA.
-export const totals = (q: Pick<Quote, "lines" | "terms"> & { discount?: number; services?: Service[] }) => {
-  const gross = q.lines.reduce((s, l) => s + lineTotal(l), 0) + (q.services ?? []).reduce((s, v) => s + serviceTotal(v), 0);
+export const totals = (q: Pick<Quote, "lines" | "terms"> & { discount?: number; services?: Service[]; status?: string; lineReviews?: Quote["lineReviews"] }) => {
+  const gross = activeLines(q).reduce((s, l) => s + lineTotal(l), 0) + (q.services ?? []).reduce((s, v) => s + serviceTotal(v), 0);
   const discount = Math.round((gross * (q.discount ?? 0)) / 100);
   const ht = gross - discount;
   const tva = Math.round((ht * q.terms.tva) / 100);

@@ -73,7 +73,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
       setMessage("");
       return true;
     } catch (e) {
-      setMsg({ ok: false, text: e instanceof ApiError && e.code === "quote_changed" ? t("act.changed") : e instanceof ApiError && e.code === "invalid_transition" ? t("act.invalid") : e instanceof ApiError && e.code === "already_reviewed" ? t("act.alreadyReviewed") : t("common.error") });
+      setMsg({ ok: false, text: e instanceof ApiError && e.code === "quote_changed" ? t("act.changed") : e instanceof ApiError && e.code === "invalid_transition" ? t("act.invalid") : e instanceof ApiError && e.code === "already_reviewed" ? t("act.alreadyReviewed") : e instanceof ApiError && e.code === "nothing_to_accept" ? t("act.nothingToAccept") : t("common.error") });
       toast.error(t("toast.errorTitle"), e instanceof ApiError && e.code === "quote_changed" ? t("act.changed") : t("toast.errorText"));
       return false;
     } finally {
@@ -85,6 +85,8 @@ export default function ClientQuoteView({ id }: { id: string }) {
   // avis par ouvrage : validés / demandes à envoyer (regroupées en une seule demande de modification)
   const reviews = q.lineReviews ?? {};
   const approved = q.lines.filter((l) => reviews[l.id]?.state === "approved").length;
+  const held = q.lines.filter((l) => reviews[l.id]?.state === "hold");
+  const kept = totals({ ...q, status: "accepted" }); // total si les ouvrages en attente sont mis de côté
   const requests = q.lines.filter((l) => reviews[l.id]?.state === "request");
   const sendRequests = () => {
     const topics = new Set(requests.map((l) => reviews[l.id].topic ?? "details"));
@@ -178,18 +180,21 @@ export default function ClientQuoteView({ id }: { id: string }) {
               <div className="space-y-2 rounded-xl border border-line bg-surface-2/40 p-3">
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <p className="text-sm font-semibold">
-                    {approved}/{q.lines.length} {t("line.validatedCount")}
+                    {approved}/{q.lines.length} {t("line.validatedCount")}{held.length > 0 ? ` · ${held.length} ${t("line.onHoldCount")}` : ""}
                   </p>
                   <div className="h-1.5 min-w-20 flex-1 overflow-hidden rounded-full bg-surface-2" aria-hidden>
                     <span className="block h-full rounded-full bg-good transition-[width]" style={{ width: `${(approved / q.lines.length) * 100}%` }} />
                   </div>
-                  {q.status === "sent" && approved < q.lines.length && (
+                  {q.status === "sent" && approved + held.length < q.lines.length && (
                     <button type="button" className="btn-primary !min-h-9 !px-3 text-xs" disabled={busy} onClick={async () => (await ask({ message: t("line.confirmAll"), confirmLabel: t("line.approveAll") })) && act({ type: "approve_all" }, t("toast.allApproved"))}>
                       <CheckCheck size={14} aria-hidden />
                       {t("line.approveAll")}
                     </button>
                   )}
                 </div>
+                {held.length > 0 && q.status === "sent" && (
+                  <p className="rounded-lg bg-surface-2 px-3 py-2 text-sm">{t("line.keptTotal")} : <strong className="tabular-nums">{fmt(kept.ttc)} {cur}</strong> <span className="text-muted">({t("line.keptNote")})</span></p>
+                )}
                 {requests.length > 0 && (
                   <div className="flex flex-wrap items-center gap-3 rounded-lg bg-warn/10 px-3 py-2">
                     <p className="min-w-0 flex-1 text-sm">{requests.length} {t("line.requestsPending")}</p>
@@ -217,7 +222,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
                   review={q.lineReviews?.[l.id]}
                   canReview={q.status === "sent"}
                   busy={busy}
-                  onReview={(b) => act({ type: "review_line", lineId: l.id, ...b }, t(b.state === "approved" ? "toast.lineApproved" : b.state === "request" ? "toast.lineRequest" : "toast.lineCleared"))}
+                  onReview={(b) => act({ type: "review_line", lineId: l.id, ...b }, t(b.state === "approved" ? "toast.lineApproved" : b.state === "request" ? "toast.lineRequest" : b.state === "hold" ? "toast.lineHold" : "toast.lineCleared"))}
                 />
               ))}
             </ul>

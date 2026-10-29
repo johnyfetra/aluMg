@@ -1,7 +1,7 @@
 import { allPieces, cutList, unitPrice } from "./calc";
 import { DEFAULT_SETTINGS, type Line, type Quote, type Service, type Settings } from "./model";
 import { extrasCost, procure } from "./procure";
-import { totals } from "./totals";
+import { activeLines, totals } from "./totals";
 
 // Chiffrage au prix de revient : déboursé sec (matière + main-d'œuvre) → prix de revient (+ frais généraux) → prix de vente (+ marge).
 // Pur et sans dépendance navigateur : le même calcul sert l'éditeur, le serveur (demandes de clients) et le budget.
@@ -52,9 +52,9 @@ export const servicesCost = (services: Pick<Service, "qty" | "price" | "cost">[]
 // Marge d'un devis entier : prix HT après remise moins le coût complet (achats, main-d'œuvre, frais généraux, coût des prestations).
 // `purchases` : coût d'achat de la matière (profilés + accessoires + verre + panneaux), déjà calculé par l'appelant avec le bon catalogue.
 // Base unique de la marge dans toute l'application : le prix de revient (comme le réglage « marge visée » et le seuil d'alerte) ; `ofSale` la redonne en % du prix de vente.
-export function quoteMargin(q: Pick<Quote, "lines" | "terms" | "discount" | "services">, s: Settings, purchases: number) {
+export function quoteMargin(q: Pick<Quote, "lines" | "terms" | "discount" | "services"> & { status?: string; lineReviews?: Quote["lineReviews"] }, s: Settings, purchases: number) {
   const { ht } = totals(q);
-  const labor = laborTotal(q.lines, s);
+  const labor = laborTotal(activeLines(q), s);
   const overhead = Math.round(((purchases + labor) * s.overheadPct) / 100);
   const svc = servicesCost(q.services);
   const cost = purchases + labor + overhead + svc.cost;

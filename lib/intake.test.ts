@@ -86,6 +86,28 @@ describe("assistant de demande de devis : comprendre un texte libre", () => {
       }
     }
   });
+  it("fautes de frappe : blan, europpern, coullisante, fenetre sans accent", () => {
+    const i = one("creer moi une fenetre coulissante 1mx1m blan , norm europpern, taille vitre standard");
+    expect(i.spec).toMatchObject({ category: "fenetre", opening: "coulissant", width: 1000, height: 1000, finish: "blanc", range: "europeen", qty: 1 });
+    expect(i.assumptions).toEqual([]);
+    expect(one("une fenetre coullisante 120x100 noire").spec).toMatchObject({ opening: "coulissant", finish: "noir" });
+    expect(one("un naco pour la salle de bain 70x100").spec.category).toBe("fenetre"); // « bain » n'est pas « baie »
+    expect(analyze("cloison vitrée 3,4 m x 2,4 m").items[0].spec.qty).toBe(1);
+    expect(one("1 fenetre oscilo battante 100x130").spec.opening).toBe("oscillo");
+  });
+  it("deux couleurs pour deux fenêtres : une de chaque, même taille", () => {
+    const r = analyze("je veux deux fenetre coulissante, marron et blanc de meme taille 1mx1m, une marron et une blanc");
+    expect(r.items.map((i) => [i.spec.finish, i.spec.qty, i.spec.width, i.spec.height, i.spec.opening])).toEqual([["marron", 1, 1000, 1000, "coulissant"], ["blanc", 1, 1000, 1000, "coulissant"]]);
+    expect(r.items.every((i) => i.assumptions.length === 0)).toBe(true);
+  });
+  it("répartition des couleurs : nombres explicites, ou répartition devinée et signalée", () => {
+    expect(analyze("3 fenêtres 120x100, 2 blanches et 1 marron").items.map((i) => [i.spec.finish, i.spec.qty])).toEqual([["blanc", 2], ["marron", 1]]);
+    expect(analyze("2 fenêtres 120x100 marron et blanche").items.map((i) => [i.spec.finish, i.spec.qty])).toEqual([["marron", 1], ["blanc", 1]]);
+    const g = analyze("3 fenêtres 120x100 marron et blanche");
+    expect(g.items.map((i) => i.spec.qty)).toEqual([2, 1]);
+    expect(g.items[0].assumptions).toContain("finish"); // 2+1 deviné : à confirmer
+    expect(analyze("une fenêtre 120x100 marron et blanche").items).toHaveLength(1);
+  });
   it("texte sans ouvrage : rien d'inventé, une question", () => {
     const r = analyze("Bonjour, pouvez-vous m'appeler ?");
     expect(r.items).toEqual([]);

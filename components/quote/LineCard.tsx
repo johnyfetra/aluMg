@@ -1,6 +1,6 @@
 "use client";
 import { FinishSwatch, GlassSwatch } from "../Swatch";
-import { Box, CheckCircle2, ChevronDown, Copy, MessageSquareWarning, Minus, Plus, Image as ImageIcon, Ruler, Trash2 } from "lucide-react";
+import { Box, CheckCircle2, ChevronDown, Copy, MessageSquareWarning, PauseCircle, Minus, Plus, Image as ImageIcon, Ruler, Trash2 } from "lucide-react";
 import { createContext, useContext, useState } from "react";
 import LineComments from "../LineComments";
 import Viewer3DLoader from "../Viewer3DLoader";
@@ -291,9 +291,9 @@ export function LineCard({
           <span className="min-w-0 flex-1">
             <span className="block break-words font-semibold leading-snug sm:truncate">{title}</span>
             {review && (
-              <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${review.state === "approved" ? "bg-good/15 text-ok" : "bg-warn/15 text-warn"}`}>
-                {review.state === "approved" ? <CheckCircle2 size={12} aria-hidden /> : <MessageSquareWarning size={12} aria-hidden />}
-                {review.state === "approved" ? t("line.approvedByClient") : `${t("line.requestedByClient")}${review.topic ? ` · ${t(`act.topic.${review.topic}`)}` : ""}`}
+              <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${review.state === "approved" ? "bg-good/15 text-ok" : review.state === "hold" ? "bg-surface-2 text-muted" : "bg-warn/15 text-warn"}`}>
+                {review.state === "approved" ? <CheckCircle2 size={12} aria-hidden /> : review.state === "hold" ? <PauseCircle size={12} aria-hidden /> : <MessageSquareWarning size={12} aria-hidden />}
+                {review.state === "approved" ? t("line.approvedByClient") : review.state === "hold" ? t("line.heldByClient") : `${t("line.requestedByClient")}${review.topic ? ` · ${t(`act.topic.${review.topic}`)}` : ""}`}
               </span>
             )}
             <span className="flex flex-wrap items-center gap-x-2 text-sm font-normal text-muted">
@@ -325,8 +325,8 @@ export function LineCard({
         <LockedCtx.Provider value={locked}>
           <div id={`${l.id}-body`} className={`border-t border-line p-4 sm:p-6 ${grid}`}>
             {review?.message && (
-              <p role="note" className={`mb-4 rounded-lg border px-3 py-2 text-sm ${review.state === "request" ? "border-warn/40 bg-warn/10" : "border-good/40 bg-good/10"}`}>
-                <strong>{review.state === "request" ? t("line.requestedByClient") : t("line.opinion")} :</strong> {review.message}
+              <p role="note" className={`mb-4 rounded-lg border px-3 py-2 text-sm ${review.state === "request" ? "border-warn/40 bg-warn/10" : review.state === "hold" ? "border-line bg-surface-2" : "border-good/40 bg-good/10"}`}>
+                <strong>{review.state === "request" ? t("line.requestedByClient") : review.state === "hold" ? t("line.heldByClient") : t("line.opinion")} :</strong> {review.message}
               </p>
             )}
             {body}

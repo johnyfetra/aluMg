@@ -1431,6 +1431,21 @@ export const fr = {
   "tl.approve_all": "Tous les ouvrages validés",
   "notif.review_line": "Demande précise sur un ouvrage",
   "notif.approve_all": "Tous les ouvrages validés par le client",
+  "line.onHold": "En attente",
+  "line.putOnHold": "Mettre en attente",
+  "line.reactivate": "Réactiver et valider",
+  "line.holdHint": "L'ouvrage est suspendu : il reste dans le devis mais n'est pas retenu pour le chantier (ni prix, ni acompte) tant que vous ne le réactivez pas.",
+  "line.holdLabel": "Pourquoi / jusqu'à quand ? (facultatif)",
+  "line.holdPh": "Ex. : à refaire l'an prochain, après les travaux de la façade.",
+  "line.confirmHold": "Mettre en attente",
+  "line.onHoldCount": "en attente",
+  "line.keptTotal": "Total retenu si vous acceptez",
+  "line.keptNote": "hors ouvrages en attente",
+  "line.heldByClient": "En attente (client)",
+  "toast.lineHold": "Ouvrage mis en attente",
+  "act.nothingToAccept": "Tous les ouvrages sont en attente : validez-en au moins un pour accepter le devis.",
+  "intake.remove": "Retirer cet ouvrage",
+  "intake.allRemoved": "Vous avez retiré tous les ouvrages détectés : modifiez votre description ou ajoutez-les à la main.",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

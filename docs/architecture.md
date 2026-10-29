@@ -220,3 +220,20 @@ Toasts personnalisés (`components/Toast.tsx`, `useToast()`) pour chaque action 
 ## Listes déroulantes et couleurs
 
 `Select` accepte des options riches (`leading` logo ou pastille, `description` lieu · numéro, `meta`, `group`) et une recherche au-delà de 9 options. Les couleurs de profilé s'affichent en échantillons (`Swatch.tsx`) : laqué avec reflet, anodisé brossé, effet bois veiné.
+
+## Performance (mesures et choix)
+
+Mesures en production (`next start`), CPU ralenti ×4 comme un téléphone d'entrée de gamme : premier affichage 120–240 ms, aucune tâche longue notable, frappe dans l'assistant ≈ 33 ms (médiane). Le calcul métier est négligeable : 50 ouvrages se chiffrent en ≈ 2 ms, le texte d'une demande de 1,4 Ko s'analyse en < 1 ms.
+
+- Les images de profil (logo, couverture, photo) ne sont plus embarquées dans chaque liste : `lib/logo.ts` donne une adresse (`/api/public/menuisiers/<slug>/img?k=…&v=…`) servie avec cache. La page de demande de devis est passée de 658 Ko à 148 Ko transférés.
+- La liste des devis du client n'embarque plus le logo ni la signature de l'entreprise (ils restent sur la fiche d'un devis).
+- L'analyse du texte suit la frappe via `useDeferredValue` : elle ne bloque jamais la saisie.
+- Mauvaises pistes évitées : ne pas répéter des images en data URL dans des listes ; ne pas recalculer l'analyse sur une valeur non différée.
+
+## Ouvrages en attente (client)
+
+Le client peut mettre un ouvrage « en attente » (`lineReviews[id].state = "hold"`). Il reste visible au devis, mais une fois le devis accepté il sort du total, de l'acompte, de la matière et de la marge (`activeLines`, `lib/totals.ts`). « Tout valider » n'y touche pas ; accepter avec tous les ouvrages en attente est refusé (`nothing_to_accept`). Modifier l'ouvrage (menuisier) efface son avis, donc le remet dans le devis.
+
+## Assistant : fautes de frappe et couleurs
+
+`analyze` corrige d'abord les mots proches du vocabulaire connu (« blan », « europpern », « coullisante ») avec une distance d'édition bornée (mots tronqués ou ≥ 5 lettres, mêmes premières lettres, liste de mots courants jamais corrigés). Plusieurs couleurs pour un même ouvrage se répartissent : « 2 fenêtres, une marron et une blanche », « 3 fenêtres, 2 blanches et 1 marron », « 2 fenêtres marron et blanche » (une de chaque). Un second morceau avec ses propres cotes (« … 120x100 et 2 marron 150x120 ») devient une variante de l'ouvrage. Corpus de référence : `lib/intake.corpus.test.ts`.

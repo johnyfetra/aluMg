@@ -22,7 +22,7 @@ import { ApiError, request, useQuoteCatalog, useQuotes, useSettings } from "@/li
 import { useI18n } from "@/lib/i18n";
 import { type EditMode, editMode, type Line, lineMarks, type Quote, type Settings, lineSchema } from "@/lib/model";
 import Select from "./Select";
-import { totals } from "@/lib/totals";
+import { activeLines, totals } from "@/lib/totals";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { DEFAULT_SIZE, newLine, price } from "./quote/line";
 import { LineCard } from "./quote/LineCard";
@@ -161,11 +161,13 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
   const valid = (l: Line) => lineSchema.safeParse(l).success;
   const validLines = q.lines.filter(valid);
-  const { discount, ht, tva, ttc } = totals({ lines: validLines, terms: q.terms, discount: q.discount, services: q.services });
-  const plan = planTotals(cuttingPlan(allPieces(validLines), settings.barLength, settings.kerf));
+  // après acceptation, les ouvrages mis en attente par le client sont hors chantier : ni total, ni matière, ni marge
+  const live = activeLines({ lines: validLines, status: q.status, lineReviews: q.lineReviews });
+  const { discount, ht, tva, ttc } = totals({ lines: live, terms: q.terms, discount: q.discount, services: q.services });
+  const plan = planTotals(cuttingPlan(allPieces(live), settings.barLength, settings.kerf));
   // marge du devis entier : achats chiffrés avec le catalogue de ce devis, remise et coût des prestations compris
-  const purchases = simulate(validLines, initSim(eff.market), settings.kerf).allCost; // React Compiler mémoïse
-  const margin = quoteMargin({ lines: validLines, terms: q.terms, discount: q.discount, services: q.services }, eff, purchases);
+  const purchases = simulate(live, initSim(eff.market), settings.kerf).allCost; // React Compiler mémoïse
+  const margin = quoteMargin({ lines: validLines, terms: q.terms, discount: q.discount, services: q.services, status: q.status, lineReviews: q.lineReviews }, eff, purchases);
 
   // Enregistre le devis (création ou mise à jour) ; renvoie le devis enregistré, ou null si une ligne est invalide / si l'envoi échoue.
   const persist = async (): Promise<Quote | null> => {

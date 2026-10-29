@@ -5,6 +5,7 @@ import type { Action } from "./workflow";
 process.env.PGLITE_DIR = "memory://";
 const repo = await import("./repo");
 const wf = await import("./workflow");
+const { totals } = await import("./totals");
 const pf = await import("./profiles");
 const notif = await import("./notifications");
 
@@ -248,7 +249,8 @@ describe("annuaire public et profils", () => {
     expect(await pf.updatePortfolioItem(m2, item.id, { title: "x", description: "", category: "", year: null, images: [img], thumb: img })).toBeNull();
     expect(await pf.deletePortfolioItem(m2, item.id)).toBe(false);
     expect((await pf.getPublicMenuisier(slug1))!.items).toHaveLength(1);
-    expect((await pf.listPublicMenuisiers()).find((e) => e.name === "Rabe Alu")!.cover).toBe(img);
+    // les listes donnent une adresse d'image mise en cache (au lieu de la data URL, qui pèse dans chaque liste)
+    expect((await pf.listPublicMenuisiers()).find((e) => e.name === "Rabe Alu")!.cover).toBe(`/api/public/menuisiers/${slug1}/img?k=cover&v=${img.length}`);
     expect(await pf.deletePortfolioItem(m1, item.id)).toBe(true);
   });
 });
@@ -464,5 +466,24 @@ describe("avis du client par ouvrage", () => {
     await wf.applyAction(m1, q.id, A({ type: "send" }));
     expect(Object.values((await repo.getQuote(m1, q.id))!.lineReviews ?? {}).every((r) => r.state === "approved")).toBe(true);
   });
+  it("mettre un ouvrage en attente : il reste au devis mais sort du total une fois le devis accepté ; tout valider le laisse en attente", async () => {
+    const q = await sentQuote();
+    const [a, b] = q.lines;
+    await wf.applyAction(c1, q.id, A({ type: "review_line", lineId: b.id, state: "hold", message: "Plus tard", rev: await rev(q.id) }));
+    await wf.applyAction(c1, q.id, A({ type: "approve_all", rev: await rev(q.id) }));
+    expect((await repo.getQuote(m1, q.id))!.lineReviews).toMatchObject({ [a.id]: { state: "approved" }, [b.id]: { state: "hold", message: "Plus tard" } });
+    const full = totals(q).ttc;
+    const sent = (await repo.getQuote(m1, q.id))!;
+    expect(totals(sent).ttc).toBe(full); // avant acceptation : total complet
+    await wf.applyAction(c1, q.id, A({ type: "accept", rev: await rev(q.id) }));
+    const accepted = (await repo.getQuote(m1, q.id))!;
+    expect(accepted.lines).toHaveLength(2);
+    expect(totals(accepted).ttc).toBeLessThan(full); // l'ouvrage en attente est hors chantier
+    expect(totals(accepted).gross).toBe(a.unit * a.qty);
+  });
+  it("accepter avec tous les ouvrages en attente est refusé", async () => {
+    const q = await sentQuote();
+    for (const l of q.lines) await wf.applyAction(c1, q.id, A({ type: "review_line", lineId: l.id, state: "hold", rev: await rev(q.id) }));
+    expect(await wf.applyAction(c1, q.id, A({ type: "accept", rev: await rev(q.id) }))).toEqual({ ok: false, error: "nothing_to_accept" });
+  });
 });
-

@@ -1,3 +1,4 @@
+import { imageSrc } from "./logo";
 import { and, asc, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ATTACH, ATTACH_MIME, isAudioMime, isImageMime } from "./attach";
@@ -116,7 +117,7 @@ export async function listConversations(userId: string): Promise<ConversationVie
       const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.messages).where(and(eq(schema.messages.conversationId, c.id), ne(schema.messages.senderId, userId), gt(schema.messages.createdAt, readAt)));
       return {
         id: c.id,
-        other: { id: otherId, name: side === "client" ? (p?.name || u?.name || "") : (u?.name ?? ""), avatar: u?.avatar ?? "", role: side === "client" ? "menuisier" : "client", slug: side === "client" ? (p?.slug ?? "") : "", logo: side === "client" ? (p?.logo ?? "") : "" },
+        other: { id: otherId, name: side === "client" ? (p?.name || u?.name || "") : (u?.name ?? ""), avatar: u?.avatar ?? "", role: side === "client" ? "menuisier" : "client", slug: side === "client" ? (p?.slug ?? "") : "", logo: side === "client" ? imageSrc(p?.slug ?? "", "logo", p?.logo ?? "") : "" },
         last: last ? { body: last.body, at: last.createdAt.toISOString(), mine: last.senderId === userId, files, quote: !!last.quoteId, receipt: last.senderId === userId ? receiptOf(c, side, last.createdAt) : null } : null,
         unread: n,
         updatedAt: c.lastMessageAt.toISOString(),

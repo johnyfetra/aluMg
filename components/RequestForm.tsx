@@ -158,6 +158,7 @@ export default function RequestForm() {
         <IntakeAssistant
           text={`${project}. ${message}`.replace(/^\. /, "")}
           t={t}
+          onEdit={(items) => { setTouched(true); setLines(items.map((i) => toLine(i.spec))); }}
           actions={(items) => (
             <>
               <button type="button" className="btn-primary !min-h-10" onClick={() => { setTouched(true); setLines(items.map((i) => toLine(i.spec))); }}>{t("intake.apply")}</button>
@@ -182,7 +183,7 @@ export default function RequestForm() {
             valid={valid(l)}
             clientMode
             onChange={(p) => setLine(i, p)}
-            onRemove={lines.length > 1 ? () => (setTouched(true), setLines(lines.filter((_, j) => j !== i))) : undefined}
+            onRemove={() => (setTouched(true), setLines(lines.filter((_, j) => j !== i)))}
             onDuplicate={() => (setTouched(true), setLines([...lines.slice(0, i + 1), { ...l, id: crypto.randomUUID() }, ...lines.slice(i + 1)]))}
             onNeeds={() => {}}
             num={num}

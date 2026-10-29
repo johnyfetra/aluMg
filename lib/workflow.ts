@@ -6,6 +6,7 @@ import { getDb, schema } from "./db";
 import { type Issuer, CHANGE_TOPICS, ISSUER_KEYS, LOSS_REASONS, type LineReview, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
 import { clientAccountFor, discountFor, ensureContact } from "./contacts";
 import { analyze, toLine } from "./intake";
+import { imageSrc } from "./logo";
 import { notify } from "./notifications";
 import { StaleQuote, createQuote, findUserById, getSettings, unchanged } from "./repo";
 
@@ -21,7 +22,7 @@ export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("reject"), message: msg.optional(), reason: z.enum(LOSS_REASONS).optional(), rev: z.number().int().optional() }),
   z.object({ type: z.literal("request_change"), message: msg.min(1), topic: z.enum(CHANGE_TOPICS).optional(), discountPercent: z.number().min(0).max(90).optional(), rev: z.number().int().optional() }),
   // avis par ouvrage : « approved » (avis facultatif), « request » (demande précise : objet + texte), « clear » (retirer) ; approve_all valide tous les ouvrages d'un coup
-  z.object({ type: z.literal("review_line"), lineId: z.string().min(1).max(64), state: z.enum(["approved", "request", "clear"]), topic: z.enum(CHANGE_TOPICS).optional(), message: msg.optional(), rev: z.number().int().optional() }),
+  z.object({ type: z.literal("review_line"), lineId: z.string().min(1).max(64), state: z.enum(["approved", "request", "hold", "clear"]), topic: z.enum(CHANGE_TOPICS).optional(), message: msg.optional(), rev: z.number().int().optional() }),
   z.object({ type: z.literal("approve_all"), rev: z.number().int().optional() }),
   z.object({ type: z.literal("review"), rating: z.number().int().min(1).max(5), comment: msg.default("") }),
   z.object({ type: z.literal("report"), reason: z.enum(REPORT_REASONS), details: z.string().trim().max(1500).default("") }),
@@ -159,7 +160,7 @@ async function toClientQuote(row: typeof schema.quotes.$inferSelect): Promise<Cl
   return {
     quote: clientView({ ...row.data, status: row.status as Status, progress: row.progress }),
     issuer: Object.fromEntries(ISSUER_KEYS.map((k) => [k, settings[k]])) as Issuer,
-    menuisier: { id: row.userId, name: p?.displayName || m?.name || "", slug: p?.slug ?? "", logo: p?.logo ?? "", city: p?.city ?? "", phone: m?.phone ?? "", email: m?.email ?? "", verified: p?.verified ?? false },
+    menuisier: { id: row.userId, name: p?.displayName || m?.name || "", slug: p?.slug ?? "", logo: imageSrc(p?.slug ?? "", "logo", p?.logo ?? ""), city: p?.city ?? "", phone: m?.phone ?? "", email: m?.email ?? "", verified: p?.verified ?? false },
     reviewed: !!r,
   };
 }
@@ -167,7 +168,8 @@ async function toClientQuote(row: typeof schema.quotes.$inferSelect): Promise<Cl
 export async function listClientQuotes(clientId: string): Promise<ClientQuote[]> {
   const db = await getDb();
   const rows = await db.select().from(schema.quotes).where(eq(schema.quotes.clientId, clientId)).orderBy(desc(schema.quotes.createdAt));
-  return Promise.all(rows.map(toClientQuote));
+  // la liste n'a pas besoin du logo ni de la signature de l'entreprise (lourds, répétés à chaque devis) : seule la fiche d'un devis les porte
+  return (await Promise.all(rows.map(toClientQuote))).map((c) => ({ ...c, issuer: { ...c.issuer, logo: "", signature: "" } }));
 }
 
 export async function getClientQuote(clientId: string, id: string): Promise<ClientQuote | null> {
@@ -176,7 +178,7 @@ export async function getClientQuote(clientId: string, id: string): Promise<Clie
 }
 
 // ---------- Appliquer une action ----------
-export type ActionResult = { ok: true; quote: Quote } | { ok: false; error: "not_found" | "invalid_transition" | "incomplete" | "already_reviewed" | "no_client_account" | "quote_changed" | "message_required" };
+export type ActionResult = { ok: true; quote: Quote } | { ok: false; error: "not_found" | "invalid_transition" | "incomplete" | "already_reviewed" | "no_client_account" | "quote_changed" | "message_required" | "nothing_to_accept" };
 
 export async function applyAction(actorId: string, quoteId: string, a: Action): Promise<ActionResult> {
   const found = await sideOf(actorId, quoteId);
@@ -213,7 +215,13 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
     void _old;
     reviews = a.state === "clear" ? rest : { ...rest, [a.lineId]: { state: a.state, ...(a.state === "request" && a.topic ? { topic: a.topic } : {}), message: a.message?.trim() ?? "", at: now } };
   } else if (a.type === "approve_all" || a.type === "accept") {
-    reviews = Object.fromEntries(row.data.lines.map((l) => [l.id, a.type === "accept" && reviews?.[l.id]?.state === "request" ? reviews[l.id] : { state: "approved" as const, message: reviews?.[l.id]?.state === "approved" ? reviews[l.id].message : "", at: reviews?.[l.id]?.at ?? now }]));
+    // accepter avec tous les ouvrages en attente n'a pas de sens : rien à faire poser
+    if (a.type === "accept" && row.data.lines.every((l) => reviews?.[l.id]?.state === "hold")) return { ok: false, error: "nothing_to_accept" };
+    // les ouvrages en attente le restent ; à l'acceptation, une demande non traitée aussi
+    reviews = Object.fromEntries(row.data.lines.map((l) => {
+      const r = reviews?.[l.id];
+      return [l.id, r?.state === "hold" || (a.type === "accept" && r?.state === "request") ? r : { state: "approved" as const, message: r?.state === "approved" ? r.message : "", at: r?.at ?? now }];
+    }));
   } else if (a.type === "send" && reviews) {
     reviews = Object.fromEntries(Object.entries(reviews).filter(([, r]) => r.state === "approved")); // les demandes sont traitées par le nouvel envoi
   }

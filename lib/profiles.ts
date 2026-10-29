@@ -1,3 +1,4 @@
+import { imageSrc } from "./logo";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "./db";
@@ -145,10 +146,10 @@ export async function listPublicMenuisiers(f: DirectoryFilter = {}): Promise<Dir
   }
 
   let out: DirectoryEntry[] = profiles.map((p) => ({
-    slug: p.slug, name: p.displayName, city: p.city, bio: p.bio, specialties: p.specialties, logo: p.logo, cover: cover.get(p.userId) ?? "",
+    slug: p.slug, name: p.displayName, city: p.city, bio: p.bio, specialties: p.specialties, logo: imageSrc(p.slug, "logo", p.logo), cover: imageSrc(p.slug, "cover", cover.get(p.userId) ?? ""),
     verified: p.verified, rating: Math.round((rating.get(p.userId)?.avg ?? 0) * 10) / 10, reviews: rating.get(p.userId)?.n ?? 0,
     completed: completed.get(p.userId) ?? 0, portfolio: count.get(p.userId) ?? 0, since: p.createdAt.toISOString(),
-    owner: { name: (owners.get(p.userId)?.name ?? "").split(/\s+/)[0], photo: owners.get(p.userId)?.avatar ?? "" },
+    owner: { name: (owners.get(p.userId)?.name ?? "").split(/\s+/)[0], photo: imageSrc(p.slug, "owner", owners.get(p.userId)?.avatar ?? "") },
   }));
   if (f.q) out = out.filter((e) => norm(`${e.name} ${e.bio} ${e.city}`).includes(norm(f.q!)));
   if (f.city) out = out.filter((e) => norm(e.city).includes(norm(f.city!)));
