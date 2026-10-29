@@ -4,69 +4,79 @@
 
 /* Jetons de design : tout le thème passe par ces variables (voir docs/architecture.md). */
 :root {
-  --bg: #f2f2f3;
-  --surface: #ffffff;
-  --surface-2: #e9e9eb;
-  --text: #1c1d20;
-  --muted: #5a5d66;
-  --border: #d6d7db;
-  --primary: #c81e2b;
-  --primary-hover: #a51822;
-  --on-primary: #ffffff;
-  --danger: #b42318;
-  --ok: #047857;
-  --warn: #92400e;
-  /* barre latérale : volontairement identique en clair et en sombre */
-  --side-bg: #1a1b1e;
-  --side-fg: #e2e3e6;
-  --side-muted: #9a9da6;
-  --side-hover: rgba(255, 255, 255, 0.08);
-  --side-active: rgba(255, 255, 255, 0.16);
-  --side-accent: #f2555c;
-  /* palette du tableau de bord (catégorielle validée : bleu, aqua, orange, violet) */
-  --c1: #d93a43;
-  --c2: #2fa37a;
-  --c3: #e8833a;
-  --c4: #7d8596;
-  --accent: #f2555c; /* touche chaude : appels à l'action et mises en avant, à utiliser avec parcimonie */
-  --on-accent: #1a0809;
-  /* bulles « moi » de la messagerie : bordeaux sourd, pas de rouge vif */
-  --mine: #f1dcde;
-  --on-mine: #2a1315;
-  --hero-from: #141416;
-  --hero-to: #2a1315;
-  --good: #0ca30c;
-  --critical: #d03b3b;
-  --bar-neutral: #8a8d96;
-  --grid: #e1e2e5;
+  /* Identité AluMg : vert atelier, bois chaud, ivoire. Contrastes WCAG AA vérifiés (texte ≥ 4.5:1). */
+  --bg: #f6f3ed;
+  --surface: #fdfcf9;
+  --surface-2: #ece6db;
+  --text: #252725;
+  --muted: #5c615b;
+  --border: #d8d0c2;
+  --primary: #243b32;
+  --primary-hover: #1a2c25;
+  --on-primary: #f6f3ed;
+  --danger: #a8321f;
+  --ok: #2b6a47;
+  --warn: #86560f;
+  /* barre latérale : vert atelier, identique en clair et en sombre */
+  --side-bg: #1b2b24;
+  --side-fg: #e4e1d8;
+  --side-muted: #9aa69f;
+  --side-hover: rgba(246, 243, 237, 0.08);
+  --side-active: rgba(246, 243, 237, 0.15);
+  --side-accent: #d9a273;
+  /* palette du tableau de bord (catégorielle : vert, bois, bleu ardoise, gris pierre) */
+  --c1: #3c6e57;
+  --c2: #c58a58;
+  --c3: #5b7fa3;
+  --c4: #8a8d86;
+  --logo: #243b32;
+  --accent: #c58a58; /* le bois : appels à l'action et mises en avant, avec parcimonie */
+  --on-accent: #1f140a;
+  /* bulles « moi » de la messagerie : vert très pâle */
+  --mine: #dfe8e0;
+  --on-mine: #17251e;
+  --hero-from: #16231d;
+  --hero-to: #243b32;
+  --good: #2f8f5b;
+  --critical: #b3402e;
+  --bar-neutral: #8a8d86;
+  --grid: #e4ddd0;
+  --info: #355D71;
+  --radius-control: 0.625rem;
+  --radius-card: 1rem;
+  --shadow-card: 0 2px 8px rgb(36 59 50 / 0.035);
+  --shadow-overlay: 0 20px 60px rgb(24 43 35 / 0.18);
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bg: #121214;
-  --surface: #1b1c1f;
-  --surface-2: #25262a;
-  --text: #ececee;
-  --muted: #a0a3ab;
-  --border: #34363c;
-  --primary: #f2555c;
-  --primary-hover: #f77b80;
-  --on-primary: #1a0809;
-  --danger: #ff9a8f;
-  --ok: #4ade80;
-  --warn: #fbbf24;
-  --mine: #3a2327;
-  --on-mine: #f4eaeb;
-  --c1: #f2555c;
-  --c2: #34b58a;
-  --c3: #ef9250;
-  --c4: #9aa1b2;
-  --bar-neutral: #6b6e78;
-  --grid: #34363c;
+  --bg: #141916;
+  --surface: #1c231f;
+  --surface-2: #27302b;
+  --text: #ece9e2;
+  --muted: #a5ada6;
+  --border: #36403a;
+  --primary: #c58a58;
+  --primary-hover: #d39c6e;
+  --on-primary: #1f140a;
+  --danger: #f09a8a;
+  --ok: #6fd09a;
+  --warn: #e8b455;
+  --mine: #2a3a31;
+  --on-mine: #eef2ec;
+  --logo: #f6f3ed;
+  --c1: #6fb392;
+  --c2: #d9a273;
+  --c3: #86a8cb;
+  --c4: #9a9d96;
+  --bar-neutral: #6b6f68;
+  --grid: #36403a;
+  --info: #A5CDDF;
   color-scheme: dark;
 }
 
 @theme inline {
+  --color-info: var(--info);
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -135,13 +145,13 @@ body {
 
 :focus-visible {
   outline: 2px solid color-mix(in srgb, var(--primary) 75%, transparent);
-  outline-offset: 1px;
+  outline-offset: 3px;
 }
 /* Champs : liseré fin + halo discret, pas de gros contour. */
 .input:focus-visible,
 .input:focus {
   outline: none;
-  border-color: color-mix(in srgb, var(--text) 50%, var(--border)); /* neutre : le rouge de la marque ressemblerait à une erreur */
+  border-color: color-mix(in srgb, var(--text) 50%, var(--border)); /* neutre : la couleur de marque ne doit pas se confondre avec une erreur */
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 9%, transparent);
 }
 
@@ -174,10 +184,10 @@ body {
 @layer components {
   /* Surfaces et champs : rayons modestes, ombre à peine visible, bordures fines. */
   .card {
-    @apply rounded-xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.06)];
+    @apply rounded-(--radius-card) border border-line bg-surface p-5 shadow-(--shadow-card);
   }
   .input {
-    @apply min-h-10 w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm md:min-h-9 text-ink transition-colors placeholder:text-muted hover:border-[color-mix(in_srgb,var(--muted)_55%,var(--border))] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply min-h-10 w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm md:min-h-10 text-ink transition-colors placeholder:text-muted hover:border-[color-mix(in_srgb,var(--muted)_55%,var(--border))] disabled:cursor-not-allowed disabled:opacity-60;
   }
   /* Boutons : une base commune, trois tons (primaire plein, secondaire filet, danger discret) et un bouton d'accent. */
   .btn-primary,
@@ -185,7 +195,7 @@ body {
   .btn-danger,
   .btn-ghost,
   .btn-accent {
-    @apply inline-flex min-h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm md:min-h-9 font-semibold tracking-[-0.005em] transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex min-h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm md:min-h-10 font-semibold tracking-[-0.005em] transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-primary {
     @apply bg-primary text-on-primary shadow-[0_1px_2px_rgb(0_0_0/0.25),inset_0_1px_0_rgb(255_255_255/0.14)] hover:bg-primary-hover;
@@ -271,4 +281,20 @@ aside :focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .auth-stage { transform: none; will-change: auto; }
   .auth-float, .auth-float-slow, .auth-rise { animation: none; }
+}
+
+/* Échelle et surfaces communes : devis, paramètres, espace client et messagerie. */
+@layer base {
+  h1 { font-size: clamp(1.5rem, 2.4vw, 2rem); line-height: 1.2; letter-spacing: -0.035em; }
+  h2 { letter-spacing: -0.02em; }
+  button:not(:disabled), summary { cursor: pointer; }
+  th { white-space: nowrap; }
+  td { vertical-align: middle; }
+}
+@layer components {
+  .page-heading { @apply border-b border-line pb-6; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.16em] text-muted; }
+  .auth-form .input { min-height: 3rem; }
+  .auth-form { width: 100%; }
+  .skeleton { @apply animate-pulse rounded-lg bg-surface-2; }
 }

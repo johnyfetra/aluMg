@@ -1,5 +1,5 @@
 "use client";
-import { Ruler } from "lucide-react";
+import Brand from "./Brand";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LangMenu, ThemeSwitch, UserMenu } from "./Controls";
@@ -18,9 +18,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-[110rem] items-center gap-2 px-3 sm:gap-4 sm:px-8 xl:px-10">
           <Link href="/" className="flex items-center gap-2.5">
-            <span aria-hidden className="grid size-9 place-items-center rounded-xl bg-primary text-on-primary">
-              <Ruler size={20} />
-            </span>
+            <Brand compact />
             <span className="hidden text-lg font-bold tracking-tight min-[430px]:inline">AluMg</span>
           </Link>
           <nav aria-label={t("nav.main")} className="ml-2 hidden sm:block">

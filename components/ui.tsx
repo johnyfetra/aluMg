@@ -17,12 +17,12 @@ export function Field({ label, hint, children, htmlFor }: { label: string; hint?
 
 // Le statut porte toujours une icône ET un texte : la couleur seule ne porte pas l'information.
 const BADGE = {
-  requested: { cls: "bg-c3/15 text-c3", Icon: Inbox },
+  requested: { cls: "bg-warn/10 text-warn", Icon: Inbox },
   draft: { cls: "bg-surface-2 text-muted", Icon: FileEdit },
-  sent: { cls: "bg-c1/15 text-c1", Icon: Clock },
+  sent: { cls: "bg-info/10 text-info", Icon: Clock },
   negotiation: { cls: "bg-warn/15 text-warn", Icon: MessageSquareWarning },
   accepted: { cls: "bg-good/15 text-ok", Icon: CheckCircle2 },
-  in_progress: { cls: "bg-c4/15 text-c4", Icon: Hammer },
+  in_progress: { cls: "bg-info/10 text-info", Icon: Hammer },
   completed: { cls: "bg-good/15 text-ok", Icon: CheckCheck },
   rejected: { cls: "bg-critical/15 text-danger", Icon: XCircle },
 } as const;

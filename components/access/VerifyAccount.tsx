@@ -3,7 +3,7 @@ import { CheckCircle2, CircleAlert, Loader2, Mail, MessageSquareText, PhoneCall 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR, { mutate } from "swr";
-import AuthShowcase from "./AuthShowcase";
+import AtelierShowcase from "./AtelierShowcase";
 import OtpInput from "./OtpInput";
 import { LangMenu, ThemeSwitch } from "../Controls";
 import { ApiError, fetcher, homeFor, request, useSession } from "@/lib/client";
@@ -87,7 +87,7 @@ export default function VerifyAccount() {
 
   return (
     <div className="flex min-h-screen flex-col lg:grid lg:grid-cols-2">
-      <AuthShowcase variant="verify" />
+      <AtelierShowcase variant="verify" />
       <section className="flex flex-1 flex-col px-5 py-5 sm:px-10 lg:py-8">
         <div className="flex justify-end gap-2">
           <LangMenu />

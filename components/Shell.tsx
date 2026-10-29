@@ -1,10 +1,11 @@
 "use client";
+import Brand from "./Brand";
 import ChatWidget from "./ChatWidget";
 import NotificationBell from "./NotificationBell";
-import { FilePlus2, MessageCircle, FileText, LayoutDashboard, Menu as MenuIcon, Ruler, Settings, UserCircle, X } from "lucide-react";
+import { FilePlus2, MessageCircle, FileText, LayoutDashboard, Menu as MenuIcon, Settings, UserCircle, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { LangMenu, ThemeSwitch, UserMenu } from "./Controls";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
@@ -106,8 +107,8 @@ function NavLinks({ nav, onNavigate }: { nav: Nav; onNavigate: () => void }) {
                     className={`relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors ${active ? "bg-(--side-active) text-white" : "text-(--side-fg) hover:bg-(--side-hover) hover:text-white"}`}
                   >
                     {active && <span aria-hidden className="absolute -left-4 top-2 bottom-2 w-1 rounded-r-full bg-(--side-accent)" />}
-                    <Icon size={18} aria-hidden className={active ? "text-(--side-accent)" : ""} />
-                    {t(key)}
+                    <Icon size={18} aria-hidden className={active ? "shrink-0 text-(--side-accent)" : "shrink-0"} />
+                    <span className="min-w-0 break-words">{t(key)}</span>
                     {href === "/messages" && unread > 0 && (
                       <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-(--side-accent) px-1.5 text-[11px] font-bold text-(--side-bg)" aria-label={`${unread} ${t("msg.unread")}`}>
                         {unread}
@@ -137,6 +138,37 @@ export default function Shell({ children }: { children: ReactNode }) {
   const nav = me?.role === "client" ? CLIENT : MENUISIER;
   const [open, setOpen] = useState(false);
 
+  const sidebar = useRef<HTMLElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const sync = () => {
+      if (sidebar.current) sidebar.current.inert = !media.matches && !open;
+      if (media.matches && open) setOpen(false);
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    sidebar.current?.querySelector<HTMLElement>("a, button")?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setOpen(false); toggle.current?.focus(); }
+      if (event.key === "Tab") {
+        const items = sidebar.current?.querySelectorAll<HTMLElement>("a[href], button:not(:disabled)");
+        if (!items?.length) return;
+        const first = items[0], last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[17rem_1fr]">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:p-3">
@@ -144,20 +176,18 @@ export default function Shell({ children }: { children: ReactNode }) {
       </a>
 
       {open && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setOpen(false)} aria-hidden />}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-(--side-bg) py-6 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
+      <aside ref={sidebar} id="app-navigation"
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col overflow-y-auto bg-(--side-bg) py-6 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="mb-8 flex items-start justify-between px-6">
           <Link href={nav.home} onClick={() => setOpen(false)} className="flex items-center gap-3">
-            <span aria-hidden className="grid size-10 place-items-center rounded-xl bg-(--side-accent) text-(--side-bg)">
-              <Ruler size={22} />
-            </span>
+            <Brand light compact />
             <span>
               <span className="block text-xl font-bold leading-tight tracking-tight text-white">AluMg</span>
-              <span className="block text-xs leading-tight text-(--side-muted)">{t("app.tagline")}</span>
+              <span className="block text-xs leading-tight text-(--side-muted)">{t(me?.role === "client" ? "ui.client" : "ui.professional")}</span>
             </span>
           </Link>
-          <button type="button" className="rounded-lg p-2 text-(--side-fg) hover:bg-(--side-hover) lg:hidden" onClick={() => setOpen(false)} aria-label={t("menu.close")}>
+          <button type="button" className="rounded-lg p-2 text-(--side-fg) hover:bg-(--side-hover) lg:hidden" onClick={() => { setOpen(false); toggle.current?.focus(); }} aria-label={t("menu.close")}>
             <X size={20} aria-hidden />
           </button>
         </div>
@@ -167,8 +197,8 @@ export default function Shell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-bg/85 px-4 backdrop-blur sm:px-8">
-          <button type="button" className="btn-secondary w-11 !px-0 lg:hidden" onClick={() => setOpen(true)} aria-label={t("menu.open")} aria-expanded={open}>
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-surface px-4 sm:px-8">
+          <button ref={toggle} aria-controls="app-navigation" type="button" className="btn-secondary w-11 !px-0 lg:hidden" onClick={() => setOpen(true)} aria-label={t("menu.open")} aria-expanded={open}>
             <MenuIcon size={20} aria-hidden />
           </button>
           <Suspense fallback={null}>

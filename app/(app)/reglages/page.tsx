@@ -1,4 +1,5 @@
 "use client";
+import { LoadingState, ErrorState } from "@/components/Feedback";
 import Link from "next/link";
 import { useState } from "react";
 import SignaturePad from "@/components/SignaturePad";
@@ -17,8 +18,8 @@ const tariffLabel = (k: TariffKey, t: T) => {
 };
 
 export default function SettingsPage() {
-  const { settings } = useSettings();
-  return settings ? <Form initial={settings} /> : null;
+  const { settings, error, retry } = useSettings();
+  return error ? <ErrorState retry={retry} /> : settings ? <Form initial={settings} /> : <LoadingState />;
 }
 
 function Form({ initial }: { initial: Settings }) {

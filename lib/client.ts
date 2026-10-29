@@ -31,13 +31,13 @@ export { ApiError, request };
 export const useMe = () => useSWR<Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role" | "verified">>("/api/me", fetcher, { revalidateOnFocus: false });
 
 export function useSettings() {
-  const { data, mutate, isLoading } = useSWR<Settings>("/api/settings", fetcher, { revalidateOnFocus: false });
+  const { data, mutate, isLoading, error } = useSWR<Settings>("/api/settings", fetcher, { revalidateOnFocus: false });
   const save = async (s: Settings) => {
     const saved = await request<Settings>("PUT", "/api/settings", s);
     await mutate(saved, false);
     return saved;
   };
-  return { settings: data, loading: isLoading, save };
+  return { settings: data, loading: isLoading, error, retry: () => mutate(), save };
 }
 
 // Catalogue des fournisseurs propre à un devis ({ market: null } : le devis suit le catalogue général).
@@ -55,7 +55,7 @@ export function useQuoteCatalog(id: string | undefined) {
 }
 
 export function useQuotes() {
-  const { data, mutate, isLoading } = useSWR<Quote[]>("/api/quotes", fetcher, { revalidateOnFocus: false });
+  const { data, mutate, isLoading, error } = useSWR<Quote[]>("/api/quotes", fetcher, { revalidateOnFocus: false });
   const save = async (q: Quote, isNew: boolean) => {
     const saved = isNew ? await request<Quote>("POST", "/api/quotes", q) : await request<Quote>("PUT", `/api/quotes/${q.id}`, q);
     await mutate();
@@ -65,7 +65,7 @@ export function useQuotes() {
     await request("DELETE", `/api/quotes/${id}`);
     await mutate();
   };
-  return { quotes: data, loading: isLoading, save, remove };
+  return { quotes: data, loading: isLoading, error, retry: () => mutate(), save, remove };
 }
 
 // Session pour les pages publiques : jamais de redirection, renvoie null si personne n'est connecté.

@@ -1,4 +1,5 @@
 "use client";
+import { LoadingState, ErrorState } from "@/components/Feedback";
 import Link from "next/link";
 import { useState } from "react";
 import DocStyleEditor from "@/components/DocStyleEditor";
@@ -8,8 +9,8 @@ import type { Settings } from "@/lib/model";
 
 // Menu dédié au design du devis : modèle, personnalisation cadrée, conformité et aperçu en direct.
 export default function DocDesignPage() {
-  const { settings } = useSettings();
-  return settings ? <Form initial={settings} /> : null;
+  const { settings, error, retry } = useSettings();
+  return error ? <ErrorState retry={retry} /> : settings ? <Form initial={settings} /> : <LoadingState />;
 }
 
 function Form({ initial }: { initial: Settings }) {

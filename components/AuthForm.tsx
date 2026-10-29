@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { mutate } from "swr";
-import AuthShowcase, { type Variant } from "./access/AuthShowcase";
+import AtelierShowcase, { type Variant } from "./access/AtelierShowcase";
+import Brand from "./Brand";
 import PasswordField from "./access/PasswordField";
 import { LangMenu, ThemeSwitch } from "./Controls";
 import { Field } from "./ui";
@@ -15,7 +16,7 @@ import { useI18n } from "@/lib/i18n";
 const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith("//") && !n.includes("\\") ? n : null);
 type Role = "client" | "menuisier";
 
-// Connexion et inscription : moitié présentation (AuthShowcase), moitié formulaire.
+// Connexion et inscription : moitié présentation (AtelierShowcase), moitié formulaire.
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -75,22 +76,24 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   );
 
   return (
-    <div className="flex min-h-screen flex-col lg:grid lg:grid-cols-2">
-      <AuthShowcase variant={variant} />
+    <div className="flex min-h-screen flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <AtelierShowcase variant={variant} />
 
-      <section className="flex flex-1 flex-col px-5 py-5 sm:px-10 lg:py-8">
+      <section className="flex flex-1 flex-col px-5 py-5 sm:px-10 lg:py-8 bg-bg">
         <div className="flex justify-end gap-2">
           <LangMenu />
           <ThemeSwitch />
         </div>
 
-        <div className="auth-rise m-auto my-8 w-full max-w-[27rem] space-y-6 rounded-2xl border border-line bg-surface p-6 shadow-[0_28px_70px_-30px_rgb(0_0_0/0.6)] sm:p-8">
-          <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight">{signup ? t("auth.signupTitle") : t("auth.loginTitle")}</h1>
+        <div className="auth-form m-auto my-10 w-full max-w-[28rem] space-y-7 sm:p-4">
+          <div className="hidden lg:block"><Brand /></div>
+          <div className="space-y-3">
+            <p className="eyebrow">{t("ui.welcome")}</p>
+            <h1 className="text-3xl font-semibold tracking-tight">{signup ? t("auth.signupTitle") : t("auth.loginTitle")}</h1>
             <p className="text-sm text-muted">{signup ? t("auth.signupSub") : t("auth.loginSub")}</p>
           </div>
 
-          <form onSubmit={submit} className="space-y-4" noValidate={false}>
+          <form aria-busy={busy} onSubmit={submit} className="space-y-4" noValidate={false}>
             {signup && (
               <fieldset className="space-y-2">
                 <legend className="mb-1.5 text-[13px] font-medium">{t("auth.role")}</legend>
@@ -116,13 +119,13 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
               </>
             ) : (
               <Field htmlFor="identifier" label={t("auth.identifier")}>
-                <input id="identifier" name="identifier" required maxLength={160} autoComplete="username" autoFocus className="input" />
+                <input id="identifier" name="identifier" required maxLength={160} autoComplete="username" aria-invalid={!!error} aria-describedby={error ? "auth-error" : undefined} className="input" />
               </Field>
             )}
             <PasswordField id="password" name="password" label={t("auth.password")} signup={signup} />
 
             {error && (
-              <p role="alert" className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-[13px] font-medium text-danger">
+              <p id="auth-error" role="alert" className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-[13px] font-medium text-danger">
                 <CircleAlert size={15} aria-hidden className="mt-0.5 shrink-0" />
                 {error}
               </p>

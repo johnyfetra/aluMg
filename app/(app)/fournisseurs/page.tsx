@@ -1,4 +1,5 @@
 "use client";
+import { LoadingState, ErrorState } from "@/components/Feedback";
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -8,8 +9,8 @@ import { useI18n } from "@/lib/i18n";
 import type { Market, Settings } from "@/lib/model";
 
 export default function SuppliersPage() {
-  const { settings } = useSettings();
-  return settings ? <Form initial={settings} /> : null;
+  const { settings, error, retry } = useSettings();
+  return error ? <ErrorState retry={retry} /> : settings ? <Form initial={settings} /> : <LoadingState />;
 }
 
 // Menu « Fournisseurs » : le catalogue général du menuisier, utilisé par tous ses devis tant qu'un devis n'a pas son propre catalogue.

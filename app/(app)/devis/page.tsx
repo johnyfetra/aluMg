@@ -3,6 +3,7 @@ import { Copy, Download, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react"
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { LoadingState, ErrorState, EmptyState } from "@/components/Feedback";
 import { StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
 import { useQuotes, useSettings } from "@/lib/client";
@@ -25,10 +26,10 @@ function QuotesView() {
   const ask = useConfirm();
   const router = useRouter();
   const params = useSearchParams();
-  const { quotes = [], loading, save, remove } = useQuotes();
+  const { quotes = [], loading, error, retry, save, remove } = useQuotes();
   const { settings } = useSettings();
   const [search, setSearch] = useState(params.get("q") ?? "");
-  const [status, setStatus] = useState<Status | "all">("all");
+  const [status, setStatus] = useState<Status | "all">(STATUSES.includes(params.get("status") as Status) ? params.get("status") as Status : "all");
 
   const needle = search.trim().toLowerCase();
   const shown = [...quotes]
@@ -57,7 +58,7 @@ function QuotesView() {
     router.push(`/devis/${copy.id}`);
   };
   const actions = (q: Quote) => (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => pdf(q)} aria-label={`${t("quotes.pdf")} ${q.number}`}>
         <Download size={16} aria-hidden />
         PDF
@@ -111,7 +112,7 @@ function QuotesView() {
         </div>
       )}
 
-      {!loading && quotes.length === 0 ? (
+      {error ? <ErrorState retry={retry} /> : loading ? <LoadingState /> : quotes.length === 0 ? (
         <div className="card py-12 text-center">
           <p className="mb-4 text-muted">{t("quotes.empty")}</p>
           <Link href="/devis/nouveau" className="btn-primary">
@@ -119,20 +120,20 @@ function QuotesView() {
           </Link>
         </div>
       ) : shown.length === 0 && !loading ? (
-        <p className="text-muted">{t("quotes.noResult")}</p>
+        <EmptyState message={t("quotes.noResult")} />
       ) : (
         <>
           {/* Tableau sur grand écran */}
-          <div className="card hidden overflow-hidden !p-0 md:block">
+          <div className="card hidden overflow-x-auto !p-0 md:block">
             <table className="w-full text-sm">
               <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">{t("quotes.col.number")}</th>
-                  <th className="px-4 py-3 font-semibold">{t("quotes.col.client")}</th>
-                  <th className="px-4 py-3 font-semibold">{t("quotes.col.date")}</th>
-                  <th className="px-4 py-3 text-right font-semibold">{t("quotes.col.total")}</th>
-                  <th className="px-4 py-3 font-semibold">{t("quotes.col.status")}</th>
-                  <th className="px-4 py-3 text-right font-semibold">{t("quotes.col.actions")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("quotes.col.number")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("quotes.col.client")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("quotes.col.date")}</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">{t("quotes.col.total")}</th>
+                  <th scope="col" className="px-4 py-3 font-semibold">{t("quotes.col.status")}</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">{t("quotes.col.actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">

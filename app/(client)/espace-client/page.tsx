@@ -2,6 +2,7 @@
 import { ArrowRight, CheckCheck, Hammer, Hourglass, MailCheck, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { LoadingState, ErrorState, EmptyState } from "@/components/Feedback";
 import { Avatar, Progress, StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
 import { useClientQuotes, useMe } from "@/lib/client";
@@ -21,7 +22,7 @@ const GROUPS = {
 export default function ClientDashboard() {
   const { t, locale } = useI18n();
   const { data: me } = useMe();
-  const { data: list = [], isLoading } = useClientQuotes();
+  const { data: list = [], isLoading, error, mutate } = useClientQuotes();
   const [group, setGroup] = useState<keyof typeof GROUPS>("all");
   const count = (g: keyof typeof GROUPS) => list.filter((c) => GROUPS[g].includes(c.quote.status)).length;
   const shown = list.filter((c) => group === "all" || GROUPS[group].includes(c.quote.status));
@@ -35,7 +36,7 @@ export default function ClientDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="page-heading flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">
             {t("dash.hello")}
@@ -49,6 +50,7 @@ export default function ClientDashboard() {
         </Link>}
       </div>
 
+      {error ? <ErrorState retry={() => { void mutate(); }} /> : isLoading ? <LoadingState /> : <>
       <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map(([k, v, Icon, color]) => (
           <div key={k} className="card flex items-center gap-4 !p-4">
@@ -83,13 +85,14 @@ export default function ClientDashboard() {
             ))}
           </div>
 
+          {shown.length === 0 && <EmptyState message={t("quotes.noResult")} />}
           <ul className="grid gap-4 xl:grid-cols-2">
             {shown.map(({ quote: q, menuisier: m }) => {
               const priced = q.status !== "requested" && q.status !== "draft";
               return (
                 <li key={q.id}>
                   <Link href={`/espace-client/devis/${q.id}`} className="card block space-y-3 transition-shadow hover:shadow-lg">
-                    <div className="flex items-start gap-3">
+                    <div className="flex flex-wrap items-start gap-3">
                       <Avatar name={m.name} src={m.logo} size={48} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold">{m.name}</p>
@@ -100,6 +103,7 @@ export default function ClientDashboard() {
                       </div>
                       <StatusBadge status={q.status} label={t(`cstatus.${q.status}`)} />
                     </div>
+                    <p className="rounded-lg bg-surface-2 px-3 py-2 text-sm leading-relaxed">{t(`ui.next.${q.status}`)}</p>
                     {(q.status === "accepted" || q.status === "in_progress" || q.status === "completed") && <Progress value={q.progress} label={`${q.number} — ${t("sites.progress")}`} />}
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted">
@@ -121,6 +125,7 @@ export default function ClientDashboard() {
           </ul>
         </>
       )}
+      </>}
     </div>
   );
 }

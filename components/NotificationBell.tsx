@@ -12,7 +12,9 @@ export default function NotificationBell() {
   const { t, locale } = useI18n();
   const router = useRouter();
   const { data: me } = useSession();
-  const { data } = useNotifications();
+  const { data, error: loadError, isLoading, mutate: reload } = useNotifications();
+  const [error, setError] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -38,13 +40,24 @@ export default function NotificationBell() {
 
   if (!me || (me.role !== "client" && me.role !== "menuisier")) return null;
   const go = async (n: NonNullable<typeof data>["items"][number]) => {
-    setOpen(false);
-    if (!n.read) await request("POST", "/api/notifications", { id: n.id }).then(() => mutate("/api/notifications"));
-    router.push(notificationHref(me.role, n));
+    if (busy) return;
+    setError(false);
+    setBusy(true);
+    try {
+      if (!n.read) await request("POST", "/api/notifications", { id: n.id }).then(() => mutate("/api/notifications"));
+      setOpen(false);
+      router.push(notificationHref(me.role, n));
+    } catch { setError(true); }
+    finally { setBusy(false); }
   };
   const readAll = async () => {
-    await request("POST", "/api/notifications", {});
-    await mutate("/api/notifications");
+    setBusy(true);
+    setError(false);
+    try {
+      await request("POST", "/api/notifications", {});
+      await mutate("/api/notifications");
+    } catch { setError(true); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -62,18 +75,19 @@ export default function NotificationBell() {
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 className="text-sm font-semibold">{t("notif.title")}</h2>
             {unread > 0 && (
-              <button type="button" onClick={readAll} className="text-xs font-semibold text-primary hover:underline">
+              <button type="button" disabled={busy} onClick={readAll} className="min-h-9 text-xs font-semibold text-primary hover:underline disabled:opacity-50">
                 {t("notif.markAll")}
               </button>
             )}
           </div>
-          {(data?.items.length ?? 0) === 0 ? (
+          {error && <p role="alert" className="px-4 py-3 text-sm text-danger">{t("common.error")}</p>}
+          {loadError ? <div role="alert" className="space-y-3 p-4"><p className="text-sm text-danger">{t("common.error")}</p><button type="button" className="btn-secondary" onClick={() => { void reload(); }}>{t("ui.retry")}</button></div> : isLoading ? <p role="status" className="p-8 text-center text-sm text-muted">{t("common.loading")}</p> : (data?.items.length ?? 0) === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-muted">{t("notif.empty")}</p>
           ) : (
-            <ul className="max-h-[26rem] divide-y divide-line overflow-y-auto">
+            <ul className="max-h-[min(26rem,65dvh)] divide-y divide-line overflow-y-auto">
               {data!.items.map((n) => (
                 <li key={n.id}>
-                  <button type="button" onClick={() => go(n)} className={`flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-surface-2 ${n.read ? "" : "bg-primary/5"}`}>
+                  <button type="button" disabled={busy} onClick={() => go(n)} className={`flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-surface-2 disabled:opacity-50 ${n.read ? "" : "bg-primary/5"}`}>
                     <span aria-hidden className={`mt-1.5 size-2 shrink-0 rounded-full ${n.read ? "bg-transparent" : "bg-primary"}`} />
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold">{t(`notif.${n.kind}` as keyof Messages)}</span>

@@ -54,8 +54,8 @@ export default function Landing() {
     <>
       {/* ---------- héros : toujours sombre (comme la barre latérale), halos de couleur ---------- */}
       <section className="relative isolate overflow-hidden bg-gradient-to-br from-(--hero-from) to-(--hero-to) text-white">
-        <div aria-hidden className="absolute -left-24 top-10 -z-10 size-96 rounded-full bg-red-600/25 blur-3xl" />
-        <div aria-hidden className="absolute right-0 top-0 -z-10 size-[28rem] rounded-full bg-rose-500/20 blur-3xl" />
+        <div aria-hidden className="absolute -left-24 top-10 -z-10 size-96 rounded-full bg-primary/20 blur-3xl" />
+        <div aria-hidden className="absolute right-0 top-0 -z-10 size-[28rem] rounded-full bg-accent/20 blur-3xl" />
         <div aria-hidden className="absolute bottom-0 left-1/3 -z-10 size-80 rounded-full bg-teal-400/20 blur-3xl" />
         <div className="mx-auto grid max-w-[110rem] items-center gap-12 px-4 py-16 sm:px-8 sm:py-24 lg:grid-cols-[1.1fr_1fr] xl:px-10">
           <div>
@@ -109,7 +109,7 @@ export default function Landing() {
                   { o: demo({ opening: "ouvrant", leaves: 2, finish: "anthracite", width: 1400, height: 1400, glassType: "teinte-bronze" }), cls: "right-0 top-32 w-[62%] rotate-3" },
                 ].map(({ o, cls }, i) => <div key={i} className={`absolute rounded-2xl bg-white p-3 shadow-2xl ${cls}`} dangerouslySetInnerHTML={{ __html: drawingSvg(o, `hero${i}`, 440, 300).svg }} />))}
             <div className="absolute -right-2 bottom-24 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-slate-900 shadow-2xl">
-              <span className="grid size-10 place-items-center rounded-xl bg-red-100 text-red-600">
+              <span className="grid size-10 place-items-center rounded-xl bg-surface-2 text-primary">
                 <Star size={20} fill="currentColor" />
               </span>
               <span>
@@ -208,7 +208,7 @@ export default function Landing() {
 
       {/* ---------- bandeau menuisiers ---------- */}
       <section className="px-4 pb-16 sm:px-8 xl:px-10">
-        <div className="relative mx-auto max-w-[110rem] overflow-hidden rounded-3xl bg-gradient-to-br from-red-800 via-red-900 to-zinc-900 p-8 text-white sm:p-14">
+        <div className="relative mx-auto max-w-[110rem] overflow-hidden rounded-3xl bg-gradient-to-br from-(--hero-to) via-(--hero-from) to-(--hero-from) p-8 text-white sm:p-14">
           <div aria-hidden className="absolute -right-20 -top-20 size-80 rounded-full bg-white/10 blur-2xl" />
           <div className="relative grid items-center gap-10 lg:grid-cols-[1.2fr_1fr]">
             <div>
