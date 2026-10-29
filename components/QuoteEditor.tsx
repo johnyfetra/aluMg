@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { mutate } from "swr";
 import IntakePanel from "./IntakePanel";
 import ProfileNeeds from "./ProfileNeeds";
+import QuoteDiscussion from "./QuoteDiscussion";
 import QuoteStatusBar from "./QuoteStatusBar";
 import { useToast } from "./Toast";
 import { openTariffs } from "./TariffsPanel";
@@ -522,7 +523,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
           <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
             <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
             {q.clientId && persisted && <ChatButton target={{ client: q.clientId }} label={t("msg.contactClient")} />}
-            {q.clientId && persisted && <Timeline quoteId={q.id} />}
+            {q.clientId && persisted && <QuoteDiscussion quoteId={q.id} me="menuisier" />}
+            {q.clientId && persisted && <Timeline quoteId={q.id} canWrite={false} messages={false} />}
           </fieldset>
         </div>
 

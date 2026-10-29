@@ -91,7 +91,8 @@ export const useMenuisier = (slug: string) => useSWR<PublicMenuisier>(`/api/publ
 
 export const useClientQuotes = () => useSWR<ClientQuote[]>("/api/client/quotes", fetcher, { revalidateOnFocus: false });
 export const useClientQuote = (id: string) => useSWR<ClientQuote>(`/api/client/quotes/${id}`, fetcher, { refreshInterval: 10000 });
-export const useEvents = (quoteId: string) => useSWR<EventView[]>(`/api/quotes/${quoteId}/events`, fetcher, { revalidateOnFocus: false });
+// `live` : la discussion du devis se rafraîchit toute seule (l'autre partie peut écrire à tout moment)
+export const useEvents = (quoteId: string, live = false) => useSWR<EventView[]>(`/api/quotes/${quoteId}/events`, fetcher, { revalidateOnFocus: live, refreshInterval: live ? 6000 : 0 });
 
 export function useProfile() {
   const { data, mutate, isLoading } = useSWR<Profile>("/api/profile", fetcher, { revalidateOnFocus: false });

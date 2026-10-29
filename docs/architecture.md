@@ -237,3 +237,9 @@ Le client peut mettre un ouvrage « en attente » (`lineReviews[id].state = "hol
 ## Assistant : fautes de frappe et couleurs
 
 `analyze` corrige d'abord les mots proches du vocabulaire connu (« blan », « europpern », « coullisante ») avec une distance d'édition bornée (mots tronqués ou ≥ 5 lettres, mêmes premières lettres, liste de mots courants jamais corrigés). Plusieurs couleurs pour un même ouvrage se répartissent : « 2 fenêtres, une marron et une blanche », « 3 fenêtres, 2 blanches et 1 marron », « 2 fenêtres marron et blanche » (une de chaque). Un second morceau avec ses propres cotes (« … 120x100 et 2 marron 150x120 ») devient une variante de l'ouvrage. Corpus de référence : `lib/intake.corpus.test.ts`.
+
+## Aide, discussion de devis, envoi à plusieurs professionnels
+
+- **Infobulles « i »** (`InfoTip`, glossaire `help.*` en trois langues) : à côté des libellés du métier (catégorie, ouverture, vantaux, gamme, couleur, verre, épaisseur, dimensions…), dans l'éditeur, la demande et la fiche client d'un ouvrage. Survol, clavier (Échap ferme) ou toucher ; une seule bulle à la fois ; elle ne change pas la hauteur des lignes.
+- **Discussion du devis** (`QuoteDiscussion`) : les messages `message` du devis, côté client et menuisier, avec historique, rafraîchis toutes les 6 s ; l'autre partie est notifiée. L'historique des étapes (`Timeline`) reste à part.
+- **Envoi à plusieurs professionnels** (`RecipientsPicker`, `MultiSelect`) : jusqu'à 5 ; une demande par professionnel (chacun répond par son devis) ; un échec n'annule pas les autres.

@@ -486,4 +486,16 @@ describe("avis du client par ouvrage", () => {
     for (const l of q.lines) await wf.applyAction(c1, q.id, A({ type: "review_line", lineId: l.id, state: "hold", rev: await rev(q.id) }));
     expect(await wf.applyAction(c1, q.id, A({ type: "accept", rev: await rev(q.id) }))).toEqual({ ok: false, error: "nothing_to_accept" });
   });
+  it("discussion du devis : un message écrit par l'une des parties est dans l'historique et prévient l'autre", async () => {
+    const q = await sentQuote();
+    const before = (await notif.listNotifications(m1)).items.filter((n) => n.quoteId === q.id && n.kind === "message").length;
+    expect((await wf.applyAction(c1, q.id, A({ type: "message", message: "Pouvez-vous passer jeudi ?" }))).ok).toBe(true);
+    expect((await wf.applyAction(m1, q.id, A({ type: "message", message: "Oui, jeudi 9 h." }))).ok).toBe(true);
+    const msgs = (await wf.listEvents(q.id)).filter((e) => e.kind === "message");
+    expect(msgs.map((m) => [m.side, m.message])).toEqual([["client", "Pouvez-vous passer jeudi ?"], ["menuisier", "Oui, jeudi 9 h."]]);
+    expect((await notif.listNotifications(m1)).items.filter((n) => n.quoteId === q.id && n.kind === "message")).toHaveLength(before + 1); // le menuisier est prévenu du message du client
+    expect((await notif.listNotifications(c1)).items.some((n) => n.quoteId === q.id && n.kind === "message")).toBe(true);
+    expect(await wf.applyAction(c2, q.id, A({ type: "message", message: "intrus" }))).toEqual({ ok: false, error: "not_found" }); // un tiers n'écrit pas
+  });
 });
+

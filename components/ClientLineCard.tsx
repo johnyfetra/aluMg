@@ -2,6 +2,7 @@
 import { FinishSwatch } from "./Swatch";
 import { Box, ChevronDown, MessageSquare, PencilRuler } from "lucide-react";
 import { useState } from "react";
+import InfoTip from "./InfoTip";
 import LineComments from "./LineComments";
 import LineDecision, { type ReviewBody } from "./LineDecision";
 import Viewer3DLoader from "./Viewer3DLoader";
@@ -92,19 +93,31 @@ export default function ClientLineCard({ quoteId, line: l, index, mark, priced, 
               <section aria-label={t("cl.specs")}>
                 <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold"><span aria-hidden className="h-4 w-1 rounded-full bg-primary" />{t("cl.specs")}</h4>
                 <dl className="divide-y divide-line rounded-xl border border-line text-sm">
+                  {(l.category === "fenetre" || l.category === "porte") && (
+                    <div className="flex justify-between gap-4 px-3 py-2">
+                      <dt className="text-muted">{t("editor.opening")}<InfoTip term="opening" /></dt>
+                      <dd className="font-medium">{cap(t(`opening.${l.opening}`))}</dd>
+                    </div>
+                  )}
+                  {(l.category === "fenetre" || l.category === "porte" || l.category === "cloison") && l.leaves > 1 && (
+                    <div className="flex justify-between gap-4 px-3 py-2">
+                      <dt className="text-muted">{t(l.category === "cloison" ? "editor.panels" : "editor.leaves")}<InfoTip term="leaves" /></dt>
+                      <dd className="font-medium tabular-nums">{l.leaves}</dd>
+                    </div>
+                  )}
                   <div className="flex justify-between gap-4 px-3 py-2">
-                    <dt className="text-muted">{t("cl.dimensions")}</dt>
+                    <dt className="text-muted">{t("cl.dimensions")}<InfoTip term="dims" /></dt>
                     <dd className="font-medium tabular-nums">{l.width} × {l.height} {t("common.mm")}</dd>
                   </div>
                   <div className="flex justify-between gap-4 px-3 py-2">
-                    <dt className="text-muted">{t("editor.finish")}</dt>
+                    <dt className="text-muted">{t("editor.finish")}<InfoTip term="finish" /></dt>
                     <dd className="inline-flex items-center gap-2 font-medium">
                       <FinishSwatch id={finish?.id ?? "blanc"} size={16} />
                       {finish ? t(finish.label) : l.finish}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-4 px-3 py-2">
-                    <dt className="text-muted">{t("editor.range")}</dt>
+                    <dt className="text-muted">{t("editor.range")}<InfoTip term="range" /></dt>
                     <dd className="font-medium">{t(`range.${l.range}`)}</dd>
                   </div>
                   {lineDetails(l, t).slice(1).map((d) => (
@@ -114,7 +127,7 @@ export default function ClientLineCard({ quoteId, line: l, index, mark, priced, 
                   ))}
                   {marks.length > 0 && (
                     <div className="px-3 py-2">
-                      <dt className="mb-1 text-muted">{t("editor.leafConfig")}</dt>
+                      <dt className="mb-1 text-muted">{t("editor.leafConfig")}<InfoTip term="leafCfg" /></dt>
                       <dd>
                         <ul className="flex flex-wrap gap-1.5">
                           {marks.map((m, i) => (

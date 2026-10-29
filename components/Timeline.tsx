@@ -8,9 +8,10 @@ import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 const ICON = { created: FilePlus2, sent: Send, declined: XCircle, accepted: ThumbsUp, rejected: ThumbsDown, change_requested: MessageSquareWarning, progress: Hammer, completed: CheckCheck, reviewed: Star, message: MessageSquare, revised: Pencil, line_review: ListChecks, approve_all: CheckCheck } as const;
 
 // Historique d'un devis (demande, envoi, négociation, avancement, évaluation) et zone de message entre le client et le menuisier.
-export default function Timeline({ quoteId, canWrite = true }: { quoteId: string; canWrite?: boolean }) {
+export default function Timeline({ quoteId, canWrite = true, messages = true }: { quoteId: string; canWrite?: boolean; messages?: boolean }) {
   const { t, locale } = useI18n();
-  const { data: events = [] } = useEvents(quoteId);
+  const { data: all = [] } = useEvents(quoteId);
+  const events = messages ? all : all.filter((e) => e.kind !== "message"); // la discussion du devis a sa propre zone
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const fmt = (iso: string) => new Date(iso).toLocaleString(DATE_LOCALE[locale], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });

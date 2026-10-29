@@ -1,20 +1,19 @@
 "use client";
 import { Send } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import useSWR, { mutate } from "swr";
+import { mutate } from "swr";
 import { LineCard } from "./quote/LineCard";
 import { newLine } from "./quote/line";
 import IntakeAssistant from "./IntakeAssistant";
-import { Avatar, Field, Stars } from "./ui";
+import RecipientsPicker from "./RecipientsPicker";
+import { Field } from "./ui";
 import { analyze, toLine } from "@/lib/intake";
 import { useToast } from "./Toast";
 import { normalize } from "@/lib/calc";
-import { ApiError, fetcher, request, useClientQuotes, useConversations, useDirectory } from "@/lib/client";
+import { ApiError, request, useClientQuotes, useConversations, useDirectory } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { DEFAULT_SETTINGS, type Line, lineSchema } from "@/lib/model";
-import Select from "./Select";
 
 // Formulaire de demande de devis d'un client : il décrit ses ouvrages (sans voir de prix) ; le menuisier répond avec son devis.
 export default function RequestForm() {
@@ -30,7 +29,7 @@ export default function RequestForm() {
     ...convs.filter((c) => c.other.role === "menuisier").map((c) => [c.other.slug, { slug: c.other.slug, name: c.other.name, logo: c.other.logo, city: "", phone: "" }] as const),
     ...mine.map((c) => [c.menuisier.slug, { slug: c.menuisier.slug, name: c.menuisier.name, logo: c.menuisier.logo, city: c.menuisier.city, phone: c.menuisier.phone }] as const), // les devis reçus donnent lieu et numéro : ils l'emportent
   ].filter(([k]) => !!k)).values()];
-  const [slug, setSlug] = useState(preset);
+  const [slugs, setSlugs] = useState<string[]>(preset ? [preset] : []);
   const [project, setProject] = useState("");
   const [message, setMessage] = useState("");
   const [siteAddress, setSiteAddress] = useState("");
@@ -46,29 +45,30 @@ export default function RequestForm() {
   // tant que le client ne détaille pas lui-même ses ouvrages, la demande est préparée à partir de sa description (assistant)
   const [touched, setTouched] = useState(false);
   const described = useMemo(() => (touched ? [] : analyze(`${project}. ${message}`).items), [touched, project, message]);
-  const chosen = directory.find((m) => m.slug === slug);
-  // lien de demande d'un menuisier hors annuaire (MVP) : on affiche seulement son nom et son logo
-  const { data: target } = useSWR<{ name: string; logo: string }>(slug && !chosen ? `/api/requests/target?slug=${encodeURIComponent(slug)}` : null, fetcher, { shouldRetryOnError: false });
-
   const valid = (l: Line) => lineSchema.safeParse(l).success;
   const setLine = (i: number, patch: Partial<Line>) => (setTouched(true), setLines((cur) => cur.map((l, j) => (j === i ? normalize({ ...l, ...patch }) : l))));
   const num = (v: string) => Number(v) || 0;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!slug) return setError(t("req.pickJoiner"));
+    if (!slugs.length) return setError(t("req.pickJoiner"));
     if (!described.length && (!lines.length || !lines.every(valid))) return setError(t(message.trim() ? "req.intakeEmpty" : "editor.needLine"));
     setBusy(true);
     setError("");
-    try {
-      const q = await request<{ id: string }>("POST", "/api/requests", { menuisier: slug, project, message, siteAddress, wantedDate, lines: described.length ? [] : lines });
-      await mutate("/api/client/quotes");
-      toast.success(t("toast.requestSent"), t("toast.requestSentText"));
-      router.replace(`/espace-client/devis/${q.id}`);
-    } catch (err) {
+    // une demande par professionnel (chacun répond par son propre devis, comparables ensuite) ; l'échec d'un envoi n'annule pas les autres
+    const body = { project, message, siteAddress, wantedDate, lines: described.length ? [] : lines };
+    const results = await Promise.allSettled(slugs.map((menuisier) => request<{ id: string }>("POST", "/api/requests", { menuisier, ...body })));
+    const ok = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+    const failed = results.flatMap((r, i) => (r.status === "rejected" ? [{ slug: slugs[i], err: r.reason }] : []));
+    if (ok.length) await mutate("/api/client/quotes");
+    if (!ok.length) {
+      const err = failed[0].err;
       setError(err instanceof ApiError && err.code === "no_menuisier" ? t("mp.notFound") : err instanceof ApiError && err.code === "intake_empty" ? t("req.intakeEmpty") : t("common.error"));
-      setBusy(false);
+      return setBusy(false);
     }
+    if (failed.length) toast.warning(t("toast.requestPartial"), `${failed.length} ${t("toast.requestPartialText")}`);
+    else toast.success(ok.length > 1 ? `${t("toast.requestSentMany")} · ${ok.length}` : t("toast.requestSent"), t(ok.length > 1 ? "toast.requestSentManyText" : "toast.requestSentText"));
+    router.replace(ok.length === 1 ? `/espace-client/devis/${ok[0].id}` : "/espace-client");
   };
 
   return (
@@ -82,59 +82,7 @@ export default function RequestForm() {
         <h2 id="h-to" className="text-lg font-semibold">
           {t("req.joiner")}
         </h2>
-        <div className="grid items-start gap-4 lg:grid-cols-2">
-          {directory.length > 0 ? (
-            <Field htmlFor="rq-m" label={t("req.joiner")}>
-              <Select id="rq-m" required value={slug} onChange={setSlug} options={[{ value: "", label: t("req.pickJoiner") }, ...directory.map((m) => ({
-                value: m.slug, label: m.name, description: m.city || undefined,
-                leading: <Avatar name={m.name} src={m.logo} size={32} />,
-                meta: m.reviews > 0 ? <span className="inline-flex items-center gap-1"><Stars value={1} size={12} />{m.rating.toFixed(1)} ({m.reviews})</span> : undefined,
-              }))]} />
-            </Field>
-          ) : !preset ? (
-            <fieldset className="m-0 min-w-0 border-0 p-0 lg:col-span-2">
-              <legend className="mb-2 text-sm font-medium">{t("req.knownTitle")}</legend>
-              {known.length ? (
-                <div role="radiogroup" aria-label={t("req.knownTitle")} className="grid gap-2 sm:grid-cols-2">
-                  {known.map((k) => (
-                    <button key={k.slug} type="button" role="radio" aria-checked={slug === k.slug} onClick={() => setSlug(k.slug)} className={`flex min-h-14 items-center gap-3 rounded-xl border p-3 text-left transition-colors ${slug === k.slug ? "border-primary bg-primary/10" : "border-line hover:bg-surface-2"}`}>
-                      <Avatar name={k.name} src={k.logo} size={40} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-semibold">{k.name}</span>
-                        {(k.city || k.phone) && <span className="block truncate text-xs text-muted">{[k.city, k.phone].filter(Boolean).join(" · ")}</span>}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="rounded-xl bg-surface-2 px-4 py-3 text-sm text-muted">{t("req.noKnown")}</p>
-              )}
-            </fieldset>
-          ) : null}
-          {!chosen && target && (
-            <div className="flex items-center gap-3 rounded-xl border border-line p-3">
-              <Avatar name={target.name} src={target.logo} size={48} />
-              <span className="min-w-0 truncate font-semibold">{target.name}</span>
-            </div>
-          )}
-          {chosen && (
-            <Link href={`/menuisiers/${chosen.slug}`} target="_blank" className="flex items-center gap-3 rounded-xl border border-line p-3 hover:bg-surface-2">
-              <Avatar name={chosen.name} src={chosen.logo} size={48} />
-              <span className="min-w-0">
-                <span className="block truncate font-semibold">{chosen.name}</span>
-                <span className="flex items-center gap-2 text-sm text-muted">
-                  {chosen.reviews > 0 ? (
-                    <>
-                      <Stars value={chosen.rating} size={14} /> {chosen.rating.toFixed(1)} ({chosen.reviews})
-                    </>
-                  ) : (
-                    t("dir.noReviews")
-                  )}
-                </span>
-              </span>
-            </Link>
-          )}
-        </div>
+        <RecipientsPicker value={slugs} onChange={setSlugs} directory={directory} known={known} preset={preset} t={t} />
       </section>
 
       <section className="card space-y-4" aria-labelledby="h-need">

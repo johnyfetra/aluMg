@@ -238,7 +238,7 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
     }
     // l'autre partie est prévenue des étapes du devis
     const other = side === "menuisier" ? clientId : row.userId;
-    const told = ["send", "decline", "accept", "reject", "request_change", "review", "approve_all"].includes(a.type) || (a.type === "review_line" && a.state === "request") || (a.type === "progress" && progress !== row.progress);
+    const told = ["send", "decline", "accept", "reject", "request_change", "review", "approve_all", "message"].includes(a.type) || (a.type === "review_line" && a.state === "request") || (a.type === "progress" && progress !== row.progress);
     if (other && told) await notify(tx, { userId: other, quoteId, kind: a.type, message: "message" in a ? a.message : "comment" in a ? a.comment : "" });
     const log = (kind: string, message = "", data: Record<string, unknown> = {}) => tx.insert(schema.quoteEvents).values({ quoteId, actorId, kind, message, data });
     switch (a.type) {

@@ -4,6 +4,7 @@ import { Box, CheckCircle2, ChevronDown, Copy, MessageSquareWarning, PauseCircle
 import { createContext, useContext, useState } from "react";
 import LineComments from "../LineComments";
 import Viewer3DLoader from "../Viewer3DLoader";
+import InfoTip, { type HelpTerm } from "../InfoTip";
 import { Choice, Field, FinishPicker } from "../ui";
 import { billedArea, cutList, cuttingPlan, fmt, lineTotal } from "@/lib/calc";
 import { costLine, marginOf } from "@/lib/costing";
@@ -66,13 +67,13 @@ export function LineCard({
        <div className="grid gap-3 @2xl:grid-cols-[1.15fr_1fr] @2xl:items-start">
         <div className="contents @2xl:flex @2xl:min-w-0 @2xl:flex-col @2xl:gap-3">
         <Panel title={t("editor.sectionConfig")} className="order-2 @2xl:order-none">
-          <Choice dense name={p("cat")} legend={t("editor.category")} value={cat} options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))} onChange={(category) => onChange({ category })} />
+          <Choice dense name={p("cat")} legend={t("editor.category")} help="category" value={cat} options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))} onChange={(category) => onChange({ category })} />
 
           {cat === "volet" && (
             <div className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
-                <Choice dense name={p("sh")} legend={t("editor.shutter")} value={l.shutter} options={SHUTTERS.map((s) => ({ value: s, label: t(`shutter.${s}`) }))} onChange={(shutter) => onChange({ shutter })} />
-                <Choice dense name={p("ct")} legend={t("editor.control")} value={l.control} options={CONTROLS.map((c) => ({ value: c, label: cap(t(`control.${c}`)) + pct(c === "motorise" ? "control.motorise" : "") }))} onChange={(control) => onChange({ control })} />
+                <Choice dense name={p("sh")} legend={t("editor.shutter")} help="shutter" value={l.shutter} options={SHUTTERS.map((s) => ({ value: s, label: t(`shutter.${s}`) }))} onChange={(shutter) => onChange({ shutter })} />
+                <Choice dense name={p("ct")} legend={t("editor.control")} help="control" value={l.control} options={CONTROLS.map((c) => ({ value: c, label: cap(t(`control.${c}`)) + pct(c === "motorise" ? "control.motorise" : "") }))} onChange={(control) => onChange({ control })} />
               </div>
               <Choice
                 dense
@@ -99,8 +100,8 @@ export function LineCard({
               </label>
             </div>
           )}
-          {cat === "garde-corps" && <Choice dense name={p("gd")} legend={t("editor.guard")} value={l.guard} options={GUARDS.map((g) => ({ value: g, label: cap(t(`guard.${g}`)) }))} onChange={(guard) => onChange({ guard })} />}
-          {openable && <Choice dense name={p("op")} legend={t("editor.opening")} value={l.opening} options={OPENINGS_BY_CATEGORY[cat].map((o) => ({ value: o, label: cap(t(`opening.${o}`)) }))} onChange={(opening) => onChange({ opening })} />}
+          {cat === "garde-corps" && <Choice dense name={p("gd")} legend={t("editor.guard")} help="guard" value={l.guard} options={GUARDS.map((g) => ({ value: g, label: cap(t(`guard.${g}`)) }))} onChange={(guard) => onChange({ guard })} />}
+          {openable && <Choice dense name={p("op")} legend={t("editor.opening")} help="opening" value={l.opening} options={OPENINGS_BY_CATEGORY[cat].map((o) => ({ value: o, label: cap(t(`opening.${o}`)) }))} onChange={(opening) => onChange({ opening })} />}
 
           {(spec && spec.max > spec.min) || cat === "porte" ? (
             <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
@@ -108,6 +109,7 @@ export function LineCard({
                 <Stepper
                   id={p("lv")}
                   label={cat === "cloison" ? t("editor.panels") : t("editor.leaves")}
+                  help="leaves"
                   value={l.leaves}
                   min={spec.min}
                   max={spec.max}
@@ -115,7 +117,7 @@ export function LineCard({
                   onChange={(leaves) => onChange({ leaves })}
                 />
               )}
-              {cat === "porte" && <Choice dense name={p("in")} legend={t("editor.infill")} value={l.infill} options={INFILLS.map((x) => ({ value: x, label: t(`infill.${x}`) }))} onChange={(infill) => onChange({ infill })} />}
+              {cat === "porte" && <Choice dense name={p("in")} legend={t("editor.infill")} help="infill" value={l.infill} options={INFILLS.map((x) => ({ value: x, label: t(`infill.${x}`) }))} onChange={(infill) => onChange({ infill })} />}
             </div>
           ) : null}
 
@@ -124,10 +126,10 @@ export function LineCard({
 
         <Panel title={t("editor.sectionSizePlace")} className="order-3 @2xl:order-none">
           <div className="grid grid-cols-3 gap-3">
-            <Field htmlFor={p("w")} label={cat === "garde-corps" ? t("editor.length") : t("editor.width")}>
+            <Field htmlFor={p("w")} label={cat === "garde-corps" ? t("editor.length") : t("editor.width")} help="dims">
               <input id={p("w")} className="input" type="number" inputMode="numeric" value={l.width || ""} aria-invalid={!valid} onChange={(e) => onChange({ width: num(e.target.value) })} />
             </Field>
-            <Field htmlFor={p("h")} label={t("editor.height")}>
+            <Field htmlFor={p("h")} label={t("editor.height")} help="dims">
               <input id={p("h")} className="input" type="number" inputMode="numeric" value={l.height || ""} aria-invalid={!valid} onChange={(e) => onChange({ height: num(e.target.value) })} />
             </Field>
             <Field htmlFor={p("q")} label={t("editor.qty")}>
@@ -137,7 +139,7 @@ export function LineCard({
           {!valid && <p role="alert" className="text-sm font-medium text-danger">{t("editor.invalidSize")}</p>}
           {tooLong && <p role="alert" className="text-sm font-medium text-danger">{t("editor.tooLong")}</p>}
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field htmlFor={p("room")} label={t("editor.room")}>
+            <Field htmlFor={p("room")} label={t("editor.room")} help="room">
               <input id={p("room")} className="input" maxLength={60} placeholder={t("editor.roomPlaceholder")} value={l.room ?? ""} onChange={(e) => onChange({ room: e.target.value })} />
             </Field>
             <Field htmlFor={p("note")} label={t("editor.lineNote")}>
@@ -230,20 +232,20 @@ export function LineCard({
         </div>
       </div>
         <Panel title={t("editor.sectionFinish")} className="order-4 @2xl:order-none">
-          <Choice dense name={p("rg")} legend={t("editor.range")} value={l.range} options={RANGES.filter((r) => r === l.range || rangeOn(settings.market, r)).map((r) => ({ value: r, label: t(`range.${r}`) }))} onChange={(range) => onChange({ range })} />
-          <FinishPicker dense name={p("fn")} legend={t("editor.finish")} value={l.finish} onChange={(finish) => onChange({ finish })} t={t} hide={settings.market.off?.finishes} />
+          <Choice dense name={p("rg")} legend={t("editor.range")} help="range" value={l.range} options={RANGES.filter((r) => r === l.range || rangeOn(settings.market, r)).map((r) => ({ value: r, label: t(`range.${r}`) }))} onChange={(range) => onChange({ range })} />
+          <FinishPicker dense name={p("fn")} legend={t("editor.finish")} help="finish" value={l.finish} onChange={(finish) => onChange({ finish })} t={t} hide={settings.market.off?.finishes} />
 
           {hasGlass && (
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-              <Field htmlFor={p("gt")} label={t("editor.glassType")}>
+              <Field htmlFor={p("gt")} label={t("editor.glassType")} help="glassType">
                 <Select id={p("gt")} value={l.glassType} onChange={(v) => onChange({ glassType: v as Line["glassType"] })} options={GLASSES.map((g) => ({ value: g.id, label: t(g.label), leading: <GlassSwatch id={g.id} size={22} /> }))} />
               </Field>
               </div>
-              <Field htmlFor={p("th")} label={t("editor.thickness")}>
+              <Field htmlFor={p("th")} label={t("editor.thickness")} help="thickness">
                 <Select id={p("th")} value={l.thickness} onChange={(v) => onChange({ thickness: v as Line["thickness"] })} options={THICKNESSES.map((x) => ({ value: x, label: t(`thickness.${x}`) }))} />
               </Field>
-              <Field htmlFor={p("pt")} label={t("editor.pattern")}>
+              <Field htmlFor={p("pt")} label={t("editor.pattern")} help="pattern">
                 <Select id={p("pt")} disabled={!canPattern} value={canPattern ? l.pattern : "none"} onChange={(v) => onChange({ pattern: v as Line["pattern"] })} options={PATTERNS.map((x) => ({ value: x, label: t(`pattern.${x}`) }))} />
               </Field>
             </div>
@@ -359,12 +361,12 @@ function Panel({ title, children, className = "" }: { title: string; children: R
 }
 
 // Nombre entier borné avec − / + (remplace les puces + champ « autre nombre »).
-function Stepper({ id, label, value, min, max, hint, onChange }: { id: string; label: string; value: number; min: number; max: number; hint?: string; onChange: (n: number) => void }) {
+function Stepper({ id, label, help, value, min, max, hint, onChange }: { id: string; label: string; help?: HelpTerm; value: number; min: number; max: number; hint?: string; onChange: (n: number) => void }) {
   const set = (n: number) => onChange(Math.min(max, Math.max(min, Math.round(n) || min)));
   const btn = "grid size-10 place-items-center text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent";
   return (
     <div className="space-y-1">
-      <label htmlFor={id} className="block text-sm font-medium">{label}</label>
+      <div className="flex items-center"><label htmlFor={id} className="text-sm font-medium">{label}</label>{help && <InfoTip term={help} />}</div>
       <div className="inline-flex items-center overflow-hidden rounded-lg border border-line bg-surface">
         <button type="button" className={btn} onClick={() => set(value - 1)} disabled={value <= min} aria-label={`${label} −`}>
           <Minus size={16} aria-hidden />

@@ -1,15 +1,19 @@
 import { FinishSwatch, SwatchCheck } from "./Swatch";
 import { CheckCheck, CheckCircle2, Clock, FileEdit, Hammer, Inbox, MessageSquareWarning, XCircle } from "lucide-react";
 import type { ReactNode } from "react";
+import InfoTip, { type HelpTerm } from "./InfoTip";
 import { FINISHES, FINISH_GROUPS, type FinishId } from "@/lib/model";
 import type { T } from "@/lib/i18n";
 
-export function Field({ label, hint, children, htmlFor }: { label: string; hint?: string; children: ReactNode; htmlFor: string }) {
+export function Field({ label, hint, children, htmlFor, help }: { label: string; hint?: string; children: ReactNode; htmlFor: string; help?: HelpTerm }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={htmlFor} className="block text-[13px] font-medium text-ink/90">
-        {label}
-      </label>
+      <div className="flex items-center">
+        <label htmlFor={htmlFor} className="text-[13px] font-medium text-ink/90">
+          {label}
+        </label>
+        {help && <InfoTip term={help} />}
+      </div>
       {children}
       {hint && <p className="text-xs text-muted">{hint}</p>}
     </div>
@@ -58,9 +62,11 @@ export function Choice<V extends string | number>({
   options,
   onChange,
   dense = false,
+  help,
 }: {
   name: string;
   legend: string;
+  help?: HelpTerm;
   value: V;
   options: readonly { value: V; label: string }[];
   onChange: (v: V) => void;
@@ -68,7 +74,7 @@ export function Choice<V extends string | number>({
 }) {
   return (
     <fieldset className="min-w-0 space-y-1">
-      <legend className="text-sm font-medium">{legend}</legend>
+      <legend className="flex items-center text-sm font-medium">{legend}{help && <InfoTip term={help} />}</legend>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
           <label key={String(o.value)} className="cursor-pointer">
@@ -94,7 +100,7 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
 }
 
 // hide : couleurs que les fournisseurs n'ont pas (la couleur déjà choisie reste visible).
-export function FinishPicker({ name, legend, value, onChange, t, dense = false, hide = [], lead }: { name: string; legend: string; value: FinishId; onChange: (v: FinishId) => void; t: T; dense?: boolean; hide?: readonly FinishId[]; lead?: ReactNode }) {
+export function FinishPicker({ name, legend, value, onChange, t, dense = false, hide = [], lead, help }: { help?: HelpTerm; name: string; legend: string; value: FinishId; onChange: (v: FinishId) => void; t: T; dense?: boolean; hide?: readonly FinishId[]; lead?: ReactNode }) {
   const shown = FINISHES.filter((f) => f.id === value || !hide.includes(f.id));
   const chosen = FINISHES.find((f) => f.id === value);
   if (dense)
@@ -102,7 +108,7 @@ export function FinishPicker({ name, legend, value, onChange, t, dense = false, 
     return (
       <fieldset className="min-w-0 space-y-2">
         <legend className="flex items-center gap-2 text-sm font-medium">
-          {legend}
+          {legend}{help && <InfoTip term={help} />}
           {chosen && <span className="inline-flex items-center gap-1.5 font-normal text-muted">· <FinishSwatch id={chosen.id} size={16} />{t(chosen.label)}</span>}
         </legend>
         <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
@@ -125,7 +131,7 @@ export function FinishPicker({ name, legend, value, onChange, t, dense = false, 
     );
   return (
     <fieldset className="min-w-0 space-y-3">
-      <legend className="text-sm font-medium">{legend}</legend>
+      <legend className="flex items-center text-sm font-medium">{legend}{help && <InfoTip term={help} />}</legend>
       {FINISH_GROUPS.map(([group, label]) => (
         <div key={group}>
           <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">{t(label)}</p>
