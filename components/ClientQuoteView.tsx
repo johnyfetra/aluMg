@@ -1,12 +1,13 @@
 "use client";
 import { LoadingState, ErrorState } from "./Feedback";
-import { ArrowLeft, BadgeCheck, FileText, Flag, Mail, Phone } from "lucide-react";
+import { ArrowLeft, BadgeCheck, CheckCheck, FileText, MessageSquareWarning, Flag, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { mutate } from "swr";
 import ChatButton from "./ChatButton";
 import ClientDecision from "./ClientDecision";
 import QuoteStatusBar from "./QuoteStatusBar";
+import { useConfirm } from "./ConfirmDialog";
 import { useToast } from "./Toast";
 import ClientLineCard from "./ClientLineCard";
 import Timeline from "./Timeline";
@@ -35,6 +36,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const toast = useToast();
+  const ask = useConfirm();
   // lien profond d'une notification : ?ligne=<ouvrage>
   const [focus] = useState(() => (typeof location === "undefined" ? null : new URLSearchParams(location.search).get("ligne")));
 
@@ -63,7 +65,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
     setMsg(null);
     try {
       // la décision porte sur la révision affichée : si le menuisier a modifié le devis entre-temps, elle est refusée
-      await request("POST", `/api/quotes/${id}/actions`, ["accept", "reject", "request_change"].includes(String(body.type)) ? { ...body, rev: q.rev ?? 0 } : body);
+      await request("POST", `/api/quotes/${id}/actions`, ["accept", "reject", "request_change", "review_line", "approve_all"].includes(String(body.type)) ? { ...body, rev: q.rev ?? 0 } : body);
       await Promise.all([mutate(`/api/client/quotes/${id}`), mutate(`/api/quotes/${id}/comments`), mutate(`/api/quotes/${id}/events`), mutate("/api/client/quotes")]);
       setMsg(null);
       toast.success(ok, t(`toast.text.${String(body.type)}` as "toast.text.accept"));
@@ -80,6 +82,15 @@ export default function ClientQuoteView({ id }: { id: string }) {
   };
 
   const steps = ["requested", "sent", "accepted", "in_progress", "completed"] as const;
+  // avis par ouvrage : validés / demandes à envoyer (regroupées en une seule demande de modification)
+  const reviews = q.lineReviews ?? {};
+  const approved = q.lines.filter((l) => reviews[l.id]?.state === "approved").length;
+  const requests = q.lines.filter((l) => reviews[l.id]?.state === "request");
+  const sendRequests = () => {
+    const topics = new Set(requests.map((l) => reviews[l.id].topic ?? "details"));
+    const text = requests.map((l) => `${marks[q.lines.indexOf(l)]} — ${t(`act.topic.${reviews[l.id].topic ?? "details"}`)} : ${reviews[l.id].message}`).join("\n");
+    return act({ type: "request_change", topic: topics.size === 1 ? [...topics][0] : "details", message: text }, t("act.changeSent"));
+  };
 
   return (
     <div className="space-y-6">
@@ -163,9 +174,51 @@ export default function ClientQuoteView({ id }: { id: string }) {
             <h2 id="h-lines" className="text-lg font-semibold">
               {t("editor.lines")}
             </h2>
+            {priced && (
+              <div className="space-y-2 rounded-xl border border-line bg-surface-2/40 p-3">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <p className="text-sm font-semibold">
+                    {approved}/{q.lines.length} {t("line.validatedCount")}
+                  </p>
+                  <div className="h-1.5 min-w-20 flex-1 overflow-hidden rounded-full bg-surface-2" aria-hidden>
+                    <span className="block h-full rounded-full bg-good transition-[width]" style={{ width: `${(approved / q.lines.length) * 100}%` }} />
+                  </div>
+                  {q.status === "sent" && approved < q.lines.length && (
+                    <button type="button" className="btn-primary !min-h-9 !px-3 text-xs" disabled={busy} onClick={async () => (await ask({ message: t("line.confirmAll"), confirmLabel: t("line.approveAll") })) && act({ type: "approve_all" }, t("toast.allApproved"))}>
+                      <CheckCheck size={14} aria-hidden />
+                      {t("line.approveAll")}
+                    </button>
+                  )}
+                </div>
+                {requests.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-3 rounded-lg bg-warn/10 px-3 py-2">
+                    <p className="min-w-0 flex-1 text-sm">{requests.length} {t("line.requestsPending")}</p>
+                    {q.status === "sent" && (
+                      <button type="button" className="btn-secondary !min-h-9 !px-3 text-xs" disabled={busy} onClick={sendRequests}>
+                        <MessageSquareWarning size={14} aria-hidden />
+                        {t("line.sendAll")}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <ul className="space-y-4">
               {q.lines.map((l, i) => (
-                <ClientLineCard key={l.id} quoteId={q.id} line={l} index={i} mark={marks[i]} priced={priced} focused={focus === l.id} canComment={priced} />
+                <ClientLineCard
+                  key={l.id}
+                  quoteId={q.id}
+                  line={l}
+                  index={i}
+                  mark={marks[i]}
+                  priced={priced}
+                  focused={focus === l.id}
+                  canComment={priced}
+                  review={q.lineReviews?.[l.id]}
+                  canReview={q.status === "sent"}
+                  busy={busy}
+                  onReview={(b) => act({ type: "review_line", lineId: l.id, ...b }, t(b.state === "approved" ? "toast.lineApproved" : b.state === "request" ? "toast.lineRequest" : "toast.lineCleared"))}
+                />
               ))}
             </ul>
           </section>
@@ -235,7 +288,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
             </section>
           )}
 
-          <ClientDecision q={q} busy={busy} act={act} t={t} />
+          <ClientDecision q={q} busy={busy} pending={requests.length} act={act} t={t} />
 
           {q.status === "completed" && (
             <section className="card space-y-3" aria-labelledby="h-rev">

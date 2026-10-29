@@ -1,4 +1,5 @@
 "use client";
+import { FinishSwatch } from "./Swatch";
 import { Droplet, Hammer, Layers, Palette } from "lucide-react";
 import { useState } from "react";
 import { AccessoriesEditor, GlassEditor, NumField, ProfilesEditor } from "./Catalog";
@@ -110,7 +111,7 @@ export default function CatalogEditor({ market: m, onChange, t }: { market: Mark
                         const on = finishOn(m, f.id);
                         return (
                           <li key={f.id} className={`flex items-center gap-3 px-4 py-2 ${on ? "" : "opacity-60"}`}>
-                            <span aria-hidden className="size-5 shrink-0 rounded-full border border-black/20" style={{ background: f.hex }} />
+                            <FinishSwatch id={f.id} size={24} />
                             <span className="min-w-0 flex-1 text-sm">{t(f.label)}</span>
                             <span className="relative block w-24">
                               <input type="number" aria-label={`${t(f.label)} — ${t("market.markupPct")}`} placeholder={String(groupMarkup(m, f.id))} disabled={!on} title={`${t("market.markupPct")} : ${finishMarkup(m, f.id)} %`} className="input !min-h-9 !pr-7 text-right text-sm tabular-nums" value={m.finishPct?.[f.id] ?? ""} onChange={(e) => setPct(f.id, e.target.value)} />

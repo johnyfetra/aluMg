@@ -212,3 +212,11 @@ Le client décrit son besoin avec ses mots (« 3 fenêtres coulissantes 150x120 
 ## Interface
 
 Toasts personnalisés (`components/Toast.tsx`, `useToast()`) pour chaque action côté client et menuisier ; « Mes tarifs » (`TariffsPanel`, tarifs au m², prix et coût des prestations, remise habituelle par client) accessible de partout.
+
+## Avis du client par ouvrage
+
+`Quote.lineReviews` (posé par le serveur) : par ouvrage, `approved` (avis facultatif) ou `request` (objet prix / détail / infos + texte). Actions du client sur un devis « envoyé » : `review_line` (valider, demander, retirer) et `approve_all` (tout valider d'un coup), toutes deux liées à la `rev` vue. Accepter le devis valide les ouvrages restants et garde les demandes non traitées ; modifier un ouvrage efface son avis (les autres restent) ; renvoyer le devis traite les demandes. Les demandes en attente se regroupent en une seule demande de modification (« Envoyer mes demandes »). Le menuisier voit l'état de chaque ouvrage dans l'éditeur.
+
+## Listes déroulantes et couleurs
+
+`Select` accepte des options riches (`leading` logo ou pastille, `description` lieu · numéro, `meta`, `group`) et une recherche au-delà de 9 options. Les couleurs de profilé s'affichent en échantillons (`Swatch.tsx`) : laqué avec reflet, anodisé brossé, effet bois veiné.

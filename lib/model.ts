@@ -33,6 +33,10 @@ export type LossReason = (typeof LOSS_REASONS)[number];
 // Objet d'une demande de modification du client : le prix, le détail des ouvrages, ou une question (plus d'informations).
 export const CHANGE_TOPICS = ["price", "details", "info"] as const;
 export type ChangeTopic = (typeof CHANGE_TOPICS)[number];
+// Avis du client sur un ouvrage du devis : validé (avec un avis facultatif) ou demande précise (objet + texte).
+export const LINE_STATES = ["approved", "request"] as const;
+export const lineReviewSchema = z.object({ state: z.enum(LINE_STATES), topic: z.enum(CHANGE_TOPICS).optional(), message: z.string().max(1000).default(""), at: z.string().max(40) });
+export type LineReview = z.infer<typeof lineReviewSchema>;
 export const CLOSE_REASONS = [...LOSS_REASONS, "declined"] as const; // « declined » : le menuisier a lui-même écarté la demande, ce n'est pas un devis perdu
 export const REPORT_REASONS = ["quality", "no_response", "price", "behavior", "fraud", "other"] as const;
 export const ROLES = ["client", "menuisier", "admin"] as const;
@@ -277,6 +281,7 @@ export const quoteSchema = z.object({
   warranty: z.number().int().min(0).max(240).optional(), // garantie en mois (absent ou 0 : non indiquée)
   docStyle: docStyleSchema.optional(), // modèle propre à ce devis ; absent : le modèle des réglages
   discount: z.number().min(0).max(100).default(0), // remise en % sur le total HT
+  lineReviews: z.record(z.string(), lineReviewSchema).optional(), // avis du client par ouvrage (posé par le serveur ; une modification d'un ouvrage efface son avis)
   changeTopic: z.enum(CHANGE_TOPICS).optional(), // objet de la dernière demande de modification du client (posé par le serveur, effacé à l'envoi)
   lostReason: z.enum(CLOSE_REASONS).optional(), // motif de clôture, posé par le serveur : refus du client (avec son motif) ou demande écartée par le menuisier
   // champs gérés par le serveur : ignorés quand le client de l'API les envoie

@@ -2,7 +2,7 @@
 import { CircleHelp, Sparkles, TriangleAlert } from "lucide-react";
 import { useMemo } from "react";
 import { analyze, type IntakeItem, questions, toLine } from "@/lib/intake";
-import { FINISHES } from "@/lib/model";
+import { FinishSwatch } from "./Swatch";
 import { lineTitle } from "@/lib/describe";
 import type { T } from "@/lib/i18n";
 
@@ -38,7 +38,7 @@ export default function IntakeAssistant({ text, t, actions, price }: { text: str
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-sm text-muted">
                   <span className={it.assumptions.includes("size") ? "text-warn" : ""}>{l.width} × {l.height} mm</span>
                   <span aria-hidden>·</span>
-                  <span className="inline-flex items-center gap-1.5"><span aria-hidden className="size-3 rounded-full border border-line" style={{ background: FINISHES.find((f) => f.id === l.finish)?.hex }} />{t(`finish.${l.finish}`)}</span>
+                  <span className="inline-flex items-center gap-1.5"><FinishSwatch id={l.finish} size={16} />{t(`finish.${l.finish}`)}</span>
                   {it.spec.room && <><span aria-hidden>·</span><span>{it.spec.room}</span></>}
                 </p>
                 {it.assumptions.length > 0 && (

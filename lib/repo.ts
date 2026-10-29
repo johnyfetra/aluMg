@@ -54,6 +54,7 @@ export async function createQuote(userId: string, q: Quote, opts: { clientId?: s
     progress: 0,
     lostReason: undefined, // posés par le serveur seulement
     changeTopic: undefined,
+    lineReviews: undefined,
     // « requested » n'existe que pour une demande de client
     status: !clientId && q.status === "requested" ? "draft" : q.status,
   };
@@ -71,6 +72,16 @@ const content = (q: Quote) => JSON.stringify(canon([{ ...q.client, email: q.clie
 export const unchanged = (status: string, rev: number) => and(eq(schema.quotes.status, status), sql`coalesce((${schema.quotes.data}->>'rev')::int, 0) = ${rev}`);
 export class StaleQuote extends Error {}
 
+// Un avis du client porte sur un ouvrage tel qu'il l'a vu : si l'ouvrage change (ou disparaît), son avis est effacé ; les autres restent.
+const keepReviews = (before: Quote, after: Quote) => {
+  const kept = Object.entries(before.lineReviews ?? {}).filter(([id]) => {
+    const a = before.lines.find((l) => l.id === id);
+    const b = after.lines.find((l) => l.id === id);
+    return !!a && !!b && JSON.stringify(canon(a)) === JSON.stringify(canon(b));
+  });
+  return kept.length ? Object.fromEntries(kept) : undefined;
+};
+
 export async function updateQuote(userId: string, id: string, q: Quote): Promise<Quote | null | "locked" | "incomplete"> {
   const existing = await getQuote(userId, id);
   if (!existing) return null;
@@ -87,7 +98,7 @@ export async function updateQuote(userId: string, id: string, q: Quote): Promise
   if (existing.clientId && seen && q.lines.some((l) => !(l.unit > 0))) return "incomplete"; // le client ne doit pas pouvoir accepter une ligne à 0
   // Toute modification d'un devis déjà montré est une révision : une décision prise sur l'ancienne version devient périmée.
   const revised = !!existing.clientId && seen && changed;
-  const saved: Quote = { ...q, id, number: existing.number, date: existing.date, terms: existing.terms, clientId: existing.clientId ?? null, request: existing.request ?? null, progress: existing.progress ?? 0, lostReason: existing.lostReason, changeTopic: existing.changeTopic, rev: (existing.rev ?? 0) + (revised ? 1 : 0), status };
+  const saved: Quote = { ...q, id, number: existing.number, date: existing.date, terms: existing.terms, clientId: existing.clientId ?? null, request: existing.request ?? null, progress: existing.progress ?? 0, lostReason: existing.lostReason, changeTopic: existing.changeTopic, lineReviews: keepReviews(existing, q), rev: (existing.rev ?? 0) + (revised ? 1 : 0), status };
   const db = await getDb();
   try {
     await db.transaction(async (tx) => {

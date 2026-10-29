@@ -1,3 +1,4 @@
+import { FinishSwatch } from "./Swatch";
 import { Copy, Pencil, Trash2 } from "lucide-react";
 import { fmt, lineTotal } from "@/lib/calc";
 import { lineTitle } from "@/lib/describe";
@@ -43,7 +44,7 @@ export default function LinesTable({ lines, t, marks, validIds, onEdit, onDuplic
                   <td className="whitespace-nowrap px-2 py-3 tabular-nums text-muted">{ok && l.leaves > 1 && l.category !== "garde-corps" && l.category !== "volet" ? leafMarks(l).join(" · ") : "—"}</td>
                   <td className="whitespace-nowrap px-2 py-3">
                     <span className="inline-flex items-center gap-2" title={t(`range.${l.range}`)}>
-                      <span aria-hidden className="size-3.5 rounded-full border border-line" style={{ background: f?.hex }} />
+                      <FinishSwatch id={f?.id ?? "blanc"} size={16} />
                       {f ? t(f.label) : l.finish}
                     </span>
                   </td>

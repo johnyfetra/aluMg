@@ -11,7 +11,7 @@ const TOPIC_ICON = { price: BadgeDollarSign, details: ListChecks, info: CircleHe
 
 // Décision du client sur un devis reçu : accepter, demander une modification (prix, détail des ouvrages ou simple question) ou refuser (avec sa raison).
 // Sur mobile, les trois actions restent à portée de pouce dans une barre fixée en bas de l'écran.
-export default function ClientDecision({ q, busy, act, t }: { q: Pick<Quote, "status">; busy: boolean; act: (body: Record<string, unknown>, ok: string) => Promise<boolean>; t: T }) {
+export default function ClientDecision({ q, busy, pending = 0, act, t }: { q: Pick<Quote, "status">; busy: boolean; pending?: number; act: (body: Record<string, unknown>, ok: string) => Promise<boolean>; t: T }) {
   const ask = useConfirm();
   const [panel, setPanel] = useState<"change" | "reject" | null>(null);
   const [topic, setTopic] = useState<ChangeTopic>("price");
@@ -25,7 +25,7 @@ export default function ClientDecision({ q, busy, act, t }: { q: Pick<Quote, "st
     requestAnimationFrame(() => forms.current?.scrollIntoView({ block: "center", behavior: "smooth" }));
   };
   const accept = async () => {
-    if (await ask({ message: t("act.confirmAccept"), confirmLabel: t("act.accept") })) await act({ type: "accept" }, t("act.accepted"));
+    if (await ask({ message: t(pending > 0 ? "act.confirmAcceptPending" : "act.confirmAccept"), confirmLabel: t("act.accept") })) await act({ type: "accept" }, t("act.accepted"));
   };
   const done = (ok: boolean) => {
     if (!ok) return;

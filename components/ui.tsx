@@ -1,3 +1,4 @@
+import { FinishSwatch, SwatchCheck } from "./Swatch";
 import { CheckCheck, CheckCircle2, Clock, FileEdit, Hammer, Inbox, MessageSquareWarning, XCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { FINISHES, FINISH_GROUPS, type FinishId } from "@/lib/model";
@@ -95,22 +96,24 @@ export function Switch({ checked, onChange, label, disabled }: { checked: boolea
 // hide : couleurs que les fournisseurs n'ont pas (la couleur déjà choisie reste visible).
 export function FinishPicker({ name, legend, value, onChange, t, dense = false, hide = [], lead }: { name: string; legend: string; value: FinishId; onChange: (v: FinishId) => void; t: T; dense?: boolean; hide?: readonly FinishId[]; lead?: ReactNode }) {
   const shown = FINISHES.filter((f) => f.id === value || !hide.includes(f.id));
+  const chosen = FINISHES.find((f) => f.id === value);
   if (dense)
-    // Version compacte : une seule rangée de pastilles, le nom de la couleur choisie est affiché à côté.
+    // Version compacte : une rangée de plaquettes par famille, le nom de la couleur choisie est affiché dans la légende.
     return (
-      <fieldset className="min-w-0 space-y-1">
-        <legend className="text-sm font-medium">
-          {legend} <span className="font-normal text-muted">· {t(FINISHES.find((f) => f.id === value)?.label ?? "finish.blanc")}</span>
+      <fieldset className="min-w-0 space-y-2">
+        <legend className="flex items-center gap-2 text-sm font-medium">
+          {legend}
+          {chosen && <span className="inline-flex items-center gap-1.5 font-normal text-muted">· <FinishSwatch id={chosen.id} size={16} />{t(chosen.label)}</span>}
         </legend>
-        <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+        <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
           {lead}
           {FINISH_GROUPS.map(([group, label], gi) => (
-            <div key={group} role="group" aria-label={t(label)} className={`flex flex-wrap gap-1 ${gi ? "ml-2 border-l border-line pl-3" : ""}`}>
+            <div key={group} role="group" aria-label={t(label)} className={`flex flex-wrap gap-1.5 ${gi ? "ml-2 border-l border-line pl-3" : ""}`}>
               {shown.filter((f) => f.group === group).map((f) => (
                 <label key={f.id} className="cursor-pointer" title={t(f.label)}>
                   <input type="radio" name={name} className="peer sr-only" checked={f.id === value} onChange={() => onChange(f.id)} />
-                  <span className="grid size-8 place-items-center rounded-full border border-transparent peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary/40 peer-focus-visible:outline-2 peer-focus-visible:outline-primary hover:bg-surface-2">
-                    <span className="size-5 rounded-full border border-black/20" style={{ background: f.hex }} />
+                  <span className="grid size-10 place-items-center rounded-lg border-2 border-transparent transition-colors hover:bg-surface-2 peer-checked:border-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
+                    <SwatchCheck id={f.id} size={26} checked={f.id === value} />
                     <span className="sr-only">{t(f.label)}</span>
                   </span>
                 </label>
@@ -121,17 +124,17 @@ export function FinishPicker({ name, legend, value, onChange, t, dense = false, 
       </fieldset>
     );
   return (
-    <fieldset className="min-w-0 space-y-2">
+    <fieldset className="min-w-0 space-y-3">
       <legend className="text-sm font-medium">{legend}</legend>
       {FINISH_GROUPS.map(([group, label]) => (
         <div key={group}>
-          <p className="mb-1 text-xs text-muted">{t(label)}</p>
-          <div className="flex flex-wrap gap-2">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">{t(label)}</p>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2">
             {shown.filter((f) => f.group === group).map((f) => (
               <label key={f.id} className="cursor-pointer">
                 <input type="radio" name={name} className="peer sr-only" checked={f.id === value} onChange={() => onChange(f.id)} />
-                <span className="flex min-h-11 items-center gap-2 rounded-lg border border-line bg-surface px-2.5 text-sm peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-primary hover:bg-surface-2">
-                  <span aria-hidden className="size-5 rounded-full border border-black/20" style={{ background: f.hex }} />
+                <span className="flex min-h-[5.25rem] flex-col items-center justify-center gap-1.5 rounded-xl border border-line bg-surface p-2 text-center text-xs font-medium leading-tight transition-colors hover:bg-surface-2 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:ring-1 peer-checked:ring-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
+                  <SwatchCheck id={f.id} size={36} checked={f.id === value} />
                   {t(f.label)}
                 </span>
               </label>

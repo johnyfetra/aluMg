@@ -257,7 +257,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               {t("preview.open")}
             </Link>
           )}
-          <button type="button" className="btn-secondary" onClick={openTariffs}>
+          <button type="button" className="btn-secondary lg:hidden" onClick={openTariffs}>
             <BadgePercent size={16} aria-hidden />
             {t("tariffs.title")}
           </button>
@@ -345,7 +345,11 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 {!q.clientId && contacts.length > 0 && (
                   <div className="mb-3 max-w-sm">
                     <Field htmlFor="ct-pick" label={t("ct.pick")}>
-                      <Select id="ct-pick" value="" onChange={pickContact} options={[{ value: "", label: t("ct.pickNone") }, ...contacts.map((c) => ({ value: c.id, label: `${c.name}${c.phone ? ` · ${c.phone}` : ""}` }))]} />
+                      <Select id="ct-pick" value="" onChange={pickContact} options={[{ value: "", label: t("ct.pickNone") }, ...contacts.map((c) => ({
+                        value: c.id, label: c.name, description: [c.phone, c.email].filter(Boolean).join(" · ") || undefined,
+                        leading: <Avatar name={c.account?.name || c.name} src={c.account?.avatar ?? ""} size={32} round />,
+                        meta: c.discount > 0 ? `−${c.discount} %` : undefined,
+                      }))]} />
                     </Field>
                   </div>
                 )}
@@ -484,6 +488,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                   mark={marks[i]}
                   quoteId={q.clientId && persisted ? q.id : undefined}
                   focused={focusId === l.id}
+                  review={q.lineReviews?.[l.id]}
                   open={openIds.has(l.id)}
                   onToggle={() => toggleOpen(l.id)}
                   onChange={(p) => setLine(i, p)}

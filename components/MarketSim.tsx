@@ -1,4 +1,5 @@
 "use client";
+import { FinishSwatch } from "./Swatch";
 import { ChevronDown, FlaskConical, RotateCcw, Save } from "lucide-react";
 import { useMemo, useState } from "react";
 import { NumField, ProfilesEditor } from "./Catalog";
@@ -121,7 +122,7 @@ export function MarketSim({ sim, setSim, lines, kerf, baseCost, cost, saved, onS
                   return (
                     <li key={f.id}>
                       <button type="button" aria-pressed={sel} title={off ? t("market.unavailable") : undefined} onClick={() => setSim({ ...sim, finish: f.id })} className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors hover:bg-surface-2 ${off ? "opacity-50" : ""} ${sel ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "border-line"}`}>
-                        <span aria-hidden className="size-5 shrink-0 rounded-full border border-black/20" style={{ background: f.hex }} />
+                        <FinishSwatch id={f.id} size={22} />
                         <span className="min-w-0 flex-1 truncate">{t(f.label)}</span>
                         <span className={`tabular-nums ${c === cheapest ? "font-bold text-ok" : "font-medium"}`}>{fmt(c)}</span>
                       </button>

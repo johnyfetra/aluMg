@@ -1,4 +1,5 @@
 "use client";
+import { FinishSwatch } from "./Swatch";
 import { ArrowLeft, ArrowRight, Box, Coins, PackageCheck, Percent, Scissors, Settings2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useMemo, useState } from "react";
@@ -11,7 +12,7 @@ import { useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
 import { lineDetails, lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { type T, useI18n } from "@/lib/i18n";
-import { FINISHES, type Line, type Market, type Quote, type Settings } from "@/lib/model";
+import { type FinishId, type Line, type Market, type Quote, type Settings } from "@/lib/model";
 import { type GroupPlan, type Plan, initSim, procure, simulate } from "@/lib/procure";
 import { totals } from "@/lib/totals";
 
@@ -32,7 +33,7 @@ function Kpi({ label, value, hint, Icon, tone }: { label: string; value: ReactNo
   );
 }
 
-const dot = (finish: string) => <span aria-hidden className="inline-block size-3.5 rounded-full border border-black/20 align-middle" style={{ background: FINISHES.find((f) => f.id === finish)?.hex }} />;
+const dot = (finish: string) => <FinishSwatch id={finish as FinishId} size={16} />;
 const lineLink = (id: string, lineId: string, n: number) => (
   <Link key={n} href={`/devis/${id}/profils/${lineId}`} className="rounded-md bg-surface-2 px-1.5 py-0.5 text-xs font-semibold text-primary hover:underline">
     #{n}

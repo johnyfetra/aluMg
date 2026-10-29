@@ -1,20 +1,22 @@
 "use client";
+import { FinishSwatch } from "./Swatch";
 import { Box, ChevronDown, MessageSquare, PencilRuler } from "lucide-react";
 import { useState } from "react";
 import LineComments from "./LineComments";
+import LineDecision, { type ReviewBody } from "./LineDecision";
 import Viewer3DLoader from "./Viewer3DLoader";
 import { fmt, lineTotal } from "@/lib/calc";
 import { useLineComments } from "@/lib/client";
 import { lineDetails, lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { useI18n } from "@/lib/i18n";
-import { FINISHES, type Line, hasLeafConfig, leafMarks, leafModes } from "@/lib/model";
+import { FINISHES, type Line, type LineReview, hasLeafConfig, leafMarks, leafModes } from "@/lib/model";
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // Un ouvrage vu par le client : résumé, puis détail complet (plan, vue 3D, caractéristiques) et fil de commentaires.
 // `focused` : ouvrage visé par une notification (déplié, mis en évidence).
-export default function ClientLineCard({ quoteId, line: l, index, mark, priced, focused, canComment }: { quoteId: string; line: Line; index: number; mark: string; priced: boolean; focused: boolean; canComment: boolean }) {
+export default function ClientLineCard({ quoteId, line: l, index, mark, priced, focused, canComment, review, canReview, busy, onReview }: { quoteId: string; line: Line; index: number; mark: string; priced: boolean; focused: boolean; canComment: boolean; review?: LineReview; canReview: boolean; busy: boolean; onReview: (b: ReviewBody) => Promise<boolean> }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(focused);
   const [view, setView] = useState<"2d" | "3d">("2d");
@@ -67,6 +69,7 @@ export default function ClientLineCard({ quoteId, line: l, index, mark, priced, 
           </button>
         )}
       </div>
+      {priced && (review || canReview) && <LineDecision review={review} canReview={canReview} busy={busy} onReview={onReview} t={t} />}
       {open && (
         <div id={`${l.id}-detail`} className="space-y-5 border-t border-line p-4 sm:p-5">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
@@ -96,7 +99,7 @@ export default function ClientLineCard({ quoteId, line: l, index, mark, priced, 
                   <div className="flex justify-between gap-4 px-3 py-2">
                     <dt className="text-muted">{t("editor.finish")}</dt>
                     <dd className="inline-flex items-center gap-2 font-medium">
-                      <span aria-hidden className="size-3.5 rounded-full border border-line" style={{ background: finish?.hex }} />
+                      <FinishSwatch id={finish?.id ?? "blanc"} size={16} />
                       {finish ? t(finish.label) : l.finish}
                     </dd>
                   </div>

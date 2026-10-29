@@ -410,3 +410,59 @@ describe("demande de devis assistée par l'analyse du texte", () => {
     expect(manual.request?.intake).toBeUndefined();
   });
 });
+
+describe("avis du client par ouvrage", () => {
+  const req = { menuisier: "", project: "Villa", message: "", siteAddress: "", wantedDate: "", lines: [{ ...line, width: 1500, height: 1200 }, { ...line, id: crypto.randomUUID(), width: 900, height: 2100 }] };
+  const sentQuote = async () => {
+    const r = (await wf.createRequest(c1, { ...req, menuisier: slug1 })) as Quote;
+    await upd(m1, r.id, quoteSchema.parse(r));
+    await wf.applyAction(m1, r.id, A({ type: "send" }));
+    return (await repo.getQuote(m1, r.id))!;
+  };
+  const rev = (id: string) => revOf(m1, id);
+
+  it("valider un ouvrage, faire une demande précise, la retirer ; le statut ne bouge pas", async () => {
+    const q = await sentQuote();
+    const [a, b] = q.lines;
+    expect((await wf.applyAction(c1, q.id, A({ type: "review_line", lineId: a.id, state: "approved", message: "Parfait", rev: await rev(q.id) }))).ok).toBe(true);
+    expect((await wf.applyAction(c1, q.id, A({ type: "review_line", lineId: b.id, state: "request", topic: "details", message: "En 950 mm de large ?", rev: await rev(q.id) }))).ok).toBe(true);
+    const cur = (await repo.getQuote(m1, q.id))!;
+    expect(cur.status).toBe("sent");
+    expect(cur.lineReviews?.[a.id]).toMatchObject({ state: "approved", message: "Parfait" });
+    expect(cur.lineReviews?.[b.id]).toMatchObject({ state: "request", topic: "details", message: "En 950 mm de large ?" });
+    expect((await wf.listEvents(q.id)).filter((e) => e.kind === "line_review")).toHaveLength(2);
+    expect((await notif.listNotifications(m1)).items.some((n) => n.quoteId === q.id && n.kind === "review_line")).toBe(true); // la demande prévient le menuisier
+    expect(await wf.applyAction(c1, q.id, A({ type: "review_line", lineId: b.id, state: "request", message: "", rev: await rev(q.id) }))).toEqual({ ok: false, error: "message_required" });
+    expect(await wf.applyAction(c1, q.id, A({ type: "review_line", lineId: "inconnu", state: "approved", rev: await rev(q.id) }))).toEqual({ ok: false, error: "not_found" });
+    await wf.applyAction(c1, q.id, A({ type: "review_line", lineId: b.id, state: "clear", rev: await rev(q.id) }));
+    expect((await repo.getQuote(m1, q.id))!.lineReviews?.[b.id]).toBeUndefined();
+  });
+  it("tout valider d'un coup ; seul le client, seulement sur un devis envoyé, sur la version qu'il a sous les yeux", async () => {
+    const q = await sentQuote();
+    expect(await wf.applyAction(m1, q.id, A({ type: "approve_all", rev: 0 }))).toEqual({ ok: false, error: "invalid_transition" });
+    expect(await wf.applyAction(c1, q.id, A({ type: "approve_all", rev: 99 }))).toEqual({ ok: false, error: "quote_changed" });
+    expect((await wf.applyAction(c1, q.id, A({ type: "approve_all", rev: await rev(q.id) }))).ok).toBe(true);
+    expect(Object.values((await repo.getQuote(m1, q.id))!.lineReviews ?? {}).map((r) => r.state)).toEqual(["approved", "approved"]);
+  });
+  it("accepter le devis valide les ouvrages restants mais garde une demande non traitée", async () => {
+    const q = await sentQuote();
+    await wf.applyAction(c1, q.id, A({ type: "review_line", lineId: q.lines[1].id, state: "request", message: "Plus clair ?", rev: await rev(q.id) }));
+    await wf.applyAction(c1, q.id, A({ type: "accept", rev: await rev(q.id) }));
+    const cur = (await repo.getQuote(m1, q.id))!;
+    expect(cur.lineReviews?.[q.lines[0].id]?.state).toBe("approved");
+    expect(cur.lineReviews?.[q.lines[1].id]?.state).toBe("request");
+  });
+  it("modifier un ouvrage efface son avis, les autres restent ; renvoyer le devis traite les demandes", async () => {
+    const q = await sentQuote();
+    await wf.applyAction(c1, q.id, A({ type: "approve_all", rev: await rev(q.id) }));
+    const cur = (await repo.getQuote(m1, q.id))!;
+    const edited = await repo.updateQuote(m1, q.id, { ...cur, lines: [{ ...cur.lines[0], width: 1600 }, cur.lines[1]] });
+    expect(edited).toMatchObject({ status: "sent" });
+    expect(Object.keys((edited as Quote).lineReviews ?? {})).toEqual([q.lines[1].id]); // l'ouvrage retouché est à revalider
+    await wf.applyAction(c1, q.id, A({ type: "review_line", lineId: q.lines[0].id, state: "request", message: "Encore 1 cm", rev: await rev(q.id) }));
+    await wf.applyAction(c1, q.id, A({ type: "request_change", message: "voir ouvrage F-01", rev: await rev(q.id) }));
+    await wf.applyAction(m1, q.id, A({ type: "send" }));
+    expect(Object.values((await repo.getQuote(m1, q.id))!.lineReviews ?? {}).every((r) => r.state === "approved")).toBe(true);
+  });
+});
+

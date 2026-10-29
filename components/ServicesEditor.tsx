@@ -1,10 +1,12 @@
 "use client";
-import { Plus, Trash2, Wrench } from "lucide-react";
+import { ArrowDownToLine, Hammer, Plus, Trash2, Truck, Wrench } from "lucide-react";
 import Select from "./Select";
 import { fmt } from "@/lib/calc";
 import type { T } from "@/lib/i18n";
 import { SERVICE_KINDS, type Service, type ServiceKind } from "@/lib/model";
 import { serviceTotal } from "@/lib/totals";
+
+const KIND_ICON = { pose: <Hammer size={16} aria-hidden />, depose: <ArrowDownToLine size={16} aria-hidden />, deplacement: <Truck size={16} aria-hidden />, autre: <Wrench size={16} aria-hidden /> } as const;
 
 // Prestations hors ouvrage : pose, dépose, déplacement… Lignes libres, comptées dans le total avant remise.
 export default function ServicesEditor({ services, onChange, prices, t, locked }: { services: Service[]; onChange: (s: Service[]) => void; prices: Record<string, { price: number; cost: number }>; t: T; locked: boolean }) {
@@ -28,7 +30,7 @@ export default function ServicesEditor({ services, onChange, prices, t, locked }
             <li key={s.id} className="grid gap-2 rounded-lg border border-line bg-surface-2/40 p-3 sm:grid-cols-[9rem_minmax(0,1fr)_5rem_8rem_8rem_auto] sm:items-end">
               <label className="space-y-1 text-xs font-medium text-muted">
                 <span className="sr-only sm:not-sr-only">Type</span>
-                <Select value={s.kind} disabled={locked} className="!min-h-10" onChange={(v) => set(i, { kind: v as ServiceKind })} options={SERVICE_KINDS.map((k) => ({ value: k, label: t(`svc.${k}`) }))} />
+                <Select value={s.kind} disabled={locked} className="!min-h-10" onChange={(v) => set(i, { kind: v as ServiceKind })} options={SERVICE_KINDS.map((k) => ({ value: k, label: t(`svc.${k}`), leading: <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">{KIND_ICON[k]}</span> }))} />
               </label>
               <label className="space-y-1 text-xs font-medium text-muted">
                 {t("svc.label")}

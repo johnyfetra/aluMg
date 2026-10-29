@@ -27,8 +27,8 @@ export default function RequestForm() {
   const { data: mine = [] } = useClientQuotes();
   const { data: convs = [] } = useConversations();
   const known = [...new Map([
-    ...mine.map((c) => [c.menuisier.slug, { slug: c.menuisier.slug, name: c.menuisier.name, logo: c.menuisier.logo }] as const),
-    ...convs.filter((c) => c.other.role === "menuisier").map((c) => [c.other.slug, { slug: c.other.slug, name: c.other.name, logo: c.other.logo }] as const),
+    ...convs.filter((c) => c.other.role === "menuisier").map((c) => [c.other.slug, { slug: c.other.slug, name: c.other.name, logo: c.other.logo, city: "", phone: "" }] as const),
+    ...mine.map((c) => [c.menuisier.slug, { slug: c.menuisier.slug, name: c.menuisier.name, logo: c.menuisier.logo, city: c.menuisier.city, phone: c.menuisier.phone }] as const), // les devis reçus donnent lieu et numéro : ils l'emportent
   ].filter(([k]) => !!k)).values()];
   const [slug, setSlug] = useState(preset);
   const [project, setProject] = useState("");
@@ -85,7 +85,11 @@ export default function RequestForm() {
         <div className="grid items-start gap-4 lg:grid-cols-2">
           {directory.length > 0 ? (
             <Field htmlFor="rq-m" label={t("req.joiner")}>
-              <Select id="rq-m" required value={slug} onChange={setSlug} options={[{ value: "", label: t("req.pickJoiner") }, ...directory.map((m) => ({ value: m.slug, label: `${m.name}${m.city ? ` — ${m.city}` : ""}` }))]} />
+              <Select id="rq-m" required value={slug} onChange={setSlug} options={[{ value: "", label: t("req.pickJoiner") }, ...directory.map((m) => ({
+                value: m.slug, label: m.name, description: m.city || undefined,
+                leading: <Avatar name={m.name} src={m.logo} size={32} />,
+                meta: m.reviews > 0 ? <span className="inline-flex items-center gap-1"><Stars value={1} size={12} />{m.rating.toFixed(1)} ({m.reviews})</span> : undefined,
+              }))]} />
             </Field>
           ) : !preset ? (
             <fieldset className="m-0 min-w-0 border-0 p-0 lg:col-span-2">
@@ -95,7 +99,10 @@ export default function RequestForm() {
                   {known.map((k) => (
                     <button key={k.slug} type="button" role="radio" aria-checked={slug === k.slug} onClick={() => setSlug(k.slug)} className={`flex min-h-14 items-center gap-3 rounded-xl border p-3 text-left transition-colors ${slug === k.slug ? "border-primary bg-primary/10" : "border-line hover:bg-surface-2"}`}>
                       <Avatar name={k.name} src={k.logo} size={40} />
-                      <span className="min-w-0 flex-1 truncate font-semibold">{k.name}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold">{k.name}</span>
+                        {(k.city || k.phone) && <span className="block truncate text-xs text-muted">{[k.city, k.phone].filter(Boolean).join(" · ")}</span>}
+                      </span>
                     </button>
                   ))}
                 </div>

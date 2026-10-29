@@ -3,7 +3,7 @@ import { z } from "zod";
 import { normalize } from "./calc";
 import { salePrice } from "./costing";
 import { getDb, schema } from "./db";
-import { type Issuer, CHANGE_TOPICS, ISSUER_KEYS, LOSS_REASONS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
+import { type Issuer, CHANGE_TOPICS, ISSUER_KEYS, LOSS_REASONS, type LineReview, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
 import { clientAccountFor, discountFor, ensureContact } from "./contacts";
 import { analyze, toLine } from "./intake";
 import { notify } from "./notifications";
@@ -20,6 +20,9 @@ export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("accept"), message: msg.optional(), rev: z.number().int().optional() }),
   z.object({ type: z.literal("reject"), message: msg.optional(), reason: z.enum(LOSS_REASONS).optional(), rev: z.number().int().optional() }),
   z.object({ type: z.literal("request_change"), message: msg.min(1), topic: z.enum(CHANGE_TOPICS).optional(), discountPercent: z.number().min(0).max(90).optional(), rev: z.number().int().optional() }),
+  // avis par ouvrage : « approved » (avis facultatif), « request » (demande précise : objet + texte), « clear » (retirer) ; approve_all valide tous les ouvrages d'un coup
+  z.object({ type: z.literal("review_line"), lineId: z.string().min(1).max(64), state: z.enum(["approved", "request", "clear"]), topic: z.enum(CHANGE_TOPICS).optional(), message: msg.optional(), rev: z.number().int().optional() }),
+  z.object({ type: z.literal("approve_all"), rev: z.number().int().optional() }),
   z.object({ type: z.literal("review"), rating: z.number().int().min(1).max(5), comment: msg.default("") }),
   z.object({ type: z.literal("report"), reason: z.enum(REPORT_REASONS), details: z.string().trim().max(1500).default("") }),
   z.object({ type: z.literal("message"), message: msg.min(1) }),
@@ -50,6 +53,9 @@ export function transition(status: Status, a: Action, side: Side): Status | null
       return ["sent", "negotiation"].includes(status) ? "rejected" : null;
     case "request_change":
       return status === "sent" ? "negotiation" : null;
+    case "review_line":
+    case "approve_all":
+      return status === "sent" ? status : null; // le client relit un devis reçu, le statut ne change pas
     case "review":
       return status === "completed" ? status : null;
     default:
@@ -139,7 +145,7 @@ export async function listEvents(quoteId: string): Promise<EventView[]> {
   }));
 }
 
-export type ClientQuote = { quote: Quote; menuisier: { id: string; name: string; slug: string; logo: string; phone: string; email: string; verified: boolean }; issuer: Issuer; reviewed: boolean };
+export type ClientQuote = { quote: Quote; menuisier: { id: string; name: string; slug: string; logo: string; city: string; phone: string; email: string; verified: boolean }; issuer: Issuer; reviewed: boolean };
 
 async function toClientQuote(row: typeof schema.quotes.$inferSelect): Promise<ClientQuote> {
   const db = await getDb();
@@ -153,7 +159,7 @@ async function toClientQuote(row: typeof schema.quotes.$inferSelect): Promise<Cl
   return {
     quote: clientView({ ...row.data, status: row.status as Status, progress: row.progress }),
     issuer: Object.fromEntries(ISSUER_KEYS.map((k) => [k, settings[k]])) as Issuer,
-    menuisier: { id: row.userId, name: p?.displayName || m?.name || "", slug: p?.slug ?? "", logo: p?.logo ?? "", phone: m?.phone ?? "", email: m?.email ?? "", verified: p?.verified ?? false },
+    menuisier: { id: row.userId, name: p?.displayName || m?.name || "", slug: p?.slug ?? "", logo: p?.logo ?? "", city: p?.city ?? "", phone: m?.phone ?? "", email: m?.email ?? "", verified: p?.verified ?? false },
     reviewed: !!r,
   };
 }
@@ -170,7 +176,7 @@ export async function getClientQuote(clientId: string, id: string): Promise<Clie
 }
 
 // ---------- Appliquer une action ----------
-export type ActionResult = { ok: true; quote: Quote } | { ok: false; error: "not_found" | "invalid_transition" | "incomplete" | "already_reviewed" | "no_client_account" | "quote_changed" };
+export type ActionResult = { ok: true; quote: Quote } | { ok: false; error: "not_found" | "invalid_transition" | "incomplete" | "already_reviewed" | "no_client_account" | "quote_changed" | "message_required" };
 
 export async function applyAction(actorId: string, quoteId: string, a: Action): Promise<ActionResult> {
   const found = await sideOf(actorId, quoteId);
@@ -191,24 +197,40 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
     }
   }
   // la décision du client porte sur une révision précise (obligatoire : sans elle, rien ne prouve ce qu'il a vu)
-  if (side === "client" && ["accept", "reject", "request_change"].includes(a.type) && (!("rev" in a) || a.rev !== (row.data.rev ?? 0))) return { ok: false, error: "quote_changed" };
+  if (side === "client" && ["accept", "reject", "request_change", "review_line", "approve_all"].includes(a.type) && (!("rev" in a) || a.rev !== (row.data.rev ?? 0))) return { ok: false, error: "quote_changed" };
   if (a.type === "review") {
     const [done] = await db.select({ id: schema.reviews.id }).from(schema.reviews).where(eq(schema.reviews.quoteId, quoteId));
     if (done) return { ok: false, error: "already_reviewed" };
   }
 
+  // avis par ouvrage du client : un par ouvrage, effacé si l'ouvrage change (voir updateQuote) ; accepter le devis valide les ouvrages restants
+  const now = new Date().toISOString();
+  let reviews: Record<string, LineReview> | undefined = row.data.lineReviews;
+  if (a.type === "review_line") {
+    if (!row.data.lines.some((l) => l.id === a.lineId)) return { ok: false, error: "not_found" };
+    if (a.state === "request" && !a.message?.trim()) return { ok: false, error: "message_required" };
+    const { [a.lineId]: _old, ...rest } = reviews ?? {};
+    void _old;
+    reviews = a.state === "clear" ? rest : { ...rest, [a.lineId]: { state: a.state, ...(a.state === "request" && a.topic ? { topic: a.topic } : {}), message: a.message?.trim() ?? "", at: now } };
+  } else if (a.type === "approve_all" || a.type === "accept") {
+    reviews = Object.fromEntries(row.data.lines.map((l) => [l.id, a.type === "accept" && reviews?.[l.id]?.state === "request" ? reviews[l.id] : { state: "approved" as const, message: reviews?.[l.id]?.state === "approved" ? reviews[l.id].message : "", at: reviews?.[l.id]?.at ?? now }]));
+  } else if (a.type === "send" && reviews) {
+    reviews = Object.fromEntries(Object.entries(reviews).filter(([, r]) => r.state === "approved")); // les demandes sont traitées par le nouvel envoi
+  }
+  const reviewsChanged = JSON.stringify(reviews ?? null) !== JSON.stringify(row.data.lineReviews ?? null);
+
   const progress = a.type === "progress" ? a.progress : row.progress;
-  const quote: Quote = { ...row.data, status: next, progress, clientId, ...(a.type === "reject" && a.reason ? { lostReason: a.reason } : {}), ...(a.type === "send" ? { lostReason: undefined, changeTopic: undefined } : {}), ...(a.type === "request_change" && a.topic ? { changeTopic: a.topic } : {}), ...(a.type === "decline" ? { lostReason: "declined" as const } : {}) };
+  const quote: Quote = { ...row.data, status: next, progress, clientId, lineReviews: reviews, ...(a.type === "reject" && a.reason ? { lostReason: a.reason } : {}), ...(a.type === "send" ? { lostReason: undefined, changeTopic: undefined } : {}), ...(a.type === "request_change" && a.topic ? { changeTopic: a.topic } : {}), ...(a.type === "decline" ? { lostReason: "declined" as const } : {}) };
   try {
   await db.transaction(async (tx) => {
-    if (next !== row.status || progress !== row.progress || clientId !== row.clientId) {
+    if (next !== row.status || progress !== row.progress || clientId !== row.clientId || reviewsChanged) {
       // écriture conditionnelle : si le devis a changé depuis la lecture (révision, décision concurrente), on abandonne
       const done = await tx.update(schema.quotes).set({ status: next, progress, clientId, data: quote }).where(and(eq(schema.quotes.id, quoteId), unchanged(row.status, row.data.rev ?? 0))).returning({ id: schema.quotes.id });
       if (!done.length) throw new StaleQuote();
     }
     // l'autre partie est prévenue des étapes du devis
     const other = side === "menuisier" ? clientId : row.userId;
-    const told = ["send", "decline", "accept", "reject", "request_change", "review"].includes(a.type) || (a.type === "progress" && progress !== row.progress);
+    const told = ["send", "decline", "accept", "reject", "request_change", "review", "approve_all"].includes(a.type) || (a.type === "review_line" && a.state === "request") || (a.type === "progress" && progress !== row.progress);
     if (other && told) await notify(tx, { userId: other, quoteId, kind: a.type, message: "message" in a ? a.message : "comment" in a ? a.comment : "" });
     const log = (kind: string, message = "", data: Record<string, unknown> = {}) => tx.insert(schema.quoteEvents).values({ quoteId, actorId, kind, message, data });
     switch (a.type) {
@@ -218,6 +240,8 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
       case "reject": return void (await log("rejected", a.message, a.reason ? { reason: a.reason } : {}));
       case "request_change": return void (await log("change_requested", a.message, { ...(a.topic ? { topic: a.topic } : {}), ...(a.discountPercent ? { discountPercent: a.discountPercent } : {}) }));
       case "message": return void (await log("message", a.message));
+      case "review_line": return void (await log("line_review", a.message ?? "", { lineId: a.lineId, state: a.state, ...(a.topic ? { topic: a.topic } : {}) }));
+      case "approve_all": return void (await log("approve_all"));
       case "progress": {
         await log("progress", a.message, { progress: a.progress });
         if (a.progress >= 100 && row.progress < 100) await log("completed");

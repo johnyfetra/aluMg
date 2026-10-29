@@ -1,8 +1,9 @@
+import { FinishSwatch } from "./Swatch";
 import { Banknote, Layers, PackageCheck, PiggyBank } from "lucide-react";
 import { fmt, meters } from "@/lib/calc";
 import { quoteMargin } from "@/lib/costing";
 import type { T } from "@/lib/i18n";
-import { ACCESSORIES, FINISHES, GLASSES, type Quote, type Settings } from "@/lib/model";
+import { ACCESSORIES, type FinishId, GLASSES, type Quote, type Settings } from "@/lib/model";
 import type { Plan } from "@/lib/procure";
 import { totals } from "@/lib/totals";
 
@@ -93,7 +94,7 @@ export default function Budget({ quote, plan, settings, t }: { quote: Quote; pla
               {[...plan.groups].sort((a, b) => b.cost - a.cost).map((g) => (
                 <tr key={g.key}>
                   <td className="px-4 py-2.5">
-                    <span aria-hidden className="mr-2 inline-block size-3.5 rounded-full border border-black/20 align-middle" style={{ background: FINISHES.find((f) => f.id === g.finish)?.hex }} />
+                    <FinishSwatch id={g.finish as FinishId} size={16} className="mr-2 align-middle" />
                     {t(g.profile)} <span className="text-xs text-muted">{t(`range.${g.range as "europeen" | "asiatique"}`)} · {t(`finish.${g.finish as "blanc"}`)}</span>
                   </td>
                   <td className="px-2 py-2.5 tabular-nums">{g.noOffer ? "—" : g.purchase.map((p) => `${p.count} × ${meters(p.length)}`).join(" + ")}</td>

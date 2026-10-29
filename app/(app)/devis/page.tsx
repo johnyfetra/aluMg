@@ -22,6 +22,9 @@ export default function QuotesPage() {
   );
 }
 
+// Couleur de chaque statut (même palette que le tableau de bord)
+const STATUS_DOT: Record<Status, string> = { requested: "var(--c3)", draft: "var(--bar-neutral)", sent: "var(--c1)", negotiation: "var(--warn)", accepted: "var(--good)", in_progress: "var(--c4)", completed: "var(--c2)", rejected: "var(--critical)" };
+
 function QuotesView() {
   const { t, locale } = useI18n();
   const ask = useConfirm();
@@ -52,7 +55,7 @@ function QuotesView() {
       value={q.status}
       onChange={(v) => save({ ...q, status: v as Status }, false)}
       className="!min-h-9 !w-auto !py-1 text-sm"
-      options={STATUSES.filter((s) => s !== "requested").map((s) => ({ value: s, label: t(`status.${s}`) }))}
+      options={STATUSES.filter((s) => s !== "requested").map((s) => ({ value: s, label: t(`status.${s}`), leading: <span aria-hidden className="size-3 rounded-full" style={{ background: STATUS_DOT[s] }} /> }))}
     />
   );
   // Copie en brouillon, sans lien client ni numéro : point de départ d'un devis voisin (même client, autre chantier…).
@@ -144,7 +147,7 @@ function QuotesView() {
                 {shown.map((q) => (
                   <tr key={q.id} className="transition-colors hover:bg-surface-2/60">
                     <td className="px-4 py-3">
-                      <Link href={`/devis/${q.id}`} className="font-semibold text-primary hover:underline">
+                      <Link href={`/devis/${q.id}`} className="whitespace-nowrap font-semibold text-primary hover:underline">
                         {q.number}
                       </Link>
                     </td>

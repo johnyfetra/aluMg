@@ -1,11 +1,11 @@
 "use client";
-import { CheckCheck, CircleDot, FilePlus2, Hammer, MessageSquare, MessageSquareWarning, Pencil, Send, Star, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
+import { CheckCheck, CircleDot, FilePlus2, Hammer, MessageSquare, ListChecks, MessageSquareWarning, Pencil, Send, Star, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
 import { useState } from "react";
 import { mutate } from "swr";
 import { request, useEvents } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 
-const ICON = { created: FilePlus2, sent: Send, declined: XCircle, accepted: ThumbsUp, rejected: ThumbsDown, change_requested: MessageSquareWarning, progress: Hammer, completed: CheckCheck, reviewed: Star, message: MessageSquare, revised: Pencil } as const;
+const ICON = { created: FilePlus2, sent: Send, declined: XCircle, accepted: ThumbsUp, rejected: ThumbsDown, change_requested: MessageSquareWarning, progress: Hammer, completed: CheckCheck, reviewed: Star, message: MessageSquare, revised: Pencil, line_review: ListChecks, approve_all: CheckCheck } as const;
 
 // Historique d'un devis (demande, envoi, négociation, avancement, évaluation) et zone de message entre le client et le menuisier.
 export default function Timeline({ quoteId, canWrite = true }: { quoteId: string; canWrite?: boolean }) {
@@ -37,7 +37,7 @@ export default function Timeline({ quoteId, canWrite = true }: { quoteId: string
         {events.map((e) => {
           const Icon = ICON[e.kind as keyof typeof ICON] ?? CircleDot;
           const extra =
-            e.kind === "progress" ? ` · ${e.data.progress} %` : e.kind === "change_requested" && e.data.discountPercent ? ` · ${t("tl.discount")} ${e.data.discountPercent} %` : e.kind === "reviewed" ? ` · ${e.data.rating}/5` : "";
+            e.kind === "progress" ? ` · ${e.data.progress} %` : e.kind === "change_requested" && e.data.discountPercent ? ` · ${t("tl.discount")} ${e.data.discountPercent} %` : e.kind === "reviewed" ? ` · ${e.data.rating}/5` : e.kind === "line_review" ? ` · ${t(e.data.state === "approved" ? "line.approved" : e.data.state === "request" ? "line.requested" : "line.withdraw")}` : "";
           return (
             <li key={e.id} className="flex gap-3">
               <span aria-hidden className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${e.side === "client" ? "bg-c3/15 text-c3" : "bg-primary/12 text-primary"}`}>

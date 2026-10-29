@@ -1,5 +1,6 @@
 "use client";
-import { Box, ChevronDown, Copy, Minus, Plus, Image as ImageIcon, Ruler, Trash2 } from "lucide-react";
+import { FinishSwatch, GlassSwatch } from "../Swatch";
+import { Box, CheckCircle2, ChevronDown, Copy, MessageSquareWarning, Minus, Plus, Image as ImageIcon, Ruler, Trash2 } from "lucide-react";
 import { createContext, useContext, useState } from "react";
 import LineComments from "../LineComments";
 import Viewer3DLoader from "../Viewer3DLoader";
@@ -9,13 +10,13 @@ import { costLine, marginOf } from "@/lib/costing";
 import { lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { type T } from "@/lib/i18n";
-import { CATEGORIES, BOXES, CONTROLS, SLATS_RIDEAU, SLATS_ROULANT, type Slat, EXTRAS, FINISHES, GLASSES, GUARDS, INFILLS, type Line, OPENINGS_BY_CATEGORY, PATTERNS, PATTERN_GLASSES, DIRECTIONS, type LeafMode, hasLeafConfig, rangeOn, leafMarks, leafModes, presetModes, RANGES, SHUTTERS, THICKNESSES, type Settings, leavesSpec } from "@/lib/model";
+import { type LineReview, CATEGORIES, BOXES, CONTROLS, SLATS_RIDEAU, SLATS_ROULANT, type Slat, EXTRAS, FINISHES, GLASSES, GUARDS, INFILLS, type Line, OPENINGS_BY_CATEGORY, PATTERNS, PATTERN_GLASSES, DIRECTIONS, type LeafMode, hasLeafConfig, rangeOn, leafMarks, leafModes, presetModes, RANGES, SHUTTERS, THICKNESSES, type Settings, leavesSpec } from "@/lib/model";
 import Select from "../Select";
 import { cap, price } from "./line";
 
 // Une carte d'ouvrage : configuration (type, dimensions, finitions, prix), aperçu 2D/3D et commentaires.
 export function LineCard({
-  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark, quoteId, focused = false,
+  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark, quoteId, focused = false, review,
 }: {
   l: Line;
   i: number;
@@ -34,6 +35,7 @@ export function LineCard({
   mark?: string; // repère d'ouvrage (F-01…)
   quoteId?: string; // devis lié à un client : affiche le fil de commentaires de l'ouvrage
   focused?: boolean; // ouvrage visé par une notification
+  review?: LineReview; // avis du client sur cet ouvrage
 }) {
   const [view, setView] = useState<"2d" | "3d">("2d");
   const cat = l.category;
@@ -235,7 +237,7 @@ export function LineCard({
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
               <Field htmlFor={p("gt")} label={t("editor.glassType")}>
-                <Select id={p("gt")} value={l.glassType} onChange={(v) => onChange({ glassType: v as Line["glassType"] })} options={GLASSES.map((g) => ({ value: g.id, label: t(g.label) }))} />
+                <Select id={p("gt")} value={l.glassType} onChange={(v) => onChange({ glassType: v as Line["glassType"] })} options={GLASSES.map((g) => ({ value: g.id, label: t(g.label), leading: <GlassSwatch id={g.id} size={22} /> }))} />
               </Field>
               </div>
               <Field htmlFor={p("th")} label={t("editor.thickness")}>
@@ -288,11 +290,17 @@ export function LineCard({
           {thumb && <span aria-hidden className="hidden h-14 w-[4.75rem] shrink-0 place-items-center rounded-lg bg-white sm:grid p-0.5 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: thumb.svg }} />}
           <span className="min-w-0 flex-1">
             <span className="block break-words font-semibold leading-snug sm:truncate">{title}</span>
+            {review && (
+              <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${review.state === "approved" ? "bg-good/15 text-ok" : "bg-warn/15 text-warn"}`}>
+                {review.state === "approved" ? <CheckCircle2 size={12} aria-hidden /> : <MessageSquareWarning size={12} aria-hidden />}
+                {review.state === "approved" ? t("line.approvedByClient") : `${t("line.requestedByClient")}${review.topic ? ` · ${t(`act.topic.${review.topic}`)}` : ""}`}
+              </span>
+            )}
             <span className="flex flex-wrap items-center gap-x-2 text-sm font-normal text-muted">
               <span>{valid ? `${l.width} × ${l.height} mm` : t("editor.invalidSize")}</span>
               <span aria-hidden>·</span>
               <span className="inline-flex items-center gap-1.5">
-                <span aria-hidden className="size-3 rounded-full border border-line" style={{ background: finish?.hex }} />
+                <FinishSwatch id={finish?.id ?? "blanc"} size={16} />
                 {t(`range.${l.range}`)}
               </span>
               {leafList && (
@@ -316,6 +324,11 @@ export function LineCard({
         // seuls les champs de saisie (les blocs « Panel ») sont verrouillés : l'aperçu 2D/3D et le détail des profilés restent consultables
         <LockedCtx.Provider value={locked}>
           <div id={`${l.id}-body`} className={`border-t border-line p-4 sm:p-6 ${grid}`}>
+            {review?.message && (
+              <p role="note" className={`mb-4 rounded-lg border px-3 py-2 text-sm ${review.state === "request" ? "border-warn/40 bg-warn/10" : "border-good/40 bg-good/10"}`}>
+                <strong>{review.state === "request" ? t("line.requestedByClient") : t("line.opinion")} :</strong> {review.message}
+              </p>
+            )}
             {body}
           </div>
         </LockedCtx.Provider>
