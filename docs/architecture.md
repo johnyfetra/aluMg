@@ -200,3 +200,15 @@ Source unique : `editMode(status, linked)` dans `lib/model.ts`, appliquée par `
 | terminé | `locked` | impossible : le devis fait foi (nouvelle version à créer) |
 
 Enregistrer sans changer le contenu ne change ni le statut ni la révision. Un devis sans compte client n'a personne à prévenir : modifiable librement sauf terminé. Chaque modification d'un devis montré écrit un événement `revised` (`data.from` = statut d'origine).
+
+## Assistant de demande de devis (`lib/intake.ts`)
+
+Le client décrit son besoin avec ses mots (« 3 fenêtres coulissantes 150x120 anthracite pour les chambres, un volet roulant motorisé… ») ; `analyze(texte)` en tire des ouvrages : découpage par ouvrage cité (fenêtre, porte, porte-fenêtre, baie, vitrine, naco, volet roulant ou rideau, garde-corps, cloison), quantité (chiffres ou lettres), cotes (`150x120`, `1,5 m par 1,2 m`, `2m x 1m20`, largeur/hauteur nommées, bornées à 200–6000 mm), ouverture, vantaux, couleur, verre, options, pièce, lieu et urgence. Ce qui n'est pas dit est **supposé et signalé** (`assumptions`), jamais chiffré en silence ; les ouvrages hors catalogue (portail, véranda…) sont listés à part. Déterministe, sans réseau ni IA externe, testé (`lib/intake.test.ts`).
+
+- **Client** (`RequestForm`) : l'assistant montre ce qu'il a compris et les questions à lever ; sans ouvrage saisi à la main, la demande part avec `lines: []` et le serveur (`createRequest`) déduit les ouvrages du texte, les chiffre avec les tarifs du menuisier et mémorise `request.intake` (points à vérifier). Rien de compréhensible : `422 intake_empty`.
+- **Menuisier** (`IntakePanel` dans l'éditeur) : colle un texte (ou part d'une conversation avec `?conv=`) ; les ouvrages arrivent chiffrés avec ses tarifs, à ajouter ou à substituer, puis ajustés avant l'envoi.
+- Limite assumée : règles et mots-clés, pas de compréhension générale ; une phrase atypique donne moins d'ouvrages ou une fiabilité basse.
+
+## Interface
+
+Toasts personnalisés (`components/Toast.tsx`, `useToast()`) pour chaque action côté client et menuisier ; « Mes tarifs » (`TariffsPanel`, tarifs au m², prix et coût des prestations, remise habituelle par client) accessible de partout.

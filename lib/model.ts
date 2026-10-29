@@ -30,6 +30,9 @@ export const SPECIALTIES = ["fenetres", "portes", "volets", "garde-corps", "cloi
 // Motif de refus donné par le client : sert au menuisier à comprendre pourquoi il perd un devis (jamais montré aux autres clients).
 export const LOSS_REASONS = ["price", "delay", "competitor", "changed_mind", "other"] as const;
 export type LossReason = (typeof LOSS_REASONS)[number];
+// Objet d'une demande de modification du client : le prix, le détail des ouvrages, ou une question (plus d'informations).
+export const CHANGE_TOPICS = ["price", "details", "info"] as const;
+export type ChangeTopic = (typeof CHANGE_TOPICS)[number];
 export const CLOSE_REASONS = [...LOSS_REASONS, "declined"] as const; // « declined » : le menuisier a lui-même écarté la demande, ce n'est pas un devis perdu
 export const REPORT_REASONS = ["quality", "no_response", "price", "behavior", "fraud", "other"] as const;
 export const ROLES = ["client", "menuisier", "admin"] as const;
@@ -213,7 +216,13 @@ export const lineSchema = z.object({
 });
 export type Line = z.infer<typeof lineSchema>;
 
-const requestSchema = z.object({ message: text(1500), siteAddress: text(200), wantedDate: text(40) });
+const requestSchema = z.object({
+  message: text(1500),
+  siteAddress: text(200),
+  wantedDate: text(40),
+  // quand les ouvrages ont été déduits du texte du client (assistant) : ce que le menuisier doit vérifier
+  intake: z.object({ auto: z.boolean(), checks: z.array(z.object({ lineId: z.string().max(64), keys: z.array(z.string().max(20)).max(8) })).max(30), unsupported: z.array(z.string().max(60)).max(10), urgent: z.boolean() }).optional(),
+});
 export type QuoteRequest = z.infer<typeof requestSchema>;
 
 // Modèle du devis (feuille et PDF). Personnalisation CADRÉE : le menuisier choisit la mise en page et le style, jamais le fond.
@@ -268,6 +277,7 @@ export const quoteSchema = z.object({
   warranty: z.number().int().min(0).max(240).optional(), // garantie en mois (absent ou 0 : non indiquée)
   docStyle: docStyleSchema.optional(), // modèle propre à ce devis ; absent : le modèle des réglages
   discount: z.number().min(0).max(100).default(0), // remise en % sur le total HT
+  changeTopic: z.enum(CHANGE_TOPICS).optional(), // objet de la dernière demande de modification du client (posé par le serveur, effacé à l'envoi)
   lostReason: z.enum(CLOSE_REASONS).optional(), // motif de clôture, posé par le serveur : refus du client (avec son motif) ou demande écartée par le menuisier
   // champs gérés par le serveur : ignorés quand le client de l'API les envoie
   clientId: z.uuid().nullable().optional(),
@@ -443,6 +453,7 @@ export const settingsSchema = z.object({
   pricing: z.enum(PRICING_MODES), // m2 : tarif au m² ; cost : matière + main-d'œuvre + frais + marge
   labor: laborSchema,
   overheadPct: z.number().min(0).max(200), // frais généraux, en % du déboursé sec
+  servicePrices: z.record(z.string(), z.object({ price: z.number().min(0).max(1e10), cost: z.number().min(0).max(1e10) })), // tarif des prestations (pose, dépose…) : prix et coût préremplis dans un devis
   marginPct: z.number().min(0).max(300), // marge visée, en % du prix de revient
   minMarginPct: z.number().min(0).max(100), // sous ce seuil, l'éditeur alerte
   tariffs: z.record(z.string(), z.number().min(0).max(1e9)),
@@ -478,6 +489,7 @@ export const DEFAULT_SETTINGS: Settings = {
   labor: { rate: 5000, fixedMin: 30, cutMin: 1.5, leafMin: 45, glazingMin: 20 }, // valeurs d'exemple à calibrer sur l'atelier
   overheadPct: 15,
   marginPct: 30,
+  servicePrices: { pose: { price: 120000, cost: 80000 }, depose: { price: 45000, cost: 28000 }, deplacement: { price: 60000, cost: 40000 }, autre: { price: 0, cost: 0 } }, // valeurs d'exemple à calibrer
   minMarginPct: 15,
   // valeurs d'exemple : chaque menuisier règle ses propres prix au m²
   tariffs: {
@@ -506,6 +518,7 @@ export const withDefaults = (s: Partial<Settings> | null | undefined): Settings 
   docStyle: { ...DEFAULT_SETTINGS.docStyle, ...s?.docStyle },
   labor: { ...DEFAULT_SETTINGS.labor, ...s?.labor },
   tariffs: { ...DEFAULT_SETTINGS.tariffs, ...s?.tariffs },
+  servicePrices: { ...DEFAULT_SETTINGS.servicePrices, ...s?.servicePrices },
   surcharges: { ...SURCHARGE_DEFAULTS, ...s?.surcharges },
   market: {
     offers: { ...DEFAULT_MARKET.offers, ...s?.market?.offers },

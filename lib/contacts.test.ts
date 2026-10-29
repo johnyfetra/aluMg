@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { lineSchema, quoteSchema } from "./model";
+import { lineSchema, type Quote, quoteSchema } from "./model";
 
 process.env.PGLITE_DIR = "memory://";
 const repo = await import("./repo");
@@ -20,15 +20,15 @@ beforeAll(async () => {
 
 describe("carnet de clients", () => {
   it("un contact retrouve le compte client par l'e-mail (sans tenir compte de la casse)", async () => {
-    const r = await ct.saveContact(m1, { name: "Hery", phone: "033 33 333 33", email: "HERY@ex.mg", note: "" });
+    const r = await ct.saveContact(m1, { name: "Hery", phone: "033 33 333 33", email: "HERY@ex.mg", note: "", discount: 0 });
     const list = await ct.listContacts(m1);
     expect(list).toHaveLength(1);
     // vie privée : tant qu'aucun devis n'a été échangé, on sait seulement qu'un compte existe (ni nom ni photo)
     expect(list[0]).toMatchObject({ id: r!.id, email: "hery@ex.mg", account: { id: "", name: "", avatar: "" } });
   });
   it("même e-mail : mise à jour, pas de doublon ; sans compte : account null", async () => {
-    await ct.saveContact(m1, { name: "Hery R.", phone: "", email: "hery@ex.mg", note: "VIP" });
-    await ct.saveContact(m1, { name: "Walk-in", phone: "032 00 000 00", email: "", note: "" });
+    await ct.saveContact(m1, { name: "Hery R.", phone: "", email: "hery@ex.mg", note: "VIP", discount: 7 });
+    await ct.saveContact(m1, { name: "Walk-in", phone: "032 00 000 00", email: "", note: "", discount: 0 });
     const list = await ct.listContacts(m1);
     expect(list).toHaveLength(2);
     expect(list.find((c) => c.email === "hery@ex.mg")).toMatchObject({ name: "Hery R.", note: "VIP" });
@@ -37,7 +37,7 @@ describe("carnet de clients", () => {
   it("chaque menuisier ne voit et ne modifie que son carnet", async () => {
     expect(await ct.listContacts(m2)).toEqual([]);
     const mine = (await ct.listContacts(m1))[0];
-    expect(await ct.saveContact(m2, { name: "pirate", phone: "", email: "", note: "" }, mine.id)).toBeNull();
+    expect(await ct.saveContact(m2, { name: "pirate", phone: "", email: "", note: "", discount: 0 }, mine.id)).toBeNull();
     expect(await ct.deleteContact(m2, mine.id)).toBe(false);
     expect(await ct.deleteContact(m1, mine.id)).toBe(true);
   });
@@ -64,5 +64,22 @@ describe("le client entre dans le carnet", () => {
   });
   it("un contact compte ses devis", async () => {
     expect((await ct.listContacts(m1)).find((c) => c.account?.id === c1)!.quotes).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("remise habituelle d'un client", () => {
+  it("se lit par e-mail ou compte, vaut 0 sans contact, et se met à jour avec le contact", async () => {
+    expect(await ct.discountFor(m1, { email: "inconnu@ex.mg" })).toBe(0);
+    await ct.saveContact(m1, { name: "Noro", phone: "", email: "noro@ex.mg", note: "", discount: 12 });
+    expect(await ct.discountFor(m1, { email: "NORO@ex.mg" })).toBe(12);
+    expect((await ct.listContacts(m1)).find((c) => c.email === "noro@ex.mg")?.discount).toBe(12);
+    expect(await ct.discountFor(m2, { email: "noro@ex.mg" })).toBe(0); // la remise est propre à chaque menuisier
+    expect(ct.contactSchema.safeParse({ name: "X", discount: 101 }).success).toBe(false);
+  });
+  it("une demande de devis reprend la remise habituelle du client", async () => {
+    const c = (await ct.listContacts(m1)).find((x) => x.account?.id === c1)!;
+    await ct.saveContact(m1, { name: c.name, phone: c.phone, email: c.email, note: "", discount: 9 });
+    const r = (await wf.createRequest(c1, { menuisier: slug1, project: "Extension", message: "", siteAddress: "", wantedDate: "", lines: [line] })) as Quote;
+    expect(r.discount).toBe(9);
   });
 });

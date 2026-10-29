@@ -3,8 +3,9 @@ import { z } from "zod";
 import { normalize } from "./calc";
 import { salePrice } from "./costing";
 import { getDb, schema } from "./db";
-import { type Issuer, ISSUER_KEYS, LOSS_REASONS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
-import { clientAccountFor, ensureContact } from "./contacts";
+import { type Issuer, CHANGE_TOPICS, ISSUER_KEYS, LOSS_REASONS, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
+import { clientAccountFor, discountFor, ensureContact } from "./contacts";
+import { analyze, toLine } from "./intake";
 import { notify } from "./notifications";
 import { StaleQuote, createQuote, findUserById, getSettings, unchanged } from "./repo";
 
@@ -18,7 +19,7 @@ export const actionSchema = z.discriminatedUnion("type", [
   // rev : révision du devis que le client a sous les yeux ; si le menuisier l'a modifié entre-temps, la décision est refusée (quote_changed).
   z.object({ type: z.literal("accept"), message: msg.optional(), rev: z.number().int().optional() }),
   z.object({ type: z.literal("reject"), message: msg.optional(), reason: z.enum(LOSS_REASONS).optional(), rev: z.number().int().optional() }),
-  z.object({ type: z.literal("request_change"), message: msg.min(1), discountPercent: z.number().min(0).max(90).optional(), rev: z.number().int().optional() }),
+  z.object({ type: z.literal("request_change"), message: msg.min(1), topic: z.enum(CHANGE_TOPICS).optional(), discountPercent: z.number().min(0).max(90).optional(), rev: z.number().int().optional() }),
   z.object({ type: z.literal("review"), rating: z.number().int().min(1).max(5), comment: msg.default("") }),
   z.object({ type: z.literal("report"), reason: z.enum(REPORT_REASONS), details: z.string().trim().max(1500).default("") }),
   z.object({ type: z.literal("message"), message: msg.min(1) }),
@@ -69,11 +70,11 @@ export const requestSchema = z.object({
   message: z.string().trim().max(1500).default(""),
   siteAddress: z.string().trim().max(200).default(""),
   wantedDate: z.string().trim().max(40).default(""),
-  lines: z.array(lineSchema).min(1).max(30),
+  lines: z.array(lineSchema).max(30).default([]), // vide : les ouvrages sont déduits du texte du client (lib/intake.ts)
 });
 
 // Crée un devis « requested » chez le menuisier : ses tarifs et majorations remplissent déjà les prix (le client ne les voit pas encore).
-export async function createRequest(clientId: string, input: z.infer<typeof requestSchema>): Promise<Quote | "no_menuisier" | "no_client"> {
+export async function createRequest(clientId: string, input: z.infer<typeof requestSchema>): Promise<Quote | "no_menuisier" | "no_client" | "intake_empty"> {
   const db = await getDb();
   // profil publié (annuaire) ou lien de demande du menuisier : le slug suffit
   const [profile] = await db.select().from(schema.menuisierProfiles).where(eq(schema.menuisierProfiles.slug, input.menuisier));
@@ -81,16 +82,24 @@ export async function createRequest(clientId: string, input: z.infer<typeof requ
   const client = await findUserById(clientId);
   if (!client) return "no_client";
   const settings = await getSettings(profile.userId);
-  const lines = input.lines.map((l) => {
+  const discount = await discountFor(profile.userId, { clientUserId: clientId, email: client.email ?? "" }); // remise habituelle de ce client
+  // Sans ouvrages saisis, l'assistant les déduit de la description (titre + message) ; rien de compris : on redemande au client.
+  const parsed = input.lines.length ? null : analyze(`${input.project}. ${input.message}`);
+  if (parsed && !parsed.items.length) return "intake_empty";
+  const given = parsed ? parsed.items.map((i) => toLine(i.spec)) : input.lines;
+  const lines = given.map((l) => {
     const n = normalize(l);
     return { ...n, id: crypto.randomUUID(), unit: salePrice(n, settings) };
   });
-  const request: QuoteRequest = { message: input.message, siteAddress: input.siteAddress, wantedDate: input.wantedDate };
+  const request: QuoteRequest = {
+    message: input.message, siteAddress: input.siteAddress || parsed?.address || "", wantedDate: input.wantedDate,
+    ...(parsed ? { intake: { auto: true, checks: parsed.items.map((i, k) => ({ lineId: lines[k].id, keys: i.assumptions })).filter((c) => c.keys.length), unsupported: parsed.unsupported, urgent: parsed.urgent } } : {}),
+  };
   const quote = await createQuote(
     profile.userId,
     {
-      id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: client.name, phone: client.phone, address: input.siteAddress, email: client.email ?? "" },
-      project: input.project, delay: "", notes: "", lines, discount: 0, progress: 0, rev: 0,
+      id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: client.name, phone: client.phone, address: request.siteAddress, email: client.email ?? "" },
+      project: input.project, delay: "", notes: "", lines, discount, progress: 0, rev: 0,
       terms: { tva: settings.tva, deposit: settings.deposit, validityDays: settings.validityDays },
     },
     { clientId, request },
@@ -189,7 +198,7 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
   }
 
   const progress = a.type === "progress" ? a.progress : row.progress;
-  const quote: Quote = { ...row.data, status: next, progress, clientId, ...(a.type === "reject" && a.reason ? { lostReason: a.reason } : {}), ...(a.type === "send" ? { lostReason: undefined } : {}), ...(a.type === "decline" ? { lostReason: "declined" as const } : {}) };
+  const quote: Quote = { ...row.data, status: next, progress, clientId, ...(a.type === "reject" && a.reason ? { lostReason: a.reason } : {}), ...(a.type === "send" ? { lostReason: undefined, changeTopic: undefined } : {}), ...(a.type === "request_change" && a.topic ? { changeTopic: a.topic } : {}), ...(a.type === "decline" ? { lostReason: "declined" as const } : {}) };
   try {
   await db.transaction(async (tx) => {
     if (next !== row.status || progress !== row.progress || clientId !== row.clientId) {
@@ -207,7 +216,7 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
       case "decline": return void (await log("declined", a.message));
       case "accept": return void (await log("accepted", a.message));
       case "reject": return void (await log("rejected", a.message, a.reason ? { reason: a.reason } : {}));
-      case "request_change": return void (await log("change_requested", a.message, a.discountPercent ? { discountPercent: a.discountPercent } : {}));
+      case "request_change": return void (await log("change_requested", a.message, { ...(a.topic ? { topic: a.topic } : {}), ...(a.discountPercent ? { discountPercent: a.discountPercent } : {}) }));
       case "message": return void (await log("message", a.message));
       case "progress": {
         await log("progress", a.message, { progress: a.progress });

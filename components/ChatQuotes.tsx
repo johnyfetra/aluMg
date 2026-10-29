@@ -17,7 +17,7 @@ export default function ChatQuotes({ conv, onCite, t }: { conv: ConversationView
   const { data: contacts = [] } = useContacts(toClient);
   const contact = contacts.find((c) => c.account?.id === conv.other.id);
   const action = toClient
-    ? { href: contact ? `/devis/nouveau?contact=${contact.id}` : "/devis/nouveau", label: t("msg.newQuote") }
+    ? { href: `/devis/nouveau?${contact ? `contact=${contact.id}&` : ""}conv=${conv.id}`, label: t("msg.newQuote") }
     : conv.other.slug ? { href: `/espace-client/nouvelle?menuisier=${conv.other.slug}`, label: t("msg.askQuote") } : null;
   if (!quotes.length && !action) return null;
   return (

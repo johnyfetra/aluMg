@@ -2,12 +2,14 @@
 import { MessageSquare, Send } from "lucide-react";
 import { useState } from "react";
 import { mutate } from "swr";
+import { useToast } from "./Toast";
 import { request, useLineComments } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 
 // Fil de discussion d'un ouvrage précis, partagé par le client et le menuisier. `me` : de quel côté on écrit.
 export default function LineComments({ quoteId, lineId, me, canWrite = true }: { quoteId: string; lineId: string; me: "client" | "menuisier"; canWrite?: boolean }) {
   const { t, locale } = useI18n();
+  const toast = useToast();
   const { data = [] } = useLineComments(quoteId);
   const list = data.filter((c) => c.lineId === lineId);
   const [body, setBody] = useState("");
@@ -23,8 +25,10 @@ export default function LineComments({ quoteId, lineId, me, canWrite = true }: {
       await request("POST", `/api/quotes/${quoteId}/comments`, { lineId, body: body.trim() });
       setBody("");
       await mutate(`/api/quotes/${quoteId}/comments`);
+      toast.success(t("toast.commentSent"), t("toast.commentSentText"));
     } catch {
       setError(true);
+      toast.error(t("toast.errorTitle"), t("toast.errorText"));
     } finally {
       setBusy(false);
     }

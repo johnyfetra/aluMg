@@ -1,5 +1,5 @@
 "use client";
-import { Check, Copy, Link2, Mail, Pencil, Phone, Plus, Search, Trash2, UserCheck, UserX } from "lucide-react";
+import { BadgePercent, Check, Copy, Link2, Mail, Pencil, Phone, Plus, Search, Trash2, UserCheck, UserX } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { mutate } from "swr";
@@ -8,15 +8,17 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import { Avatar, Field } from "@/components/ui";
 import { ApiError, request, useContacts, useProfile } from "@/lib/client";
 import type { ContactView } from "@/lib/contacts";
+import { useToast } from "@/components/Toast";
 import { useI18n } from "@/lib/i18n";
 
-type Draft = { name: string; phone: string; email: string; note: string };
-const EMPTY: Draft = { name: "", phone: "", email: "", note: "" };
+type Draft = { name: string; phone: string; email: string; note: string; discount: number };
+const EMPTY: Draft = { name: "", phone: "", email: "", note: "", discount: 0 };
 
 // Carnet de clients du menuisier : nom, téléphone, e-mail, compte AluMg ; un clic pour lui créer un devis ou lui écrire.
 export default function ClientsPage() {
   const { t } = useI18n();
   const ask = useConfirm();
+  const toast = useToast();
   const { data: list = [], isLoading } = useContacts();
   const { profile } = useProfile();
   const [q, setQ] = useState("");
@@ -33,6 +35,7 @@ export default function ClientsPage() {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(key);
+      toast.success(t("toast.linkCopied"), t("toast.linkCopiedText"));
       setTimeout(() => setCopied(""), 2000);
     } catch {
       /* presse-papiers indisponible : le texte reste visible à l'écran */
@@ -41,7 +44,7 @@ export default function ClientsPage() {
   const open = (c?: ContactView) => {
     setError("");
     setEditing(c ? c.id : "new");
-    setDraft(c ? { name: c.name, phone: c.phone, email: c.email, note: c.note } : EMPTY);
+    setDraft(c ? { name: c.name, phone: c.phone, email: c.email, note: c.note, discount: c.discount } : EMPTY);
   };
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +52,7 @@ export default function ClientsPage() {
     try {
       await (editing === "new" ? request("POST", "/api/contacts", draft) : request("PUT", `/api/contacts/${editing}`, draft));
       await mutate("/api/contacts");
+      toast.success(t("toast.contactSaved"), draft.discount > 0 ? `${draft.name} · ${t("ct.discount")} ${draft.discount} %` : draft.name);
       setEditing(null);
     } catch (err) {
       setError(err instanceof ApiError ? t("ct.error") : t("common.error"));
@@ -58,6 +62,7 @@ export default function ClientsPage() {
     if (!(await ask({ message: t("ct.confirmDelete"), tone: "danger", confirmLabel: t("ct.delete") }))) return;
     await request("DELETE", `/api/contacts/${c.id}`);
     await mutate("/api/contacts");
+    toast.success(t("toast.contactDeleted"), c.name);
   };
 
   const form = (
@@ -75,6 +80,9 @@ export default function ClientsPage() {
       </div>
       <Field htmlFor="ct-o" label={t("ct.note")}>
         <input id="ct-o" className="input" maxLength={500} value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} />
+      </Field>
+      <Field htmlFor="ct-d" label={t("ct.discount")} hint={t("ct.discountHint")}>
+        <input id="ct-d" className="input" type="number" inputMode="numeric" min={0} max={100} value={draft.discount || ""} placeholder="0" onChange={(e) => setDraft({ ...draft, discount: Math.min(100, Math.max(0, Math.round(Number(e.target.value)) || 0)) })} />
       </Field>
       {error && <p role="alert" className="text-sm font-medium text-danger">{error}</p>}
       <div className="flex gap-2">
@@ -126,6 +134,7 @@ export default function ClientsPage() {
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2 font-semibold">
                     <span className="truncate">{c.name}</span>
+                    {c.discount > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 text-xs font-semibold text-primary"><BadgePercent size={12} aria-hidden />−{c.discount} %</span>}
                     {c.account ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-ok/15 px-2 py-0.5 text-xs font-semibold text-ok"><UserCheck size={12} aria-hidden />{t("ct.account")}</span>
                     ) : (

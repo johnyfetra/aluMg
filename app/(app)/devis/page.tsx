@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { LoadingState, ErrorState, EmptyState } from "@/components/Feedback";
+import { useToast } from "@/components/Toast";
 import { StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
 import { useQuotes, useSettings } from "@/lib/client";
@@ -24,6 +25,7 @@ export default function QuotesPage() {
 function QuotesView() {
   const { t, locale } = useI18n();
   const ask = useConfirm();
+  const toast = useToast();
   const router = useRouter();
   const params = useSearchParams();
   const { quotes = [], loading, error, retry, save, remove } = useQuotes();
@@ -40,6 +42,7 @@ function QuotesView() {
     if (!settings) return;
     const { quotePdf } = await import("@/lib/pdf");
     await quotePdf(q, settings, t, locale, false);
+    toast.success(t("toast.pdf"), q.number);
   };
   const date = (q: Quote) => new Date(q.date).toLocaleDateString(DATE_LOCALE[locale]);
   // Un devis lié à un compte client change de statut par ses actions (envoi, acceptation…) : pas de menu libre.
@@ -54,7 +57,8 @@ function QuotesView() {
   );
   // Copie en brouillon, sans lien client ni numéro : point de départ d'un devis voisin (même client, autre chantier…).
   const duplicate = async (q: Quote) => {
-    const copy = await save({ ...q, id: crypto.randomUUID(), number: "", status: "draft", date: new Date().toISOString(), progress: 0, rev: 0, clientId: null, request: null }, true);
+    const copy = await save({ ...q, id: crypto.randomUUID(), number: "", status: "draft", date: new Date().toISOString(), progress: 0, rev: 0, clientId: null, request: null, lostReason: undefined, changeTopic: undefined }, true);
+    toast.success(t("toast.duplicated"), `${q.number} → ${copy.number}`);
     router.push(`/devis/${copy.id}`);
   };
   const actions = (q: Quote) => (
@@ -73,7 +77,7 @@ function QuotesView() {
       <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => duplicate(q)} aria-label={`${t("quotes.duplicate")} ${q.number}`} title={t("quotes.duplicate")}>
         <Copy size={16} aria-hidden />
       </button>
-      <button type="button" className="btn-danger !min-h-9 !px-3" aria-label={`${t("common.delete")} ${q.number}`} onClick={async () => (await ask({ message: t("common.confirmDelete"), tone: "danger", confirmLabel: t("common.delete") })) && remove(q.id)}>
+      <button type="button" className="btn-danger !min-h-9 !px-3" aria-label={`${t("common.delete")} ${q.number}`} onClick={async () => (await ask({ message: t("common.confirmDelete"), tone: "danger", confirmLabel: t("common.delete") })) && (await remove(q.id), toast.success(t("toast.deleted"), q.number))}>
         <Trash2 size={16} aria-hidden />
       </button>
     </div>

@@ -10,5 +10,6 @@ export async function POST(req: Request) {
   const r = await createRequest(user.id, p.data);
   if (r === "no_menuisier") return fail(404, "no_menuisier");
   if (r === "no_client") return fail(401, "unauthorized");
+  if (r === "intake_empty") return fail(422, "intake_empty"); // rien de compréhensible dans la description : le client doit préciser
   return json(r, 201);
 }

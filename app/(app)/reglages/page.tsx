@@ -5,17 +5,11 @@ import { useState } from "react";
 import SignaturePad from "@/components/SignaturePad";
 import { Choice, Field } from "@/components/ui";
 import { useSettings } from "@/lib/client";
-import { type T, useI18n } from "@/lib/i18n";
+import { useToast } from "@/components/Toast";
+import { useI18n } from "@/lib/i18n";
+import { tariffLabel } from "@/lib/describe";
 import { fileToDataUrl } from "@/lib/image";
-import { type Category, type Opening, SURCHARGES, type Settings, TARIFF_KEYS, type TariffKey } from "@/lib/model";
-
-const tariffLabel = (k: TariffKey, t: T) => {
-  const [cat, kind] = k.split(".") as [Category, string];
-  if (cat === "volet") return t(`shutter.${kind as "roulant" | "rideau"}`);
-  if (cat === "garde-corps") return `${t("cat.garde-corps")} ${t(`guard.${kind as "barreaudage" | "verre"}`)}`;
-  if (cat === "cloison") return t("cat.cloison");
-  return `${t(`cat.${cat}`)} ${t(`opening.${kind as Opening}`)}`;
-};
+import { SURCHARGES, type Settings, TARIFF_KEYS } from "@/lib/model";
 
 export default function SettingsPage() {
   const { settings, error, retry } = useSettings();
@@ -26,6 +20,7 @@ function Form({ initial }: { initial: Settings }) {
   const { t } = useI18n();
   const { save } = useSettings();
   const [s, setS] = useState(initial);
+  const toast = useToast();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const set = (patch: Partial<Settings>) => setS((cur) => ({ ...cur, ...patch }));
 
@@ -65,9 +60,11 @@ function Form({ initial }: { initial: Settings }) {
     e.preventDefault();
     try {
       await save(s);
-      setMsg({ ok: true, text: t("settings.saved") });
+      setMsg(null);
+      toast.success(t("toast.settingsSaved"), t("settings.saved"));
     } catch {
       setMsg({ ok: false, text: t("common.error") });
+      toast.error(t("toast.errorTitle"), t("toast.errorText"));
     }
   };
 

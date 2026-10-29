@@ -41,7 +41,7 @@ type Props = {
 export default function SummaryAside({ t, q, setQ, totals, margin, plan, persisted, canAct, locked, revisable, mode, note, setNote, attachCut, setAttachCut, msg, settings, onNeeds, onAct, onSubmit, onNewVersion }: Props) {
   const num = (v: string) => Number(v) || 0;
   return (
-    <aside className="space-y-3 xl:sticky xl:top-20" aria-label="Total">
+    <aside className="space-y-3 xl:sticky xl:top-32" aria-label="Total">
           <section className="card space-y-2 !p-3.5">
             <div className="flex items-start justify-between gap-3">
               <div>

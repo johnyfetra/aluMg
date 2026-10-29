@@ -143,6 +143,7 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
     const ev = await wf.listEvents(q.id);
     expect(ev.map((e) => e.kind)).toEqual(["created", "sent", "revised", "revised", "change_requested", "revised", "sent"]);
     expect(ev[4]).toMatchObject({ side: "client", message: "Une remise possible ?", data: { discountPercent: 10 } });
+    expect((await repo.getQuote(m1, q.id))!.changeTopic).toBeUndefined(); // sans objet précisé
   });
 
   it("acceptation puis chantier : l'avancement fait évoluer le statut", async () => {
@@ -378,11 +379,34 @@ describe("modifier un devis selon son statut (côté menuisier)", () => {
   it("négociation : modifier crée une révision ; la demande et le brouillon restent libres", async () => {
     const id = await fresh();
     await wf.applyAction(m1, id, A({ type: "send" }));
-    await wf.applyAction(c1, id, A({ type: "request_change", message: "Moins cher ?", rev: await revOf(m1, id) }));
+    await wf.applyAction(c1, id, A({ type: "request_change", message: "Moins cher ?", topic: "price", rev: await revOf(m1, id) }));
     const cur = (await repo.getQuote(m1, id))!;
-    expect(await repo.updateQuote(m1, id, { ...cur, discount: 5 })).toMatchObject({ status: "negotiation", rev: (cur.rev ?? 0) + 1 });
+    expect(cur.changeTopic).toBe("price");
+    expect((await wf.listEvents(id)).find((e) => e.kind === "change_requested")?.data).toEqual({ topic: "price" });
+    expect(await repo.updateQuote(m1, id, { ...cur, discount: 5 })).toMatchObject({ status: "negotiation", changeTopic: "price", rev: (cur.rev ?? 0) + 1 });
+    await wf.applyAction(m1, id, A({ type: "send" }));
+    expect((await repo.getQuote(m1, id))!.changeTopic).toBeUndefined(); // la demande est traitée
+    expect(wf.actionSchema.safeParse({ type: "request_change", message: "x", topic: "autre" }).success).toBe(false);
     const draft = await fresh();
     const d = (await repo.getQuote(m1, draft))!;
     expect(await repo.updateQuote(m1, draft, { ...d, notes: "brouillon" })).toMatchObject({ status: "draft", rev: 0 });
+  });
+});
+
+describe("demande de devis assistée par l'analyse du texte", () => {
+  it("sans ouvrages saisis, les ouvrages sont déduits du message, chiffrés, avec les points à vérifier", async () => {
+    const r = (await wf.createRequest(c1, { menuisier: slug1, project: "Maison Ivandry", message: "Bonjour, je voudrais 2 fenêtres coulissantes 150x120 anthracite et une porte d'entrée pour la maison à Ivandry", siteAddress: "", wantedDate: "", lines: [] })) as Quote;
+    expect(r.status).toBe("requested");
+    expect(r.lines.map((l) => [l.category, l.qty])).toEqual([["fenetre", 2], ["porte", 1]]);
+    expect(r.lines.every((l) => l.unit > 0)).toBe(true); // chiffré avec les tarifs du menuisier
+    expect(r.request?.intake?.auto).toBe(true);
+    expect(r.request?.intake?.checks.some((c) => c.lineId === r.lines[1].id && c.keys.includes("size"))).toBe(true); // la porte n'a pas de cotes
+    expect(r.request?.siteAddress).toBe("Ivandry");
+    expect((await wf.getClientQuote(c1, r.id))!.quote.lines[0].unit).toBe(0); // le client ne voit pas les prix
+  });
+  it("rien de compréhensible : la demande est refusée pour que le client précise ; des ouvrages saisis passent comme avant", async () => {
+    expect(await wf.createRequest(c1, { menuisier: slug1, project: "", message: "Bonjour, pouvez-vous m'appeler ?", siteAddress: "", wantedDate: "", lines: [] })).toBe("intake_empty");
+    const manual = (await wf.createRequest(c1, { menuisier: slug1, project: "", message: "", siteAddress: "", wantedDate: "", lines: [line] })) as Quote;
+    expect(manual.request?.intake).toBeUndefined();
   });
 });

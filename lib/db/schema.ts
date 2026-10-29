@@ -259,6 +259,7 @@ export const contacts = pgTable(
     phone: text("phone").notNull().default(""),
     email: text("email").notNull().default(""),
     note: text("note").notNull().default(""),
+    discount: integer("discount").notNull().default(0), // remise habituelle accordée à ce client, en % (préremplie sur ses nouveaux devis)
     clientUserId: uuid("client_user_id").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

@@ -1,11 +1,14 @@
 "use client";
-import { Check, Mail, Pencil, Phone, UserCheck, Eye, Inbox, LayoutGrid, Rows3, Table2 } from "lucide-react";
+import { BadgePercent, Check, Mail, Pencil, Phone, UserCheck, Eye, Inbox, LayoutGrid, Rows3, Table2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { mutate } from "swr";
+import IntakePanel from "./IntakePanel";
 import ProfileNeeds from "./ProfileNeeds";
 import QuoteStatusBar from "./QuoteStatusBar";
+import { useToast } from "./Toast";
+import { openTariffs } from "./TariffsPanel";
 import ChatButton from "./ChatButton";
 import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
@@ -14,7 +17,7 @@ import { Avatar, Field } from "./ui";
 import { allPieces, cuttingPlan, normalize, planTotals } from "@/lib/calc";
 import { quoteMargin } from "@/lib/costing";
 import { initSim, simulate } from "@/lib/procure";
-import { useContacts } from "@/lib/client";
+import { useContacts, useMessages } from "@/lib/client";
 import { ApiError, request, useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { type EditMode, editMode, type Line, lineMarks, type Quote, type Settings, lineSchema } from "@/lib/model";
@@ -48,6 +51,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const { t, locale } = useI18n();
   const router = useRouter();
   const ask = useConfirm();
+  const toast = useToast();
   const { save } = useQuotes();
   // gammes et couleurs proposées : celles du catalogue de ce devis s'il en a un, sinon du catalogue général
   const catalog = useQuoteCatalog(existing?.id);
@@ -119,11 +123,24 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     setFocusId(id);
     requestAnimationFrame(() => document.getElementById(`line-${id}`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
   }, [existing]);
+  // « Nouveau devis depuis la conversation » : les messages du client servent de texte de départ à l'assistant
+  const convId = typeof location === "undefined" ? null : new URLSearchParams(location.search).get("conv");
+  const { data: convMsgs = [] } = useMessages(convId);
+  const convText = convMsgs.filter((m) => !m.mine && m.body).map((m) => m.body).join("\n");
+  const addGenerated = (ls: Line[], replace: boolean) => {
+    // sur un devis neuf, la ligne de départ intacte est remplacée par les ouvrages générés
+    setQ((cur) => ({ ...cur, lines: replace || (!existing && cur.lines.length === 1 && JSON.stringify(cur.lines[0]) === JSON.stringify(first)) ? ls : [...cur.lines, ...ls] }));
+    setOpenIds(new Set(ls.map((l) => l.id)));
+    toast.success(t("toast.linesGenerated"), `${ls.length} ${t("intake.pro.added")}`);
+  };
   // Carnet de clients : choisir un client remplit nom, téléphone et e-mail ; ?contact=<id> préremplit un nouveau devis.
   const { data: contacts = [] } = useContacts();
   const pickContact = (id: string) => {
     const c = contacts.find((x) => x.id === id);
-    if (c) setQ((cur) => ({ ...cur, client: { ...cur.client, name: c.name, phone: c.phone, email: c.email } }));
+    if (!c) return;
+    const withDiscount = c.discount > 0 && !q.discount; // remise habituelle du client, sauf si une remise a déjà été saisie
+    setQ((cur) => ({ ...cur, client: { ...cur.client, name: c.name, phone: c.phone, email: c.email }, ...(withDiscount ? { discount: c.discount } : {}) }));
+    if (withDiscount) toast.info(t("toast.discountApplied"), `${c.discount} % · ${c.name}`);
   };
   // fiche client : formulaire ouvert seulement pour ajouter ou modifier
   const [editClient, setEditClient] = useState(() => !(existing && existing.client.name.trim()));
@@ -165,6 +182,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     } catch (e) {
       console.error("[alumg] enregistrement en échec", e);
       setMsg({ ok: false, text: t("common.error") });
+      toast.error(t("toast.errorTitle"), t("toast.errorText"));
       return null;
     }
   };
@@ -174,15 +192,19 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     if (mode === "reconfirm" && JSON.stringify(q) !== JSON.stringify(existing) && !(await ask({ message: t("editor.confirmReconfirm"), tone: "danger", confirmLabel: t("editor.saveReconfirm") }))) return;
     const saved = await persist();
     if (!saved) return;
-    setMsg({ ok: true, text: mode === "reconfirm" ? t("editor.reconfirmed") : revisable ? t("editor.revSaved") : t("editor.saved") });
+    setMsg(null);
+    if (mode === "reconfirm") toast.warning(t("toast.reconfirm"), t("toast.reconfirmText"));
+    else if (revisable) toast.success(t("toast.revSaved"), t("toast.revSavedText"));
+    else toast.success(t("toast.quoteSaved"), [saved.number, saved.client.name].filter(Boolean).join(" · "));
     try {
       if (withPdf) {
         const { quotePdf } = await import("@/lib/pdf");
         await quotePdf(saved, settings, t, locale, attachCut);
+        toast.success(t("toast.pdf"), t("toast.pdfText"));
       }
     } catch (e) {
       console.error("[alumg] génération du PDF en échec", e);
-      setMsg({ ok: false, text: t("common.error") });
+      toast.error(t("toast.errorTitle"), t("toast.errorText"));
       return;
     }
     if (!existing) router.replace(`/devis/${saved.id}`);
@@ -201,6 +223,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     try {
       await request("POST", `/api/quotes/${saved.id}/actions`, { type, ...(note.trim() ? { message: note.trim() } : {}) });
       await mutate("/api/quotes");
+      toast.success(type === "decline" ? t("toast.declined") : q.status === "rejected" ? t("toast.resent") : t("toast.sent"), `${saved.number} · ${saved.client.name} — ${t(`toast.text.${type}`)}`);
       router.push("/devis");
     } catch (e) {
       setMsg({ ok: false, text: e instanceof ApiError && e.code === "incomplete" ? t("editor.incompletePrices") : e instanceof ApiError && e.code === "no_client_account" ? t("editor.noClientAccount") : t("common.error") });
@@ -234,6 +257,10 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               {t("preview.open")}
             </Link>
           )}
+          <button type="button" className="btn-secondary" onClick={openTariffs}>
+            <BadgePercent size={16} aria-hidden />
+            {t("tariffs.title")}
+          </button>
           <Link href="/devis" className="btn-secondary">
             {t("common.back")}
           </Link>
@@ -254,6 +281,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       {existing && mode !== "free" && (
         <p role="note" className={`rounded-lg border px-3 py-2 text-[13px] ${mode === "reconfirm" ? "border-warn/50 bg-warn/10" : "border-primary/40 bg-primary/5"}`}>
           {t(`editor.mode.${mode}`)}
+          {mode === "negotiate" && q.changeTopic && <strong> {t("editor.changeTopic")} {t(`act.topic.${q.changeTopic}`)}.</strong>}
           {mode === "reopen" && q.lostReason && q.lostReason !== "declined" && <strong> {t("editor.lostWhy")} {t(`loss.${q.lostReason}`)}.</strong>}
           {revisable && ` (${t("editor.revision")} ${q.rev ?? 0})`}
         </p>
@@ -273,6 +301,20 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             {q.request.wantedDate && <div><dt className="inline text-muted">{t("req.wantedDate")} : </dt><dd className="inline font-medium">{q.request.wantedDate}</dd></div>}
           </dl>
           {q.request.message && <p className="whitespace-pre-line rounded-lg bg-surface-2 px-3 py-2 text-sm">{q.request.message}</p>}
+          {q.request.intake?.auto && (
+            <div className="space-y-1.5 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2.5 text-sm" role="note">
+              <p className="font-semibold">{t("intake.checks")}</p>
+              {q.request.intake.checks.length === 0 && <p className="text-muted">{t("intake.checksNone")}</p>}
+              <ul className="list-disc space-y-0.5 pl-5 text-[13px]">
+                {q.request.intake.checks.map((c) => {
+                  const idx = q.lines.findIndex((l) => l.id === c.lineId);
+                  return idx < 0 ? null : <li key={c.lineId}><strong>{lineMarks(q.lines)[idx]}</strong> — {c.keys.map((k) => t(`intake.as.${k as "size"}`)).join(", ")}</li>;
+                })}
+              </ul>
+              {q.request.intake.unsupported.length > 0 && <p className="text-[13px]">{t("intake.unsupported")} : {q.request.intake.unsupported.join(", ")}.</p>}
+              {q.request.intake.urgent && <p className="text-[13px] font-semibold text-warn">{t("intake.urgent")}</p>}
+            </div>
+          )}
         </section>
       )}
 
@@ -382,6 +424,16 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             )}
           </section>
 
+          {!locked && (
+            <IntakePanel
+              initial={q.request?.message || convText}
+              settings={eff}
+              t={t}
+              onAdd={(ls) => addGenerated(ls, false)}
+              onReplace={(ls) => addGenerated(ls, true)}
+            />
+          )}
+
           <section className="space-y-4" aria-labelledby="h-lines">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 id="h-lines" className="text-lg font-semibold">
@@ -458,7 +510,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             )}
           </section>
 
-          <ServicesEditor services={q.services ?? []} onChange={(services) => setQ((c) => ({ ...c, services }))} t={t} locked={locked} />
+          <ServicesEditor services={q.services ?? []} onChange={(services) => setQ((c) => ({ ...c, services }))} prices={settings.servicePrices} t={t} locked={locked} />
 
           <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
             <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />

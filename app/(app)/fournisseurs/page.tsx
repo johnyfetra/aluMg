@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import CatalogEditor from "@/components/CatalogEditor";
 import { useSettings } from "@/lib/client";
+import { useToast } from "@/components/Toast";
 import { useI18n } from "@/lib/i18n";
 import type { Market, Settings } from "@/lib/model";
 
@@ -18,6 +19,7 @@ function Form({ initial }: { initial: Settings }) {
   const { t } = useI18n();
   const { save } = useSettings();
   const [m, setM] = useState<Market>(initial.market);
+  const toast = useToast();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const dirty = JSON.stringify(m) !== JSON.stringify(initial.market);
 
@@ -25,9 +27,11 @@ function Form({ initial }: { initial: Settings }) {
     e.preventDefault();
     try {
       await save({ ...initial, market: m });
-      setMsg({ ok: true, text: t("market.saved") });
+      setMsg(null);
+      toast.success(t("toast.catalogSaved"), t("market.saved"));
     } catch {
       setMsg({ ok: false, text: t("common.error") });
+      toast.error(t("toast.errorTitle"), t("toast.errorText"));
     }
   };
 

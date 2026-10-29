@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { ConfirmProvider } from "@/components/ConfirmDialog";
+import { ToastProvider } from "@/components/Toast";
 import { I18nProvider } from "@/lib/i18n";
 
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -29,7 +30,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full">
         <I18nProvider>
-          <ConfirmProvider>{children}</ConfirmProvider>
+          <ConfirmProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </ConfirmProvider>
         </I18nProvider>
       </body>
     </html>

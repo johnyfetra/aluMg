@@ -3,6 +3,7 @@ import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { mutate } from "swr";
+import { useToast } from "./Toast";
 import { notificationHref, request, useNotifications, useSession } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
@@ -13,6 +14,8 @@ export default function NotificationBell() {
   const router = useRouter();
   const { data: me } = useSession();
   const { data, error: loadError, isLoading, mutate: reload } = useNotifications();
+  const toast = useToast();
+  const seen = useRef<Set<string> | null>(null);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
@@ -20,6 +23,17 @@ export default function NotificationBell() {
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const unread = data?.unread ?? 0;
+
+  // une notification arrivée pendant la session s'affiche en toast ; celles déjà là au chargement restent dans la cloche
+  useEffect(() => {
+    if (!data || !me) return;
+    const known = seen.current;
+    seen.current = new Set(data.items.map((n) => n.id));
+    if (!known) return;
+    for (const n of data.items.filter((x) => !x.read && !known.has(x.id)).slice(0, 2)) {
+      toast.info(t(`notif.${n.kind}` as keyof Messages), [n.number, n.project].filter(Boolean).join(" · "), { label: t("toast.view"), href: notificationHref(me.role, n) });
+    }
+  }, [data, me]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!open) return;

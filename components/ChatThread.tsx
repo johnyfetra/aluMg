@@ -187,6 +187,13 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
     } else setPicker({ query: "", from: "menu" });
   };
   const preview = (m: { body: string; files: number }) => m.body || (m.files ? t("msg.attachment") : t("msg.original"));
+  // le champ suit le texte : de une à huit lignes, puis défilement interne
+  useEffect(() => {
+    const el = input.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+  }, [text, recording]);
   const canSend = !sending && (!!text.trim() || pending.length > 0 || !!quote);
   const ghost = `grid ${compact ? "size-8" : "size-9"} shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-line/50 hover:text-primary`;
 
@@ -388,7 +395,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
         ) : (
           <div className={`flex items-end ${compact ? "gap-1.5" : "gap-2.5"}`}>
             {/* champ de saisie : un seul conteneur qui s'éclaire doucement au focus, boutons discrets à l'intérieur */}
-            <div className={`flex min-w-0 flex-1 items-end gap-0.5 rounded-full border border-line bg-surface-2/60 px-1.5 py-1 transition-[border-color,background-color,box-shadow] duration-200 focus-within:border-[color-mix(in_srgb,var(--muted)_60%,var(--border))] focus-within:bg-surface ${compact ? "min-h-10" : "min-h-11"}`}>
+            <div className={`flex min-w-0 flex-1 items-end gap-0.5 rounded-[1.5rem] border border-line bg-surface-2/60 px-1.5 py-1 transition-[border-color,background-color,box-shadow] duration-200 focus-within:border-[color-mix(in_srgb,var(--muted)_60%,var(--border))] focus-within:bg-surface ${compact ? "min-h-10" : "min-h-11"}`}>
               <div className="relative">
                 <button type="button" className={ghost} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu(!menu)} aria-label={t("msg.attach")} title={t("msg.attach")}>
                   <Paperclip size={18} aria-hidden />
@@ -442,7 +449,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                     else send();
                   }
                 }}
-                className={`bare-focus max-h-32 min-w-0 flex-1 resize-none bg-transparent px-2 text-base leading-5 text-ink sm:text-sm outline-none placeholder:text-muted ${compact ? "min-h-8 py-1.5" : "min-h-9 py-2"}`}
+                className={`bare-focus max-h-44 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 text-base leading-5 text-ink sm:text-sm outline-none placeholder:text-muted ${compact ? "min-h-8 py-1.5" : "min-h-9 py-2"}`}
               />
               <button type="button" className={ghost} onClick={() => photoInput.current?.click()} aria-label={t("msg.gallery")} title={t("msg.gallery")}>
                 <ImageIcon size={18} aria-hidden />

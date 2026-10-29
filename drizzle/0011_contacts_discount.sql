@@ -1,0 +1,1 @@
+ALTER TABLE "contacts" ADD COLUMN "discount" integer DEFAULT 0 NOT NULL;

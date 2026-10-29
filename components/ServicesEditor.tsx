@@ -7,9 +7,9 @@ import { SERVICE_KINDS, type Service, type ServiceKind } from "@/lib/model";
 import { serviceTotal } from "@/lib/totals";
 
 // Prestations hors ouvrage : pose, dépose, déplacement… Lignes libres, comptées dans le total avant remise.
-export default function ServicesEditor({ services, onChange, t, locked }: { services: Service[]; onChange: (s: Service[]) => void; t: T; locked: boolean }) {
+export default function ServicesEditor({ services, onChange, prices, t, locked }: { services: Service[]; onChange: (s: Service[]) => void; prices: Record<string, { price: number; cost: number }>; t: T; locked: boolean }) {
   const set = (i: number, patch: Partial<Service>) => onChange(services.map((s, j) => (j === i ? { ...s, ...patch } : s)));
-  const add = (kind: ServiceKind) => onChange([...services, { id: crypto.randomUUID(), kind, label: t(`svc.${kind}`), qty: 1, price: 0 }]);
+  const add = (kind: ServiceKind) => onChange([...services, { id: crypto.randomUUID(), kind, label: t(`svc.${kind}`), qty: 1, price: prices[kind]?.price ?? 0, cost: prices[kind]?.cost ?? 0 }]); // prix et coût de « Mes tarifs »
   const sum = services.reduce((a, s) => a + serviceTotal(s), 0);
   const n = (v: string) => Math.max(0, Number(v) || 0);
 

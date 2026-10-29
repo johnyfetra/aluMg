@@ -44,10 +44,10 @@ export default function ClientDashboard() {
           </h1>
           <p className="text-muted">{t("cl.subtitle")}</p>
         </div>
-        {!MVP && <Link href="/espace-client/nouvelle" className="btn-primary">
+        <Link href="/espace-client/nouvelle" className="btn-primary">
           <Plus size={18} aria-hidden />
           {t("cl.newRequest")}
-        </Link>}
+        </Link>
       </div>
 
       {error ? <ErrorState retry={() => { void mutate(); }} /> : isLoading ? <LoadingState /> : <>

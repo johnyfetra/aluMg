@@ -1,8 +1,9 @@
 "use client";
 import Brand from "./Brand";
+import TariffsPanel, { openTariffs } from "./TariffsPanel";
 import ChatWidget from "./ChatWidget";
 import NotificationBell from "./NotificationBell";
-import { AlignLeft, FilePlus2, MessageCircle, FileText, LayoutDashboard, LogOut, Settings, UserCircle, X } from "lucide-react";
+import { AlignLeft, BadgePercent, FilePlus2, MessageCircle, FileText, LayoutDashboard, LogOut, Settings, UserCircle, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
@@ -71,7 +72,7 @@ const FULL_CLIENT: Nav = {
 };
 
 const CLIENT: Nav = MVP
-  ? { home: FULL_CLIENT.home, groups: FULL_CLIENT.groups.map((g) => ({ ...g, items: g.items.filter((i) => !HIDDEN_CLIENT.includes(i.href)) })) }
+  ? { home: FULL_CLIENT.home, cta: FULL_CLIENT.cta, groups: FULL_CLIENT.groups.map((g) => ({ ...g, items: g.items.filter((i) => !HIDDEN_CLIENT.includes(i.href)) })) }
   : FULL_CLIENT;
 
 // usePathname() est lu à l'exécution : isolé dans Suspense pour garder le reste du layout prérendu.
@@ -217,6 +218,12 @@ export default function Shell({ children }: { children: ReactNode }) {
         <Suspense fallback={null}>
           {me && <NavLinks nav={nav} onNavigate={() => setOpen(false)} />}
         </Suspense>
+        {me?.role === "menuisier" && (
+          <button type="button" onClick={() => { setOpen(false); openTariffs(); }} className="mx-4 mt-4 flex min-h-11 items-center gap-3 rounded-xl border border-(--side-active) px-3 text-sm font-medium text-(--side-fg) transition-colors hover:bg-(--side-hover) lg:hidden">
+            <BadgePercent size={18} aria-hidden className="text-(--side-accent)" />
+            {t("tariffs.title")}
+          </button>
+        )}
         {me && <DrawerUser name={me.name} email={me.email || me.phone} avatar={me.avatar} />}
       </aside>
 
@@ -229,6 +236,18 @@ export default function Shell({ children }: { children: ReactNode }) {
             <PageTitle nav={nav} />
           </Suspense>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            {me?.role === "client" && (
+              <Link href="/espace-client/nouvelle" className="btn-primary !min-h-10 !rounded-full !px-0 max-sm:w-10 sm:!px-4" aria-label={t("cl.newRequest")} title={t("cl.newRequest")}>
+                <FilePlus2 size={18} aria-hidden />
+                <span className="max-sm:sr-only">{t("cl.newRequest")}</span>
+              </Link>
+            )}
+            {me?.role === "menuisier" && (
+              <button type="button" onClick={openTariffs} className="hidden h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 text-sm font-medium transition-colors hover:bg-surface-2 lg:flex" title={t("tariffs.sub")}>
+                <BadgePercent size={16} aria-hidden className="text-primary" />
+                {t("tariffs.title")}
+              </button>
+            )}
             <div className="hidden items-center gap-2 sm:flex">
               <LangMenu />
               <ThemeSwitch />
@@ -240,6 +259,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         <main id="main" className="mx-auto w-full max-w-[110rem] px-4 pb-20 pt-6 sm:px-8 xl:px-10">
           {children}
         </main>
+        {me?.role === "menuisier" && <TariffsPanel />}
         <Suspense fallback={null}>
           <ChatWidget />
         </Suspense>

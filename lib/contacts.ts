@@ -9,9 +9,10 @@ export const contactSchema = z.object({
   phone: z.string().trim().max(40).default(""),
   email: z.union([z.literal(""), z.email().max(160)]).default(""),
   note: z.string().trim().max(500).default(""),
+  discount: z.number().int().min(0).max(100).default(0), // remise habituelle en %
 });
 export type ContactInput = z.infer<typeof contactSchema>;
-export type ContactView = { id: string; name: string; phone: string; email: string; note: string; account: { id: string; name: string; avatar: string } | null; quotes: number; at: string };
+export type ContactView = { id: string; name: string; phone: string; email: string; note: string; discount: number; account: { id: string; name: string; avatar: string } | null; quotes: number; at: string };
 
 const norm = (e: string) => e.trim().toLowerCase();
 
@@ -39,7 +40,7 @@ export async function listContacts(userId: string): Promise<ContactView[]> {
     .orderBy(asc(schema.contacts.name));
   // Vie privée : le nom et la photo du compte ne sont révélés qu'une fois une relation établie (devis échangé) ; avant, seul le fait qu'il existe l'est.
   return rows.map(({ c, aName, aAvatar, quotes }) => ({
-    id: c.id, name: c.name, phone: c.phone, email: c.email, note: c.note, quotes: Number(quotes), at: c.createdAt.toISOString(),
+    id: c.id, name: c.name, phone: c.phone, email: c.email, note: c.note, discount: c.discount, quotes: Number(quotes), at: c.createdAt.toISOString(),
     account: c.clientUserId ? (Number(quotes) > 0 ? { id: c.clientUserId, name: aName ?? "", avatar: aAvatar ?? "" } : { id: "", name: "", avatar: "" }) : null,
   }));
 }
@@ -49,7 +50,7 @@ export async function saveContact(userId: string, input: ContactInput, id?: stri
   const db = await getDb();
   const email = norm(input.email);
   const acc = await clientAccountFor({ email, phone: input.phone });
-  const values = { name: input.name, phone: input.phone, email, note: input.note, clientUserId: acc?.id ?? null };
+  const values = { name: input.name, phone: input.phone, email, note: input.note, discount: input.discount, clientUserId: acc?.id ?? null };
   if (id) {
     const [u] = await db.update(schema.contacts).set(values).where(and(eq(schema.contacts.id, id), eq(schema.contacts.userId, userId))).returning({ id: schema.contacts.id });
     return u ?? null;
@@ -86,4 +87,14 @@ export async function ensureContact(userId: string, c: { name: string; phone: st
   }
   const [row] = await db.insert(schema.contacts).values({ userId, name: c.name.slice(0, 120) || email, phone: c.phone.slice(0, 40), email, clientUserId: c.clientUserId ?? null }).returning({ id: schema.contacts.id });
   return row.id;
+}
+
+// Remise habituelle d'un client (en %) : celle de son contact chez ce menuisier, 0 s'il n'en a pas.
+export async function discountFor(userId: string, c: { clientUserId?: string | null; email?: string }) {
+  const db = await getDb();
+  const email = norm(c.email ?? "");
+  const where = c.clientUserId ? eq(schema.contacts.clientUserId, c.clientUserId) : email ? eq(schema.contacts.email, email) : null;
+  if (!where) return 0;
+  const [row] = await db.select({ discount: schema.contacts.discount }).from(schema.contacts).where(and(eq(schema.contacts.userId, userId), where));
+  return row?.discount ?? 0;
 }

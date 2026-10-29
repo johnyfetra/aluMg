@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import DocStyleEditor from "@/components/DocStyleEditor";
 import { useSettings } from "@/lib/client";
+import { useToast } from "@/components/Toast";
 import { useI18n } from "@/lib/i18n";
 import type { Settings } from "@/lib/model";
 
@@ -17,6 +18,7 @@ function Form({ initial }: { initial: Settings }) {
   const { t, locale } = useI18n();
   const { save } = useSettings();
   const [s, setS] = useState(initial);
+  const toast = useToast();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const dirty = JSON.stringify(s.docStyle) !== JSON.stringify(initial.docStyle);
@@ -26,9 +28,11 @@ function Form({ initial }: { initial: Settings }) {
     setBusy(true);
     try {
       await save({ ...initial, docStyle: s.docStyle }); // seul le modèle change : le reste des réglages reste tel qu'il est
-      setMsg({ ok: true, text: t("settings.saved") });
+      setMsg(null);
+      toast.success(t("toast.designSaved"), t("settings.saved"));
     } catch {
       setMsg({ ok: false, text: t("common.error") });
+      toast.error(t("toast.errorTitle"), t("toast.errorText"));
     } finally {
       setBusy(false);
     }

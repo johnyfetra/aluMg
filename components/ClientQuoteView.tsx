@@ -1,11 +1,13 @@
 "use client";
 import { LoadingState, ErrorState } from "./Feedback";
-import { ArrowLeft, BadgeCheck, FileText, Flag, Mail, MessageSquareWarning, Phone, ThumbsDown, ThumbsUp } from "lucide-react";
+import { ArrowLeft, BadgeCheck, FileText, Flag, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { mutate } from "swr";
 import ChatButton from "./ChatButton";
+import ClientDecision from "./ClientDecision";
 import QuoteStatusBar from "./QuoteStatusBar";
+import { useToast } from "./Toast";
 import ClientLineCard from "./ClientLineCard";
 import Timeline from "./Timeline";
 import { Avatar, Field, Progress, StarInput, StatusBadge } from "./ui";
@@ -13,11 +15,10 @@ import { fmt } from "@/lib/calc";
 import { serviceTotal } from "@/lib/totals";
 import { ApiError, request, useClientQuote } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
-import { LOSS_REASONS, type LossReason, REPORT_REASONS, lineMarks } from "@/lib/model";
+import { REPORT_REASONS, lineMarks } from "@/lib/model";
 import { MVP } from "@/lib/mvp";
 import { totals } from "@/lib/totals";
 import Select from "./Select";
-import { useConfirm } from "@/components/ConfirmDialog";
 
 const STEPS = ["requested", "sent", "accepted", "in_progress", "completed"] as const;
 const stepOf = (s: string) => (s === "draft" ? 0 : s === "negotiation" ? 1 : Math.max(0, STEPS.indexOf(s as (typeof STEPS)[number])));
@@ -26,16 +27,14 @@ const stepOf = (s: string) => (s === "draft" ? 0 : s === "negotiation" ? 1 : Mat
 export default function ClientQuoteView({ id }: { id: string }) {
   const { t, locale } = useI18n();
   const { data, isLoading, error, mutate: reload } = useClientQuote(id);
-  const ask = useConfirm();
   const [panel, setPanel] = useState<null | "change" | "reject" | "report">(null);
   const [message, setMessage] = useState("");
-  const [discount, setDiscount] = useState("");
   const [reason, setReason] = useState<(typeof REPORT_REASONS)[number]>("quality");
-  const [lossReason, setLossReason] = useState<"" | LossReason>("");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
   // lien profond d'une notification : ?ligne=<ouvrage>
   const [focus] = useState(() => (typeof location === "undefined" ? null : new URLSearchParams(location.search).get("ligne")));
 
@@ -59,19 +58,22 @@ export default function ClientQuoteView({ id }: { id: string }) {
   const rejected = q.status === "rejected";
   const marks = lineMarks(q.lines);
 
-  const act = async (body: Record<string, unknown>, ok: string) => {
+  const act = async (body: Record<string, unknown>, ok: string): Promise<boolean> => {
     setBusy(true);
     setMsg(null);
     try {
       // la décision porte sur la révision affichée : si le menuisier a modifié le devis entre-temps, elle est refusée
       await request("POST", `/api/quotes/${id}/actions`, ["accept", "reject", "request_change"].includes(String(body.type)) ? { ...body, rev: q.rev ?? 0 } : body);
       await Promise.all([mutate(`/api/client/quotes/${id}`), mutate(`/api/quotes/${id}/comments`), mutate(`/api/quotes/${id}/events`), mutate("/api/client/quotes")]);
-      setMsg({ ok: true, text: ok });
+      setMsg(null);
+      toast.success(ok, t(`toast.text.${String(body.type)}` as "toast.text.accept"));
       setPanel(null);
       setMessage("");
-      setDiscount("");
+      return true;
     } catch (e) {
       setMsg({ ok: false, text: e instanceof ApiError && e.code === "quote_changed" ? t("act.changed") : e instanceof ApiError && e.code === "invalid_transition" ? t("act.invalid") : e instanceof ApiError && e.code === "already_reviewed" ? t("act.alreadyReviewed") : t("common.error") });
+      toast.error(t("toast.errorTitle"), e instanceof ApiError && e.code === "quote_changed" ? t("act.changed") : t("toast.errorText"));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -233,70 +235,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
             </section>
           )}
 
-          {q.status === "sent" && (
-            <section className="card space-y-3" aria-labelledby="h-dec">
-              <h2 id="h-dec" className="font-semibold">
-                {t("act.decide")}
-              </h2>
-              <button type="button" className="btn-primary w-full" disabled={busy} onClick={async () => (await ask({ message: t("act.confirmAccept"), confirmLabel: t("act.accept") })) && act({ type: "accept" }, t("act.accepted"))}>
-                <ThumbsUp size={16} aria-hidden />
-                {t("act.accept")}
-              </button>
-              <button type="button" className="btn-secondary w-full" onClick={() => setPanel(panel === "change" ? null : "change")} aria-expanded={panel === "change"}>
-                <MessageSquareWarning size={16} aria-hidden />
-                {t("act.requestChange")}
-              </button>
-              <button type="button" className="btn-danger w-full" onClick={() => setPanel(panel === "reject" ? null : "reject")} aria-expanded={panel === "reject"}>
-                <ThumbsDown size={16} aria-hidden />
-                {t("act.reject")}
-              </button>
-            </section>
-          )}
-          {q.status === "negotiation" && (
-            <button type="button" className="btn-danger w-full" onClick={() => setPanel(panel === "reject" ? null : "reject")} aria-expanded={panel === "reject"}>
-              <ThumbsDown size={16} aria-hidden />
-              {t("act.reject")}
-            </button>
-          )}
-
-          {panel === "change" && (
-            <form
-              className="card space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                act({ type: "request_change", message, ...(Number(discount) > 0 ? { discountPercent: Number(discount) } : {}) }, t("act.changeSent"));
-              }}
-            >
-              <Field htmlFor="ch-msg" label={t("act.changeMessage")} hint={t("act.changeHint")}>
-                <textarea id="ch-msg" className="input min-h-24" required maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
-              </Field>
-              <Field htmlFor="ch-disc" label={t("act.discount")}>
-                <input id="ch-disc" type="number" inputMode="decimal" min={0} max={90} className="input" value={discount} onChange={(e) => setDiscount(e.target.value)} />
-              </Field>
-              <button type="submit" className="btn-primary w-full" disabled={busy || !message.trim()}>
-                {t("act.send")}
-              </button>
-            </form>
-          )}
-          {panel === "reject" && (
-            <form
-              className="card space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                act({ type: "reject", ...(lossReason ? { reason: lossReason } : {}), ...(message.trim() ? { message: message.trim() } : {}) }, t("act.rejected"));
-              }}
-            >
-              <Field htmlFor="rj-why" label={t("act.lossReason")} hint={t("act.lossHint")}>
-                <Select id="rj-why" value={lossReason} onChange={(v) => setLossReason(v as "" | LossReason)} options={[{ value: "", label: t("loss.none") }, ...LOSS_REASONS.map((r) => ({ value: r, label: t(`loss.${r}`) }))]} />
-              </Field>
-              <Field htmlFor="rj-msg" label={t("act.rejectReason")}>
-                <textarea id="rj-msg" className="input min-h-20" maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
-              </Field>
-              <button type="submit" className="btn-danger w-full" disabled={busy}>
-                {t("act.reject")}
-              </button>
-            </form>
-          )}
+          <ClientDecision q={q} busy={busy} act={act} t={t} />
 
           {q.status === "completed" && (
             <section className="card space-y-3" aria-labelledby="h-rev">
