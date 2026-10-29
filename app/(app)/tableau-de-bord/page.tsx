@@ -23,12 +23,14 @@ const STATUS_COLOR: Record<Status, string> = {
   completed: "var(--c2)",
   rejected: "var(--critical)",
 };
+// Ligne de liste : deux rangées compactes sur mobile (repère + état, puis client), une seule rangée sur grand écran.
+export const ROW = "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-lg px-2 py-3 hover:bg-surface-2 sm:flex sm:flex-wrap sm:gap-x-4";
 const WON: Status[] = ["accepted", "in_progress", "completed"];
 
 function Kpi({ label, value, Icon, color, href, title }: { label: string; value: ReactNode; Icon: typeof Wallet; color: string; href?: string; title?: string }) {
   const body = (
-    <div title={title} className="card flex items-center gap-4 !p-4 transition-shadow hover:shadow-md">
-      <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-xl" style={{ background: `color-mix(in srgb, ${color} 16%, transparent)`, color }}>
+    <div title={title} className="card flex h-full flex-col items-start gap-3 !p-3.5 transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:gap-4 sm:!p-4">
+      <span aria-hidden className="grid size-10 shrink-0 sm:size-12 place-items-center rounded-xl" style={{ background: `color-mix(in srgb, ${color} 16%, transparent)`, color }}>
         <Icon size={22} />
       </span>
       <div className="min-w-0 flex-1">
@@ -143,11 +145,10 @@ export default function Dashboard() {
               <ul className="mt-4 divide-y divide-line">
                 {priorities.slice(0, 4).map((q) => (
                   <li key={q.id}>
-                    <Link href={`/devis/${q.id}`} className="flex flex-wrap items-center gap-3 rounded-lg py-3 hover:bg-surface-2">
-                      <span className="font-semibold">{q.number}</span>
-                      <span className="min-w-0 flex-1 text-sm">{q.client.name || t("quotes.noClient")}</span>
-                      <StatusBadge status={q.status} label={t(`status.${q.status}`)} />
-                      <ArrowRight size={16} aria-hidden />
+                    <Link href={`/devis/${q.id}`} className={ROW}>
+                      <span className="whitespace-nowrap font-semibold">{q.number}</span>
+                      <span className="order-2 justify-self-end sm:order-none"><StatusBadge status={q.status} label={t(`status.${q.status}`)} /></span>
+                      <span className="order-3 col-span-2 min-w-0 truncate text-sm sm:order-none sm:col-span-1 sm:flex-1">{q.client.name || t("quotes.noClient")}</span>
                     </Link>
                   </li>
                 ))}
@@ -157,7 +158,7 @@ export default function Dashboard() {
             )}
           </section>
           <FollowUp quotes={quotes} t={t} />
-          <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             <Kpi label={t("dash.revenue")} value={`${fmt(sum(inStatus(...WON)))} ${cur}`} Icon={Wallet} color="var(--c2)" />
             <Kpi label={t("dash.pipeline")} value={`${fmt(sum(inStatus("sent", "negotiation")))} ${cur}`} Icon={Hourglass} color="var(--c3)" />
             <Kpi label={t("dash.requests")} value={requests.length} Icon={Inbox} color="var(--c1)" href="/devis" />
@@ -209,10 +210,10 @@ export default function Dashboard() {
                 <ul className="divide-y divide-line">
                   {requests.slice(0, 5).map((q) => (
                     <li key={q.id}>
-                      <Link href={`/devis/${q.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg px-2 py-3 hover:bg-surface-2">
-                        <span className="w-32 font-semibold text-primary">{q.number}</span>
-                        <span className="min-w-0 flex-1 truncate text-sm">{q.client.name || t("quotes.noClient")}</span>
-                        <span className="text-xs text-muted">{new Date(q.date).toLocaleDateString(DATE_LOCALE[locale])}</span>
+                      <Link href={`/devis/${q.id}`} className={ROW}>
+                        <span className="whitespace-nowrap font-semibold text-primary sm:w-32">{q.number}</span>
+                        <span className="order-2 text-xs text-muted sm:order-none">{new Date(q.date).toLocaleDateString(DATE_LOCALE[locale])}</span>
+                        <span className="order-3 col-span-2 min-w-0 truncate text-sm sm:order-none sm:col-span-1 sm:flex-1">{q.client.name || t("quotes.noClient")}</span>
                       </Link>
                     </li>
                   ))}
@@ -239,7 +240,7 @@ export default function Dashboard() {
                     <li key={q.id}>
                       <Link href={`/chantiers`} className="block rounded-lg px-2 py-2 hover:bg-surface-2">
                         <p className="mb-1 flex justify-between gap-2 text-sm">
-                          <span className="font-semibold">{q.number}</span>
+                          <span className="whitespace-nowrap font-semibold">{q.number}</span>
                           <span className="truncate text-muted">{q.client.name}</span>
                         </p>
                         <Progress value={q.progress ?? 0} label={q.number} />
@@ -265,13 +266,13 @@ export default function Dashboard() {
             <ul className="divide-y divide-line">
               {recent.map((q) => (
                 <li key={q.id}>
-                  <Link href={`/devis/${q.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg px-2 py-3 hover:bg-surface-2">
-                    <span className="w-32 font-semibold text-primary">{q.number}</span>
-                    <span className="min-w-0 flex-1 truncate text-sm">{q.client.name || t("quotes.noClient")}</span>
-                    <span className="text-sm font-semibold">
+                  <Link href={`/devis/${q.id}`} className={ROW}>
+                    <span className="whitespace-nowrap font-semibold text-primary sm:w-32">{q.number}</span>
+                    <span className="order-2 justify-self-end sm:order-none"><StatusBadge status={q.status} label={t(`status.${q.status}`)} /></span>
+                    <span className="order-3 min-w-0 truncate text-sm sm:order-none sm:flex-1">{q.client.name || t("quotes.noClient")}</span>
+                    <span className="order-4 justify-self-end text-sm font-semibold sm:order-none">
                       {fmt(totals(q).ttc)} {cur}
                     </span>
-                    <StatusBadge status={q.status} label={t(`status.${q.status}`)} />
                   </Link>
                 </li>
               ))}

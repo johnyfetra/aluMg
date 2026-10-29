@@ -69,7 +69,7 @@ export default function ChatWidget() {
   return (
     <section
       aria-label={t("msg.widget.title")}
-      className={`fixed bottom-0 right-5 z-40 flex flex-col overflow-hidden rounded-t-xl border border-b-0 border-line bg-surface shadow-[0_-6px_28px_rgba(15,23,42,0.16)] transition-[width,box-shadow] duration-200 hover:shadow-[0_-8px_34px_rgba(15,23,42,0.22)] max-sm:inset-x-2 max-sm:w-auto ${big ? "w-[30rem]" : "w-[23rem]"}`}
+      className={`fixed bottom-0 right-5 z-40 flex flex-col overflow-hidden rounded-t-xl border border-b-0 border-line bg-surface shadow-[0_-6px_28px_rgba(15,23,42,0.16)] transition-[width,box-shadow] duration-200 hover:shadow-[0_-8px_34px_rgba(15,23,42,0.22)] max-sm:hidden ${big ? "w-[30rem]" : "w-[23rem]"}`}
     >
       <div className={`flex h-12 shrink-0 items-center gap-1 pr-2 transition-colors ${open ? "border-b border-line" : "hover:bg-surface-2"}`}>
         {current && open ? (

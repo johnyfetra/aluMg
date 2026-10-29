@@ -2,16 +2,17 @@
 import Brand from "./Brand";
 import ChatWidget from "./ChatWidget";
 import NotificationBell from "./NotificationBell";
-import { FilePlus2, MessageCircle, FileText, LayoutDashboard, Menu as MenuIcon, Settings, UserCircle, X } from "lucide-react";
+import { AlignLeft, FilePlus2, MessageCircle, FileText, LayoutDashboard, LogOut, Settings, UserCircle, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { LangMenu, ThemeSwitch, UserMenu } from "./Controls";
+import { Avatar } from "./ui";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
 import { Boxes, Briefcase, ClipboardList, Images, LayoutTemplate, Search, Store, Users } from "lucide-react";
-import { useSession, useUnread } from "@/lib/client";
+import { request, useSession, useUnread } from "@/lib/client";
 import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
 type Item = { href: string; key: keyof Messages; Icon: typeof Settings; match: (p: string) => boolean };
@@ -129,7 +130,29 @@ function PageTitle({ nav }: { nav: Nav }) {
   const { t } = useI18n();
   const path = usePathname();
   const cur = [...(nav.cta ? [nav.cta] : []), ...nav.groups.flatMap((g) => g.items)].find((i) => i.match(path));
-  return cur ? <p className="hidden truncate text-sm font-semibold text-muted sm:block">{t(cur.key)}</p> : null;
+  return cur ? <p className="min-w-0 truncate text-[15px] font-semibold sm:text-sm sm:text-muted">{t(cur.key)}</p> : null;
+}
+
+// Pied du tiroir mobile : qui est connecté, et la déconnexion à portée de pouce.
+function DrawerUser({ name, email, avatar }: { name: string; email?: string | null; avatar?: string | null }) {
+  const { t } = useI18n();
+  const router = useRouter();
+  const logout = async () => {
+    await request("POST", "/api/auth/logout");
+    router.replace("/connexion");
+  };
+  return (
+    <div className="mx-4 mt-6 flex items-center gap-3 rounded-2xl bg-(--side-hover) p-3 lg:hidden">
+      <Avatar name={name} src={avatar ?? undefined} size={40} round />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-white">{name}</p>
+        {email && <p className="truncate text-xs text-(--side-muted)">{email}</p>}
+      </div>
+      <button type="button" onClick={logout} aria-label={t("menu.logout")} title={t("menu.logout")} className="grid size-10 shrink-0 place-items-center rounded-full text-(--side-fg) transition-colors hover:bg-(--side-active)">
+        <LogOut size={18} aria-hidden />
+      </button>
+    </div>
+  );
 }
 
 export default function Shell({ children }: { children: ReactNode }) {
@@ -175,9 +198,9 @@ export default function Shell({ children }: { children: ReactNode }) {
         {t("nav.skip")}
       </a>
 
-      {open && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setOpen(false)} aria-hidden />}
+      {open && <div className="fixed inset-0 z-30 bg-black/55 backdrop-blur-[2px] lg:hidden" onClick={() => setOpen(false)} aria-hidden />}
       <aside ref={sidebar} id="app-navigation"
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col overflow-y-auto bg-(--side-bg) py-6 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-[min(20rem,86vw)] flex-col overflow-y-auto overscroll-contain rounded-r-3xl bg-(--side-bg) pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 shadow-2xl transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 lg:rounded-none lg:pb-6 lg:shadow-none ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="mb-8 flex items-start justify-between px-6">
           <Link href={nav.home} onClick={() => setOpen(false)} className="flex items-center gap-3">
@@ -187,26 +210,29 @@ export default function Shell({ children }: { children: ReactNode }) {
               <span className="block text-xs leading-tight text-(--side-muted)">{t(me?.role === "client" ? "ui.client" : "ui.professional")}</span>
             </span>
           </Link>
-          <button type="button" className="rounded-lg p-2 text-(--side-fg) hover:bg-(--side-hover) lg:hidden" onClick={() => { setOpen(false); toggle.current?.focus(); }} aria-label={t("menu.close")}>
+          <button type="button" className="grid size-10 place-items-center rounded-full bg-(--side-hover) text-(--side-fg) transition-colors hover:bg-(--side-active) lg:hidden" onClick={() => { setOpen(false); toggle.current?.focus(); }} aria-label={t("menu.close")}>
             <X size={20} aria-hidden />
           </button>
         </div>
         <Suspense fallback={null}>
           {me && <NavLinks nav={nav} onNavigate={() => setOpen(false)} />}
         </Suspense>
+        {me && <DrawerUser name={me.name} email={me.email || me.phone} avatar={me.avatar} />}
       </aside>
 
       <div className="min-w-0">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-surface px-4 sm:px-8">
-          <button ref={toggle} aria-controls="app-navigation" type="button" className="btn-secondary w-11 !px-0 lg:hidden" onClick={() => setOpen(true)} aria-label={t("menu.open")} aria-expanded={open}>
-            <MenuIcon size={20} aria-hidden />
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-line bg-surface px-3 sm:gap-3 sm:px-8">
+          <button ref={toggle} aria-controls="app-navigation" type="button" className="-ml-1 grid size-11 shrink-0 place-items-center rounded-xl text-ink transition-colors hover:bg-surface-2 active:bg-surface-2 lg:hidden" onClick={() => setOpen(true)} aria-label={t("menu.open")} aria-expanded={open}>
+            <AlignLeft size={24} strokeWidth={2} aria-hidden />
           </button>
           <Suspense fallback={null}>
             <PageTitle nav={nav} />
           </Suspense>
-          <div className="ml-auto flex items-center gap-2">
-            <LangMenu />
-            <ThemeSwitch />
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <div className="hidden items-center gap-2 sm:flex">
+              <LangMenu />
+              <ThemeSwitch />
+            </div>
             <NotificationBell />
             <UserMenu />
           </div>

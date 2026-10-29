@@ -76,7 +76,7 @@ export function LangMenu() {
 }
 
 export function UserMenu() {
-  const { t } = useI18n();
+  const { t, locale, setLocale } = useI18n();
   const { data: me } = useMe();
   const router = useRouter();
   const logout = async () => {
@@ -87,12 +87,12 @@ export function UserMenu() {
     <Menu
       label={t("nav.account")}
       width="w-64"
-      triggerClass="flex h-10 items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-3 transition-colors hover:bg-surface-2"
+      triggerClass="flex h-10 items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-1 transition-colors hover:bg-surface-2 sm:pr-3"
       trigger={
         <>
           <Avatar name={me?.name ?? "?"} src={me?.avatar} size={32} round />
           <span className="hidden max-w-36 truncate text-sm font-medium md:block">{me?.name}</span>
-          <ChevronDown size={14} aria-hidden className="text-muted" />
+          <ChevronDown size={14} aria-hidden className="hidden text-muted sm:block" />
         </>
       }
     >
@@ -108,6 +108,21 @@ export function UserMenu() {
                   <ShieldCheck size={11} aria-hidden /> Admin
                 </span>
               )}
+            </div>
+          </div>
+          {/* langue et thème : dans l'en-tête sur grand écran, ici sur mobile pour ne pas surcharger la barre */}
+          <div className="space-y-2 border-t border-line px-1 pb-2 pt-3 sm:hidden">
+            <p className="px-2 text-xs font-semibold uppercase tracking-wide text-muted">{t("lang.label")}</p>
+            <div role="radiogroup" aria-label={t("lang.label")} className="grid grid-cols-3 gap-1.5 px-2">
+              {(Object.entries(LOCALES) as [Locale, string][]).map(([k, name]) => (
+                <button key={k} type="button" role="radio" aria-checked={k === locale} lang={k} title={name} onClick={() => setLocale(k)} className={`min-h-10 rounded-lg border text-sm font-bold uppercase ${k === locale ? "border-primary bg-primary/10 text-primary" : "border-line text-muted hover:bg-surface-2"}`}>
+                  {k}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center justify-between gap-3 px-2">
+              <span className="text-sm font-medium">{t("theme.toggle")}</span>
+              <ThemeSwitch />
             </div>
           </div>
           <Link href="/compte" role="menuitem" className={menuItem} onClick={close}><UserCircle size={17} aria-hidden className="text-muted" />{t("nav.account")}</Link>

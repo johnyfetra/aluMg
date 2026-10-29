@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, BellRing, TrendingDown } from "lucide-react";
+import { BellRing, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { fmt } from "@/lib/calc";
 import type { T } from "@/lib/i18n";
@@ -26,11 +26,10 @@ export function FollowUp({ quotes, t }: { quotes: Quote[]; t: T }) {
       <ul className="mt-3 divide-y divide-line">
         {due.slice(0, 5).map(({ q, left }) => (
           <li key={q.id}>
-            <Link href={`/devis/${q.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg px-2 py-3 hover:bg-surface-2">
-              <span className="w-32 font-semibold text-primary">{q.number}</span>
-              <span className="min-w-0 flex-1 truncate text-sm">{q.client.name || t("quotes.noClient")}</span>
-              <span className={`text-xs font-semibold ${left < 0 ? "text-danger" : "text-warn"}`}>{left < 0 ? t("dash.expired") : `${left} ${t("dash.daysLeft")}`}</span>
-              <ArrowRight size={16} aria-hidden />
+            <Link href={`/devis/${q.id}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-lg px-2 py-3 hover:bg-surface-2 sm:flex sm:flex-wrap sm:gap-x-4">
+              <span className="whitespace-nowrap font-semibold text-primary sm:w-32">{q.number}</span>
+              <span className={`order-2 justify-self-end text-xs font-semibold sm:order-none ${left < 0 ? "text-danger" : "text-warn"}`}>{left < 0 ? t("dash.expired") : `${left} ${t("dash.daysLeft")}`}</span>
+              <span className="order-3 col-span-2 min-w-0 truncate text-sm sm:order-none sm:col-span-1 sm:flex-1">{q.client.name || t("quotes.noClient")}</span>
             </Link>
           </li>
         ))}

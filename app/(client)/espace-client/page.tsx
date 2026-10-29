@@ -51,10 +51,10 @@ export default function ClientDashboard() {
       </div>
 
       {error ? <ErrorState retry={() => { void mutate(); }} /> : isLoading ? <LoadingState /> : <>
-      <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {kpis.map(([k, v, Icon, color]) => (
-          <div key={k} className="card flex items-center gap-4 !p-4">
-            <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-xl" style={{ background: `color-mix(in srgb, ${color} 16%, transparent)`, color }}>
+          <div key={k} className="card flex flex-col items-start gap-3 !p-3.5 sm:flex-row sm:items-center sm:gap-4 sm:!p-4">
+            <span aria-hidden className="grid size-10 shrink-0 sm:size-12 place-items-center rounded-xl" style={{ background: `color-mix(in srgb, ${color} 16%, transparent)`, color }}>
               <Icon size={22} />
             </span>
             <div>
@@ -95,13 +95,13 @@ export default function ClientDashboard() {
                     <div className="flex flex-wrap items-start gap-3">
                       <Avatar name={m.name} src={m.logo} size={48} />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold">{m.name}</p>
+                        <p className="break-words font-semibold">{m.name}</p>
                         <p className="line-clamp-2 text-sm text-muted">
                           {q.number}
                           {q.project ? ` · ${q.project}` : ""} · {new Date(q.date).toLocaleDateString(DATE_LOCALE[locale])}
                         </p>
                       </div>
-                      <StatusBadge status={q.status} label={t(`cstatus.${q.status}`)} />
+                      <span className="max-sm:order-last max-sm:basis-full"><StatusBadge status={q.status} label={t(`cstatus.${q.status}`)} /></span>
                     </div>
                     <p className="rounded-lg bg-surface-2 px-3 py-2 text-sm leading-relaxed">{t(`ui.next.${q.status}`)}</p>
                     {(q.status === "accepted" || q.status === "in_progress" || q.status === "completed") && <Progress value={q.progress} label={`${q.number} — ${t("sites.progress")}`} />}

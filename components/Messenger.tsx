@@ -15,15 +15,16 @@ export default function Messenger() {
   const current = convs.find((c) => c.id === selected) ?? null;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{t("msg.title")}</h1>
-      <div className="grid h-[calc(100vh-11rem)] min-h-[34rem] overflow-hidden rounded-2xl border border-line bg-surface shadow-sm lg:grid-cols-[22rem_minmax(0,1fr)]">
-        <aside className={`min-h-0 flex-col border-r border-line ${current ? "hidden lg:flex" : "flex"}`} aria-label={t("msg.conversations")}>
-          <div className="border-b border-line px-4 py-3 text-sm font-semibold">{t("msg.conversations")}</div>
+    <div className="lg:space-y-4">
+      <h1 className="hidden text-2xl font-bold lg:block">{t("msg.title")}</h1>
+      {/* mobile : la liste prend tout l'écran sous la barre, et un fil ouvert passe en plein écran (comme WhatsApp) ; ordinateur : deux volets dans une carte */}
+      <div className="-mx-4 -mb-20 -mt-6 grid h-[calc(100dvh-4rem)] overflow-hidden bg-surface sm:-mx-8 lg:mx-0 lg:mb-0 lg:mt-0 lg:h-[calc(100vh-11rem)] lg:min-h-[34rem] lg:grid-cols-[22rem_minmax(0,1fr)] lg:rounded-2xl lg:border lg:border-line lg:shadow-sm">
+        <aside className={`min-h-0 flex-col border-line lg:border-r ${current ? "hidden lg:flex" : "flex"}`} aria-label={t("msg.conversations")}>
+          <div className="hidden border-b border-line px-4 py-3 text-sm font-semibold lg:block">{t("msg.conversations")}</div>
           <ConversationList convs={convs} selected={selected} loading={isLoading} onSelect={(id) => router.replace(`/messages?c=${id}`)} />
         </aside>
 
-        <section className={`min-h-0 min-w-0 flex-col ${current ? "flex" : "hidden lg:flex"}`} aria-label={t("msg.thread")}>
+        <section className={`min-h-0 min-w-0 flex-col ${current ? "flex max-lg:fixed max-lg:inset-0 max-lg:z-50 max-lg:h-dvh max-lg:bg-surface" : "hidden lg:flex"}`} aria-label={t("msg.thread")}>
           {current ? (
             <Thread key={current.id} conv={current} onBack={() => router.replace("/messages")} />
           ) : (

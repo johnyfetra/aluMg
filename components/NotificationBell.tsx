@@ -62,7 +62,7 @@ export default function NotificationBell() {
 
   return (
     <div ref={box} className="relative">
-      <button ref={trigger} type="button" className="btn-secondary relative w-11 !px-0" aria-label={`${t("notif.open")}${unread ? ` (${unread})` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <button ref={trigger} type="button" className="relative grid size-10 place-items-center rounded-full border border-line bg-surface transition-colors hover:bg-surface-2" aria-label={`${t("notif.open")}${unread ? ` (${unread})` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <Bell size={18} aria-hidden />
         {unread > 0 && (
           <span aria-hidden className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] font-bold leading-5 text-on-primary">
