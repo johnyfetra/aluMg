@@ -33,7 +33,7 @@ export function transition(status: Status, a: Action, side: Side): Status | null
   if (side === "menuisier") {
     switch (a.type) {
       case "send":
-        return ["requested", "draft", "negotiation"].includes(status) ? "sent" : null;
+        return ["requested", "draft", "negotiation", "rejected"].includes(status) ? "sent" : null; // « rejected » : le menuisier a adapté le devis refusé et le renvoie
       case "decline":
         return ["requested", "draft", "negotiation", "sent"].includes(status) ? "rejected" : null;
       case "progress":
@@ -189,7 +189,7 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
   }
 
   const progress = a.type === "progress" ? a.progress : row.progress;
-  const quote: Quote = { ...row.data, status: next, progress, clientId, ...(a.type === "reject" && a.reason ? { lostReason: a.reason } : {}), ...(a.type === "decline" ? { lostReason: "declined" as const } : {}) };
+  const quote: Quote = { ...row.data, status: next, progress, clientId, ...(a.type === "reject" && a.reason ? { lostReason: a.reason } : {}), ...(a.type === "send" ? { lostReason: undefined } : {}), ...(a.type === "decline" ? { lostReason: "declined" as const } : {}) };
   try {
   await db.transaction(async (tx) => {
     if (next !== row.status || progress !== row.progress || clientId !== row.clientId) {

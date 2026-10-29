@@ -39,6 +39,30 @@ export type Category = (typeof CATEGORIES)[number];
 export type Opening = (typeof OPENINGS)[number];
 export type Status = (typeof STATUSES)[number];
 
+// Que devient une modification faite par le menuisier, selon l'état du devis ? (source unique : serveur, éditeur, documentation)
+//  free      brouillon ou demande : rien n'a été montré au client, on modifie librement
+//  negotiate le client a demandé une modification : on ajuste puis on renvoie
+//  revise    envoyé, sans réponse : chaque modification est une nouvelle révision, le client est prévenu
+//  reopen    refusé : on adapte le devis à la raison du client puis on le renvoie
+//  reconfirm accepté, chantier pas commencé : modifier annule l'acceptation (statut « envoyé »), le client doit valider la nouvelle version
+//  amend     chantier en cours : avenant, nouvelle révision notifiée au client, statut inchangé
+//  locked    chantier terminé : figé (on en crée une nouvelle version)
+// Un devis sans compte client n'a personne à prévenir : modifiable librement tant que le chantier n'est pas terminé.
+export type EditMode = "free" | "negotiate" | "revise" | "reopen" | "reconfirm" | "amend" | "locked";
+export const editMode = (status: Status, linked: boolean): EditMode => {
+  if (!linked) return status === "completed" ? "locked" : "free";
+  switch (status) {
+    case "requested":
+    case "draft": return "free";
+    case "negotiation": return "negotiate";
+    case "sent": return "revise";
+    case "rejected": return "reopen";
+    case "accepted": return "reconfirm";
+    case "in_progress": return "amend";
+    default: return "locked";
+  }
+};
+
 // Ouvertures proposées par catégorie (« jalousie » = naco, fenêtre à lames de verre).
 export const OPENINGS_BY_CATEGORY: Record<Category, readonly Opening[]> = {
   fenetre: ["coulissant", "ouvrant", "oscillo", "soufflet", "jalousie", "fixe"],

@@ -2,7 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "./db";
 import { notify } from "./notifications";
 import { normalizePhone } from "./phone";
-import { type Market, type Quote, type QuoteRequest, type Role, type Settings, withDefaults } from "./model";
+import { type Market, type Quote, type QuoteRequest, type Role, type Settings, editMode, withDefaults } from "./model";
 
 // Accès aux données, toujours borné à un utilisateur (userId) : un compte ne lit ni n'écrit les données d'un autre.
 
@@ -59,12 +59,7 @@ export async function createQuote(userId: string, q: Quote, opts: { clientId?: s
   return saved;
 }
 
-// Un devis envoyé (ou accepté, refusé, en cours, terminé) n'est plus modifiable : ses lignes, prix et remise sont figés pour que le client
-// voie toujours ce qu'il a reçu ou accepté. Pour le changer : négociation (devis lié à un client) ou nouvelle version (devis sans compte).
-// Un devis sans compte client garde seulement son menu de statut libre.
-export const EDITABLE = ["requested", "draft", "negotiation"];
-// Envoyé mais pas encore tranché par le client : le menuisier peut encore corriger (chaque correction crée une révision, le client en est averti).
-const REVISABLE = ["sent"];
+// Ce que devient une modification du menuisier selon le statut : voir `editMode` (lib/model.ts). Un devis terminé reste figé.
 // Comparaison indépendante de l'ordre des clés (le JSONB de la base les réordonne).
 const canon = (v: unknown): unknown => (Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)).map(([k, x]) => [k, canon(x)])) : v);
 const content = (q: Quote) => JSON.stringify(canon([{ ...q.client, email: q.client.email ?? "" }, q.project, q.delay, q.notes, q.lines, q.discount ?? 0, q.services ?? [], q.warranty ?? 0]));
@@ -77,26 +72,29 @@ export class StaleQuote extends Error {}
 export async function updateQuote(userId: string, id: string, q: Quote): Promise<Quote | null | "locked" | "incomplete"> {
   const existing = await getQuote(userId, id);
   if (!existing) return null;
-  if (!EDITABLE.includes(existing.status) && !(existing.clientId && REVISABLE.includes(existing.status))) {
-    if (existing.clientId) return "locked";
-    if (content(existing) !== content(q)) return "locked"; // seul le statut peut changer
-  }
+  const mode = editMode(existing.status, !!existing.clientId);
+  if (mode === "locked") return "locked";
+  const changed = content(existing) !== content(q);
   // Numéro, date, conditions, client, demande et avancement ne changent jamais par cette voie.
-  // Pour un devis lié à un client, le statut ne bouge que par les actions (envoi, acceptation…) ; une demande modifiée passe en préparation.
+  // Devis lié à un client : le statut ne bouge que par les actions, sauf deux cas : une demande modifiée passe en préparation,
+  // et un devis accepté dont le contenu change redevient « envoyé » (le client doit valider la nouvelle version).
   let status = q.status;
-  if (existing.clientId) status = existing.status === "requested" ? "draft" : existing.status;
+  if (existing.clientId) status = existing.status === "requested" ? "draft" : existing.status === "accepted" && changed ? "sent" : existing.status;
   else if (status === "requested") status = "draft";
-  if (existing.clientId && existing.status === "sent" && q.lines.some((l) => !(l.unit > 0))) return "incomplete"; // le client ne doit pas pouvoir accepter une ligne à 0
-  const revised = !!existing.clientId && existing.status === "sent" && content(existing) !== content(q);
+  const seen = !["requested", "draft"].includes(existing.status); // le client a déjà vu ce devis
+  if (existing.clientId && seen && q.lines.some((l) => !(l.unit > 0))) return "incomplete"; // le client ne doit pas pouvoir accepter une ligne à 0
+  // Toute modification d'un devis déjà montré est une révision : une décision prise sur l'ancienne version devient périmée.
+  const revised = !!existing.clientId && seen && changed;
   const saved: Quote = { ...q, id, number: existing.number, date: existing.date, terms: existing.terms, clientId: existing.clientId ?? null, request: existing.request ?? null, progress: existing.progress ?? 0, lostReason: existing.lostReason, rev: (existing.rev ?? 0) + (revised ? 1 : 0), status };
   const db = await getDb();
   try {
     await db.transaction(async (tx) => {
       const done = await tx.update(schema.quotes).set({ status: saved.status, data: saved }).where(and(eq(schema.quotes.id, id), eq(schema.quotes.userId, userId), unchanged(existing.status, existing.rev ?? 0))).returning({ id: schema.quotes.id });
       if (!done.length) throw new StaleQuote(); // le client a répondu (ou une autre révision est passée) entre la lecture et l'écriture
+      // le client n'est prévenu que de ce qu'il voit : devis envoyé, accepté ou en chantier (en négociation ou refusé, il verra la nouvelle version à l'envoi)
       if (revised && existing.clientId) {
-        await tx.insert(schema.quoteEvents).values({ quoteId: id, actorId: userId, kind: "revised", message: "", data: { rev: saved.rev } });
-        await notify(tx, { userId: existing.clientId, quoteId: id, kind: "revised" });
+        await tx.insert(schema.quoteEvents).values({ quoteId: id, actorId: userId, kind: "revised", message: "", data: { rev: saved.rev, from: existing.status } });
+        if (["sent", "accepted", "in_progress"].includes(existing.status)) await notify(tx, { userId: existing.clientId, quoteId: id, kind: "revised" });
       }
     });
   } catch (e) {

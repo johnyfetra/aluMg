@@ -17,7 +17,7 @@ import { initSim, simulate } from "@/lib/procure";
 import { useContacts } from "@/lib/client";
 import { ApiError, request, useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
-import { type Line, lineMarks, type Quote, type Settings, lineSchema } from "@/lib/model";
+import { type EditMode, editMode, type Line, lineMarks, type Quote, type Settings, lineSchema } from "@/lib/model";
 import Select from "./Select";
 import { totals } from "@/lib/totals";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -59,10 +59,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const [first] = useState(() => newLine(settings));
   const [layout, setLayout] = useState<"cards" | "table">("cards");
   const [openIds, setOpenIds] = useState<Set<string>>(() => new Set((existing ?? { lines: [first] }).lines.length > 1 ? [] : (existing ?? { lines: [first] }).lines.map((l) => l.id)));
-  // devis d'un client déjà envoyé, accepté ou refusé : en lecture seule (le client doit toujours voir ce qu'il a accepté)
-  // Envoyé au client qui n'a pas encore répondu : encore modifiable (chaque modification crée une révision).
-  const revisable = !!existing?.clientId && existing.status === "sent";
-  const locked = !!existing && !["requested", "draft", "negotiation"].includes(existing.status) && !revisable;
+  // Ce que devient une modification selon l'état du devis (voir `editMode` dans lib/model.ts) : seul un chantier terminé est figé.
   const [focusId, setFocusId] = useState<string | null>(null);
   const [q, setQ] = useState<Quote>(
     () =>
@@ -84,6 +81,9 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         terms: { tva: settings.tva, deposit: settings.deposit, validityDays: settings.validityDays },
       },
   );
+  const mode: EditMode = existing ? editMode(q.status, !!q.clientId) : "free";
+  const revisable = mode === "revise" || mode === "reconfirm" || mode === "amend";
+  const locked = mode === "locked";
 
   const setLine = (i: number, patch: Partial<Line>) =>
     setQ((cur) => ({
@@ -170,9 +170,11 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   };
 
   const submit = async (withPdf: boolean) => {
+    // modifier un devis accepté annule l'acceptation : on demande confirmation avant
+    if (mode === "reconfirm" && JSON.stringify(q) !== JSON.stringify(existing) && !(await ask({ message: t("editor.confirmReconfirm"), tone: "danger", confirmLabel: t("editor.saveReconfirm") }))) return;
     const saved = await persist();
     if (!saved) return;
-    setMsg({ ok: true, text: revisable ? t("editor.revSaved") : t("editor.saved") });
+    setMsg({ ok: true, text: mode === "reconfirm" ? t("editor.reconfirmed") : revisable ? t("editor.revSaved") : t("editor.saved") });
     try {
       if (withPdf) {
         const { quotePdf } = await import("@/lib/pdf");
@@ -189,7 +191,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   // Demande d'un client : le menuisier vérifie les prix puis envoie le devis (ou décline la demande).
   // Un devis saisi par le menuisier s'envoie au compte client retrouvé par e-mail ; une demande de client est déjà liée.
   // (disponible dès la création : l'envoi enregistre d'abord le devis)
-  const canAct = ["requested", "draft", "negotiation"].includes(q.status);
+  const canAct = ["requested", "draft", "negotiation"].includes(q.status) || (q.status === "rejected" && !!q.clientId); // « rejected » : renvoyer le devis adapté
   const [note, setNote] = useState("");
   const act = async (type: "send" | "decline") => {
     if (type === "decline" && !(await ask({ message: t("editor.confirmDecline"), tone: "danger", confirmLabel: t("editor.decline") }))) return;
@@ -249,14 +251,11 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         </p>
       )}
 
-      {revisable && (
-        <p role="note" className="rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-[13px]">
-          {t("editor.revisable")} ({t("editor.revision")} {q.rev ?? 0})
-        </p>
-      )}
-      {locked && (
-        <p role="note" className="rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-[13px]">
-          {t("editor.locked")}
+      {existing && mode !== "free" && (
+        <p role="note" className={`rounded-lg border px-3 py-2 text-[13px] ${mode === "reconfirm" ? "border-warn/50 bg-warn/10" : "border-primary/40 bg-primary/5"}`}>
+          {t(`editor.mode.${mode}`)}
+          {mode === "reopen" && q.lostReason && q.lostReason !== "declined" && <strong> {t("editor.lostWhy")} {t(`loss.${q.lostReason}`)}.</strong>}
+          {revisable && ` (${t("editor.revision")} ${q.rev ?? 0})`}
         </p>
       )}
 
@@ -479,6 +478,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
           canAct={canAct}
           locked={locked}
           revisable={revisable}
+          mode={mode}
           note={note}
           setNote={setNote}
           attachCut={attachCut}

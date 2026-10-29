@@ -88,6 +88,12 @@ export default function ClientQuoteView({ id }: { id: string }) {
 
       <QuoteStatusBar quote={q} total={priced ? tot.ttc : null} side="client" />
 
+      {(q.rev ?? 0) > 0 && (q.status === "sent" || q.status === "in_progress") && (
+        <p role="status" className="rounded-xl border border-warn/50 bg-warn/10 px-4 py-3 text-sm font-medium">
+          {t(q.status === "sent" ? "cl.upd.sent" : "cl.upd.in_progress")} ({t("editor.revision")} {q.rev})
+        </p>
+      )}
+
       <header className="card space-y-5">
         <div className="flex flex-wrap items-start gap-4">
           <Avatar name={m.name} src={m.logo} size={64} />

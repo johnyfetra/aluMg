@@ -67,7 +67,7 @@ requested ─(menuisier prépare)→ draft ─send→ sent ─accept→ accepted
 - `lib/workflow.ts` : `transition(statut, action, rôle)` est une fonction pure (testée) ; `applyAction` l'applique en transaction et écrit l'historique.
 - Le rôle sur un devis vient du devis lui-même (menuisier propriétaire ou client demandeur), jamais du corps de la requête. Un tiers reçoit « introuvable ».
 - Tant que le devis est `requested` ou `draft`, le client ne voit **aucun prix** (lignes, remise et prestations mis à zéro par `clientView`).
-- **Révisions** : un devis `sent` reste modifiable par le menuisier tant que le client n'a pas répondu. Chaque modification de contenu fait `rev + 1`, écrit un événement `revised` et prévient le client. Accepter, refuser ou demander une modification porte sur une `rev` précise (`quote_changed` si elle est périmée). Une fois le client répondu (accepté, négociation, refusé…), le devis est figé ; seule la négociation rouvre l'édition.
+- **Révisions** : voir « Modifier un devis selon son statut » ci-dessous. Chaque modification de contenu d'un devis déjà montré au client fait `rev + 1` ; accepter, refuser ou demander une modification porte sur une `rev` précise (`quote_changed` si elle est périmée).
 - **Envoi à un client** : un devis créé par le menuisier porte l'e-mail du client (`client.email`) ; l'action `send` retrouve le compte client correspondant et lie le devis (`no_client_account` sinon).
 - **Commentaires par ouvrage** : événements `line_comment` (`data.lineId`), lus/écrits via `/api/quotes/[id]/comments`, absents de l'historique général. Chaque événement notable crée une **notification** (`notifications`, `/api/notifications`) pour l'autre partie ; un clic mène au devis et à l'ouvrage (`?ligne=`).
 - Un devis déjà remis à un client ne peut plus être supprimé.
@@ -184,3 +184,19 @@ Lien d'évitement, un `h1` par page, champs avec `label`, cibles tactiles de 44 
 - `npm run dev:local` : serveur sur la base embarquée `.data/pglite` (port 3200). Il vide `DATABASE_URL` / `POSTGRES_URL` : `npm run dev` lit `.env.local` et vise donc Supabase.
 - `npm run seed:local` : démarre ce serveur, crée les comptes (`seed-demo.mjs`), 18 devis réalistes du menuisier `test@alumada.mg` avec leurs clients et conversations (`seed-quotes.mts`, tout par l'API), puis étale les dates (`backdate-demo.ts`, écriture directe, serveur arrêté). Pour repartir de zéro : déplacer `.data/pglite` avant de relancer.
 - Mot de passe de tous les comptes : `scripts/demo-data.mjs` ; clients `hery@`, `noro@`, `toky@`, `lalao@client.mg`.
+
+## Modifier un devis selon son statut
+
+Source unique : `editMode(status, linked)` dans `lib/model.ts`, appliquée par `updateQuote` (serveur) et lue par l'éditeur.
+
+| Statut | Mode | Une modification du menuisier… |
+| --- | --- | --- |
+| demande, brouillon | `free` | est libre ; une demande modifiée passe en préparation |
+| négociation | `negotiate` | ajuste le devis (révision) ; `send` le renvoie, statut « envoyé » |
+| envoyé | `revise` | crée une révision ; le client est notifié et voit la bannière « mis à jour » |
+| refusé | `reopen` | adapte le devis (révision, statut inchangé, motif conservé) ; `send` le renvoie : statut « envoyé », motif effacé |
+| accepté (avancement 0) | `reconfirm` | **annule l'acceptation** : statut « envoyé », révision, client notifié, il doit valider la nouvelle version (l'ancienne `rev` est refusée) |
+| en cours | `amend` | avenant : révision notifiée, statut et avancement conservés |
+| terminé | `locked` | impossible : le devis fait foi (nouvelle version à créer) |
+
+Enregistrer sans changer le contenu ne change ni le statut ni la révision. Un devis sans compte client n'a personne à prévenir : modifiable librement sauf terminé. Chaque modification d'un devis montré écrit un événement `revised` (`data.from` = statut d'origine).

@@ -39,9 +39,9 @@ beforeAll(async () => {
 
 describe("transition (machine d'états)", () => {
   const t = wf.transition;
-  it("menuisier : envoyer depuis demande, brouillon ou négociation seulement", () => {
-    for (const s of ["requested", "draft", "negotiation"] as const) expect(t(s, A({ type: "send" }), "menuisier")).toBe("sent");
-    for (const s of ["sent", "accepted", "in_progress", "completed", "rejected"] as const) expect(t(s, A({ type: "send" }), "menuisier")).toBeNull();
+  it("menuisier : envoyer depuis demande, brouillon, négociation ou devis refusé (renvoi) seulement", () => {
+    for (const s of ["requested", "draft", "negotiation", "rejected"] as const) expect(t(s, A({ type: "send" }), "menuisier")).toBe("sent");
+    for (const s of ["sent", "accepted", "in_progress", "completed"] as const) expect(t(s, A({ type: "send" }), "menuisier")).toBeNull();
   });
   it("client : accepter seulement un devis envoyé", () => {
     expect(t("sent", A({ type: "accept" }), "client")).toBe("accepted");
@@ -141,7 +141,7 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
     const sent = await wf.applyAction(m1, q.id, A({ type: "send", message: "Remise de 10 % accordée" }));
     expect(sent.ok && sent.quote.status).toBe("sent");
     const ev = await wf.listEvents(q.id);
-    expect(ev.map((e) => e.kind)).toEqual(["created", "sent", "revised", "revised", "change_requested", "sent"]);
+    expect(ev.map((e) => e.kind)).toEqual(["created", "sent", "revised", "revised", "change_requested", "revised", "sent"]);
     expect(ev[4]).toMatchObject({ side: "client", message: "Une remise possible ?", data: { discountPercent: 10 } });
   });
 
@@ -180,9 +180,12 @@ describe("parcours complet demande → devis → chantier → évaluation", () =
     expect(await repo.updateQuote(m1, w.id, { ...w, notes: "ok en brouillon" })).toMatchObject({ notes: "ok en brouillon" });
     const sent = await upd(m1, w.id, { ...w, notes: "ok en brouillon", status: "sent" }); // le statut change (menu de la liste)
     expect(sent.status).toBe("sent");
-    expect(await repo.updateQuote(m1, w.id, { ...sent, notes: "modifié après envoi" })).toBe("locked");
-    expect(await repo.updateQuote(m1, w.id, { ...sent, lines: [{ ...sent.lines[0], unit: 1 }] })).toBe("locked");
+    // personne à prévenir : il reste modifiable (le menuisier corrige une coquille), sans révision ni notification
+    expect(await repo.updateQuote(m1, w.id, { ...sent, notes: "modifié après envoi" })).toMatchObject({ notes: "modifié après envoi", rev: 0, status: "sent" });
     expect(await repo.updateQuote(m1, w.id, { ...sent, status: "accepted" })).toMatchObject({ status: "accepted" });
+    const accepted = (await repo.getQuote(m1, w.id))!;
+    expect(await repo.updateQuote(m1, w.id, { ...accepted, status: "completed" })).toMatchObject({ status: "completed" });
+    expect(await repo.updateQuote(m1, w.id, { ...accepted, status: "completed", notes: "trop tard" })).toBe("locked"); // un chantier terminé est figé
   });
 
   it("un devis saisi pour un client sans compte ne s'envoie pas par l'action « send »", async () => {
@@ -289,21 +292,18 @@ describe("devis envoyé : révisions, commentaires d'ouvrage et notifications", 
   it("une révision qui remet un prix à zéro est refusée ; une écriture sur un état périmé aussi", async () => {
     const x = (await repo.listQuotes(m1)).find((y) => y.status === "sent" && y.client.email === "c1@ex.mg")!;
     expect(await repo.updateQuote(m1, x.id, { ...x, lines: [{ ...x.lines[0], unit: 0 }] })).toBe("incomplete");
-    // course : le client accepte pendant que le menuisier enregistre une révision lue avant l'acceptation
+    // le client accepte, puis le menuisier enregistre une modification lue avant l'acceptation : l'acceptation est annulée (nouvelle validation requise)
     const stale = { ...x, notes: "révision tardive" };
     expect((await wf.applyAction(c1, x.id, A({ type: "accept", rev: x.rev ?? 0 }))).ok).toBe(true);
-    expect(await repo.updateQuote(m1, x.id, stale)).toBe("locked");
-    expect((await repo.getQuote(m1, x.id))!.status).toBe("accepted");
+    expect(await repo.updateQuote(m1, x.id, stale)).toMatchObject({ status: "sent", rev: (x.rev ?? 0) + 1 });
+    expect(await wf.applyAction(c1, x.id, A({ type: "accept", rev: x.rev ?? 0 }))).toEqual({ ok: false, error: "quote_changed" }); // l'ancienne version ne peut plus être acceptée
+    expect((await wf.applyAction(c1, x.id, A({ type: "accept", rev: (x.rev ?? 0) + 1 }))).ok).toBe(true);
   });
   it("le client ne lit ni n'est prévenu des commentaires du menuisier avant l'envoi", async () => {
     const d = await repo.createQuote(m1, quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "draft", client: { name: "", phone: "", address: "", email: "" }, project: "", delay: "", notes: "", lines: [line], terms: { tva: 0, deposit: 0, validityDays: 30 } }), { clientId: c2 });
     expect(await wf.addLineComment(m1, d.id, { lineId: line.id, body: "je compte 450 000 Ar" })).toMatchObject({ side: "menuisier" });
     expect(await wf.listLineComments(c2, d.id)).toEqual([]);
     expect((await notif.listNotifications(c2)).items.some((n) => n.quoteId === d.id)).toBe(false);
-  });
-  it("après la réponse du client, le devis est figé", async () => {
-    const cur = (await repo.getQuote(m1, q.id))!;
-    expect(await repo.updateQuote(m1, q.id, { ...cur, notes: "trop tard" })).toBe("locked");
   });
   it("commentaires d'ouvrage : chaque partie écrit, l'autre est notifiée avec l'ouvrage visé ; un tiers ne voit rien", async () => {
     const lineId = line.id;
@@ -323,5 +323,66 @@ describe("devis envoyé : révisions, commentaires d'ouvrage et notifications", 
   it("le client ne peut pas commenter un devis pas encore envoyé", async () => {
     const d = await repo.createQuote(m1, quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: "", phone: "", address: "", email: "" }, project: "", delay: "", notes: "", lines: [line], terms: { tva: 0, deposit: 0, validityDays: 30 } }), { clientId: c1 });
     expect(await wf.addLineComment(c1, d.id, { lineId: line.id, body: "?" })).toBe("not_allowed");
+  });
+});
+
+describe("modifier un devis selon son statut (côté menuisier)", () => {
+  const req = { menuisier: "", project: "Villa", message: "Je voudrais 2 fenêtres", siteAddress: "Ivandry", wantedDate: "2026-12-01", lines: [{ ...line, width: 1500, height: 1200 }] };
+  const fresh = async () => {
+    const r = (await wf.createRequest(c1, { ...req, menuisier: slug1 })) as Quote;
+    await upd(m1, r.id, quoteSchema.parse(r)); // le menuisier prépare la demande
+    return r.id;
+  };
+  const kinds = async (id: string) => (await wf.listEvents(id)).map((e) => e.kind);
+
+  it("accepté : modifier annule l'acceptation (statut « envoyé », révision, client prévenu) ; sans changement, rien ne bouge", async () => {
+    const id = await fresh();
+    await wf.applyAction(m1, id, A({ type: "send" }));
+    await wf.applyAction(c1, id, A({ type: "accept", rev: await revOf(m1, id) }));
+    const cur = (await repo.getQuote(m1, id))!;
+    expect(cur.status).toBe("accepted");
+    expect(await repo.updateQuote(m1, id, cur)).toMatchObject({ status: "accepted", rev: cur.rev }); // enregistrer sans rien changer
+    expect(await repo.updateQuote(m1, id, { ...cur, discount: 3 })).toMatchObject({ status: "sent", rev: (cur.rev ?? 0) + 1, discount: 3 });
+    expect((await wf.listEvents(id)).find((e) => e.kind === "revised")?.data).toMatchObject({ from: "accepted" });
+    expect((await notif.listNotifications(c1)).items.filter((n) => n.quoteId === id && n.kind === "revised")).toHaveLength(1); // une seule notification « modifié »
+    expect((await wf.getClientQuote(c1, id))!.quote).toMatchObject({ status: "sent", discount: 3 });
+    expect((await wf.applyAction(c1, id, A({ type: "accept", rev: await revOf(m1, id) }))).ok).toBe(true); // le client valide la nouvelle version
+  });
+
+  it("chantier en cours : avenant (révision notifiée), avancement et statut conservés ; terminé : figé", async () => {
+    const id = await fresh();
+    await wf.applyAction(m1, id, A({ type: "send" }));
+    await wf.applyAction(c1, id, A({ type: "accept", rev: await revOf(m1, id) }));
+    await wf.applyAction(m1, id, A({ type: "progress", progress: 40 }));
+    const cur = (await repo.getQuote(m1, id))!;
+    expect(await repo.updateQuote(m1, id, { ...cur, notes: "Ajout d'un volet demandé sur place", progress: 0, status: "draft" })).toMatchObject({ status: "in_progress", progress: 40, rev: (cur.rev ?? 0) + 1 });
+    expect(await kinds(id)).toContain("revised");
+    await wf.applyAction(m1, id, A({ type: "progress", progress: 100 }));
+    expect(await repo.updateQuote(m1, id, { ...(await repo.getQuote(m1, id))!, notes: "trop tard" })).toBe("locked");
+  });
+
+  it("refusé : le menuisier l'adapte, le renvoie, le motif est effacé et le client peut l'accepter", async () => {
+    const id = await fresh();
+    await wf.applyAction(m1, id, A({ type: "send" }));
+    await wf.applyAction(c1, id, A({ type: "reject", reason: "price", rev: await revOf(m1, id) }));
+    const cur = (await repo.getQuote(m1, id))!;
+    expect(cur).toMatchObject({ status: "rejected", lostReason: "price" });
+    const adapted = await repo.updateQuote(m1, id, { ...cur, discount: 8 });
+    expect(adapted).toMatchObject({ status: "rejected", lostReason: "price", discount: 8, rev: (cur.rev ?? 0) + 1 }); // rien n'est renvoyé tant que le menuisier ne le décide pas
+    const sent = await wf.applyAction(m1, id, A({ type: "send", message: "Nouvelle proposition avec 8 % de remise" }));
+    expect(sent.ok && sent.quote).toMatchObject({ status: "sent", discount: 8 });
+    expect((await repo.getQuote(m1, id))!.lostReason).toBeUndefined();
+    expect((await wf.applyAction(c1, id, A({ type: "accept", rev: await revOf(m1, id) }))).ok).toBe(true);
+  });
+
+  it("négociation : modifier crée une révision ; la demande et le brouillon restent libres", async () => {
+    const id = await fresh();
+    await wf.applyAction(m1, id, A({ type: "send" }));
+    await wf.applyAction(c1, id, A({ type: "request_change", message: "Moins cher ?", rev: await revOf(m1, id) }));
+    const cur = (await repo.getQuote(m1, id))!;
+    expect(await repo.updateQuote(m1, id, { ...cur, discount: 5 })).toMatchObject({ status: "negotiation", rev: (cur.rev ?? 0) + 1 });
+    const draft = await fresh();
+    const d = (await repo.getQuote(m1, draft))!;
+    expect(await repo.updateQuote(m1, draft, { ...d, notes: "brouillon" })).toMatchObject({ status: "draft", rev: 0 });
   });
 });

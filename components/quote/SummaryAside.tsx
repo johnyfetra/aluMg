@@ -10,7 +10,7 @@ import type { quoteMargin } from "@/lib/costing";
 import { presetOf } from "@/lib/docStyle";
 import type { T } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
-import { DOC_PRESETS, type DocPreset, type Quote, type Settings } from "@/lib/model";
+import { DOC_PRESETS, type DocPreset, type EditMode, type Quote, type Settings } from "@/lib/model";
 
 type Props = {
   t: T;
@@ -23,6 +23,7 @@ type Props = {
   canAct: boolean;
   locked: boolean;
   revisable: boolean;
+  mode: EditMode;
   note: string;
   setNote: (v: string) => void;
   attachCut: boolean;
@@ -37,7 +38,7 @@ type Props = {
 
 // Colonne de synthèse de l'éditeur : totaux, besoin en profilés, envoi au client, modèle du devis, PDF et enregistrement.
 // Elle reste visible pendant la saisie sur grand écran.
-export default function SummaryAside({ t, q, setQ, totals, margin, plan, persisted, canAct, locked, revisable, note, setNote, attachCut, setAttachCut, msg, settings, onNeeds, onAct, onSubmit, onNewVersion }: Props) {
+export default function SummaryAside({ t, q, setQ, totals, margin, plan, persisted, canAct, locked, revisable, mode, note, setNote, attachCut, setAttachCut, msg, settings, onNeeds, onAct, onSubmit, onNewVersion }: Props) {
   const num = (v: string) => Number(v) || 0;
   return (
     <aside className="space-y-3 xl:sticky xl:top-20" aria-label="Total">
@@ -102,9 +103,9 @@ export default function SummaryAside({ t, q, setQ, totals, margin, plan, persist
               <div className="flex gap-2">
                 <button type="button" className="btn-primary flex-1" onClick={() => onAct("send")}>
                   <Send size={15} aria-hidden />
-                  {t("editor.sendShort")}
+                  {q.status === "rejected" ? t("editor.resend") : t("editor.sendShort")}
                 </button>
-                {q.clientId && q.status !== "negotiation" && (
+                {q.clientId && q.status !== "negotiation" && q.status !== "rejected" && (
                   <button type="button" className="btn-danger !px-3" onClick={() => onAct("decline")} aria-label={t("editor.decline")} title={t("editor.decline")}>
                     <XCircle size={15} aria-hidden />
                   </button>
@@ -140,7 +141,7 @@ export default function SummaryAside({ t, q, setQ, totals, margin, plan, persist
               {!locked && (
                 <button type="button" className="btn-secondary" onClick={() => onSubmit(false)}>
                   <Save size={16} aria-hidden />
-                  {revisable ? t("editor.saveRevision") : t("editor.saveDraft")}
+                  {mode === "reconfirm" ? t("editor.saveReconfirm") : revisable ? t("editor.saveRevision") : mode === "negotiate" || mode === "reopen" ? t("editor.saveChanges") : t("editor.saveDraft")}
                 </button>
               )}
             </div>

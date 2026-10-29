@@ -1,11 +1,11 @@
 "use client";
-import { CheckCheck, CircleDot, FilePlus2, Hammer, MessageSquare, MessageSquareWarning, Send, Star, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
+import { CheckCheck, CircleDot, FilePlus2, Hammer, MessageSquare, MessageSquareWarning, Pencil, Send, Star, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
 import { useState } from "react";
 import { mutate } from "swr";
 import { request, useEvents } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 
-const ICON = { created: FilePlus2, sent: Send, declined: XCircle, accepted: ThumbsUp, rejected: ThumbsDown, change_requested: MessageSquareWarning, progress: Hammer, completed: CheckCheck, reviewed: Star, message: MessageSquare } as const;
+const ICON = { created: FilePlus2, sent: Send, declined: XCircle, accepted: ThumbsUp, rejected: ThumbsDown, change_requested: MessageSquareWarning, progress: Hammer, completed: CheckCheck, reviewed: Star, message: MessageSquare, revised: Pencil } as const;
 
 // Historique d'un devis (demande, envoi, négociation, avancement, évaluation) et zone de message entre le client et le menuisier.
 export default function Timeline({ quoteId, canWrite = true }: { quoteId: string; canWrite?: boolean }) {
@@ -45,7 +45,7 @@ export default function Timeline({ quoteId, canWrite = true }: { quoteId: string
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm">
-                  <span className="font-semibold">{t(`tl.${e.kind}` as "tl.created")}</span>
+                  <span className="font-semibold">{t(e.kind === "revised" ? (e.data.from === "accepted" ? "tl.revisedReopen" : e.data.from === "in_progress" ? "tl.revisedAmend" : "tl.revised") : (`tl.${e.kind}` as "tl.created"))}</span>
                   <span className="text-muted">
                     {extra} — {e.actor} · {fmt(e.at)}
                   </span>
