@@ -51,7 +51,7 @@ function QuotesView() {
   // Un devis lié à un compte client change de statut par ses actions (envoi, acceptation…) : pas de menu libre.
   const statusSelect = (q: Quote) => q.clientId ? null : (
     <Select
-      aria-label={`${t("status.label")} — ${q.number}`}
+      aria-label={`${t("status.label")}, ${q.number}`}
       value={q.status}
       onChange={(v) => save({ ...q, status: v as Status }, false)}
       className="!min-h-9 !w-auto !py-1 text-sm"

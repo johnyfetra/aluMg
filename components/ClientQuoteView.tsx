@@ -91,7 +91,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
   const requests = q.lines.filter((l) => reviews[l.id]?.state === "request");
   const sendRequests = () => {
     const topics = new Set(requests.map((l) => reviews[l.id].topic ?? "details"));
-    const text = requests.map((l) => `${marks[q.lines.indexOf(l)]} — ${t(`act.topic.${reviews[l.id].topic ?? "details"}`)} : ${reviews[l.id].message}`).join("\n");
+    const text = requests.map((l) => `${marks[q.lines.indexOf(l)]} · ${t(`act.topic.${reviews[l.id].topic ?? "details"}`)} : ${reviews[l.id].message}`).join("\n");
     return act({ type: "request_change", topic: topics.size === 1 ? [...topics][0] : "details", message: text }, t("act.changeSent"));
   };
 

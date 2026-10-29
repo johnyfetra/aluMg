@@ -54,7 +54,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
       </main>
       <footer className="border-t border-line bg-surface">
         <div className="mx-auto flex w-full max-w-[110rem] flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-muted sm:px-8 xl:px-10">
-          <p>© AluMg — {t("pub.footer")}</p>
+          <p>© AluMg · {t("pub.footer")}</p>
           <Link href="/menuisiers" className="font-medium text-primary hover:underline">
             {t("pub.menuisiers")}
           </Link>

@@ -58,7 +58,7 @@ export function LineCard({
     return v ? ` (${v > 0 ? "+" : ""}${v} %)` : "";
   };
 
-  const title = `${mark ?? `${t("editor.line")} ${i + 1}`} — ${cap(lineTitle(l, t))}`;
+  const title = `${mark ?? `${t("editor.line")} ${i + 1}`} · ${cap(lineTitle(l, t))}`;
   // Une colonne jusqu'à 2xl (l'illustration passe au-dessus), puis formulaire + illustration fixe à droite.
   const grid = "min-w-0";
   const body = (
@@ -315,7 +315,7 @@ export function LineCard({
           </span>
           {!clientMode && (
             <span className="shrink-0 text-right">
-              <span className="block font-semibold tabular-nums">{valid ? fmt(lineTotal(l)) : "—"} {t("common.currency")}</span>
+              <span className="block font-semibold tabular-nums">{valid ? fmt(lineTotal(l)) : "-"} {t("common.currency")}</span>
               <span className="text-xs font-normal text-muted">{t("editor.qty")} : {l.qty}</span>
             </span>
           )}

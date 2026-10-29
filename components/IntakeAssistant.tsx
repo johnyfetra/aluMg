@@ -53,7 +53,7 @@ export default function IntakeAssistant({ text, t, actions, price, onEdit }: { t
                     <button type="button" onClick={() => setQty(i, qty - 1)} disabled={qty <= 1} aria-label={`${t("editor.qty")} −`} className="grid size-8 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2 disabled:opacity-40"><Minus size={14} aria-hidden /></button>
                     <span className="min-w-8 text-center text-sm font-bold tabular-nums">× {qty}</span>
                     <button type="button" onClick={() => setQty(i, qty + 1)} aria-label={`${t("editor.qty")} +`} className="grid size-8 place-items-center rounded-lg border border-line text-muted hover:bg-surface-2"><Plus size={14} aria-hidden /></button>
-                    <button type="button" onClick={() => commit({ ...cur, off: [...cur.off, i] })} aria-label={`${t("intake.remove")} — ${lineTitle(l, t)}`} title={t("intake.remove")} className="ml-1 grid size-8 place-items-center rounded-lg text-muted hover:bg-danger/10 hover:text-danger"><X size={15} aria-hidden /></button>
+                    <button type="button" onClick={() => commit({ ...cur, off: [...cur.off, i] })} aria-label={`${t("intake.remove")}, ${lineTitle(l, t)}`} title={t("intake.remove")} className="ml-1 grid size-8 place-items-center rounded-lg text-muted hover:bg-danger/10 hover:text-danger"><X size={15} aria-hidden /></button>
                   </div>
                 </div>
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted">
@@ -83,7 +83,7 @@ export default function IntakeAssistant({ text, t, actions, price, onEdit }: { t
         <div className="rounded-xl bg-surface-2 p-3">
           <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold"><CircleHelp size={14} aria-hidden className="text-primary" />{t("intake.questions")}</p>
           <ul className="list-disc space-y-0.5 pl-5 text-[13px] text-muted">
-            {qs.map((q, n) => <li key={n}>{q.key === "empty" ? t("intake.q.empty") : `${t(`intake.q.${q.key}` as "intake.q.size")} — ${lineTitle(toLine(items[q.item].spec), t)}`}</li>)}
+            {qs.map((q, n) => <li key={n}>{q.key === "empty" ? t("intake.q.empty") : `${t(`intake.q.${q.key}` as "intake.q.size")} · ${lineTitle(toLine(items[q.item].spec), t)}`}</li>)}
           </ul>
         </div>
       )}

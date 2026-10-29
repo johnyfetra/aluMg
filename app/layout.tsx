@@ -8,7 +8,7 @@ import { I18nProvider } from "@/lib/i18n";
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AluMg — Devis menuiserie aluminium",
+  title: "AluMg, devis menuiserie aluminium",
   description: "Créez des devis professionnels pour la menuiserie aluminium et les volets roulants.",
 };
 

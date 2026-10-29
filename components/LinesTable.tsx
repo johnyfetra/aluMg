@@ -41,7 +41,7 @@ export default function LinesTable({ lines, t, marks, validIds, onEdit, onDuplic
                   <td className="whitespace-nowrap px-2 py-3">
                     {ok ? `${l.width} × ${l.height} mm` : <span className="font-medium text-danger">{t("editor.invalidSize")}</span>}
                   </td>
-                  <td className="whitespace-nowrap px-2 py-3 tabular-nums text-muted">{ok && l.leaves > 1 && l.category !== "garde-corps" && l.category !== "volet" ? leafMarks(l).join(" · ") : "—"}</td>
+                  <td className="whitespace-nowrap px-2 py-3 tabular-nums text-muted">{ok && l.leaves > 1 && l.category !== "garde-corps" && l.category !== "volet" ? leafMarks(l).join(" · ") : "-"}</td>
                   <td className="whitespace-nowrap px-2 py-3">
                     <span className="inline-flex items-center gap-2" title={t(`range.${l.range}`)}>
                       <FinishSwatch id={f?.id ?? "blanc"} size={16} />
@@ -50,7 +50,7 @@ export default function LinesTable({ lines, t, marks, validIds, onEdit, onDuplic
                   </td>
                   <td className={num}>{l.qty}</td>
                   <td className={num}>{fmt(l.unit)}</td>
-                  <td className={`${num} font-semibold`}>{ok ? fmt(lineTotal(l)) : "—"}</td>
+                  <td className={`${num} font-semibold`}>{ok ? fmt(lineTotal(l)) : "-"}</td>
                   <td className="whitespace-nowrap px-1.5 py-1.5 text-right [&>button]:ml-1">
                     <button type="button" className="btn-secondary !min-h-8 !px-2" onClick={() => onEdit(i)} aria-label={`${t("editor.edit")} ${t("editor.line")} ${i + 1}`} title={t("editor.edit")}>
                       <Pencil size={15} aria-hidden />

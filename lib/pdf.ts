@@ -61,7 +61,7 @@ export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale,
       fit(doc, s.logo, M + 1, 5, 24, 14);
       bx = M + 30;
     }
-    doc.setTextColor(255, 255, 255).setFont(F, "bold").setFontSize(15).text(s.company || "—", bx, 15);
+    doc.setTextColor(255, 255, 255).setFont(F, "bold").setFontSize(15).text(s.company || "-", bx, 15);
     doc.setFontSize(20).text(t("pdf.quote"), R, 15, { align: "right" });
     gray();
     doc.setFont(F, "normal").setFontSize(8.5);
@@ -77,7 +77,7 @@ export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale,
     }
     const hy = s.logo ? 27 : 17;
     dark();
-    doc.setFont(F, "bold").setFontSize(15).text(s.company || "—", 105, hy, { align: "center" });
+    doc.setFont(F, "bold").setFontSize(15).text(s.company || "-", 105, hy, { align: "center" });
     gray();
     doc.setFont(F, "normal").setFontSize(8.5);
     idLines.forEach((line, i) => doc.text(line, 105, hy + 5.5 + i * 4.1, { align: "center" }));
@@ -91,7 +91,7 @@ export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale,
     let tx = M;
     if (s.logo) tx += fit(doc, s.logo, M, 11, 36, 22).w + 5;
     dark();
-    doc.setFont(F, "bold").setFontSize(15).text(s.company || "—", tx, 17);
+    doc.setFont(F, "bold").setFontSize(15).text(s.company || "-", tx, 17);
     gray();
     doc.setFont(F, "normal").setFontSize(8.5);
     idLines.forEach((line, i) => doc.text(line, tx, 22.5 + i * 4.1));
@@ -104,7 +104,7 @@ export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale,
   doc.setFillColor(243, 245, 250).roundedRect(M, 50 + oy, q.project ? 85 : R - M, 22, 1.5, 1.5, "F");
   label(t("pdf.client"), M + 4, 56 + oy);
   dark();
-  doc.setFont(F, "bold").setFontSize(10.5).text(q.client.name || "—", M + 4, 61.5 + oy);
+  doc.setFont(F, "bold").setFontSize(10.5).text(q.client.name || "-", M + 4, 61.5 + oy);
   gray();
   doc.setFont(F, "normal").setFontSize(8.5);
   [q.client.phone, q.client.address].filter(Boolean).forEach((l, i) => doc.text(l, M + 4, 66 + oy + i * 4));
@@ -250,7 +250,7 @@ export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale,
     doc.addPage();
     doc.setFillColor(...accent).rect(0, 0, 210, 5, "F");
     dark();
-    doc.setFont(F, "bold").setFontSize(15).text(`${t("pdf.cutSheet")} — ${q.number}`, M, 20);
+    doc.setFont(F, "bold").setFontSize(15).text(`${t("pdf.cutSheet")} · ${q.number}`, M, 20);
     let cy = 28;
     const need = (h: number) => {
       if (cy + h > 280) {

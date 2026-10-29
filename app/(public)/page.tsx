@@ -42,7 +42,7 @@ export default function Landing() {
   const stats: [string, string][] = [
     [String(data.length), t("land2.stat.joiners")],
     [String(jobs), t("land2.stat.jobs")],
-    [avg ? avg.toFixed(1) : "—", t("land2.stat.rating")],
+    [avg ? avg.toFixed(1) : "-", t("land2.stat.rating")],
     [String(projects), t("land2.stat.projects")],
   ];
   const go = (e: React.FormEvent) => {

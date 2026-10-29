@@ -36,7 +36,7 @@ export function LangMenu() {
   const { t, locale, setLocale } = useI18n();
   return (
     <Menu
-      label={`${t("lang.label")} — ${LOCALES[locale]}`}
+      label={`${t("lang.label")}, ${LOCALES[locale]}`}
       width="w-52"
       triggerClass="flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 text-sm font-medium transition-colors hover:bg-surface-2"
       trigger={

@@ -256,7 +256,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                   {imgs.length > 0 && (
                     <div className={`grid gap-1.5 ${imgs.length > 1 ? "grid-cols-2" : ""}`}>
                       {imgs.map((a) => (
-                        <button key={a.id} type="button" onClick={() => setZoom(images.indexOf(`/api/attachments/${a.id}`))} aria-label={`${t("msg.zoom")} — ${a.name}`} className="overflow-hidden rounded-lg">
+                        <button key={a.id} type="button" onClick={() => setZoom(images.indexOf(`/api/attachments/${a.id}`))} aria-label={`${t("msg.zoom")}, ${a.name}`} className="overflow-hidden rounded-lg">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={`/api/attachments/${a.id}`} alt={a.name} loading="lazy" className={`w-full object-cover ${compact ? "max-h-44" : "max-h-60"}`} />
                         </button>
@@ -295,7 +295,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                     {m.receipt && <Ticks receipt={m.receipt} t={t} />}
                   </p>
                 </div>
-                <button type="button" onClick={() => { setReplyTo(m); input.current?.focus(); }} aria-label={`${t("msg.reply")} — ${preview({ body: m.body, files: m.attachments.length })}`} title={t("msg.reply")} className="mb-1 grid size-8 shrink-0 place-items-center rounded-full text-muted opacity-0 transition-opacity hover:bg-surface hover:text-primary focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-60">
+                <button type="button" onClick={() => { setReplyTo(m); input.current?.focus(); }} aria-label={`${t("msg.reply")}, ${preview({ body: m.body, files: m.attachments.length })}`} title={t("msg.reply")} className="mb-1 grid size-8 shrink-0 place-items-center rounded-full text-muted opacity-0 transition-opacity hover:bg-surface hover:text-primary focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-60">
                   <Reply size={15} aria-hidden />
                 </button>
               </div>

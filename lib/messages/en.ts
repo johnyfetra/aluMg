@@ -1284,7 +1284,7 @@ export const en: Messages = {
   "editor.reconfirmed": "Quote changed: the customer is notified and must approve it again.",
   "editor.resend": "Send again to the customer",
   "tl.revised": "Quote changed",
-  "tl.revisedReopen": "Quote changed after acceptance — new approval required",
+  "tl.revisedReopen": "Quote changed after acceptance · new approval required",
   "tl.revisedAmend": "Amendment during the job",
   "cl.upd.sent": "Your professional updated this quote: read it again, then accept it, ask for a change or reject it.",
   "cl.upd.in_progress": "The quote was amended during the job. Read the items again and message your professional with any question.",

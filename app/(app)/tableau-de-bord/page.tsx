@@ -106,7 +106,7 @@ export default function Dashboard() {
   // taux d'acceptation : devis tranchés seulement (acceptés ou refusés par le client) ; les devis en attente ou écartés par le menuisier n'y comptent pas
   const refused = inStatus("rejected").filter((q) => q.lostReason !== "declined").length;
   const decided = inStatus(...WON).length + refused;
-  const rate = decided ? `${Math.round((inStatus(...WON).length / decided) * 100)} %` : "—";
+  const rate = decided ? `${Math.round((inStatus(...WON).length / decided) * 100)} %` : "-";
   const recent = [...quotes].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
   const cur = t("common.currency");
 

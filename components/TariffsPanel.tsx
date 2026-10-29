@@ -103,8 +103,8 @@ export default function TariffsPanel() {
                 <li key={k}>
                   <p className="mb-1 text-sm">{t(`svc.${k}`)}</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <NumField label={`${t(`svc.${k}`)} — ${t("tariffs.price")}`} unit={`Ar · ${t("tariffs.price")}`} value={prices[k]?.price ?? 0} onChange={(v) => setEdits((e) => ({ ...e, prices: { ...e.prices, [k]: { price: v, cost: prices[k]?.cost ?? 0 } } }))} />
-                    <NumField label={`${t(`svc.${k}`)} — ${t("svc.cost")}`} unit={`Ar · ${t("tariffs.cost")}`} value={prices[k]?.cost ?? 0} onChange={(v) => setEdits((e) => ({ ...e, prices: { ...e.prices, [k]: { price: prices[k]?.price ?? 0, cost: v } } }))} />
+                    <NumField label={`${t(`svc.${k}`)}, ${t("tariffs.price")}`} unit={`Ar · ${t("tariffs.price")}`} value={prices[k]?.price ?? 0} onChange={(v) => setEdits((e) => ({ ...e, prices: { ...e.prices, [k]: { price: v, cost: prices[k]?.cost ?? 0 } } }))} />
+                    <NumField label={`${t(`svc.${k}`)}, ${t("svc.cost")}`} unit={`Ar · ${t("tariffs.cost")}`} value={prices[k]?.cost ?? 0} onChange={(v) => setEdits((e) => ({ ...e, prices: { ...e.prices, [k]: { price: prices[k]?.price ?? 0, cost: v } } }))} />
                   </div>
                 </li>
               ))}
@@ -121,7 +121,7 @@ export default function TariffsPanel() {
                 {contacts.map((c) => (
                   <li key={c.id} className="flex items-center gap-3">
                     <span className="min-w-0 flex-1 truncate text-sm">{c.name}</span>
-                    <span className="w-28 shrink-0"><NumField label={`${c.name} — ${t("ct.discount")}`} unit="%" value={disc[c.id] ?? 0} onChange={(v) => setEdits((e) => ({ ...e, disc: { ...e.disc, [c.id]: Math.min(100, Math.round(v)) } }))} /></span>
+                    <span className="w-28 shrink-0"><NumField label={`${c.name}, ${t("ct.discount")}`} unit="%" value={disc[c.id] ?? 0} onChange={(v) => setEdits((e) => ({ ...e, disc: { ...e.disc, [c.id]: Math.min(100, Math.round(v)) } }))} /></span>
                   </li>
                 ))}
               </ul>

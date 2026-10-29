@@ -104,7 +104,7 @@ export default function ClientDashboard() {
                       <span className="max-sm:order-last max-sm:basis-full"><StatusBadge status={q.status} label={t(`cstatus.${q.status}`)} /></span>
                     </div>
                     <p className="rounded-lg bg-surface-2 px-3 py-2 text-sm leading-relaxed">{t(`ui.next.${q.status}`)}</p>
-                    {(q.status === "accepted" || q.status === "in_progress" || q.status === "completed") && <Progress value={q.progress} label={`${q.number} — ${t("sites.progress")}`} />}
+                    {(q.status === "accepted" || q.status === "in_progress" || q.status === "completed") && <Progress value={q.progress} label={`${q.number}, ${t("sites.progress")}`} />}
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted">
                         {q.lines.length} {t("editor.lines").toLowerCase()}

@@ -88,7 +88,7 @@ export default function CatalogEditor({ market: m, onChange, t }: { market: Mark
                         {r === "europeen" && <span className="block text-xs text-muted">{t("market.rangeMarkup")}</span>}
                       </span>
                       {r === "europeen" && <NumField label={t("market.rangeMarkup")} unit="%" width="w-24" value={m.rangeMarkup} onChange={(v) => setM({ ...m, rangeMarkup: v })} />}
-                      <Switch checked={on} disabled={on && rangesOn === 1} label={`${t(`range.${r}`)} — ${t(on ? "market.available" : "market.unavailable")}`} onChange={(v) => setOff({ ranges: toggle(m.off?.ranges, r, v) })} />
+                      <Switch checked={on} disabled={on && rangesOn === 1} label={`${t(`range.${r}`)}, ${t(on ? "market.available" : "market.unavailable")}`} onChange={(v) => setOff({ ranges: toggle(m.off?.ranges, r, v) })} />
                     </li>
                   );
                 })}
@@ -104,7 +104,7 @@ export default function CatalogEditor({ market: m, onChange, t }: { market: Mark
                   <div key={group} className="overflow-hidden rounded-2xl border border-line bg-surface">
                     <h3 className="flex items-center justify-between gap-2 border-b border-line bg-surface-2/60 px-4 py-2.5 text-sm font-semibold">
                       {t(label)}
-                      {group !== "laque" && <NumField label={`${t("market.defaultMarkup")} — ${t(label)}`} unit="%" width="w-24" value={m.finishMarkup[group as "anodise" | "fauxbois"]} onChange={(v) => setM({ ...m, finishMarkup: { ...m.finishMarkup, [group]: v } })} />}
+                      {group !== "laque" && <NumField label={`${t("market.defaultMarkup")}, ${t(label)}`} unit="%" width="w-24" value={m.finishMarkup[group as "anodise" | "fauxbois"]} onChange={(v) => setM({ ...m, finishMarkup: { ...m.finishMarkup, [group]: v } })} />}
                     </h3>
                     <ul className="divide-y divide-line">
                       {FINISHES.filter((f) => f.group === group).map((f) => {
@@ -114,10 +114,10 @@ export default function CatalogEditor({ market: m, onChange, t }: { market: Mark
                             <FinishSwatch id={f.id} size={24} />
                             <span className="min-w-0 flex-1 text-sm">{t(f.label)}</span>
                             <span className="relative block w-24">
-                              <input type="number" aria-label={`${t(f.label)} — ${t("market.markupPct")}`} placeholder={String(groupMarkup(m, f.id))} disabled={!on} title={`${t("market.markupPct")} : ${finishMarkup(m, f.id)} %`} className="input !min-h-9 !pr-7 text-right text-sm tabular-nums" value={m.finishPct?.[f.id] ?? ""} onChange={(e) => setPct(f.id, e.target.value)} />
+                              <input type="number" aria-label={`${t(f.label)}, ${t("market.markupPct")}`} placeholder={String(groupMarkup(m, f.id))} disabled={!on} title={`${t("market.markupPct")} : ${finishMarkup(m, f.id)} %`} className="input !min-h-9 !pr-7 text-right text-sm tabular-nums" value={m.finishPct?.[f.id] ?? ""} onChange={(e) => setPct(f.id, e.target.value)} />
                               <span aria-hidden className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted">%</span>
                             </span>
-                            <Switch checked={on} disabled={on && colorsOn === 1} label={`${t(f.label)} — ${t(on ? "market.available" : "market.unavailable")}`} onChange={(v) => setOff({ finishes: toggle(m.off?.finishes, f.id, v) })} />
+                            <Switch checked={on} disabled={on && colorsOn === 1} label={`${t(f.label)}, ${t(on ? "market.available" : "market.unavailable")}`} onChange={(v) => setOff({ finishes: toggle(m.off?.finishes, f.id, v) })} />
                           </li>
                         );
                       })}

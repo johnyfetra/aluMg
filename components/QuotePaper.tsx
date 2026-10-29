@@ -35,7 +35,7 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
   ) : null;
   const identity = (withName: boolean) => (
     <div className="min-w-0 space-y-0.5">
-      {withName && <p className="text-xl font-bold leading-tight">{s.company || "—"}</p>}
+      {withName && <p className="text-xl font-bold leading-tight">{s.company || "-"}</p>}
       {s.address && <p className={small}>{s.address}</p>}
       {(s.phone || s.email) && <p className={small}>{[s.phone, s.email].filter(Boolean).join("  ·  ")}</p>}
       {s.website && <p className={small}>{s.website}</p>}
@@ -63,7 +63,7 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
               // eslint-disable-next-line @next/next/no-img-element
               <img src={s.logo} alt="" className="h-14 max-w-28 rounded bg-white/95 object-contain p-1" />
             )}
-            <p className="text-2xl font-bold leading-tight">{s.company || "—"}</p>
+            <p className="text-2xl font-bold leading-tight">{s.company || "-"}</p>
           </div>
           <p className="text-2xl font-bold uppercase tracking-wide">{t("pdf.quote")}</p>
         </div>
@@ -105,7 +105,7 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
         <section className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-lg bg-slate-50 p-4">
             <p className={label} style={{ color: accent }}>{t("pdf.client")}</p>
-            <p className="mt-1 text-base font-bold">{q.client.name || "—"}</p>
+            <p className="mt-1 text-base font-bold">{q.client.name || "-"}</p>
             {q.client.phone && <p className={small}>{q.client.phone}</p>}
             {q.client.address && <p className={small}>{q.client.address}</p>}
           </div>

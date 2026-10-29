@@ -97,7 +97,7 @@ function QuoteView({ quote, base, settings, market, specific, catalog, t }: { qu
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">
-          {t("needsPage.title")} — {quote.number}
+          {t("needsPage.title")} · {quote.number}
         </h1>
         <Link href="/fournisseurs" className="btn-secondary">
           <Settings2 size={16} aria-hidden />
@@ -347,7 +347,7 @@ function LineView({ quote, idx, plan, t }: { quote: Quote; idx: number; plan: Re
 
       <div>
         <h1 className="text-2xl font-bold">
-          {t("editor.line")} {n} — {cap(lineTitle(l, t))}
+          {t("editor.line")} {n} · {cap(lineTitle(l, t))}
         </h1>
         <p className="text-muted">
           {quote.number} · {l.width} × {l.height} mm · ×{l.qty}

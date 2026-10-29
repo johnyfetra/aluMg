@@ -59,7 +59,7 @@ export function ProfilesEditor({ market, onChange, t }: { market: Market; onChan
                   <span className="text-xs text-muted">{t("cat.notSold")}</span>
                 )}
               </span>
-              <Switch checked={sold} label={`${t(k)} — ${t("cat.sold")}`} onChange={(v) => setSold(k, v)} />
+              <Switch checked={sold} label={`${t(k)}, ${t("cat.sold")}`} onChange={(v) => setSold(k, v)} />
             </div>
 
             {isOpen && (
@@ -75,14 +75,14 @@ export function ProfilesEditor({ market, onChange, t }: { market: Market; onChan
                   const isBest = !o.off && o.length > 0 && perM(o) === best && usable.length > 1;
                   return (
                     <div key={i} className={`grid grid-cols-2 items-center gap-3 rounded-xl border border-line bg-surface p-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8rem_4.5rem_2.5rem] sm:border-0 sm:bg-transparent sm:p-0 ${o.off ? "opacity-60" : ""}`}>
-                      <NumField label={`${t(k)} — ${t("cat.bar.length")}`} unit="mm" value={o.length} onChange={(v) => setOffers(k, (l) => l.map((x, j) => (j === i ? { ...x, length: v } : x)))} />
-                      <NumField label={`${t(k)} — ${t("cat.bar.price")}`} unit="Ar" value={o.price} onChange={(v) => setOffers(k, (l) => l.map((x, j) => (j === i ? { ...x, price: v } : x)))} />
+                      <NumField label={`${t(k)}, ${t("cat.bar.length")}`} unit="mm" value={o.length} onChange={(v) => setOffers(k, (l) => l.map((x, j) => (j === i ? { ...x, length: v } : x)))} />
+                      <NumField label={`${t(k)}, ${t("cat.bar.price")}`} unit="Ar" value={o.price} onChange={(v) => setOffers(k, (l) => l.map((x, j) => (j === i ? { ...x, price: v } : x)))} />
                       <span className="flex flex-col items-start gap-0.5 text-sm tabular-nums">
                         <span>{fmt(perM(o))} <span className="text-xs text-muted">Ar/m</span></span>
                         {isBest && <span className="rounded-full bg-good/15 px-2 py-0.5 text-[11px] font-semibold text-ok">{t("cat.bar.best")}</span>}
                       </span>
                       <span className="flex justify-center">
-                        <Switch checked={!o.off} label={`${o.length} mm — ${t("cat.bar.stock")}`} onChange={(v) => setOffers(k, (l) => l.map((x, j) => (j === i ? { ...x, off: v ? undefined : true } : x)))} />
+                        <Switch checked={!o.off} label={`${o.length} mm, ${t("cat.bar.stock")}`} onChange={(v) => setOffers(k, (l) => l.map((x, j) => (j === i ? { ...x, off: v ? undefined : true } : x)))} />
                       </span>
                       <button type="button" className="btn-danger !min-h-10 !px-2.5" aria-label={t("cat.bar.remove")} title={t("cat.bar.remove")} onClick={() => setOffers(k, (l) => l.filter((_, j) => j !== i))}>
                         <Trash2 size={15} aria-hidden />
@@ -121,11 +121,11 @@ export function AccessoriesEditor({ market, onChange, t }: { market: Market; onC
     <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
       {ACCESSORIES.map((a) => (
         <PriceRow key={a.key} title={t(a.key)} hint={t(`${a.key}.use` as "acc.handle.use")}>
-          <NumField label={`${t(a.key)} — ${t("cat.price")}`} unit={a.unit === "ml" ? "Ar/m" : "Ar"} value={market.accessories?.[a.key] ?? a.def} onChange={(v) => onChange({ ...market, accessories: { ...market.accessories, [a.key]: v } })} />
+          <NumField label={`${t(a.key)}, ${t("cat.price")}`} unit={a.unit === "ml" ? "Ar/m" : "Ar"} value={market.accessories?.[a.key] ?? a.def} onChange={(v) => onChange({ ...market, accessories: { ...market.accessories, [a.key]: v } })} />
         </PriceRow>
       ))}
       <PriceRow title={t("cat.panel")} hint={t("cat.panel.hint")}>
-        <NumField label={`${t("cat.panel")} — ${t("cat.price")}`} unit="Ar/m²" value={market.panel ?? DEFAULT_MARKET.panel ?? 0} onChange={(v) => onChange({ ...market, panel: v })} />
+        <NumField label={`${t("cat.panel")}, ${t("cat.price")}`} unit="Ar/m²" value={market.panel ?? DEFAULT_MARKET.panel ?? 0} onChange={(v) => onChange({ ...market, panel: v })} />
       </PriceRow>
       <PriceRow title={t("cat.glassWaste")} hint={t("cat.glassWaste.hint")}>
         <NumField label={t("cat.glassWaste")} unit="%" value={market.glassWaste ?? DEFAULT_MARKET.glassWaste ?? 0} onChange={(v) => onChange({ ...market, glassWaste: Math.min(100, v) })} />
@@ -139,7 +139,7 @@ export function GlassEditor({ market, onChange, t }: { market: Market; onChange:
     <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
       {GLASSES.map((g) => (
         <PriceRow key={g.id} title={t(g.label)}>
-          <NumField label={`${t(g.label)} — ${t("cat.price")}`} unit="Ar/m²" value={market.glass?.[g.id] ?? GLASS_PRICE_DEFAULTS[g.id] ?? 0} onChange={(v) => onChange({ ...market, glass: { ...market.glass, [g.id]: v } })} />
+          <NumField label={`${t(g.label)}, ${t("cat.price")}`} unit="Ar/m²" value={market.glass?.[g.id] ?? GLASS_PRICE_DEFAULTS[g.id] ?? 0} onChange={(v) => onChange({ ...market, glass: { ...market.glass, [g.id]: v } })} />
         </PriceRow>
       ))}
     </ul>

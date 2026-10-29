@@ -226,7 +226,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     try {
       await request("POST", `/api/quotes/${saved.id}/actions`, { type, ...(note.trim() ? { message: note.trim() } : {}) });
       await mutate("/api/quotes");
-      toast.success(type === "decline" ? t("toast.declined") : q.status === "rejected" ? t("toast.resent") : t("toast.sent"), `${saved.number} · ${saved.client.name} — ${t(`toast.text.${type}`)}`);
+      toast.success(type === "decline" ? t("toast.declined") : q.status === "rejected" ? t("toast.resent") : t("toast.sent"), `${saved.number} · ${saved.client.name} · ${t(`toast.text.${type}`)}`);
       router.push("/devis");
     } catch (e) {
       setMsg({ ok: false, text: e instanceof ApiError && e.code === "incomplete" ? t("editor.incompletePrices") : e instanceof ApiError && e.code === "no_client_account" ? t("editor.noClientAccount") : t("common.error") });
@@ -311,7 +311,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               <ul className="list-disc space-y-0.5 pl-5 text-[13px]">
                 {q.request.intake.checks.map((c) => {
                   const idx = q.lines.findIndex((l) => l.id === c.lineId);
-                  return idx < 0 ? null : <li key={c.lineId}><strong>{lineMarks(q.lines)[idx]}</strong> — {c.keys.map((k) => t(`intake.as.${k as "size"}`)).join(", ")}</li>;
+                  return idx < 0 ? null : <li key={c.lineId}><strong>{lineMarks(q.lines)[idx]}</strong> · {c.keys.map((k) => t(`intake.as.${k as "size"}`)).join(", ")}</li>;
                 })}
               </ul>
               {q.request.intake.unsupported.length > 0 && <p className="text-[13px]">{t("intake.unsupported")} : {q.request.intake.unsupported.join(", ")}.</p>}

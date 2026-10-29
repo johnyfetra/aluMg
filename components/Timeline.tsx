@@ -48,7 +48,7 @@ export default function Timeline({ quoteId, canWrite = true, messages = true }: 
                 <p className="text-sm">
                   <span className="font-semibold">{t(e.kind === "revised" ? (e.data.from === "accepted" ? "tl.revisedReopen" : e.data.from === "in_progress" ? "tl.revisedAmend" : "tl.revised") : (`tl.${e.kind}` as "tl.created"))}</span>
                   <span className="text-muted">
-                    {extra} — {e.actor} · {fmt(e.at)}
+                    {extra} · {e.actor} · {fmt(e.at)}
                   </span>
                 </p>
                 {e.message && <p className="mt-1 whitespace-pre-line rounded-lg bg-surface-2 px-3 py-2 text-sm">{e.message}</p>}

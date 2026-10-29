@@ -1284,7 +1284,7 @@ export const fr = {
   "editor.reconfirmed": "Devis modifié : le client est prévenu et doit le valider à nouveau.",
   "editor.resend": "Renvoyer au client",
   "tl.revised": "Devis modifié",
-  "tl.revisedReopen": "Devis modifié après acceptation — nouvelle validation requise",
+  "tl.revisedReopen": "Devis modifié après acceptation · nouvelle validation requise",
   "tl.revisedAmend": "Avenant pendant le chantier",
   "cl.upd.sent": "Ce devis a été mis à jour par votre professionnel : relisez-le, puis acceptez-le, demandez une modification ou refusez-le.",
   "cl.upd.in_progress": "Le devis a été modifié pendant le chantier (avenant). Relisez les ouvrages et écrivez à votre professionnel pour toute question.",

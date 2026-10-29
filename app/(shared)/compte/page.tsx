@@ -71,7 +71,7 @@ export default function AccountPage() {
           <input id="ph" name="phone" type="tel" required pattern="\+?[0-9][0-9 ().\-]{5,22}" defaultValue={me.phone} className="input" />
         </Field>
         <Field htmlFor="e" label={t("account.email")}>
-          <input id="e" value={me.email || "—"} readOnly className="input opacity-70" />
+          <input id="e" value={me.email || "-"} readOnly className="input opacity-70" />
         </Field>
         <h2 className="pt-2 text-lg font-semibold">{t("account.password")}</h2>
         <Field htmlFor="cp" label={t("account.current")}>

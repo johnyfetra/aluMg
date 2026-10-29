@@ -97,7 +97,7 @@ export default function Budget({ quote, plan, settings, t }: { quote: Quote; pla
                     <FinishSwatch id={g.finish as FinishId} size={16} className="mr-2 align-middle" />
                     {t(g.profile)} <span className="text-xs text-muted">{t(`range.${g.range as "europeen" | "asiatique"}`)} · {t(`finish.${g.finish as "blanc"}`)}</span>
                   </td>
-                  <td className="px-2 py-2.5 tabular-nums">{g.noOffer ? "—" : g.purchase.map((p) => `${p.count} × ${meters(p.length)}`).join(" + ")}</td>
+                  <td className="px-2 py-2.5 tabular-nums">{g.noOffer ? "-" : g.purchase.map((p) => `${p.count} × ${meters(p.length)}`).join(" + ")}</td>
                   <td className="px-2 py-2.5 text-right tabular-nums">{meters(g.usedLen)}</td>
                   <td className={`px-2 py-2.5 text-right tabular-nums ${g.wastePct > 40 ? "text-warn" : ""}`}>{g.wastePct} %</td>
                   <td className="px-2 py-2.5 text-right font-semibold tabular-nums">{fmt(g.cost)} {cur}</td>

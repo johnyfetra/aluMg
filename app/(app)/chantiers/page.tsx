@@ -71,7 +71,7 @@ function SiteCard({ q }: { q: Quote }) {
             <Link href={`/devis/${q.id}`} className="text-primary hover:underline">
               {q.number}
             </Link>{" "}
-            — {q.client.name || t("quotes.noClient")}
+            · {q.client.name || t("quotes.noClient")}
           </h2>
           <p className="text-sm text-muted">{[q.project, q.client.address].filter(Boolean).join(" · ")}</p>
         </div>
@@ -83,7 +83,7 @@ function SiteCard({ q }: { q: Quote }) {
         </div>
       </div>
 
-      <Progress value={q.progress ?? 0} label={`${q.number} — ${t("sites.progress")}`} />
+      <Progress value={q.progress ?? 0} label={`${q.number}, ${t("sites.progress")}`} />
 
       <form onSubmit={update} className="space-y-3 rounded-xl bg-surface-2 p-4">
         <label className="flex items-center gap-3 text-sm font-medium">

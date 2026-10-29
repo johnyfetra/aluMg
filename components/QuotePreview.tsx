@@ -54,7 +54,7 @@ function Document({ q, s, t, locale }: { q: Quote; s: Settings; t: T; locale: ke
             <ArrowLeft size={16} aria-hidden />
             {t("common.back")}
           </Link>
-          <h1 className="text-xl font-bold">{t("preview.title")} — {q.number}</h1>
+          <h1 className="text-xl font-bold">{t("preview.title")} · {q.number}</h1>
           <StatusBadge status={q.status} label={t(`status.${q.status}`)} />
         </div>
         <div className="flex flex-wrap gap-2">

@@ -11,7 +11,7 @@ export default function QuoteStatusBar({ quote, total, side }: { quote: Pick<Quo
   const label = side === "client" ? t(`cstatus.${quote.status}`) : t(`status.${quote.status}`);
   const building = quote.status === "accepted" || quote.status === "in_progress" || quote.status === "completed";
   return (
-    <div role="status" aria-label={`${quote.number} — ${label}`} className="sticky top-16 z-10 -mx-4 flex items-center gap-x-3 gap-y-1 border-b border-line bg-surface/95 px-4 py-2 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-4">
+    <div role="status" aria-label={`${quote.number}, ${label}`} className="sticky top-16 z-10 -mx-4 flex items-center gap-x-3 gap-y-1 border-b border-line bg-surface/95 px-4 py-2 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-4">
       <span className="whitespace-nowrap text-sm font-bold">{quote.number}</span>
       <StatusBadge status={quote.status} label={label} />
       {(quote.rev ?? 0) > 0 && <span className="hidden rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold text-muted sm:inline">{t("editor.revision")} {quote.rev}</span>}

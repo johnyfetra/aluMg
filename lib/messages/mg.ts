@@ -1286,7 +1286,7 @@ export const mg: Messages = {
   "editor.reconfirmed": "Voaova ny tolotra: ampahafantarina ny mpanjifa ary tsy maintsy ekeny indray.",
   "editor.resend": "Alefaso indray amin'ny mpanjifa",
   "tl.revised": "Navaozina ny tolotra",
-  "tl.revisedReopen": "Navaozina taorian'ny fanekena — ilaina ny fanekena vaovao",
+  "tl.revisedReopen": "Navaozina taorian'ny fanekena · ilaina ny fanekena vaovao",
   "tl.revisedAmend": "Fanavaozana mandritra ny asa",
   "cl.upd.sent": "Nohavaozin'ny mpiasanao ity tolotra ity: vakio indray, avy eo ekeo, angataho ovaina na lavo.",
   "cl.upd.in_progress": "Novaina mandritra ny asa ny tolotra. Vakio indray ary soraty ny mpiasanao raha misy fanontaniana.",
