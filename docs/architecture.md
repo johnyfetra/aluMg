@@ -178,3 +178,9 @@ Lien d'évitement, un `h1` par page, champs avec `label`, cibles tactiles de 44 
 - `Quote.lostReason` : posé par le serveur, motif de refus du client (`LOSS_REASONS`) ou `declined` (demande écartée par le menuisier, exclue du taux d'acceptation et des devis perdus).
 - `calibration(settings)` signale les prix d'exemple et les prix fournisseurs non datés ou de plus de 90 jours.
 - Le carnet de clients reste actif en MVP (la liste « masqués » plus haut ne le concerne pas).
+
+## Données de test locales
+
+- `npm run dev:local` : serveur sur la base embarquée `.data/pglite` (port 3200). Il vide `DATABASE_URL` / `POSTGRES_URL` : `npm run dev` lit `.env.local` et vise donc Supabase.
+- `npm run seed:local` : démarre ce serveur, crée les comptes (`seed-demo.mjs`), 18 devis réalistes du menuisier `test@alumada.mg` avec leurs clients et conversations (`seed-quotes.mts`, tout par l'API), puis étale les dates (`backdate-demo.ts`, écriture directe, serveur arrêté). Pour repartir de zéro : déplacer `.data/pglite` avant de relancer.
+- Mot de passe de tous les comptes : `scripts/demo-data.mjs` ; clients `hery@`, `noro@`, `toky@`, `lalao@client.mg`.

@@ -1,51 +1,19 @@
 /**
  * Données de démonstration réalistes : 12 menuisiers (logo, photo de profil, réalisations, avis), 4 clients, des devis à tous les stades.
- * Nécessite `npm run dev`, les logos/portraits (npm run demo:assets) et les photos (npm run demo:photos). Idempotent : peut être relancé.
+ * Nécessite `npm run dev:local` (base locale, jamais Supabase), les logos/portraits (npm run demo:assets) et les photos (npm run demo:photos). Idempotent : peut être relancé.
  *   npm run seed:demo
  *   ADMIN_EMAIL=admin@alumg.local ADMIN_PASSWORD=… npm run seed:demo     (pour accorder le badge « Vérifié »)
- * Tous les comptes ont le mot de passe « motdepasse123 ».
+ * Tous les comptes ont le mot de passe de scripts/demo-data.mjs. Les devis du compte test@alumada.mg viennent de scripts/seed-quotes.mts.
  */
 import { existsSync, readFileSync } from "node:fs";
 import sharp from "sharp";
-import { CLIENTS, LEGACY_PASSWORD, MENUISIERS, PASSWORD } from "./demo-data.mjs";
+import { CLIENTS, MENUISIERS, PASSWORD } from "./demo-data.mjs";
+import { Api, account } from "./demo-api.mjs";
 
-const BASE = process.env.E2E_BASE_URL ?? "http://localhost:3000";
-// garde-fou : ce script crée des comptes à mot de passe connu, il ne doit viser qu'un serveur local
-if (!/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(BASE)) throw new Error(`seed:demo refuse de viser ${BASE} (serveur local uniquement)`);
-class Api {
-  cookie = "";
-  async call(method, path, body) {
-    const res = await fetch(BASE + path, { method, redirect: "manual", headers: { ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...(this.cookie ? { Cookie: this.cookie } : {}) }, body: body !== undefined ? JSON.stringify(body) : undefined });
-    const sc = res.headers.getSetCookie().find((c) => c.startsWith("alumg_session="));
-    if (sc) this.cookie = /Max-Age=0|1970/i.test(sc) ? "" : sc.split(";")[0];
-    return { status: res.status, body: (res.headers.get("content-type") ?? "").includes("json") ? await res.json() : null };
-  }
-  async must(method, path, body) {
-    const r = await this.call(method, path, body);
-    if (r.status >= 300) throw new Error(`${method} ${path} → ${r.status} ${JSON.stringify(r.body).slice(0, 200)}`);
-    return r.body;
-  }
-}
 const dataUrl = (buf, mime) => `data:${mime};base64,${buf.toString("base64")}`;
 const png = async (file, size) => dataUrl(await sharp(readFileSync(file)).resize(size, size).png({ compressionLevel: 9 }).toBuffer(), "image/png");
 const jpg = async (file, size) => dataUrl(await sharp(readFileSync(file)).resize(size, size).flatten({ background: "#fff" }).jpeg({ quality: 85 }).toBuffer(), "image/jpeg");
 const file = (f) => dataUrl(readFileSync(f), "image/jpeg");
-
-// Création (ou reconnexion) d'un compte de démonstration. L'inscription exige maintenant un compte vérifié : on passe par la vraie vérification,
-// l'envoi « dev » du serveur renvoyant le code (serveur de développement, idéalement lancé avec RATE_LIMIT=off).
-async function account(a, role, name, email, phone) {
-  const s = await a.call("POST", "/api/auth/signup", { role, name, email, phone, password: PASSWORD });
-  if (s.status === 409) {
-    let l = await a.call("POST", "/api/auth/login", { identifier: email, password: PASSWORD });
-    if (l.status === 401) l = await a.call("POST", "/api/auth/login", { identifier: email, password: LEGACY_PASSWORD });
-    if (l.status >= 300) throw new Error(`login ${email}: ${l.status} (compte existant avec un autre mot de passe ?)`);
-    return;
-  }
-  if (s.status >= 300) throw new Error(`signup ${email}: ${s.status} ${JSON.stringify(s.body)}`);
-  const sent = await a.must("POST", "/api/auth/verify/send", { channel: "sms", lang: "fr" });
-  if (!sent.devCode) throw new Error("pas de code « dev » : lancez le serveur de développement (npm run dev)");
-  await a.must("POST", "/api/auth/verify/confirm", { code: sent.devCode });
-}
 
 // ---------- menuisiers ----------
 const slugs = {};
@@ -102,8 +70,6 @@ const SCENARIOS = [
   ["hery@client.mg", "sud@alumada.mg", 4, "done", 4], ["noro@client.mg", "sud@alumada.mg", 0, "done", 5],
   ["toky@client.mg", "mahajanga@demo.mg", 3, "done", 5], ["lalao@client.mg", "mahajanga@demo.mg", 0, "done", 4], ["noro@client.mg", "mahajanga@demo.mg", 1, "done", 5],
   ["hery@client.mg", "nosybe@demo.mg", 3, "done", 4], ["lalao@client.mg", "fianar@demo.mg", 1, "done", 5],
-  ["noro@client.mg", "test@alumada.mg", 1, "done", 5], ["toky@client.mg", "test@alumada.mg", 0, "done", 4],
-  ["lalao@client.mg", "test@alumada.mg", 2, "running", 60], ["hery@client.mg", "test@alumada.mg", 3, "requested", 0], ["toky@client.mg", "test@alumada.mg", 4, "sent", 0],
 ];
 let created = 0;
 for (const [i, [ce, me, set, kind, extra]] of SCENARIOS.entries()) {
@@ -131,8 +97,6 @@ for (const [i, [ce, me, set, kind, extra]] of SCENARIOS.entries()) {
 // ---------- conversations (idempotent : seulement si le fil est vide) ----------
 const CHATS = [
   ["noro@client.mg", "tana@demo.mg", [["c", "Bonjour, avez-vous des disponibilités en novembre pour une pose de fenêtres ?"], ["m", "Bonjour ! Oui, nous pouvons passer faire le métré la semaine prochaine. Quel jour vous arrange ?"], ["c", "Mardi matin serait parfait."], ["m", "Entendu, mardi à 9 h. À bientôt !"]], 0],
-  ["hery@client.mg", "test@alumada.mg", [["c", "Bonjour, ma demande de devis est-elle bien arrivée ?"], ["m", "Bonjour Hery, oui je prépare le chiffrage et vous l'envoie demain."], ["c", "Merci, je compte sur vous."]], 1],
-  ["toky@client.mg", "test@alumada.mg", [["m", "Bonjour, votre devis est envoyé. Dites-moi si vous souhaitez ajuster la couleur."], ["c", "Pourriez-vous faire le volet en bronze plutôt qu'anthracite ?"]], 1],
   ["lalao@client.mg", "mahajanga@demo.mg", [["c", "Bonjour, livrez-vous aussi hors de Mahajanga ?"], ["m", "Oui, jusqu'à 200 km, avec un supplément de transport."]], 0],
 ];
 let chats = 0;
