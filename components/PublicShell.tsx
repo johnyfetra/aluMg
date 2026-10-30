@@ -11,7 +11,7 @@ import { marketing } from "@/lib/marketing";
 
 function PublicNavigation() {
   const { locale, t } = useI18n(); const c = marketing[locale]; const path = usePathname();
-  return <nav aria-label={t("nav.main")} className="flex items-center gap-1 text-sm sm:gap-2">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className="whitespace-nowrap rounded-lg px-3 py-2.5 text-muted transition-colors hover:bg-surface-2 hover:text-ink aria-[current=page]:bg-surface-2 aria-[current=page]:text-primary">{label}</Link>)}</nav>;
+  return <nav aria-label={t("nav.main")} className="flex items-center gap-1 text-sm sm:gap-2">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className="relative whitespace-nowrap rounded-md px-3 py-2.5 focus-visible:outline-offset-2 text-muted transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-muted/50 after:transition-transform after:duration-300 hover:text-ink hover:after:scale-x-100 aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:after:scale-x-100 aria-[current=page]:after:bg-accent">{label}</Link>)}</nav>;
 }
 
 export default function PublicShell({ children }: { children: ReactNode }) {

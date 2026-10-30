@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Figtree, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { ConfirmProvider } from "@/components/ConfirmDialog";
 import { ToastProvider } from "@/components/Toast";
 import { I18nProvider } from "@/lib/i18n";
 
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geist = Figtree({ variable: "--font-geist-sans", subsets: ["latin", "latin-ext"], display: "swap" });
+const display = Instrument_Serif({ variable: "--font-display", subsets: ["latin", "latin-ext"], weight: "400", style: ["normal", "italic"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "AluMg, devis menuiserie aluminium",
@@ -24,7 +25,7 @@ const themeInit = `try{var t=localStorage.getItem('alumg.theme');if(!t)t=matchMe
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={`${geist.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="fr" className={`${geist.variable} ${display.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>
