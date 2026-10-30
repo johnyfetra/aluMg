@@ -15,10 +15,10 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // MVP : l'accueil public et les pages hors devis renvoient vers le tableau de bord (la connexion si pas de session, via le contrôle ci-dessous)
-  if (MVP && (pathname === "/" || HIDDEN.some((h) => pathname === h || pathname.startsWith(`${h}/`)))) return NextResponse.redirect(new URL("/tableau-de-bord", req.url));
+  // Seul le suivi avancé de chantier reste soumis au mode MVP.
+  if (MVP && HIDDEN.some((h) => pathname === h || pathname.startsWith(`${h}/`))) return NextResponse.redirect(new URL("/tableau-de-bord", req.url));
   // pages ouvertes à tous : accueil, annuaire et profils des menuisiers, connexion, inscription
-  const open = pathname === "/" || pathname === "/connexion" || pathname === "/inscription" || pathname === "/menuisiers" || pathname.startsWith("/menuisiers/") || pathname === "/demo-render"; // /demo-render : page de développement (404 en production)
+  const open = pathname === "/" || pathname === "/application" || pathname === "/realisations-menuiserie" || pathname === "/connexion" || pathname === "/inscription" || pathname === "/menuisiers" || pathname.startsWith("/menuisiers/") || pathname === "/demo-render"; // /demo-render : page de développement (404 en production)
   if (!open && !req.cookies.has("alumg_session")) {
     const url = new URL("/connexion", req.url);
     url.searchParams.set("next", pathname + req.nextUrl.search);

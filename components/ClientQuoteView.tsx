@@ -17,7 +17,6 @@ import { serviceTotal } from "@/lib/totals";
 import { ApiError, request, useClientQuote } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import { REPORT_REASONS, lineMarks } from "@/lib/model";
-import { MVP } from "@/lib/mvp";
 import { totals } from "@/lib/totals";
 import Select from "./Select";
 
@@ -127,7 +126,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
               {new Date(q.date).toLocaleDateString(DATE_LOCALE[locale])}
             </p>
             <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              {m.slug && !MVP ? (
+              {m.slug ? (
                 <Link href={`/menuisiers/${m.slug}`} className="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
                   {m.name}
                   {m.verified && <BadgeCheck size={14} aria-label={t("dir.verified")} />}

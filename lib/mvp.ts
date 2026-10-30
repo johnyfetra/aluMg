@@ -1,7 +1,5 @@
-// MVP : l'app se limite au devis (menuisier ↔ client : décision, commentaires par ouvrage, messagerie, notifications).
-// NEXT_PUBLIC_MVP=0 réaffiche aussi l'annuaire, les profils publics, les réalisations, et les chantiers (le carnet de clients reste actif).
+// Le mode MVP ne masque que le suivi de chantier avancé.
+// La vitrine, l’annuaire et la publication des réalisations restent disponibles.
 export const MVP = process.env.NEXT_PUBLIC_MVP !== "0";
-// Pages masquées en MVP (préfixes) ; le proxy les redirige vers le tableau de bord.
-export const HIDDEN = ["/menuisiers", "/chantiers", "/realisations", "/profil-public"];
-// Dans le menu du client (les mêmes pages, côté client)
-export const HIDDEN_CLIENT = ["/menuisiers"];
+export const HIDDEN = ["/chantiers"];
+export const HIDDEN_CLIENT: string[] = [];

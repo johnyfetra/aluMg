@@ -314,3 +314,9 @@ aside :focus-visible {
   .auth-form { width: 100%; }
   .skeleton { @apply animate-pulse rounded-lg bg-surface-2; }
 }
+
+/* Vitrine : une grille éditoriale commune, lisible du téléphone au grand écran. */
+@layer components {
+  .public-container { @apply mx-auto w-full max-w-[86rem] px-5 sm:px-8 lg:px-12; }
+}
+#h-port, #h-about, #h-rev { scroll-margin-top: 10rem; }

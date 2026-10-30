@@ -204,7 +204,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         className={`fixed inset-y-0 left-0 z-40 flex w-[min(20rem,86vw)] flex-col overflow-y-auto overscroll-contain rounded-r-3xl bg-(--side-bg) pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 shadow-2xl transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 lg:rounded-none lg:pb-6 lg:shadow-none ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="mb-8 flex items-start justify-between px-6">
-          <Link href={nav.home} onClick={() => setOpen(false)} className="flex items-center gap-3">
+          <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-3">
             <Brand light compact />
             <span>
               <span className="block text-xl font-bold leading-tight tracking-tight text-white">AluMg</span>
