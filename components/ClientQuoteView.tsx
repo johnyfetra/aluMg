@@ -11,7 +11,6 @@ import { useConfirm } from "./ConfirmDialog";
 import { useToast } from "./Toast";
 import ClientLineCard from "./ClientLineCard";
 import QuoteDiscussion from "./QuoteDiscussion";
-import Timeline from "./Timeline";
 import { Avatar, Field, Progress, StarInput, StatusBadge } from "./ui";
 import { fmt } from "@/lib/calc";
 import { serviceTotal } from "@/lib/totals";
@@ -253,7 +252,6 @@ export default function ClientQuoteView({ id }: { id: string }) {
           )}
 
           <QuoteDiscussion quoteId={id} me="client" />
-          <Timeline quoteId={id} canWrite={false} messages={false} />
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-20">

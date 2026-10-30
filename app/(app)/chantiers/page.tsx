@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { mutate } from "swr";
-import Timeline from "@/components/Timeline";
+import QuoteDiscussion from "@/components/QuoteDiscussion";
 import { Progress, StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
 import { ApiError, request, useQuotes } from "@/lib/client";
@@ -118,7 +118,7 @@ function SiteCard({ q }: { q: Quote }) {
         <details>
           <summary className="cursor-pointer text-sm font-medium text-primary">{t("tl.title")}</summary>
           <div className="mt-3">
-            <Timeline quoteId={q.id} />
+            <QuoteDiscussion quoteId={q.id} me="menuisier" />
           </div>
         </details>
       )}

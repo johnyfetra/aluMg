@@ -1479,7 +1479,7 @@ export const fr = {
   "help.room.text": "Où l'ouvrage sera posé (salon, chambre 2, façade sud…). Cela aide à s'y retrouver sur le devis et sur le chantier.",
   "help.leafCfg.title": "Repères des vantaux",
   "help.leafCfg.text": "V1, V2… sont les vantaux mobiles (de gauche à droite) ; F1, F2… sont les parties fixes. La flèche indique dans quel sens ça glisse ou ça s'ouvre.",
-  "disc.title": "Discussion sur ce devis",
+  "disc.title": "Discussion et historique",
   "disc.empty": "Aucun message pour l'instant. Posez une question ou donnez une précision : tout reste ici, avec ce devis.",
   "disc.write": "Écrire sur ce devis…",
   "notif.message": "Nouveau message sur le devis",
@@ -1491,6 +1491,13 @@ export const fr = {
   "toast.requestSentManyText": "Chaque professionnel répond par son devis : vous les retrouvez dans « Mes devis ».",
   "toast.requestPartial": "Envoi partiel",
   "toast.requestPartialText": "envoi(s) ont échoué, les autres sont partis.",
+  "intake.dir": "Ouverture",
+  "intake.dir.left": "à gauche",
+  "intake.dir.right": "à droite",
+  "intake.dir.both": "gauche et droite",
+  "intake.leafFixed": "fixe",
+  "intake.leafMobile": "mobile",
+  "intake.note": "Précision retenue",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

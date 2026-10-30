@@ -1,18 +1,22 @@
 "use client";
-import { MessagesSquare, Send } from "lucide-react";
+import { CheckCheck, CircleDot, FilePlus2, Hammer, ListChecks, MessagesSquare, MessageSquareWarning, Pencil, Send, Star, ThumbsDown, ThumbsUp, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { mutate } from "swr";
 import { useToast } from "./Toast";
 import { request, useEvents } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 
-// Discussion propre à un devis : tout ce que le client et le menuisier s'écrivent à son sujet, avec l'historique, au même endroit que le devis.
+const ICON = { created: FilePlus2, sent: Send, declined: XCircle, accepted: ThumbsUp, rejected: ThumbsDown, change_requested: MessageSquareWarning, progress: Hammer, completed: CheckCheck, reviewed: Star, revised: Pencil, line_review: ListChecks, approve_all: CheckCheck } as const;
+
+// Fil unique d'un devis : les messages du client et du menuisier (bulles) et, dans l'ordre, les étapes du devis (envoi, acceptation, révision, avancement…)
+// en lignes centrées. La discussion EST l'historique : tout ce qui concerne ce devis est au même endroit.
 // (La messagerie générale reste pour le reste ; les remarques précises sur un ouvrage vivent sur l'ouvrage.)
 export default function QuoteDiscussion({ quoteId, me, canWrite = true }: { quoteId: string; me: "client" | "menuisier"; canWrite?: boolean }) {
   const { t, locale } = useI18n();
   const toast = useToast();
   const { data: events = [] } = useEvents(quoteId, true);
-  const list = events.filter((e) => e.kind === "message");
+  const list = events;
+  const messageCount = events.filter((e) => e.kind === "message").length;
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -58,13 +62,31 @@ export default function QuoteDiscussion({ quoteId, me, canWrite = true }: { quot
       <h2 id="h-disc" className="flex items-center gap-2 border-b border-line px-4 py-3 text-lg font-semibold sm:px-6">
         <MessagesSquare size={18} aria-hidden className="text-primary" />
         {t("disc.title")}
-        {list.length > 0 && <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold text-muted">{list.length}</span>}
+        {messageCount > 0 && <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold text-muted">{messageCount}</span>}
       </h2>
-      <div ref={box} role="log" aria-live="polite" aria-label={t("disc.title")} className="max-h-96 min-h-32 space-y-1.5 overflow-y-auto bg-surface-2/40 px-4 py-4 sm:px-6">
+      <div ref={box} role="log" aria-live="polite" aria-label={t("disc.title")} className="max-h-[34rem] min-h-32 space-y-1.5 overflow-y-auto bg-surface-2/40 px-4 py-4 sm:px-6">
         {list.length === 0 && <p className="py-6 text-center text-sm text-muted">{t("disc.empty")}</p>}
         {list.map((m, i) => {
           const mine = m.side === me;
           const newDay = i === 0 || day(list[i - 1].at) !== day(m.at);
+          if (m.kind !== "message") {
+            const Icon = ICON[m.kind as keyof typeof ICON] ?? CircleDot;
+            const extra = m.kind === "progress" ? ` · ${m.data.progress} %` : m.kind === "change_requested" && m.data.discountPercent ? ` · ${t("tl.discount")} ${m.data.discountPercent} %` : m.kind === "reviewed" ? ` · ${m.data.rating}/5` : m.kind === "line_review" ? ` · ${t(m.data.state === "approved" ? "line.approved" : m.data.state === "request" ? "line.requested" : m.data.state === "hold" ? "line.onHold" : "line.withdraw")}` : "";
+            const title = t(m.kind === "revised" ? (m.data.from === "accepted" ? "tl.revisedReopen" : m.data.from === "in_progress" ? "tl.revisedAmend" : "tl.revised") : (`tl.${m.kind}` as "tl.created"));
+            return (
+              <div key={m.id}>
+                {newDay && <p className="my-3 text-center text-xs capitalize text-muted">{day(m.at)}</p>}
+                <div className="my-2 flex flex-col items-center gap-1 text-center">
+                  <p className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs text-muted">
+                    <Icon size={13} aria-hidden className={m.side === "client" ? "text-c3" : "text-primary"} />
+                    <span className="font-semibold text-ink">{title}</span>
+                    <span>{extra} · {m.actor} · {hour(m.at)}</span>
+                  </p>
+                  {m.message && <p className="max-w-[85%] whitespace-pre-line rounded-lg bg-surface px-3 py-1.5 text-xs text-muted">{m.message}</p>}
+                </div>
+              </div>
+            );
+          }
           return (
             <div key={m.id}>
               {newDay && <p className="my-3 text-center text-xs capitalize text-muted">{day(m.at)}</p>}

@@ -243,3 +243,8 @@ Le client peut mettre un ouvrage « en attente » (`lineReviews[id].state = "hol
 - **Infobulles « i »** (`InfoTip`, glossaire `help.*` en trois langues) : à côté des libellés du métier (catégorie, ouverture, vantaux, gamme, couleur, verre, épaisseur, dimensions…), dans l'éditeur, la demande et la fiche client d'un ouvrage. Survol, clavier (Échap ferme) ou toucher ; une seule bulle à la fois ; elle ne change pas la hauteur des lignes.
 - **Discussion du devis** (`QuoteDiscussion`) : les messages `message` du devis, côté client et menuisier, avec historique, rafraîchis toutes les 6 s ; l'autre partie est notifiée. L'historique des étapes (`Timeline`) reste à part.
 - **Envoi à plusieurs professionnels** (`RecipientsPicker`, `MultiSelect`) : jusqu'à 5 ; une demande par professionnel (chacun répond par son devis) ; un échec n'annule pas les autres.
+
+## Fil unique d'un devis, détails de configuration
+
+- **Discussion et historique** (`QuoteDiscussion`) : un seul fil par devis. Les messages sont des bulles ; les étapes (envoi, acceptation, révision, avis par ouvrage, avancement, évaluation) sont des lignes centrées, dans l'ordre. Il remplace l'ancienne chronologie séparée, y compris sur la page des chantiers.
+- **Assistant de demande** : en plus du type, des cotes, de l'ouverture, des vantaux, de la couleur, de la gamme et du verre, il lit le motif du verre, le sens d'ouverture (gauche, droite, les deux), les vantaux fixes et mobiles dans l'ordre écrit (`leafCfg`), les lames et le coffre des volets. Tout détail non compris est gardé tel quel (accents restitués) dans la précision de l'ouvrage (`note`), jamais perdu.

@@ -65,6 +65,13 @@ export default function IntakeAssistant({ text, t, actions, price, onEdit }: { t
                   {it.spec.room && <><span aria-hidden>·</span><span>{it.spec.room}</span></>}
                   {price && <span className="ml-auto font-bold tabular-nums text-ink">{new Intl.NumberFormat("fr-FR").format(price({ ...it, spec: { ...it.spec } }) * qty)} {t("common.currency")}</span>}
                 </p>
+                {(it.spec.direction || it.spec.leafCfg || it.spec.note) && (
+                  <div className="mt-1.5 space-y-1 text-[13px] text-muted">
+                    {it.spec.direction && <p>{t("intake.dir")} : {t(`intake.dir.${it.spec.direction}`)}</p>}
+                    {it.spec.leafCfg && <p>{t("editor.leaves")} : {it.spec.leafCfg.map((m) => t(m === "F" ? "intake.leafFixed" : "intake.leafMobile")).join(" · ")}</p>}
+                    {it.spec.note && <p className="rounded-lg bg-surface-2 px-2.5 py-1.5 text-ink">{t("intake.note")} : {it.spec.note}</p>}
+                  </div>
+                )}
                 {it.assumptions.length > 0 && (
                   <p className="mt-1.5 flex flex-wrap gap-1.5">
                     {it.assumptions.map((k) => <span key={k} className="inline-flex items-center gap-1 rounded-full bg-warn/10 px-2 py-0.5 text-[11px] font-semibold text-warn"><TriangleAlert size={11} aria-hidden />{t(`intake.as.${k}`)}</span>)}

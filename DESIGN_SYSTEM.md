@@ -25,10 +25,8 @@ Ne pas utiliser les couleurs catégorielles des graphiques pour du texte de stat
 
 ## Image d'accès
 
-Fichier : `public/brand/atelier.webp`. Source : génération originale via l'outil intégré Imagegen, le 29 octobre 2026. Il s'agit d'un visuel photoréaliste généré, pas de la photographie documentaire d'un atelier partenaire. Aucun téléchargement de photographie tierce, aucun témoignage ni client implicite. Le fond vert reste visible si l'image est indisponible. L'image décorative ne porte aucune information indispensable.
+Fichier : `public/brand/realisation-aluminium.webp`. Source : outil intégré Imagegen, le 30 octobre 2026. Visuel photoréaliste généré : un artisan ajuste une baie coulissante en aluminium dans un intérieur achevé. Il ne représente pas un chantier client documenté.
 
-Prompt final utilisé (outil intégré, sans CLI) :
+Le cadrage laisse le geste professionnel visible au-dessus du texte. Le fond uni conserve la lisibilité si l'image ne charge pas. L'ancienne image reste disponible dans `public/brand/atelier.webp`.
 
-> Use case: photorealistic-natural. Asset type: portrait editorial photograph for AluMg joinery SaaS login. Contemporary artisanal woodworking workshop, close detail of a beautifully precise oak window frame corner joint on a workbench, warm natural oak grain and brushed dark green metal clamps, softly blurred tall workshop windows behind, natural side daylight, refined quiet craftsmanship, credible construction and realistic materials. Portrait 2:3 framing, subject in middle, calm darker upper and lower areas for UI overlay. No people, no text, no logo, no watermark, no computer office, no illustration. Save the generated asset for use in this project if file output is supported.
-
-Le fichier source généré reste à son emplacement d'origine ; le projet référence uniquement la copie WebP locale.
+Prompt complet et provenance : [realisation-source.md](public/brand/realisation-source.md). Génération par l'outil intégré, sans CLI ; fichier WebP local optimisé pour le site.

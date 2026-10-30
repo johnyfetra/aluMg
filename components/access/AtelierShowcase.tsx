@@ -11,10 +11,10 @@ export default function AtelierShowcase({ variant }: { variant: Variant }) {
     <header className="flex items-center justify-between gap-4 border-b border-line px-5 py-4 lg:hidden"><Brand /><span className="max-w-40 text-right text-xs text-muted">{t("app.tagline")}</span></header>
     <aside className="relative isolate hidden min-h-screen flex-col justify-between overflow-hidden bg-(--hero-to) p-10 text-(--side-fg) lg:flex xl:p-14">
       {/* Un fond uni conserve le contraste si la photographie ne charge pas. */}
-      <div aria-hidden className="absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: "url('/brand/atelier.webp')" }} />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-linear-to-b from-(--hero-from)/85 via-(--hero-from)/20 to-(--hero-from)/95" />
+      <div aria-hidden className="absolute inset-x-0 top-0 -z-20 h-[34rem] bg-cover bg-[position:center_38%]" style={{ backgroundImage: "url('/brand/realisation-aluminium.webp')" }} />
+      <div aria-hidden className="absolute inset-x-0 top-0 -z-10 h-[34rem] bg-linear-to-b from-(--hero-from)/70 via-transparent to-(--hero-to)" />
       <div><Brand light /><p className="mt-3 text-xs tracking-widest text-(--side-fg)">{t("app.tagline")}</p></div>
-      <div className="mt-32 max-w-lg rounded-2xl bg-(--hero-from)/90 p-6 xl:p-8">
+      <div className="mt-80 max-w-lg rounded-2xl bg-(--hero-from)/90 p-6 xl:p-8">
         <p className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-(--side-accent)">{t("ui.signature")}</p>
         <h2 className="text-4xl font-medium leading-[1.15] tracking-tight xl:text-5xl">{t(`auth.hero.${variant}.title` as keyof Messages)}</h2>
         <p className="mt-5 max-w-md text-base leading-relaxed">{t(`auth.hero.${variant}.sub` as keyof Messages)}</p>

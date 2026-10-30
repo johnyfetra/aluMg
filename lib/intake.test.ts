@@ -108,6 +108,20 @@ describe("assistant de demande de devis : comprendre un texte libre", () => {
     expect(g.items[0].assumptions).toContain("finish"); // 2+1 deviné : à confirmer
     expect(analyze("une fenêtre 120x100 marron et blanche").items).toHaveLength(1);
   });
+  it("détails de configuration : sens d'ouverture, vantaux fixes et mobiles, motif, lames", () => {
+    const a = analyze("je veux deux fenetre collissante, ouverture gauche et droite, 1mx1m, un gris et un marron , coulissante vers gauche et droite");
+    expect(a.items.map((i) => [i.spec.finish, i.spec.qty, i.spec.direction, i.spec.width])).toEqual([["anthracite", 1, "both", 1000], ["marron", 1, "both", 1000]]);
+    const b = one("fenetre 150x120 avec un vantail fixe et un coulissant");
+    expect(b.spec).toMatchObject({ leaves: 2, leafCfg: ["F", "L"] }); // un fixe puis un mobile, de gauche à droite
+    expect(toLine(b.spec).leafCfg).toEqual(["F", "L"]);
+    expect(one("une fenetre coulissante 120x100 verre granité double vitrage").spec).toMatchObject({ pattern: "granite", thickness: "4/12/4" });
+    expect(one("volet roulant 150x140 lames de 55 mm coffre encastré avec moustiquaire").spec).toMatchObject({ slat: "55", box: "encastre", net: true });
+    expect(one("rideau métallique 3m x 2,5m perforé").spec).toMatchObject({ shutter: "rideau", slat: "perforee" });
+  });
+  it("un détail non compris reste écrit dans la précision de l'ouvrage", () => {
+    expect(one("2 fenêtres coulissantes 150x120 blanches avec serrure de sécurité trois points").spec.note).toBe("Serrure de sécurité trois points");
+    expect(one("fenêtre coulissante 150x120 blanche").spec.note).toBeUndefined(); // rien d'inconnu : pas de note
+  });
   it("texte sans ouvrage : rien d'inventé, une question", () => {
     const r = analyze("Bonjour, pouvez-vous m'appeler ?");
     expect(r.items).toEqual([]);

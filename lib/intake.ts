@@ -1,5 +1,5 @@
 import { normalize } from "./calc";
-import { type Category, type FinishId, type Line, type Opening, lineSchema } from "./model";
+import { type Category, type FinishId, type LeafMode, type Line, type Opening, lineSchema } from "./model";
 
 // Assistant de demande de devis : comprend une description libre (« 3 fenêtres coulissantes 150x120 anthracite pour les chambres, un volet roulant motorisé… »)
 // et la transforme en ouvrages structurés, avec ce qui a été déduit par défaut et ce qui manque.
@@ -35,7 +35,7 @@ const VOCAB = [
   "deux", "trois", "quatre", "cinq", "sept", "huit", "neuf", "douze", "quinze", "vingt", "pleine", "vitre", "standard",
 ];
 // mots courants proches d'un mot reconnu : jamais « corrigés »
-const KEEP = new Set(["sorte", "forte", "morte", "corte", "norme", "normes", "pour", "mais", "vous", "nous", "dans", "avec", "sans", "taille", "tailles", "meme", "memes", "autre", "autres", "aussi", "comme", "plus", "moins", "veux", "faire", "creer", "refaire", "changer", "chambre", "maison", "mieux", "merci", "bonjour", "salut", "devis", "prix", "cout", "tarif", "coulis", "claire", "claires", "clairs", "doree", "dorer", "porter", "portez", "portail", "portails", "voler", "volee", "double", "doubles", "quatre", "quatres", "huitre", "seule", "seul", "sept", "cinq", "gros", "gras", "bas", "haut", "hauts", "total", "totale", "petit", "petite", "grand", "grande", "moyen", "moyenne", "lourd", "lourde", "large", "larges", "longue", "long", "court", "courte"]);
+const KEEP = new Set(["securite", "securites", "securisee", "sorte", "forte", "morte", "corte", "norme", "normes", "pour", "mais", "vous", "nous", "dans", "avec", "sans", "taille", "tailles", "meme", "memes", "autre", "autres", "aussi", "comme", "plus", "moins", "veux", "faire", "creer", "refaire", "changer", "chambre", "maison", "mieux", "merci", "bonjour", "salut", "devis", "prix", "cout", "tarif", "coulis", "claire", "claires", "clairs", "doree", "dorer", "porter", "portez", "portail", "portails", "voler", "volee", "double", "doubles", "quatre", "quatres", "huitre", "seule", "seul", "sept", "cinq", "gros", "gras", "bas", "haut", "hauts", "total", "totale", "petit", "petite", "grand", "grande", "moyen", "moyenne", "lourd", "lourde", "large", "larges", "longue", "long", "court", "courte"]);
 const VOCAB_SET = new Set(VOCAB);
 
 // Distance d'édition bornée (insertion, suppression, remplacement, échange de deux lettres voisines) ; renvoie max+1 dès que c'est dépassé.
@@ -242,6 +242,34 @@ function fill(head: Spec, raw: string, c: string): IntakeItem {
     else if (/semi[- ]?vitree|moitie vitree|partie vitree|demi[- ]?vitree/.test(c)) spec.infill = "semi";
   }
 
+  // motif décoratif du verre
+  if (/granit/.test(c)) spec.pattern = "granite";
+  else if (/martel/.test(c)) spec.pattern = "martele";
+  else if (/cathedr/.test(c)) spec.pattern = "cathedrale";
+  else if (/cannel/.test(c)) spec.pattern = "cannele";
+
+  // sens d'ouverture : « ouverture gauche et droite », « coulisse vers la droite », « charnières à gauche »
+  if ((cat === "fenetre" || cat === "porte") && /ouvertu|ouvre|coulis|charni|\bsens\b|\bvers\b|battant/.test(c)) {
+    const g = /gauche/.test(c);
+    const d = /droite/.test(c);
+    if (g && d) spec.direction = "both";
+    else if (g) spec.direction = "left";
+    else if (d) spec.direction = "right";
+  }
+  // vantaux fixes et mobiles : « un vantail fixe et un coulissant », « 1 fixe + 2 coulissants » (dans l'ordre écrit, de gauche à droite)
+  if (cat === "fenetre" || cat === "porte") {
+    const modes: LeafMode[] = [];
+    for (const m of c.matchAll(new RegExp(`(?:(${NUM})\\s+)?(?:vantail|vantaux)?\\s*(fixes?|coulissants?|mobiles?|ouvrants?|battants?)`, "g"))) {
+      const n = m[1] ? toNum(m[1]) : 1;
+      const mobile = !/^fixe/.test(m[2]);
+      for (let k = 0; k < Math.min(n, 8); k++) modes.push(mobile ? (modes.length === 0 ? "R" : "L") : "F");
+    }
+    if (modes.includes("F") && modes.some((x) => x !== "F") && modes.length >= 2 && modes.length <= 8 && spec.opening !== "fixe") {
+      spec.leafCfg = modes;
+      spec.leaves = modes.length;
+    }
+  }
+
   // options
   if (cat === "fenetre" || cat === "porte") {
     const extras: Line["extras"] = [];
@@ -258,6 +286,12 @@ function fill(head: Spec, raw: string, c: string): IntakeItem {
       else if (/encastre/.test(c)) spec.box = "encastre";
       else if (/apparent|exterieur/.test(c)) spec.box = "apparent";
       if (/moustiquaire/.test(c)) spec.net = true;
+      const sl = /lames?\D{0,12}(39|42|55)/.exec(c);
+      if (sl) spec.slat = sl[1] as Line["slat"];
+    } else {
+      if (/perfor/.test(c)) spec.slat = "perforee";
+      else if (/grille|ajoure/.test(c)) spec.slat = "grille";
+      else if (/\bplein/.test(c)) spec.slat = "pleine";
     }
   }
   if (cat === "garde-corps") {
@@ -341,6 +375,16 @@ function groupsOf(clause: string): string[] {
   return out.length ? out.map((g) => g.text) : [clause];
 }
 
+// ---------- ce qui n'est pas compris reste écrit : jamais perdu ----------
+const KNOWN = new Set([...VOCAB, ...KEEP, "norm", "bonjour", "salut", "merci", "veux", "voudrais", "souhaite", "souhaiterais", "besoin", "creer", "cree", "faire", "installer", "poser", "changer", "remplacer", "prix", "devis", "svp", "stp", "pour", "avec", "sans", "dans", "chez", "mais", "donc", "une", "des", "les", "mes", "mon", "ton", "son", "notre", "votre", "cette", "ces", "ouverture", "gauche", "droite", "vers", "coulisse", "ouvre", "taille", "meme", "memes", "hauteur", "largeur", "metre", "metres", "environ", "dimension", "dimensions", "couleur", "gamme", "norme", "type", "modele", "ouvrage", "ouvrages", "grande", "grandes", "petite", "petites", "fixes", "mobile", "mobiles", "granite", "martele", "cathedrale", "cannele", "double", "simple", "chene", "dore", "clair", "gris", "bois", "metallique", "vitree", "vitrees"]);
+function residual(clause: string, raw: string): string {
+  const orig = new Map<string, string>();
+  for (const w of raw.match(/[\p{L}][\p{L}'’-]*/gu) ?? []) orig.set(strip(w), w); // seuls les accents sont restitués (un mot corrigé reste corrigé)
+  const kept = clause.split(/[,;]|\bavec\b|\bet\b|\bsans\b|\.\s/).map((seg) => seg.trim()).filter((seg) => (seg.match(/[a-z]{4,}/g) ?? []).some((w) => !KNOWN.has(w) && !VOCAB_SET.has(w)));
+  const text = kept.map((seg) => seg.replace(/[a-z][a-z'-]*/g, (w) => orig.get(w) ?? w)).join(" ; ").replace(/\s+/g, " ").trim();
+  return text ? text.charAt(0).toUpperCase() + text.slice(1, 300) : "";
+}
+
 // ---------- découpage en ouvrages ----------
 export function analyze(input: string): IntakeResult {
   const raw = input.replace(/\r/g, "").slice(0, 6000);
@@ -403,6 +447,8 @@ export function analyze(input: string): IntakeResult {
     const head = f.head;
     groupsOf(clause).forEach((g, gi) => {
       const item = fill(head, g, g);
+      const rest = residual(g, raw);
+      if (rest) item.spec.note = rest;
       if (gi === 0) {
         if (qm && !(item.spec.qty && item.spec.qty > 1)) setQty(item, toNum(qm[1]), g.slice(g.indexOf(qm[0]) + qm[1].length));
       } else {

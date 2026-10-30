@@ -12,7 +12,6 @@ import { openTariffs } from "./TariffsPanel";
 import ChatButton from "./ChatButton";
 import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
-import Timeline from "./Timeline";
 import { Avatar, Field } from "./ui";
 import { allPieces, cuttingPlan, normalize, planTotals } from "@/lib/calc";
 import { quoteMargin } from "@/lib/costing";
@@ -503,7 +502,6 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
             {q.clientId && persisted && <ChatButton target={{ client: q.clientId }} label={t("msg.contactClient")} />}
             {q.clientId && persisted && <QuoteDiscussion quoteId={q.id} me="menuisier" />}
-            {q.clientId && persisted && <Timeline quoteId={q.id} canWrite={false} messages={false} />}
           </fieldset>
         </div>
 
