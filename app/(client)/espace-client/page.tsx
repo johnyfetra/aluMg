@@ -6,7 +6,6 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/Feedback";
 import { Avatar, Progress, StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
 import { useClientQuotes, useMe } from "@/lib/client";
-import { MVP } from "@/lib/mvp";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import type { Status } from "@/lib/model";
 import { totals } from "@/lib/totals";
@@ -68,11 +67,9 @@ export default function ClientDashboard() {
       {!isLoading && list.length === 0 ? (
         <div className="card py-14 text-center">
           <p className="mb-4 text-muted">{t("cl.empty")}</p>
-          {!MVP && (
-            <Link href="/menuisiers" className="btn-primary">
+          <Link href="/menuisiers" className="btn-primary">
               {t("cl.findJoiner")}
-            </Link>
-          )}
+          </Link>
         </div>
       ) : (
         <>

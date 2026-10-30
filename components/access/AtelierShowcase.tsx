@@ -1,27 +1,22 @@
 "use client";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import Brand from "../Brand";
+import Photo from "../marketing/Photo";
 import { useI18n } from "@/lib/i18n";
+import { marketing } from "@/lib/marketing";
 import type { Messages } from "@/lib/messages/fr";
 
 export type Variant = "login" | "menuisier" | "client" | "verify";
 
 export default function AtelierShowcase({ variant }: { variant: Variant }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n(); const c = marketing[locale];
   return <>
-    <header className="flex items-center justify-between gap-4 border-b border-line px-5 py-4 lg:hidden"><Brand /><span className="max-w-40 text-right text-xs text-muted">{t("app.tagline")}</span></header>
-    <aside className="relative isolate hidden min-h-screen flex-col justify-between overflow-hidden bg-(--hero-to) p-10 text-(--side-fg) lg:flex xl:p-14">
-      {/* Un fond uni conserve le contraste si la photographie ne charge pas. */}
-      <div aria-hidden className="absolute inset-x-0 top-0 -z-20 h-[34rem] bg-cover bg-[position:center_38%]" style={{ backgroundImage: "url('/brand/realisation-aluminium.webp')" }} />
-      <div aria-hidden className="absolute inset-x-0 top-0 -z-10 h-[34rem] bg-linear-to-b from-(--hero-from)/70 via-transparent to-(--hero-to)" />
-      <div><Brand light /><p className="mt-3 text-xs tracking-widest text-(--side-fg)">{t("app.tagline")}</p></div>
-      <div className="mt-80 max-w-lg rounded-2xl bg-(--hero-from)/90 p-6 xl:p-8">
-        <p className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-(--side-accent)">{t("ui.signature")}</p>
-        <h2 className="text-4xl font-medium leading-[1.15] tracking-tight xl:text-5xl">{t(`auth.hero.${variant}.title` as keyof Messages)}</h2>
-        <p className="mt-5 max-w-md text-base leading-relaxed">{t(`auth.hero.${variant}.sub` as keyof Messages)}</p>
-        <div className="mt-8 grid grid-cols-3 gap-4 border-t border-white/30 pt-6">
-          {(["ui.precision", "ui.clarity", "ui.together"] as const).map((key, i) => <p key={key} className="text-sm"><span className="mb-2 block text-xs text-(--side-accent)">0{i + 1}</span>{t(key)}</p>)}
-        </div>
-      </div>
+    <header className="border-b border-line lg:hidden"><div className="flex items-center justify-between gap-4 px-5 py-4"><Link href="/" aria-label={c.back}><Brand /></Link><Link href="/" className="inline-flex items-center gap-2 text-xs text-muted"><ArrowLeft size={14} aria-hidden />{c.home}</Link></div><Photo src="/brand/realisation-aluminium.webp" alt={c.loginAlt} priority className="h-40 sm:h-48" position="center 33%" /></header>
+    <aside className="hidden min-h-screen flex-col bg-(--hero-to) p-8 text-(--side-fg) lg:flex xl:p-10">
+      <div className="flex items-center justify-between gap-4"><Link href="/" aria-label={c.back}><Brand light /></Link><Link href="/" className="inline-flex items-center gap-2 text-xs text-(--side-fg) hover:underline"><ArrowLeft size={14} aria-hidden />{c.home}</Link></div>
+      <figure className="mt-8"><Photo src="/brand/realisation-aluminium.webp" alt={c.loginAlt} priority className="h-[clamp(20rem,42vh,32rem)] rounded-xl" position="center 34%" /><figcaption className="mt-2 text-[11px] text-(--side-muted)">{c.editorial}</figcaption></figure>
+      <div className="my-auto max-w-xl pt-8"><p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-(--side-accent)">{t("ui.signature")}</p><h2 className="text-3xl font-medium leading-[1.18] tracking-tight xl:text-4xl">{t(`auth.hero.${variant}.title` as keyof Messages)}</h2><p className="mt-4 max-w-lg text-sm leading-7">{t(`auth.hero.${variant}.sub` as keyof Messages)}</p><div className="mt-7 grid grid-cols-3 gap-4 border-t border-white/20 pt-5">{(["ui.precision","ui.clarity","ui.together"] as const).map((key,i)=><p key={key} className="text-xs leading-5"><span className="mb-1 block font-mono text-(--side-accent)">0{i+1}</span>{t(key)}</p>)}</div></div>
     </aside>
   </>;
 }

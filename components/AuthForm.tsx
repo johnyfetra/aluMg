@@ -86,7 +86,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </div>
 
         <div className="auth-form m-auto my-10 w-full max-w-[28rem] space-y-7 sm:p-4">
-          <div className="hidden lg:block"><Brand /></div>
+          <div className="hidden lg:block"><Link href="/" aria-label={t("auth.back")} className="inline-block rounded-lg"><Brand /></Link></div>
           <div className="space-y-3">
             <p className="eyebrow">{t("ui.welcome")}</p>
             <h1 className="text-3xl font-semibold tracking-tight">{signup ? t("auth.signupTitle") : t("auth.loginTitle")}</h1>

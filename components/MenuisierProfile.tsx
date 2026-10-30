@@ -2,6 +2,8 @@
 import { ArrowLeft, BadgeCheck, CalendarDays, Hammer, Images, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import Photo from "./marketing/Photo";
+import { LoadingState, ErrorState } from "./Feedback";
 import ChatButton from "./ChatButton";
 import Lightbox from "./Lightbox";
 import { Avatar, Stars } from "./ui";
@@ -11,12 +13,13 @@ import type { PortfolioItem } from "@/lib/profiles";
 
 export default function MenuisierProfile({ slug }: { slug: string }) {
   const { t, locale } = useI18n();
-  const { data: m, error, isLoading } = useMenuisier(slug);
+  const { data: m, error, isLoading, mutate } = useMenuisier(slug);
   const { data: me } = useSession();
   const [open, setOpen] = useState<{ item: PortfolioItem; i: number } | null>(null);
   const date = (iso: string) => new Date(iso).toLocaleDateString(DATE_LOCALE[locale], { year: "numeric", month: "long" });
 
-  if (isLoading) return null;
+  if (isLoading) return <div className="public-container py-12"><LoadingState /></div>;
+  if (error && error.status !== 404) return <div className="public-container py-12"><ErrorState retry={() => { void mutate(); }} /></div>;
   if (error || !m) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
@@ -32,19 +35,14 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
   const total = m.reviews || 1;
 
   return (
-    <div className="mx-auto w-full max-w-[110rem] px-4 py-8 sm:px-8 xl:px-10">
+    <div className="mx-auto w-full max-w-[86rem] px-4 py-8 sm:px-8 xl:px-10">
       <Link href="/menuisiers" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
         <ArrowLeft size={16} aria-hidden />
         {t("mp.back")}
       </Link>
 
       <header className="card relative overflow-hidden !p-0">
-        <div className="h-32 bg-gradient-to-br from-primary/30 via-surface-2 to-c2/25 sm:h-44">
-          {m.cover && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={m.cover} alt="" className="h-full w-full object-cover opacity-60" />
-          )}
-        </div>
+        <Photo src={m.cover} alt={m.name} priority className="h-56 sm:h-80" />
         <div className="flex flex-wrap items-end gap-5 px-6 pb-6">
           <div className="-mt-12 rounded-2xl bg-surface p-1.5 shadow-md">
             <Avatar name={m.name} src={m.logo} size={88} />
@@ -129,8 +127,7 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
                   <li key={it.id}>
                     <button type="button" onClick={() => setOpen({ item: it, i: 0 })} className="group block w-full overflow-hidden rounded-xl border border-line bg-surface text-left transition-shadow hover:shadow-md" aria-label={`${t("mp.openPhoto")} : ${it.title}`}>
                       <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={it.thumb || it.images[0]} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                        <Photo src={it.thumb || it.images[0]} alt={it.title} className="h-full w-full" />
                         {it.images.length > 1 && (
                           <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white">
                             <Images size={12} aria-hidden />
@@ -206,17 +203,17 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
           <p className="text-sm text-muted">{t("mp.requestHint")}</p>
           {me?.role === "client" ? (
             <>
-              <Link href={next} className="btn-primary w-full">
+              <Link href={next} className="btn-primary w-full !whitespace-normal text-center">
                 {t("mp.requestQuote")}
               </Link>
               <ChatButton target={{ menuisier: slug }} label={t("msg.contact")} />
             </>
           ) : !me ? (
             <>
-              <Link href={`/connexion?next=${encodeURIComponent(next)}`} className="btn-primary w-full">
+              <Link href={`/connexion?next=${encodeURIComponent(next)}`} className="btn-primary w-full !whitespace-normal text-center">
                 {t("mp.loginToRequest")}
               </Link>
-              <Link href={`/inscription?role=client&next=${encodeURIComponent(next)}`} className="btn-secondary w-full">
+              <Link href={`/inscription?role=client&next=${encodeURIComponent(next)}`} className="btn-secondary w-full !whitespace-normal text-center">
                 {t("mp.createAccount")}
               </Link>
             </>

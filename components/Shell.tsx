@@ -18,7 +18,7 @@ import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
 type Item = { href: string; key: keyof Messages; Icon: typeof Settings; match: (p: string) => boolean };
 type Group = { label: keyof Messages; items: Item[] };
-type Nav = { home: string; cta?: Item; groups: Group[] }; // pas de bouton d'action principal en MVP côté client (la demande passe par l'annuaire, masqué)
+type Nav = { home: string; cta?: Item; groups: Group[] }; // navigation adaptée au rôle
 
 const starts = (...prefix: string[]) => (p: string) => prefix.some((x) => p === x || p.startsWith(`${x}/`));
 
@@ -50,7 +50,7 @@ const FULL_MENUISIER: Nav = {
   ],
 };
 
-// En MVP, on retire du menu les pages masquées (et les groupes devenus vides).
+// Le mode MVP ne masque que les écrans avancés, pas la vitrine publique.
 const MENUISIER: Nav = MVP
   ? { ...FULL_MENUISIER, groups: FULL_MENUISIER.groups.map((g) => ({ ...g, items: g.items.filter((i) => !HIDDEN.some((h) => i.href === h)) })).filter((g) => g.items.length) }
   : FULL_MENUISIER;

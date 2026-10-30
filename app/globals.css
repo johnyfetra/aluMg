@@ -315,6 +315,13 @@ aside :focus-visible {
   .skeleton { @apply animate-pulse rounded-lg bg-surface-2; }
 }
 
+/* Photos de réalisations : un même traitement (couleurs un peu assagies, contraste léger) pour que des clichés de sources différentes forment un ensemble */
+.photo-grade { filter: saturate(0.78) contrast(1.04) brightness(0.97); }
+
+/* Captures de la vitrine : l'image du thème actif seulement */
+[data-theme="dark"] .dark-hidden { display: none; }
+[data-theme="dark"] .dark-shown { display: block; }
+
 /* Vitrine : une grille éditoriale commune, lisible du téléphone au grand écran. */
 @layer components {
   .public-container { @apply mx-auto w-full max-w-[86rem] px-5 sm:px-8 lg:px-12; }

@@ -21,6 +21,17 @@ const fr = {
   pro1: "Configurez les dimensions, le vitrage et les finitions.", pro2: "Préparez et partagez vos devis en PDF.", pro3: "Publiez votre profil et vos réalisations.", pro4: "Retrouvez les retours clients et les validations.",
   faq: "Avant de commencer", q1: "À qui s’adresse AluMg ?", a1: "Aux professionnels de la menuiserie aluminium et à leurs clients. Chaque rôle dispose d’un espace adapté pour préparer ou consulter les devis et échanger sur les projets.", q2: "Puis-je découvrir les menuisiers sans compte ?", a2: "Oui. Les profils publics et leurs réalisations sont consultables librement. Un compte client permet ensuite de demander un devis et de retrouver vos échanges.", q3: "Que puis-je faire avec un devis reçu ?", a3: "Consulter le détail des ouvrages, poser des questions, demander une modification et donner votre décision. Les actions proposées dépendent du statut du devis.", q4: "Les photos sont-elles celles des professionnels ?", a4: "Les galeries et profils présentent les photos publiées par les professionnels. Les images d’ambiance utilisées pour présenter AluMg sont signalées comme des visuels d’inspiration générés.",
   finalTitle: "Un beau projet commence par un échange.", finalSub: "Trouvez votre professionnel ou créez votre espace pour préparer la suite.", footer: "La précision du métier. La simplicité du lien.", explore: "Explorer", account: "Votre espace", back: "Retour à l’accueil", loginAlt: "Menuisier ajustant la poignée d’une baie coulissante en aluminium dans un intérieur achevé", galleryCount: "professionnels avec des photos publiées", galleryNote: "Une sélection de couvertures de portfolios. Ouvrez un profil pour consulter toutes ses réalisations.", noPhoto: "Portfolio à venir", question: "Un projet en tête ?", appDetail: "Tout ce qui donne du sens à votre devis.", details: "Dimensions & finitions", detailsText: "Retrouvez les caractéristiques de chaque ouvrage, ses plans et sa visualisation 3D lorsqu’elle est disponible.", documents: "Devis & documents", documentsText: "Consultez un devis structuré et son aperçu imprimable. Les montants restent liés aux ouvrages proposés.", discussion: "Échanges & décisions", discussionText: "Commentez les ouvrages, demandez une modification et répondez au devis depuis votre espace.",
+  showTitle: "L’application, telle qu’elle est vraiment.",
+  showSub: "Captures de l’application avec des données d’exemple : rien n’est retouché.",
+  tab1: "Tableau de bord",
+  tab2: "Devis",
+  tab3: "Validation par le client",
+  tab4: "Sur téléphone",
+  cap1: "Le menuisier voit ce qui demande son attention : demandes, devis à relancer, montants et conversion.",
+  cap2: "Chaque ouvrage est détaillé (dimensions, gamme, couleur, verre) avec son schéma, son prix et la marge estimée.",
+  cap3: "Le client valide ouvrage par ouvrage, met un ouvrage en attente, pose une question précise ou accepte tout d’un coup.",
+  cap4: "Le même devis se consulte et se décide depuis un téléphone, avec les mêmes actions à portée de pouce.",
+  showNote: "Données d’exemple.",
 };
 type Copy = { [K in keyof typeof fr]: string };
 const en: Copy = {
@@ -32,6 +43,17 @@ const en: Copy = {
   craftTitle: "Your craftsmanship deserves a clear presentation.", craftIntro: "Prepare quotes, showcase your work and keep track of client conversations. AluMg helps you present your work with the clarity it deserves.", craftAlt: "Craftsman checking the precise joint of an aluminium frame in a workshop", pro1: "Configure dimensions, glazing and finishes.", pro2: "Prepare and share PDF quotes.", pro3: "Publish your profile and projects.", pro4: "Keep track of client feedback and approvals.",
   faq: "Before you begin", q1: "Who is AluMg for?", a1: "Aluminium joinery professionals and their clients. Each role has a dedicated workspace to prepare or review quotes and discuss projects.", q2: "Can I browse joiners without an account?", a2: "Yes. Public profiles and projects are freely accessible. A client account lets you request a quote and keep your conversations together.", q3: "What can I do with a quote?", a3: "Review each item, ask questions, request changes and share your decision. Available actions depend on the quote’s status.", q4: "Are project photos from professionals?", a4: "Profiles and galleries show photographs published by professionals. The atmospheric images introducing AluMg are labelled as generated inspiration images.",
   finalTitle: "A great project starts with a conversation.", finalSub: "Find a professional or create your workspace to take the next step.", footer: "Precision in your craft. Simplicity in your connections.", explore: "Explore", account: "Your workspace", back: "Back to home", loginAlt: "Joiner adjusting an aluminium sliding door handle in a finished interior", galleryCount: "professionals with published photos", galleryNote: "A selection of portfolio covers. Open a profile to explore all its projects.", noPhoto: "Portfolio coming soon", question: "Have a project in mind?", appDetail: "Everything that makes your quote clear.", details: "Dimensions & finishes", detailsText: "Review each item’s specifications, drawings and 3D view where available.", documents: "Quotes & documents", documentsText: "Review structured quotes and print previews. Amounts relate to the items being proposed.", discussion: "Conversations & decisions", discussionText: "Comment on individual items, request changes and respond to quotes from your workspace.",
+  showTitle: "The application, exactly as it is.",
+  showSub: "Screenshots of the app with sample data: nothing is retouched.",
+  tab1: "Dashboard",
+  tab2: "Quote",
+  tab3: "Customer approval",
+  tab4: "On mobile",
+  cap1: "The joiner sees what needs attention: requests, quotes to follow up, amounts and conversion.",
+  cap2: "Each item is detailed (size, range, colour, glass) with its drawing, price and estimated margin.",
+  cap3: "The customer approves item by item, puts one on hold, asks a specific question or accepts everything at once.",
+  cap4: "The same quote is read and decided on from a phone, with the same actions within thumb reach.",
+  showNote: "Sample data.",
 };
 const mg: Copy = {
   app: "Ny rindranasa", gallery: "Asa vita", joiners: "Mpandrafitra", home: "Fandraisana", discover: "Fantaro AluMg", find: "Mitadiava mpandrafitra", pro: "Mpandrafitra aho", client: "Mpanjifa aho", start: "Hamorona kaonty", view: "Hijery ny mombamomba", all: "Ny mpandrafitra rehetra",
@@ -42,5 +64,16 @@ const mg: Copy = {
   craftTitle: "Mendrika fampisehoana tsara ny fahaiza-manaonao.", craftIntro: "Manomàna tombana, asehoy ny asanao ary araho ny resaka amin’ny mpanjifa. Manampy anao hanazava ny asanao AluMg.", craftAlt: "Mpandrafitra manamarina ny fampifandraisana ny zoro aluminium ao amin’ny atrikasa", pro1: "Farito ny refy, ny fitaratra ary ny loko.", pro2: "Manomàna sy mizara tombana PDF.", pro3: "Avoahy ny mombamomba anao sy ny asa vita.", pro4: "Araho ny valin’ny mpanjifa sy ny fanekena.",
   faq: "Alohan’ny hanombohana", q1: "Ho an’iza AluMg?", a1: "Ho an’ny mpandrafitra aluminium sy ny mpanjifany. Samy manana toerana hanomanana na hijerena tombana sy hifanakalozana hevitra izy ireo.", q2: "Afaka mijery mpandrafitra tsy manana kaonty ve aho?", a2: "Eny. Malalaka ny fijerena ny mombamomba sy ny asa ampahibemaso. Mila kaonty mpanjifa kosa ny fangatahana tombana sy ny resaka.", q3: "Inona no azoko atao amin’ny tombana voaray?", a3: "Mijery ny antsipiriany, mametraka fanontaniana, mangataka fanovana ary manome valiny. Miankina amin’ny satan’ny tombana ny asa azo atao.", q4: "Avy amin’ny mpandrafitra ve ny sary?", a4: "Ny sary ao amin’ny galeria sy ny mombamomba dia navoakan’ny mpandrafitra. Voamarika ho sary noforonina ireo sary fampisehoana an’i AluMg.",
   finalTitle: "Manomboka amin’ny resaka ny tetikasa tsara.", finalSub: "Mitadiava mpandrafitra na mamoròna kaonty hanomanana ny dingana manaraka.", footer: "Asa marina. Fifandraisana tsotra.", explore: "Hijery", account: "Ny kaontinao", back: "Hiverina amin’ny fandraisana", loginAlt: "Mpandrafitra manitsy ny tahon’ny varavarana aluminium misosa", galleryCount: "mpandrafitra namoaka sary", galleryNote: "Sary voafantina avy amin’ny portfolios. Sokafy ny mombamomba hijerena ny asa rehetra.", noPhoto: "Mbola tsy misy sary", question: "Manana tetikasa ve ianao?", appDetail: "Ny zavatra rehetra hanazavana ny tombanao.", details: "Refy sy loko", detailsText: "Jereo ny antsipiriany, ny drafitra ary ny endrika 3D raha misy.", documents: "Tombana sy antontan-taratasy", documentsText: "Jereo ny tombana voalamina sy ny pejy azo pirinty. Mifandray amin’ny asa atolotra ny vola.", discussion: "Resaka sy fanapahan-kevitra", discussionText: "Manehoa hevitra isaky ny asa, mangataha fanovana ary valio ao amin’ny kaontinao ny tombana.",
+  showTitle: "Ny rindranasa, araka ny tena izy.",
+  showSub: "Sary avy amin'ny rindranasa misy angona ohatra: tsy misy novana.",
+  tab1: "Tabilao",
+  tab2: "Tolotra",
+  tab3: "Fankatoavan'ny mpanjifa",
+  tab4: "Amin'ny finday",
+  cap1: "Hitan'ny mpandrafitra izay mila ny sainy: fangatahana, tolotra hotadidina, vola.",
+  cap2: "Asa tsirairay dia voadinika: habe, karazana, loko, fitaratra, sary, vidiny sy tombony.",
+  cap3: "Manamarina asa isan-karazany ny mpanjifa, mametraka mitazona, manontany na manaiky ny rehetra.",
+  cap4: "Azo jerena sy hanapahana hevitra amin'ny finday ny tolotra iray ihany.",
+  showNote: "Angona ohatra.",
 };
 export const marketing: Record<Locale, Copy> = { fr, en, mg };

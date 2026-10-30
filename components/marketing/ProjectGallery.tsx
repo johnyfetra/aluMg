@@ -19,7 +19,7 @@ export default function ProjectGallery({ limit }: { limit?: number }) {
     {!limit && <p className="mb-6 text-sm text-muted">{projects.length} {c.galleryCount}</p>}
     <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">{projects.slice(0, limit).map(m => <article key={m.slug} className="group">
       <Link href={`/menuisiers/${m.slug}#h-port`} className="block rounded-xl focus-visible:outline-offset-4">
-        <Photo src={m.cover} alt={m.name} className="aspect-[4/3] rounded-xl transition-opacity group-hover:opacity-90" />
+        <Photo src={m.cover} alt={m.name} grade className="aspect-[4/3] rounded-xl transition-opacity group-hover:opacity-90" />
         <div className="mt-4 flex items-start justify-between gap-3"><div><h3 className="font-semibold">{m.name}</h3>{m.city && <p className="mt-1 flex items-center gap-1 text-sm text-muted"><MapPin size={13} aria-hidden />{m.city}</p>}</div><ArrowUpRight size={19} aria-hidden className="mt-1 text-primary" /></div>
       </Link>
     </article>)}</div>

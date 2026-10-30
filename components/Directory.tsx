@@ -2,6 +2,9 @@
 import { BadgeCheck, MapPin, Search, SlidersHorizontal, Star, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { ErrorState } from "./Feedback";
+import { marketing } from "@/lib/marketing";
+import Photo from "./marketing/Photo";
 import MenuisierCard from "./MenuisierCard";
 import { useDirectory } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
@@ -25,12 +28,13 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 // Annuaire : panneau de filtres (collant sur ordinateur, tiroir sur mobile), puces des filtres actifs, résultats triables.
 export default function Directory() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const c = marketing[locale];
   const params = useSearchParams();
   const [f, setF] = useState<F>(() => Object.fromEntries(KEYS.map((k) => [k, params.get(k) ?? EMPTY[k]])) as F);
   const [open, setOpen] = useState(false);
   const drawer = useRef<HTMLDialogElement>(null);
-  const { data, isLoading } = useDirectory(Object.fromEntries(KEYS.map((k) => [k, k === "sort" && f.sort === "rating" ? "" : f[k]])));
+  const { data, isLoading, error, mutate } = useDirectory(Object.fromEntries(KEYS.map((k) => [k, k === "sort" && f.sort === "rating" ? "" : f[k]])));
   const { data: all = [] } = useDirectory({}); // sans filtre : sert à proposer les villes et à compter les spécialités
   const set = (patch: Partial<F>) => setF((cur) => ({ ...cur, ...patch }));
 
@@ -57,13 +61,13 @@ export default function Directory() {
     f.verified && { k: "verified", label: t("dir.verified") },
   ].filter(Boolean) as { k: keyof F; label: string }[];
 
-  const panel = (
+  const panel = (prefix: string) => (
     <div className="space-y-5">
       <Section title={t("dir.location")}>
         <div className="relative">
           <MapPin size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input className="input !pl-9" list="cities" aria-label={t("dir.city")} placeholder={t("dir.allCities")} value={f.city} onChange={(e) => set({ city: e.target.value })} />
-          <datalist id="cities">
+          <input className="input !pl-9" list={`${prefix}-cities`} aria-label={t("dir.city")} placeholder={t("dir.allCities")} value={f.city} onChange={(e) => set({ city: e.target.value })} />
+          <datalist id={`${prefix}-cities`}>
             {cities.map(([c]) => (
               <option key={c} value={c} />
             ))}
@@ -92,7 +96,7 @@ export default function Directory() {
         <div role="radiogroup" aria-label={t("dir.rating")} className="space-y-1">
           {["", "4.5", "4", "3"].map((r) => (
             <label key={r} className={`flex min-h-10 cursor-pointer items-center gap-3 rounded-lg px-2 text-sm ${f.minRating === r ? "bg-primary/10 font-semibold" : "hover:bg-surface-2"}`}>
-              <input type="radio" name="minRating" className="size-4 accent-[var(--primary)]" checked={f.minRating === r} onChange={() => set({ minRating: r })} />
+              <input type="radio" name={`${prefix}-minRating`} className="size-4 accent-[var(--primary)]" checked={f.minRating === r} onChange={() => set({ minRating: r })} />
               {r === "" ? (
                 t("dir.any")
               ) : (
@@ -131,10 +135,12 @@ export default function Directory() {
   return (
     <div>
       {/* bandeau : titre et recherche */}
-      <section className="border-b border-line bg-gradient-to-br from-primary/10 via-bg to-c2/10">
-        <div className="mx-auto w-full max-w-[110rem] px-4 py-10 sm:px-8 xl:px-10">
-          <h1 className="max-w-3xl text-3xl font-extrabold tracking-tight sm:text-4xl">{t("dir.headline")}</h1>
+      <section className="border-b border-line bg-bg">
+        <div className="mx-auto w-full max-w-[86rem] px-4 py-10 sm:px-8 xl:px-10">
+          <p className="eyebrow mb-4">{c.joiners}</p>
+          <h1 className="max-w-3xl text-3xl font-medium tracking-tight sm:text-5xl">{t("dir.headline")}</h1>
           <p className="mt-2 max-w-2xl text-muted">{t("dir.subtitle")}</p>
+          <figure className="mt-6 max-w-2xl"><Photo src="/brand/precision-aluminium.webp" alt={c.craftAlt} className="h-40 rounded-xl sm:h-48" position="center 55%" /><figcaption className="mt-2 text-xs text-muted">{c.editorial}</figcaption></figure>
           <form role="search" onSubmit={(e) => e.preventDefault()} className="mt-6 flex max-w-2xl items-center gap-2 rounded-full border border-line bg-surface p-1.5 pl-5 shadow-lg shadow-primary/5 focus-within:ring-2 focus-within:ring-primary">
             <Search size={18} aria-hidden className="text-muted" />
             <input type="search" aria-label={t("dir.search")} placeholder={t("dir.search")} className="h-10 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted" value={f.q} onChange={(e) => set({ q: e.target.value })} />
@@ -147,13 +153,13 @@ export default function Directory() {
         </div>
       </section>
 
-      <div className="mx-auto grid w-full max-w-[110rem] items-start gap-8 px-4 py-8 sm:px-8 lg:grid-cols-[17.5rem_minmax(0,1fr)] xl:px-10">
+      <div className="mx-auto grid w-full max-w-[86rem] items-start gap-8 px-4 py-8 sm:px-8 lg:grid-cols-[17.5rem_minmax(0,1fr)] xl:px-10">
         <aside className="card hidden !p-5 lg:sticky lg:top-24 lg:block" aria-label={t("dir.filters")}>
           <h2 className="mb-4 flex items-center gap-2 text-base font-bold">
             <SlidersHorizontal size={16} aria-hidden />
             {t("dir.filters")}
           </h2>
-          {panel}
+          {panel("desktop")}
         </aside>
 
         <div className="min-w-0 space-y-5">
@@ -191,8 +197,8 @@ export default function Directory() {
             </ul>
           )}
 
-          {isLoading && !data ? (
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-hidden>
+          {error ? <ErrorState retry={() => { void mutate(); }} /> : isLoading && !data ? (
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" role="status" aria-label={t("common.loading")}>
               {[0, 1, 2].map((i) => (
                 <div key={i} className="h-96 animate-pulse rounded-2xl bg-surface-2" />
               ))}
@@ -205,7 +211,7 @@ export default function Directory() {
               </button>
             </div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {(data ?? []).map((m) => (
                 <MenuisierCard key={m.slug} m={m} />
               ))}
@@ -223,7 +229,7 @@ export default function Directory() {
               <X size={18} aria-hidden />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-4">{panel}</div>
+          <div className="flex-1 overflow-y-auto p-4">{panel("mobile")}</div>
           <div className="border-t border-line p-4">
             <button type="button" className="btn-primary w-full" onClick={() => setOpen(false)}>
               {data?.length ?? 0} {t("dir.results")}

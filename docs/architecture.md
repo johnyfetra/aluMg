@@ -248,3 +248,10 @@ Le client peut mettre un ouvrage « en attente » (`lineReviews[id].state = "hol
 
 - **Discussion et historique** (`QuoteDiscussion`) : un seul fil par devis. Les messages sont des bulles ; les étapes (envoi, acceptation, révision, avis par ouvrage, avancement, évaluation) sont des lignes centrées, dans l'ordre. Il remplace l'ancienne chronologie séparée, y compris sur la page des chantiers.
 - **Assistant de demande** : en plus du type, des cotes, de l'ouverture, des vantaux, de la couleur, de la gamme et du verre, il lit le motif du verre, le sens d'ouverture (gauche, droite, les deux), les vantaux fixes et mobiles dans l'ordre écrit (`leafCfg`), les lames et le coffre des volets. Tout détail non compris est gardé tel quel (accents restitués) dans la précision de l'ouvrage (`note`), jamais perdu.
+
+## Vitrine publique
+
+Accessible sans session, y compris en mode MVP : `/`, `/application`, `/menuisiers`, `/menuisiers/[slug]`, `/realisations-menuiserie` (voir `proxy.ts`, test `lib/public-routing.test.ts`). Les écrans d'administration restent protégés. Le logo mène à `/` depuis la barre latérale, l'écran de connexion et l'inscription.
+
+- **Illustrations du produit** : `components/marketing/ProductShowcase.tsx` affiche de vraies captures de l'application (tableau de bord, devis du menuisier, validation par le client, téléphone), en clair et en sombre selon le thème, dans `public/marketing/*.webp`. Elles viennent de `npm run seed:local` (données d'exemple). Pour les refaire : relancer l'application locale puis le script de capture.
+- **Photos de réalisations** : celles que publient les menuisiers ; un traitement commun (`.photo-grade`) assagit les couleurs pour que des clichés de sources différentes forment un ensemble. Les visuels d'inspiration générés sont signalés comme tels.
