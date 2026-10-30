@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, Check, Plus, AppWindow, DoorOpen, PanelsTopLeft, Fence } from "lucide-react";
+import { ArrowRight, Check, Plus, AppWindow, DoorOpen, PanelsTopLeft, Fence } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
 import { useDirectory } from "@/lib/client";
 import MenuisierCard from "../MenuisierCard";
 import { EmptyState, ErrorState, LoadingState } from "../Feedback";
 import Photo from "./Photo";
+import HeroSlider from "./HeroSlider";
 import ProductShowcase from "./ProductShowcase";
 import ProjectGallery from "./ProjectGallery";
 
@@ -19,10 +20,7 @@ export default function MarketingHome() {
   const { t, locale } = useI18n(); const c = marketing[locale];
   const { data, error, isLoading, mutate } = useDirectory({ sort: "rating" });
   return <>
-    <section className="public-container grid items-center gap-10 py-10 sm:py-16 lg:grid-cols-[.95fr_1.05fr] lg:gap-14 lg:py-20" aria-labelledby="home-title">
-      <div><p className="eyebrow flex items-center gap-3"><span className="h-px w-8 bg-accent" />{c.eyebrow}</p><h1 id="home-title" className="mt-6 text-[clamp(2.75rem,5.2vw,5.25rem)] font-medium leading-[1.04] tracking-[-0.055em]">{c.title}<span className="mt-2 block text-primary">{c.titleEnd}</span></h1><p className="mt-6 max-w-lg text-base leading-8 text-muted sm:text-lg">{c.intro}</p><div className="mt-8 flex flex-wrap gap-3"><Link href="/menuisiers" className="btn-primary !min-h-12 !px-6">{c.find}<ArrowRight size={17} aria-hidden /></Link><Link href="/application" className="btn-secondary !min-h-12 !px-6">{c.discover}</Link></div><Link href="#savoir-faire" className="mt-9 inline-flex items-center gap-2 text-xs font-medium text-muted hover:text-primary"><ArrowDown size={15} aria-hidden />{c.projectsLink}</Link></div>
-      <figure className="relative"><Photo src="/brand/architecture-aluminium.webp" alt={c.heroAlt} priority className="door aspect-[4/5] rounded-t-[8rem] rounded-b-2xl sm:aspect-[5/4] lg:aspect-[4/5]" position="57% center" /><figcaption className="mt-3 flex items-center justify-between gap-3 text-[11px] text-muted"><span>{c.precision}</span><span>{c.editorial}</span></figcaption></figure>
-    </section>
+    <section className="public-container pb-12 pt-4 sm:pt-6 lg:pb-16" aria-labelledby="home-title"><HeroSlider /></section>
     <div className="border-y border-line bg-surface"><ul className="public-container grid gap-5 py-6 sm:grid-cols-3">{[c.benefit1,c.benefit2,c.benefit3].map((label,i)=><li key={label} className="flex items-center gap-4 text-sm font-medium"><span className="font-mono text-xs text-muted">0{i+1}</span><span>{label}</span></li>)}</ul></div>
     <section className="public-container py-14 sm:py-20" id="application">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-x-10 gap-y-4"><div><p className="eyebrow">{c.appEyebrow}</p><h2 className="mt-3 max-w-xl text-3xl font-medium leading-tight sm:text-4xl">{c.appTitle}</h2></div><div className="max-w-md"><p className="leading-7 text-muted">{c.appIntro}</p><Link href="/application" className="mt-3 inline-flex items-center gap-2 font-semibold text-primary hover:underline">{c.discover}<ArrowRight size={17} aria-hidden /></Link></div></div>
