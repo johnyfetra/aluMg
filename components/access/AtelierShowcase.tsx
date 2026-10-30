@@ -18,7 +18,7 @@ export default function AtelierShowcase({ variant }: { variant: Variant }) {
       <span aria-hidden className="absolute inset-0 bg-gradient-to-b from-black/45 from-0% via-transparent via-40% to-black/60" />
       <div className="relative flex h-full flex-col justify-between p-8 xl:p-10">
         <div className="flex items-center justify-between gap-4"><Link href="/" aria-label={c.back}><Brand light /></Link><Link href="/" className="inline-flex items-center gap-2 rounded-full bg-black/25 px-3 py-1.5 text-xs backdrop-blur-md hover:bg-black/40"><ArrowLeft size={14} aria-hidden />{c.home}</Link></div>
-        <div className="max-w-lg rounded-2xl border border-white/15 bg-[#0f1713]/70 p-6 shadow-[0_30px_60px_-30px_rgb(0_0_0/0.8)] backdrop-blur-xl xl:p-7">
+        <div className="max-w-lg rounded-2xl border border-white/20 bg-black/20 p-6 shadow-[0_30px_60px_-30px_rgb(0_0_0/0.8)] backdrop-blur-2xl backdrop-saturate-150 [text-shadow:0_1px_12px_rgb(0_0_0/0.45)] xl:p-7">
           <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">{t("ui.signature")}</p>
           <h2 className="font-[family-name:var(--font-display)] text-3xl font-normal leading-[1.1] xl:text-4xl">{t(`auth.hero.${variant}.title` as keyof Messages)}</h2>
           <p className="mt-4 max-w-md text-sm leading-7 text-white/90">{t(`auth.hero.${variant}.sub` as keyof Messages)}</p>
