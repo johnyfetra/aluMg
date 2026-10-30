@@ -318,6 +318,31 @@ aside :focus-visible {
 /* Photos de réalisations : un même traitement (couleurs un peu assagies, contraste léger) pour que des clichés de sources différentes forment un ensemble */
 .photo-grade { filter: saturate(0.78) contrast(1.04) brightness(0.97); }
 
+/* Mouvements de la vitrine : sobres, uniquement transform et opacité (rien ne recalcule la mise en page).
+   Les blocs se posent au fil du défilement ; la photo d'accueil s'ouvre comme une baie coulissante. */
+@keyframes rule { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@supports (animation-timeline: view()) {
+  .vitrine :is(h2, .eyebrow, section p.leading-7, section p.leading-8, figure, article, details, ol > li, ul.space-y-3 > li, .grid > a) { animation: rise linear both; animation-timeline: view(); animation-range: entry 2% entry 34%; }
+  /* cartes voisines : l'arrivée se décale d'un cran, comme si on posait les pièces une à une */
+  .vitrine :is(.grid > :nth-child(2), ol > li:nth-child(2), ul.space-y-3 > li:nth-child(2)) { animation-range: entry 8% entry 40%; }
+  .vitrine :is(.grid > :nth-child(3), ol > li:nth-child(3), ul.space-y-3 > li:nth-child(3)) { animation-range: entry 14% entry 46%; }
+  .vitrine :is(.grid > :nth-child(n+4), ul.space-y-3 > li:nth-child(n+4)) { animation-range: entry 18% entry 50%; }
+  .vitrine .border-t.pt-6 { animation: rule linear both; animation-timeline: view(); animation-range: entry 0% entry 40%; transform-origin: left; }
+}
+.vitrine .group img { transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.vitrine .group:hover img { transform: scale(1.04); }
+.vitrine a svg { transition: transform 0.2s ease; }
+.vitrine a:hover svg.lucide-arrow-right, .vitrine a:hover svg.lucide-arrow-up-right { transform: translateX(3px); }
+@keyframes show-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.show-in { animation: show-in 0.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.door::before, .door::after { content: ""; position: absolute; top: 0; bottom: 0; z-index: 2; width: 50.4%; will-change: transform; }
+.door::before { left: 0; background: linear-gradient(90deg, #16231d 0 calc(100% - 9px), #3a5a4b calc(100% - 9px)); animation: door-left 1.2s cubic-bezier(0.7, 0, 0.2, 1) 0.3s both; }
+.door::after { right: 0; background: linear-gradient(270deg, #16231d 0 calc(100% - 9px), #3a5a4b calc(100% - 9px)); animation: door-right 1.2s cubic-bezier(0.7, 0, 0.2, 1) 0.3s both; }
+@keyframes door-left { to { transform: translateX(-102%); } }
+@keyframes door-right { to { transform: translateX(102%); } }
+@media (prefers-reduced-motion: reduce) { .door::before, .door::after { display: none; } .vitrine :is(h2, .eyebrow, p, figure, article, details, li, a, .border-t) { animation: none; } }
+
 /* Captures de la vitrine : l'image du thème actif seulement */
 [data-theme="dark"] .dark-hidden { display: none; }
 [data-theme="dark"] .dark-shown { display: block; }

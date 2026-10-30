@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "DATABASE_URL= POSTGRES_URL= POSTGRES_URL_NON_POOLING= POSTGRES_PRISMA_URL= next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -15,7 +15,8 @@
     "demo:assets": "node scripts/make-demo-assets.mjs",
     "demo:photos": "node scripts/fetch-demo-photos.mjs",
     "dev:local": "DATABASE_URL= POSTGRES_URL= POSTGRES_URL_NON_POOLING= POSTGRES_PRISMA_URL= RATE_LIMIT=off NEXT_DIST_DIR=.next-local next dev -p 3200",
-    "seed:local": "bash scripts/seed-local.sh"
+    "seed:local": "bash scripts/seed-local.sh",
+    "dev:remote": "next dev"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.10",

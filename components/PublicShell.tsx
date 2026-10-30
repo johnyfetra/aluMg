@@ -20,13 +20,13 @@ export default function PublicShell({ children }: { children: ReactNode }) {
     <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:p-3">{t("nav.skip")}</a>
     <header className="sticky top-0 z-30 border-b border-line bg-bg">
       <div className="public-container flex min-h-20 flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3">
-        <Link href="/" aria-label={`AluMg — ${c.home}`} className="shrink-0"><Brand /></Link>
+        <Link href="/" aria-label={`AluMg, ${c.home}`} className="shrink-0"><Brand /></Link>
         <div className="hidden xl:block"><Suspense fallback={null}><PublicNavigation /></Suspense></div>
         <div className="flex items-center gap-1 sm:gap-2"><LangMenu /><ThemeSwitch />{me ? <><Link href={homeFor(me.role)} className="btn-secondary hidden sm:inline-flex">{t("pub.myspace")}</Link><UserMenu /></> : <><Link href="/connexion" className="btn-ghost hidden sm:inline-flex">{t("pub.login")}</Link><Link href="/inscription" className="btn-primary hidden md:inline-flex">{c.start}<ArrowUpRight size={15} aria-hidden /></Link></>}</div>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-1 border-t border-line px-2 py-1 xl:hidden"><Suspense fallback={null}><PublicNavigation /></Suspense>{!me && <Link href="/connexion" className="btn-ghost sm:hidden">{t("pub.login")}</Link>}</div>
     </header>
-    <main id="main" className="min-w-0 flex-1">{children}</main>
+    <main id="main" className="vitrine min-w-0 flex-1">{children}</main>
     <footer className="border-t border-line bg-bg"><div className="public-container grid gap-10 py-14 md:grid-cols-[2fr_1fr_1fr]"><div><Link href="/"><Brand /></Link><p className="mt-4 max-w-xs text-sm leading-7 text-muted">{c.footer}</p><p className="mt-5 text-xs text-muted">© AluMg</p></div><div><h2 className="eyebrow">{c.explore}</h2><ul className="mt-5 space-y-3 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></div><div><h2 className="eyebrow">{c.account}</h2><ul className="mt-5 space-y-3 text-sm">{[["/connexion",t("pub.login")],["/inscription?role=client",c.client],["/inscription?role=menuisier",c.pro]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></div></div></footer>
   </div>;
 }
