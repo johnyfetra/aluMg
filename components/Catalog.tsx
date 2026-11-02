@@ -84,7 +84,7 @@ export function ProfilesEditor({ market, onChange, t }: { market: Market; onChan
                       <span className="flex justify-center">
                         <Switch checked={!o.off} label={`${o.length} mm, ${t("cat.bar.stock")}`} onChange={(v) => setOffers(k, (l) => l.map((x, j) => (j === i ? { ...x, off: v ? undefined : true } : x)))} />
                       </span>
-                      <button type="button" className="btn-danger !min-h-10 !px-2.5" aria-label={t("cat.bar.remove")} title={t("cat.bar.remove")} onClick={() => setOffers(k, (l) => l.filter((_, j) => j !== i))}>
+                      <button type="button" className="btn-danger !min-h-10 !px-2.5" aria-label={t("cat.bar.remove")} data-tooltip={t("cat.bar.remove")} onClick={() => setOffers(k, (l) => l.filter((_, j) => j !== i))}>
                         <Trash2 size={15} aria-hidden />
                       </button>
                     </div>

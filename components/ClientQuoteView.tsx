@@ -19,6 +19,7 @@ import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import { REPORT_REASONS, lineMarks } from "@/lib/model";
 import { totals } from "@/lib/totals";
 import Select from "./Select";
+import { errorText } from "@/lib/errors";
 
 const STEPS = ["requested", "sent", "accepted", "in_progress", "completed"] as const;
 const stepOf = (s: string) => (s === "draft" ? 0 : s === "negotiation" ? 1 : Math.max(0, STEPS.indexOf(s as (typeof STEPS)[number])));
@@ -39,7 +40,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
   // lien profond d'une notification : ?ligne=<ouvrage>
   const [focus] = useState(() => (typeof location === "undefined" ? null : new URLSearchParams(location.search).get("ligne")));
 
-  if (error) return <ErrorState retry={() => { void reload(); }} />;
+  if (error) return <ErrorState error={error} retry={() => { void reload(); }} />;
   if (isLoading) return <LoadingState />;
   if (!data) {
     return (
@@ -72,7 +73,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
       setMessage("");
       return true;
     } catch (e) {
-      setMsg({ ok: false, text: e instanceof ApiError && e.code === "quote_changed" ? t("act.changed") : e instanceof ApiError && e.code === "invalid_transition" ? t("act.invalid") : e instanceof ApiError && e.code === "already_reviewed" ? t("act.alreadyReviewed") : e instanceof ApiError && e.code === "nothing_to_accept" ? t("act.nothingToAccept") : t("common.error") });
+      setMsg({ ok: false, text: e instanceof ApiError && e.code === "quote_changed" ? t("act.changed") : e instanceof ApiError && e.code === "invalid_transition" ? t("act.invalid") : e instanceof ApiError && e.code === "already_reviewed" ? t("act.alreadyReviewed") : e instanceof ApiError && e.code === "nothing_to_accept" ? t("act.nothingToAccept") : errorText(e, t) });
       toast.error(t("toast.errorTitle"), e instanceof ApiError && e.code === "quote_changed" ? t("act.changed") : t("toast.errorText"));
       return false;
     } finally {

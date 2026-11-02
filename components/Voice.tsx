@@ -110,7 +110,7 @@ export function RecorderBar({ t, onSend, onCancel, onError, onTick }: { t: T; on
 
   return (
     <div role="group" aria-label={t("msg.recording")} className="flex items-center gap-2">
-      <button type="button" onClick={() => stop("cancel")} aria-label={t("msg.cancelVoice")} title={t("msg.cancelVoice")} className="grid size-10 shrink-0 place-items-center rounded-full border border-line text-muted transition-colors hover:border-danger/40 hover:text-danger">
+      <button type="button" onClick={() => stop("cancel")} aria-label={t("msg.cancelVoice")} data-tooltip={t("msg.cancelVoice")} data-tooltip-pos="top" className="grid size-10 shrink-0 place-items-center rounded-full border border-line text-muted transition-colors hover:border-danger/40 hover:text-danger">
         <Trash2 size={17} aria-hidden />
       </button>
       <div className="flex min-h-10 min-w-0 flex-1 items-center gap-3 rounded-2xl border border-line bg-surface-2/50 px-3">
@@ -122,7 +122,7 @@ export function RecorderBar({ t, onSend, onCancel, onError, onTick }: { t: T; on
           ))}
         </div>
       </div>
-      <button type="button" onClick={() => stop("send")} aria-label={t("msg.stopSend")} title={t("msg.stopSend")} className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-on-primary shadow-sm transition-colors hover:bg-primary-hover">
+      <button type="button" onClick={() => stop("send")} aria-label={t("msg.stopSend")} data-tooltip={t("msg.stopSend")} data-tooltip-pos="top" className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-on-primary shadow-sm transition-colors hover:bg-primary-hover">
         <Send size={17} aria-hidden />
       </button>
     </div>
@@ -193,7 +193,7 @@ export function VoicePlayer({ src, durationMs, mine, t }: { src: string; duratio
 
 export function MicButton({ t, onClick, disabled, small = false }: { t: T; onClick: () => void; disabled?: boolean; small?: boolean }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} aria-label={t("msg.mic")} title={t("msg.mic")} className={`grid shrink-0 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50 ${small ? "size-10" : "size-11"}`}>
+    <button type="button" onClick={onClick} disabled={disabled} aria-label={t("msg.mic")} data-tooltip={t("msg.mic")} data-tooltip-pos="top" className={`grid shrink-0 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50 ${small ? "size-10" : "size-11"}`}>
       <Mic size={18} aria-hidden />
     </button>
   );

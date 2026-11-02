@@ -149,7 +149,7 @@ function DrawerUser({ name, email, avatar }: { name: string; email?: string | nu
         <p className="truncate text-sm font-semibold text-white">{name}</p>
         {email && <p className="truncate text-xs text-(--side-muted)">{email}</p>}
       </div>
-      <button type="button" onClick={logout} aria-label={t("menu.logout")} title={t("menu.logout")} className="grid size-10 shrink-0 place-items-center rounded-full text-(--side-fg) transition-colors hover:bg-(--side-active)">
+      <button type="button" onClick={logout} aria-label={t("menu.logout")} data-tooltip={t("menu.logout")} className="grid size-10 shrink-0 place-items-center rounded-full text-(--side-fg) transition-colors hover:bg-(--side-active)">
         <LogOut size={18} aria-hidden />
       </button>
     </div>
@@ -237,13 +237,13 @@ export default function Shell({ children }: { children: ReactNode }) {
           </Suspense>
           <div className="ml-auto flex shrink-0 items-center gap-2">
             {me?.role === "client" && (
-              <Link href="/espace-client/nouvelle" className="btn-primary !min-h-10 !rounded-full !px-0 max-sm:w-10 sm:!px-4" aria-label={t("cl.newRequest")} title={t("cl.newRequest")}>
+              <Link href="/espace-client/nouvelle" className="btn-primary !min-h-10 !rounded-full !px-0 max-sm:w-10 sm:!px-4" aria-label={t("cl.newRequest")} data-tooltip={t("cl.newRequest")}>
                 <FilePlus2 size={18} aria-hidden />
                 <span className="max-sm:sr-only">{t("cl.newRequest")}</span>
               </Link>
             )}
             {me?.role === "menuisier" && (
-              <button type="button" onClick={openTariffs} className="hidden h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 text-sm font-medium transition-colors hover:bg-surface-2 lg:flex" title={t("tariffs.sub")}>
+              <button type="button" onClick={openTariffs} className="hidden h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 text-sm font-medium transition-colors hover:bg-surface-2 lg:flex" data-tooltip={t("tariffs.sub")}>
                 <BadgePercent size={16} aria-hidden className="text-primary" />
                 {t("tariffs.title")}
               </button>

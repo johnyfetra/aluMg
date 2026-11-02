@@ -51,7 +51,7 @@ export default function ServicesEditor({ services, onChange, prices, t, locked }
               <div className="flex items-center justify-between gap-3 sm:justify-end">
                 <span className="text-sm font-semibold tabular-nums sm:hidden">{fmt(serviceTotal(s))} {t("common.currency")}</span>
                 {!locked && (
-                  <button type="button" className="btn-danger !min-h-10 !px-3" onClick={() => onChange(services.filter((_, j) => j !== i))} aria-label={`${t("svc.remove")} ${i + 1}`} title={t("svc.remove")}>
+                  <button type="button" className="btn-danger !min-h-10 !px-3" onClick={() => onChange(services.filter((_, j) => j !== i))} aria-label={`${t("svc.remove")} ${i + 1}`} data-tooltip={t("svc.remove")}>
                     <Trash2 size={16} aria-hidden />
                   </button>
                 )}

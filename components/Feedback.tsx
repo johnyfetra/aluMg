@@ -1,6 +1,7 @@
 "use client";
 import { CircleAlert, Inbox } from "lucide-react";
 import type { ReactNode } from "react";
+import { errorText } from "@/lib/errors";
 import { useI18n } from "@/lib/i18n";
 
 export function LoadingState() {
@@ -12,11 +13,11 @@ export function LoadingState() {
   </div>;
 }
 
-export function ErrorState({ retry }: { retry: () => void }) {
+export function ErrorState({ retry, error }: { retry: () => void; error?: unknown }) {
   const { t } = useI18n();
   return <div role="alert" className="card flex flex-wrap items-center gap-3 border-danger/30">
     <CircleAlert size={20} className="text-danger" aria-hidden />
-    <p className="flex-1 text-sm">{t("common.error")}</p>
+    <p className="flex-1 text-sm">{errorText(error, t)}</p>
     <button type="button" className="btn-secondary" onClick={retry}>{t("ui.retry")}</button>
   </div>;
 }

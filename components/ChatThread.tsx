@@ -16,6 +16,7 @@ import { DATE_LOCALE, type T, useI18n } from "@/lib/i18n";
 import { compressImage } from "@/lib/image";
 import type { ConversationView, MessageView, Receipt } from "@/lib/chat";
 import type { Status } from "@/lib/model";
+import { errorText } from "@/lib/errors";
 
 type Pending = { id: string; name: string; mime: string; size: number; data: string; preview: string };
 type Citable = { id: string; number: string; project: string; status: string };
@@ -133,7 +134,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
       setPicker(null);
       end.current?.scrollIntoView({ block: "end" });
     } catch (e) {
-      setError(e instanceof ApiError && e.code === "too_big" ? t("msg.tooBig") : e instanceof ApiError && e.code === "bad_file" ? t("msg.badFile") : t("common.error"));
+      setError(e instanceof ApiError && e.code === "too_big" ? t("msg.tooBig") : e instanceof ApiError && e.code === "bad_file" ? t("msg.badFile") : errorText(e, t));
     } finally {
       setSending(false);
     }
@@ -295,7 +296,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                     {m.receipt && <Ticks receipt={m.receipt} t={t} />}
                   </p>
                 </div>
-                <button type="button" onClick={() => { setReplyTo(m); input.current?.focus(); }} aria-label={`${t("msg.reply")}, ${preview({ body: m.body, files: m.attachments.length })}`} title={t("msg.reply")} className="mb-1 grid size-8 shrink-0 place-items-center rounded-full text-muted opacity-0 transition-opacity hover:bg-surface hover:text-primary focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-60">
+                <button type="button" onClick={() => { setReplyTo(m); input.current?.focus(); }} aria-label={`${t("msg.reply")}, ${preview({ body: m.body, files: m.attachments.length })}`} data-tooltip={t("msg.reply")} data-tooltip-pos="top" className="mb-1 grid size-8 shrink-0 place-items-center rounded-full text-muted opacity-0 transition-opacity hover:bg-surface hover:text-primary focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-60">
                   <Reply size={15} aria-hidden />
                 </button>
               </div>
@@ -397,7 +398,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
             {/* champ de saisie : un seul conteneur qui s'éclaire doucement au focus, boutons discrets à l'intérieur */}
             <div className={`flex min-w-0 flex-1 items-end gap-0.5 rounded-[1.5rem] border border-line bg-surface-2/60 px-1.5 py-1 transition-[border-color,background-color,box-shadow] duration-200 focus-within:border-[color-mix(in_srgb,var(--muted)_60%,var(--border))] focus-within:bg-surface ${compact ? "min-h-10" : "min-h-11"}`}>
               <div className="relative">
-                <button type="button" className={ghost} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu(!menu)} aria-label={t("msg.attach")} title={t("msg.attach")}>
+                <button type="button" className={ghost} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu(!menu)} aria-label={t("msg.attach")} data-tooltip={t("msg.attach")} data-tooltip-pos="top">
                   <Paperclip size={18} aria-hidden />
                 </button>
                 {menu && (
@@ -451,12 +452,12 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                 }}
                 className={`bare-focus max-h-44 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-2 text-base leading-5 text-ink sm:text-sm outline-none placeholder:text-muted ${compact ? "min-h-8 py-1.5" : "min-h-9 py-2"}`}
               />
-              <button type="button" className={ghost} onClick={() => photoInput.current?.click()} aria-label={t("msg.gallery")} title={t("msg.gallery")}>
+              <button type="button" className={ghost} onClick={() => photoInput.current?.click()} aria-label={t("msg.gallery")} data-tooltip={t("msg.gallery")} data-tooltip-pos="top">
                 <ImageIcon size={18} aria-hidden />
               </button>
             </div>
             <MicButton t={t} small={compact} onClick={() => setRecording(true)} disabled={sending} />
-            <button type="submit" disabled={!canSend} aria-label={sending ? t("msg.sending") : t("tl.send")} title={t("tl.send")} className={`grid shrink-0 place-items-center rounded-full bg-primary text-on-primary shadow-sm transition-[background-color,opacity] hover:bg-primary-hover disabled:bg-surface-2 disabled:text-muted disabled:shadow-none ${compact ? "size-10" : "size-11"}`}>
+            <button type="submit" disabled={!canSend} aria-label={sending ? t("msg.sending") : t("tl.send")} data-tooltip={t("tl.send")} data-tooltip-pos="top" className={`grid shrink-0 place-items-center rounded-full bg-primary text-on-primary shadow-sm transition-[background-color,opacity] hover:bg-primary-hover disabled:bg-surface-2 disabled:text-muted disabled:shadow-none ${compact ? "size-10" : "size-11"}`}>
               <Send size={18} aria-hidden />
             </button>
           </div>

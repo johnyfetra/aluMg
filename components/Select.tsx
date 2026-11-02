@@ -141,7 +141,7 @@ export default function Select({
           disabled={disabled}
           onClick={() => (open ? close() : show())}
           onKeyDown={onKey}
-          className={`input flex items-center justify-between gap-2.5 text-left disabled:cursor-not-allowed ${open ? "!border-primary ring-[3px] ring-primary/15" : ""} ${className}`}
+          className={`input flex items-center justify-between gap-2.5 text-left disabled:cursor-not-allowed ${open ? "!border-accent ring-[3px] ring-accent/20" : ""} ${className}`}
         >
           {current?.leading && <span className="shrink-0">{current.leading}</span>}
           <span className="min-w-0 flex-1">
@@ -149,7 +149,7 @@ export default function Select({
             {current?.description && <span className="block truncate text-xs text-muted">{current.description}</span>}
           </span>
           {current?.meta && <span className="shrink-0 text-xs text-muted">{current.meta}</span>}
-          <ChevronDown size={16} aria-hidden className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
+          <ChevronDown size={16} aria-hidden className={`shrink-0 text-muted transition-transform duration-200 ${open ? "rotate-180 text-accent" : ""}`} />
         </button>
         {required && <input tabIndex={-1} aria-hidden required value={value} onChange={() => {}} className="pointer-events-none absolute inset-0 opacity-0" />}
       </span>
@@ -157,7 +157,7 @@ export default function Select({
         createPortal(
           <div
             style={{ position: "fixed", left: pos.left, width: pos.width, maxWidth: "calc(100vw - 16px)", top: pos.top, bottom: pos.bottom, maxHeight: pos.max }}
-            className="select-pop z-[100] flex flex-col overflow-hidden rounded-2xl border border-line bg-surface text-sm text-ink shadow-[0_18px_48px_rgba(0,0,0,0.35)]"
+            className="select-pop z-[100] flex flex-col overflow-hidden rounded-2xl border border-line bg-surface text-sm text-ink shadow-[0_18px_48px_rgba(0,0,0,0.35)] ring-1 ring-black/5"
           >
             {withSearch && (
               <div className="flex shrink-0 items-center gap-2 border-b border-line px-3">
@@ -181,22 +181,23 @@ export default function Select({
                 const selected = o.value === value;
                 return (
                   <li key={o.value} role="presentation">
-                    {heading && <p className="px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted">{heading}</p>}
+                    {heading && <p className="pop-label !px-2.5">{heading}</p>}
                     <div
                       id={`${uid}-o${i}`}
                       role="option"
                       aria-selected={selected}
                       onPointerEnter={() => setActive(i)}
                       onClick={() => pick(i)}
-                      className={`flex cursor-pointer items-center gap-3 rounded-xl px-2.5 ${rich ? "min-h-12 py-2" : "min-h-10 py-1.5"} ${i === active ? "bg-surface-2" : ""} ${selected ? "bg-primary/10" : ""}`}
+                      data-active={i === active}
+                      className={`pop-item ${rich ? "min-h-12 py-2" : "min-h-10 py-1.5"}`}
                     >
                       {o.leading && <span className="shrink-0">{o.leading}</span>}
                       <span className="min-w-0 flex-1">
-                        <span className={`block truncate ${selected ? "font-semibold text-primary" : "font-medium"}`}>{o.label}</span>
+                        <span className={`block truncate ${selected ? "font-semibold" : "font-medium"}`}>{o.label}</span>
                         {o.description && <span className="block truncate text-xs text-muted">{o.description}</span>}
                       </span>
                       {o.meta && <span className="shrink-0 text-xs text-muted">{o.meta}</span>}
-                      {selected && <Check size={16} aria-hidden className="shrink-0 text-primary" />}
+                      {selected && <Check size={16} strokeWidth={2.5} aria-hidden className="shrink-0 text-accent" />}
                     </div>
                   </li>
                 );

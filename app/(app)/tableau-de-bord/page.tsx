@@ -126,7 +126,7 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {error ? <ErrorState retry={retry} /> : loading ? <LoadingState /> : quotes.length === 0 ? (
+      {error ? <ErrorState error={error} retry={retry} /> : loading ? <LoadingState /> : quotes.length === 0 ? (
         <div className="card py-12 text-center">
           <p className="mb-4 text-muted">{t("dash.empty")}</p>
           <Link href="/devis/nouveau" className="btn-primary">

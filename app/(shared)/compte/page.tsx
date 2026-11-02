@@ -5,6 +5,7 @@ import { compressImage } from "@/lib/image";
 import { ApiError, request, useMe } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { mutate } from "swr";
+import { errorText } from "@/lib/errors";
 
 export default function AccountPage() {
   const { t } = useI18n();
@@ -26,7 +27,7 @@ export default function AccountPage() {
       (e.target as HTMLFormElement).reset();
       setMsg({ ok: true, text: t("account.saved") });
     } catch (err) {
-      setMsg({ ok: false, text: err instanceof ApiError && err.code === "wrong_password" ? t("account.wrongPassword") : t("common.error") });
+      setMsg({ ok: false, text: err instanceof ApiError && err.code === "wrong_password" ? t("account.wrongPassword") : errorText(err, t) });
     }
   };
 

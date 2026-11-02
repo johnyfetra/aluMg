@@ -669,7 +669,7 @@ export default function Viewer3D({ line, highlight = null, stage, bare = false, 
             />
           </SceneCtx.Provider>
         </Canvas>
-        {!bare && <button type="button" className="absolute right-2 top-2 grid size-9 place-items-center rounded-lg bg-surface/90 text-ink shadow hover:bg-surface" onClick={() => controls.current?.reset()} aria-label={t("viewer.reset")} title={t("viewer.reset")}>
+        {!bare && <button type="button" className="absolute right-2 top-2 grid size-9 place-items-center rounded-lg bg-surface/90 text-ink shadow hover:bg-surface" onClick={() => controls.current?.reset()} aria-label={t("viewer.reset")} data-tooltip={t("viewer.reset")}>
           <RotateCcw size={16} aria-hidden />
         </button>}
       </div>

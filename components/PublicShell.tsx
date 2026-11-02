@@ -21,7 +21,7 @@ function GlassControls() {
   const next = theme === "dark" ? "light" : "dark";
   return <div className="flex items-center gap-1">
     <div role="group" aria-label={t("lang.label")} className="flex items-center rounded-full bg-black/10 p-0.5 font-mono text-[11px] font-semibold dark:bg-white/10">{(Object.keys(LOCALES) as Locale[]).map(k=><button key={k} type="button" lang={k} aria-pressed={k===locale} title={LOCALES[k]} onClick={()=>setLocale(k)} className={`grid h-8 min-w-9 place-items-center rounded-full px-2 uppercase transition-colors ${k===locale ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}>{k}</button>)}</div>
-    <button type="button" aria-label={t(next === "dark" ? "theme.dark" : "theme.light")} title={t(next === "dark" ? "theme.dark" : "theme.light")} onClick={()=>setTheme(next)} className="grid size-10 place-items-center rounded-full text-muted transition-colors hover:bg-black/10 hover:text-ink dark:hover:bg-white/10">{theme === "dark" ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}</button>
+    <button type="button" aria-label={t(next === "dark" ? "theme.dark" : "theme.light")} data-tooltip={t(next === "dark" ? "theme.dark" : "theme.light")} onClick={()=>setTheme(next)} className="grid size-10 place-items-center rounded-full text-muted transition-colors hover:bg-black/10 hover:text-ink dark:hover:bg-white/10">{theme === "dark" ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}</button>
   </div>;
 }
 

@@ -10,6 +10,7 @@ import { ApiError, request, useContacts, useProfile } from "@/lib/client";
 import type { ContactView } from "@/lib/contacts";
 import { useToast } from "@/components/Toast";
 import { useI18n } from "@/lib/i18n";
+import { errorText } from "@/lib/errors";
 
 type Draft = { name: string; phone: string; email: string; note: string; discount: number };
 const EMPTY: Draft = { name: "", phone: "", email: "", note: "", discount: 0 };
@@ -55,7 +56,7 @@ export default function ClientsPage() {
       toast.success(t("toast.contactSaved"), draft.discount > 0 ? `${draft.name} · ${t("ct.discount")} ${draft.discount} %` : draft.name);
       setEditing(null);
     } catch (err) {
-      setError(err instanceof ApiError ? t("ct.error") : t("common.error"));
+      setError(err instanceof ApiError ? t("ct.error") : errorText(err, t));
     }
   };
   const remove = async (c: ContactView) => {

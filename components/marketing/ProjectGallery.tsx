@@ -39,7 +39,7 @@ export default function ProjectGallery({ limit, filters }: { limit?: number; fil
       </label>}
       <p className="text-sm text-muted" aria-live="polite">{works.length} {t("gal.count")}</p>
     </div>}
-    {error ? <ErrorState retry={() => { void mutate(); }} />
+    {error ? <ErrorState error={error} retry={() => { void mutate(); }} />
     : isLoading ? <LoadingState />
     : !works.length ? <EmptyState message={filters ? t("gal.none") : c.projectsEmpty}><Link href="/menuisiers" className="btn-secondary">{c.find}</Link></EmptyState>
     : <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">{works.map(w => <article key={w.id} className="group reveal">

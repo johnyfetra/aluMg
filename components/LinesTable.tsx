@@ -52,16 +52,16 @@ export default function LinesTable({ lines, t, marks, validIds, onEdit, onDuplic
                   <td className={num}>{fmt(l.unit)}</td>
                   <td className={`${num} font-semibold`}>{ok ? fmt(lineTotal(l)) : "-"}</td>
                   <td className="whitespace-nowrap px-1.5 py-1.5 text-right [&>button]:ml-1">
-                    <button type="button" className="btn-secondary !min-h-8 !px-2" onClick={() => onEdit(i)} aria-label={`${t("editor.edit")} ${t("editor.line")} ${i + 1}`} title={t("editor.edit")}>
+                    <button type="button" className="btn-secondary !min-h-8 !px-2" onClick={() => onEdit(i)} aria-label={`${t("editor.edit")} ${t("editor.line")} ${i + 1}`} data-tooltip={t("editor.edit")}>
                       <Pencil size={15} aria-hidden />
                     </button>
                     {!locked && (
                       <>
-                        <button type="button" className="btn-secondary !min-h-8 !px-2" onClick={() => onDuplicate(i)} aria-label={`${t("editor.duplicateLine")} ${t("editor.line")} ${i + 1}`} title={t("editor.duplicateLine")}>
+                        <button type="button" className="btn-secondary !min-h-8 !px-2" onClick={() => onDuplicate(i)} aria-label={`${t("editor.duplicateLine")} ${t("editor.line")} ${i + 1}`} data-tooltip={t("editor.duplicateLine")}>
                           <Copy size={15} aria-hidden />
                         </button>
                         {onRemove && (
-                          <button type="button" className="btn-danger !min-h-8 !px-2" onClick={() => onRemove(i)} aria-label={`${t("editor.removeLine")} ${i + 1}`} title={t("editor.removeLine")}>
+                          <button type="button" className="btn-danger !min-h-8 !px-2" onClick={() => onRemove(i)} aria-label={`${t("editor.removeLine")} ${i + 1}`} data-tooltip={t("editor.removeLine")}>
                             <Trash2 size={15} aria-hidden />
                           </button>
                         )}

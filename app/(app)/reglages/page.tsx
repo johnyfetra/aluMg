@@ -13,7 +13,7 @@ import { SURCHARGES, type Settings, TARIFF_KEYS } from "@/lib/model";
 
 export default function SettingsPage() {
   const { settings, error, retry } = useSettings();
-  return error ? <ErrorState retry={retry} /> : settings ? <Form initial={settings} /> : <LoadingState />;
+  return error ? <ErrorState error={error} retry={retry} /> : settings ? <Form initial={settings} /> : <LoadingState />;
 }
 
 function Form({ initial }: { initial: Settings }) {

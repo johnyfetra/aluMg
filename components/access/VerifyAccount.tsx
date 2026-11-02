@@ -9,6 +9,7 @@ import { LangMenu, ThemeSwitch } from "../Controls";
 import { ApiError, fetcher, homeFor, request, useSession } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
+import { errorText } from "@/lib/errors";
 
 type Channel = "sms" | "call" | "email";
 type Status = { verified: boolean; channels: Channel[]; phone: string; email: string };
@@ -72,7 +73,7 @@ export default function VerifyAccount() {
       if (e instanceof ApiError && e.code === "wrong_code") setError(t("vf.wrong"));
       else if (e instanceof ApiError && e.code === "locked") setError(t("vf.locked"));
       else if (e instanceof ApiError && e.code === "no_pending") setError(t("vf.expired"));
-      else setError(t("common.error"));
+      else setError(errorText(e, t));
       setCode("");
       setBusy(false);
     }

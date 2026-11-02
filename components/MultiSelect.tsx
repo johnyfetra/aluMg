@@ -65,11 +65,11 @@ export default function MultiSelect({ value, onChange, options, id, placeholder,
       <button
         ref={btn} id={id} type="button" role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? `${uid}-list` : undefined} aria-label={ariaLabel}
         onClick={() => (open ? close() : (setQuery(""), setActive(0), setOpen(true)))} onKeyDown={onKey}
-        className={`input flex items-center justify-between gap-2.5 text-left ${open ? "!border-primary ring-[3px] ring-primary/15" : ""}`}
+        className={`input flex items-center justify-between gap-2.5 text-left ${open ? "!border-accent ring-[3px] ring-accent/20" : ""}`}
       >
         {chosen.length > 0 && <span className="flex shrink-0 -space-x-2">{chosen.slice(0, 3).map((o) => <span key={o.value} className="rounded-full ring-2 ring-surface">{o.leading}</span>)}</span>}
         <span className={`min-w-0 flex-1 truncate ${chosen.length ? "" : "text-muted"}`}>{chosen.length ? chosen.map((o) => o.label).join(", ") : placeholder}</span>
-        {chosen.length > 1 && <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-bold text-primary">{chosen.length}</span>}
+        {chosen.length > 1 && <span className="shrink-0 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-bold text-ink">{chosen.length}</span>}
         <ChevronDown size={16} aria-hidden className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && pos && typeof document !== "undefined" &&
@@ -88,11 +88,11 @@ export default function MultiSelect({ value, onChange, options, id, placeholder,
                 const blocked = full && !on;
                 return (
                   <li key={o.value} role="presentation">
-                    <div role="option" aria-selected={on} aria-disabled={blocked} onPointerEnter={() => setActive(i)} onClick={() => !blocked && toggle(o.value)} className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl px-2.5 py-2 ${i === active ? "bg-surface-2" : ""} ${on ? "bg-primary/10" : ""} ${blocked ? "cursor-not-allowed opacity-45" : ""}`}>
-                      <span aria-hidden className={`grid size-5 shrink-0 place-items-center rounded-md border ${on ? "border-primary bg-primary text-on-primary" : "border-line bg-surface"}`}>{on && <Check size={13} strokeWidth={3} />}</span>
+                    <div role="option" aria-selected={on} aria-disabled={blocked} onPointerEnter={() => setActive(i)} onClick={() => !blocked && toggle(o.value)} data-active={i === active} className={`pop-item min-h-12 py-2 ${blocked ? "!cursor-not-allowed opacity-45" : ""}`}>
+                      <span aria-hidden className={`grid size-5 shrink-0 place-items-center rounded-md border ${on ? "border-accent bg-accent text-on-accent" : "border-line bg-surface"}`}>{on && <Check size={13} strokeWidth={3} />}</span>
                       {o.leading && <span className="shrink-0">{o.leading}</span>}
                       <span className="min-w-0 flex-1">
-                        <span className={`block truncate ${on ? "font-semibold text-primary" : "font-medium"}`}>{o.label}</span>
+                        <span className={`block truncate ${on ? "font-semibold" : "font-medium"}`}>{o.label}</span>
                         {o.description && <span className="block truncate text-xs text-muted">{o.description}</span>}
                       </span>
                       {o.meta && <span className="shrink-0 text-xs text-muted">{o.meta}</span>}
@@ -103,7 +103,7 @@ export default function MultiSelect({ value, onChange, options, id, placeholder,
             </ul>
             <div className="flex shrink-0 items-center justify-between gap-3 border-t border-line px-3 py-2 text-xs text-muted">
               <span>{value.length}{max ? ` / ${max}` : ""} {t("multi.chosen")}</span>
-              <button type="button" onClick={() => close()} className="rounded-lg px-2 py-1 font-semibold text-primary hover:bg-primary/10">{t("multi.done")}</button>
+              <button type="button" onClick={() => close()} className="rounded-lg px-2 py-1 font-semibold text-primary hover:bg-surface-2">{t("multi.done")}</button>
             </div>
           </div>,
           document.body,

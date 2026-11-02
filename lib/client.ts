@@ -16,7 +16,10 @@ class ApiError extends Error {
 
 // Une session expirée renvoie 401 : on repart vers la connexion.
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
-  const res = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
+  // coupure réseau : fetch lève une TypeError ; on la rend reconnaissable (status 0) pour afficher « connexion impossible »
+  const res = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined }).catch(() => {
+    throw new ApiError(0, "network");
+  });
   if (res.status === 401 && !url.startsWith("/api/auth/") && typeof location !== "undefined") location.replace("/connexion");
   const data = await res.json().catch(() => ({}));
   // compte pas encore vérifié : toute action est refusée, on renvoie vers l'écran de vérification

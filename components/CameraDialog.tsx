@@ -84,7 +84,7 @@ export default function CameraDialog({ t, onCapture, onClose }: { t: T; onCaptur
           </>
         ) : (
           <>
-            <button type="button" className="btn-secondary" onClick={() => { setError(""); setFacing(facing === "environment" ? "user" : "environment"); }} aria-label={t("msg.switchCamera")} title={t("msg.switchCamera")}>
+            <button type="button" className="btn-secondary" onClick={() => { setError(""); setFacing(facing === "environment" ? "user" : "environment"); }} aria-label={t("msg.switchCamera")} data-tooltip={t("msg.switchCamera")}>
               <RefreshCw size={16} aria-hidden />
             </button>
             <button type="button" className="btn-primary" onClick={capture} disabled={!!error}>

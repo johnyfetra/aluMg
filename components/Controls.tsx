@@ -1,8 +1,9 @@
 "use client";
-import { Check, ChevronDown, Globe, LogOut, Moon, Settings, ShieldCheck, Sun, UserCircle } from "lucide-react";
+import { Check, ChevronDown, LogOut, Moon, Settings, ShieldCheck, Sun, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Menu, { menuItem } from "./Menu";
+import Flag from "./Flag";
 import { Avatar } from "./ui";
 import { request, useMe } from "@/lib/client";
 import { LOCALES, type Locale, useI18n } from "@/lib/i18n";
@@ -41,16 +42,16 @@ export function LangMenu() {
       triggerClass="flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 text-sm font-medium transition-colors hover:bg-surface-2"
       trigger={
         <>
-          <Globe size={16} aria-hidden className="text-muted" />
+          <Flag code={locale} size={22} />
           <span className="hidden sm:inline">{LOCALES[locale]}</span>
-          <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-bold uppercase text-muted sm:hidden">{locale}</span>
+          <span className="text-[11px] font-bold uppercase text-muted sm:hidden">{locale}</span>
           <ChevronDown size={14} aria-hidden className="text-muted" />
         </>
       }
     >
       {(close) => (
         <>
-          <p className="px-3 pb-1 pt-1.5 text-xs font-semibold uppercase tracking-wide text-muted">{t("lang.label")}</p>
+          <p className="pop-label">{t("lang.label")}</p>
           {(Object.entries(LOCALES) as [Locale, string][]).map(([k, name]) => (
             <button
               key={k}
@@ -58,15 +59,16 @@ export function LangMenu() {
               role="menuitemradio"
               aria-checked={k === locale}
               lang={k}
-              className={`${menuItem} ${k === locale ? "bg-surface-2 font-semibold" : ""}`}
+              className={`${menuItem} ${k === locale ? "font-semibold" : ""}`}
               onClick={() => {
                 setLocale(k);
                 close();
               }}
             >
-              <span className="grid size-7 place-items-center rounded-md bg-surface-2 text-[11px] font-bold uppercase text-muted">{k}</span>
+              <Flag code={k} size={26} />
               <span className="flex-1">{name}</span>
-              {k === locale && <Check size={16} aria-hidden className="text-primary" />}
+              <span className="text-[11px] font-bold uppercase text-muted">{k}</span>
+              {k === locale && <Check size={16} strokeWidth={2.5} aria-hidden className="text-accent" />}
             </button>
           ))}
         </>

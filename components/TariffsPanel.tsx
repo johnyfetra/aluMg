@@ -9,6 +9,7 @@ import { ApiError, request, useContacts, useSettings } from "@/lib/client";
 import { tariffLabel } from "@/lib/describe";
 import { useI18n } from "@/lib/i18n";
 import { SERVICE_KINDS, type Settings, TARIFF_KEYS } from "@/lib/model";
+import { errorText } from "@/lib/errors";
 
 export const openTariffs = () => window.dispatchEvent(new Event("alumg:tariffs"));
 
@@ -62,7 +63,7 @@ export default function TariffsPanel() {
       toast.success(t("toast.tariffsSaved"), changedContacts.length ? `${changedContacts.length} ${t("tariffs.discountsUpdated")}` : t("toast.tariffsSavedText"));
       setOpen(false);
     } catch (err) {
-      toast.error(t("toast.errorTitle"), err instanceof ApiError ? t("common.error") : t("toast.errorText"));
+      toast.error(t("toast.errorTitle"), err instanceof ApiError ? errorText(err, t) : t("toast.errorText"));
     } finally {
       setBusy(false);
     }

@@ -106,7 +106,7 @@ export default function SummaryAside({ t, q, setQ, totals, margin, plan, persist
                   {q.status === "rejected" ? t("editor.resend") : t("editor.sendShort")}
                 </button>
                 {q.clientId && q.status !== "negotiation" && q.status !== "rejected" && (
-                  <button type="button" className="btn-danger !px-3" onClick={() => onAct("decline")} aria-label={t("editor.decline")} title={t("editor.decline")}>
+                  <button type="button" className="btn-danger !px-3" onClick={() => onAct("decline")} aria-label={t("editor.decline")} data-tooltip={t("editor.decline")}>
                     <XCircle size={15} aria-hidden />
                   </button>
                 )}

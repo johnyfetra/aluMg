@@ -224,7 +224,7 @@ export function LineCard({
             {t("editor.duplicateLine")}
           </button>
           {onRemove && (
-            <button type="button" className="btn-danger" onClick={onRemove} disabled={locked} aria-label={t("editor.removeLine")} title={t("editor.removeLine")}>
+            <button type="button" className="btn-danger" onClick={onRemove} disabled={locked} aria-label={t("editor.removeLine")} data-tooltip={t("editor.removeLine")}>
               <Trash2 size={16} aria-hidden />
             </button>
           )}

@@ -70,14 +70,14 @@ function QuotesView() {
         <Download size={16} aria-hidden />
         PDF
       </button>
-      <Link href={`/devis/${q.id}/apercu`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("preview.open")} ${q.number}`} title={t("preview.open")}>
+      <Link href={`/devis/${q.id}/apercu`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("preview.open")} ${q.number}`} data-tooltip={t("preview.open")}>
         <Eye size={16} aria-hidden />
         <span className="max-xl:hidden">{t("preview.view")}</span>
       </Link>
       <Link href={`/devis/${q.id}`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("common.edit")} ${q.number}`}>
         <Pencil size={16} aria-hidden />
       </Link>
-      <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => duplicate(q)} aria-label={`${t("quotes.duplicate")} ${q.number}`} title={t("quotes.duplicate")}>
+      <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => duplicate(q)} aria-label={`${t("quotes.duplicate")} ${q.number}`} data-tooltip={t("quotes.duplicate")}>
         <Copy size={16} aria-hidden />
       </button>
       <button type="button" className="btn-danger !min-h-9 !px-3" aria-label={`${t("common.delete")} ${q.number}`} onClick={async () => (await ask({ message: t("common.confirmDelete"), tone: "danger", confirmLabel: t("common.delete") })) && (await remove(q.id), toast.success(t("toast.deleted"), q.number))}>

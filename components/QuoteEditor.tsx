@@ -26,6 +26,7 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import { DEFAULT_SIZE, newLine, price } from "./quote/line";
 import { LineCard } from "./quote/LineCard";
 import SummaryAside from "./quote/SummaryAside";
+import { errorText } from "@/lib/errors";
 
 export default function QuoteEditor({ id }: { id?: string }) {
   const { t } = useI18n();
@@ -172,7 +173,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       return saved;
     } catch (e) {
       console.error("[alumg] enregistrement en échec", e);
-      setMsg({ ok: false, text: t("common.error") });
+      setMsg({ ok: false, text: errorText(e, t) });
       toast.error(t("toast.errorTitle"), t("toast.errorText"));
       return null;
     }
@@ -217,7 +218,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       toast.success(type === "decline" ? t("toast.declined") : q.status === "rejected" ? t("toast.resent") : t("toast.sent"), `${saved.number} · ${saved.client.name} · ${t(`toast.text.${type}`)}`);
       router.push("/devis");
     } catch (e) {
-      setMsg({ ok: false, text: e instanceof ApiError && e.code === "incomplete" ? t("editor.incompletePrices") : e instanceof ApiError && e.code === "no_client_account" ? t("editor.noClientAccount") : t("common.error") });
+      setMsg({ ok: false, text: e instanceof ApiError && e.code === "incomplete" ? t("editor.incompletePrices") : e instanceof ApiError && e.code === "no_client_account" ? t("editor.noClientAccount") : errorText(e, t) });
     }
   };
 

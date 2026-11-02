@@ -10,6 +10,7 @@ import { ApiError, request, useQuotes } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import type { Quote } from "@/lib/model";
 import { totals } from "@/lib/totals";
+import { errorText } from "@/lib/errors";
 
 const SITE_STATUSES = ["accepted", "in_progress", "completed"] as const;
 
@@ -57,7 +58,7 @@ function SiteCard({ q }: { q: Quote }) {
       setNote("");
       setMsg({ ok: true, text: t("sites.updated") });
     } catch (err) {
-      setMsg({ ok: false, text: err instanceof ApiError ? t("common.error") : t("common.error") });
+      setMsg({ ok: false, text: err instanceof ApiError ? errorText(err, t) : errorText(err, t) });
     } finally {
       setBusy(false);
     }

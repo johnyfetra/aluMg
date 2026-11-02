@@ -100,15 +100,15 @@ export default function ChatWidget() {
         )}
         {open && (
           <>
-            <button type="button" onClick={() => update({ big: !big })} aria-label={t(big ? "msg.widget.shrink" : "msg.widget.enlarge")} title={t(big ? "msg.widget.shrink" : "msg.widget.enlarge")} className={`${icon} max-sm:hidden`}>
+            <button type="button" onClick={() => update({ big: !big })} aria-label={t(big ? "msg.widget.shrink" : "msg.widget.enlarge")} data-tooltip={t(big ? "msg.widget.shrink" : "msg.widget.enlarge")} data-tooltip-pos="top" className={`${icon} max-sm:hidden`}>
               {big ? <Minimize2 size={15} aria-hidden /> : <Maximize2 size={15} aria-hidden />}
             </button>
-            <Link href={expandHref} onClick={() => update({ open: false })} aria-label={t("msg.widget.expand")} title={t("msg.widget.expand")} className={icon}>
+            <Link href={expandHref} onClick={() => update({ open: false })} aria-label={t("msg.widget.expand")} data-tooltip={t("msg.widget.expand")} data-tooltip-pos="top" className={icon}>
               <ExternalLink size={15} aria-hidden />
             </Link>
           </>
         )}
-        <button type="button" onClick={() => update({ open: !open })} aria-label={t(open ? "msg.widget.close" : "msg.widget.open")} title={t(open ? "msg.widget.close" : "msg.widget.open")} className={icon}>
+        <button type="button" onClick={() => update({ open: !open })} aria-label={t(open ? "msg.widget.close" : "msg.widget.open")} data-tooltip={t(open ? "msg.widget.close" : "msg.widget.open")} data-tooltip-pos="top" className={icon}>
           {open ? <ChevronDown size={18} aria-hidden /> : <ChevronUp size={18} aria-hidden />}
         </button>
       </div>

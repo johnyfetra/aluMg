@@ -8,6 +8,7 @@ import { fileToDataUrl } from "@/lib/image";
 import { useI18n } from "@/lib/i18n";
 import { SPECIALTIES } from "@/lib/model";
 import type { Profile } from "@/lib/profiles";
+import { errorText } from "@/lib/errors";
 
 export default function PublicProfilePage() {
   const { profile } = useProfile();
@@ -36,7 +37,7 @@ function Form({ initial }: { initial: Profile }) {
       setP(saved);
       setMsg({ ok: true, text: t("pp.saved") });
     } catch (err) {
-      setMsg({ ok: false, text: err instanceof ApiError && err.code === "incomplete" ? t("pp.incomplete") : err instanceof ApiError && err.code === "invalid_body" ? t("pp.invalid") : t("common.error") });
+      setMsg({ ok: false, text: err instanceof ApiError && err.code === "incomplete" ? t("pp.incomplete") : err instanceof ApiError && err.code === "invalid_body" ? t("pp.invalid") : errorText(err, t) });
     }
   };
 

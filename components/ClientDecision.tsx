@@ -116,7 +116,7 @@ export default function ClientDecision({ q, busy, pending = 0, act, t }: { q: Pi
 
       {sent && panel === null && (
         <div className="fixed inset-x-0 bottom-0 z-30 flex items-stretch gap-2 border-t border-line bg-surface/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden" role="group" aria-label={t("act.decide")}>
-          <button type="button" className="btn-danger !min-h-12 !px-3.5" onClick={() => open("reject")} aria-label={t("act.reject")} title={t("act.reject")}><ThumbsDown size={18} aria-hidden /></button>
+          <button type="button" className="btn-danger !min-h-12 !px-3.5" onClick={() => open("reject")} aria-label={t("act.reject")} data-tooltip={t("act.reject")}><ThumbsDown size={18} aria-hidden /></button>
           <button type="button" className="btn-secondary !min-h-12 flex-1 !px-2 text-[13px]" onClick={() => open("change")}><MessageSquareWarning size={16} aria-hidden />{t("act.requestChangeShort")}</button>
           <button type="button" className="btn-primary !min-h-12 flex-[1.2] !px-2" disabled={busy} onClick={accept}><ThumbsUp size={16} aria-hidden />{t("act.acceptShort")}</button>
         </div>

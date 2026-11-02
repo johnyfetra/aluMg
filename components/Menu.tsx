@@ -48,7 +48,7 @@ export default function Menu({
         {trigger}
       </button>
       {open && (
-        <div role="menu" aria-label={label} className={`absolute z-40 mt-2 ${width} origin-top overflow-hidden rounded-xl border border-line bg-surface p-1.5 shadow-xl ring-1 ring-black/5 ${align === "right" ? "right-0" : "left-0"}`}>
+        <div role="menu" aria-label={label} className={`select-pop absolute z-40 mt-2 ${width} origin-top overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.35)] ring-1 ring-black/5 ${align === "right" ? "right-0" : "left-0"}`}>
           {children(() => setOpen(false))}
         </div>
       )}
@@ -56,4 +56,4 @@ export default function Menu({
   );
 }
 
-export const menuItem = "flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm text-ink transition-colors hover:bg-surface-2 focus-visible:bg-surface-2";
+export const menuItem = "pop-item min-h-10 w-full text-left text-sm text-ink";

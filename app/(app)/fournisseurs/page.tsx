@@ -11,7 +11,7 @@ import type { Market, Settings } from "@/lib/model";
 
 export default function SuppliersPage() {
   const { settings, error, retry } = useSettings();
-  return error ? <ErrorState retry={retry} /> : settings ? <Form initial={settings} /> : <LoadingState />;
+  return error ? <ErrorState error={error} retry={retry} /> : settings ? <Form initial={settings} /> : <LoadingState />;
 }
 
 // Menu « Fournisseurs » : le catalogue général du menuisier, utilisé par tous ses devis tant qu'un devis n'a pas son propre catalogue.

@@ -49,7 +49,7 @@ export default function ClientDashboard() {
         </Link>
       </div>
 
-      {error ? <ErrorState retry={() => { void mutate(); }} /> : isLoading ? <LoadingState /> : <>
+      {error ? <ErrorState error={error} retry={() => { void mutate(); }} /> : isLoading ? <LoadingState /> : <>
       <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {kpis.map(([k, v, Icon, color]) => (
           <div key={k} className="card flex flex-col items-start gap-3 !p-3.5 sm:flex-row sm:items-center sm:gap-4 sm:!p-4">
