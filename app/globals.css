@@ -402,5 +402,5 @@ aside :focus-visible {
 @media (prefers-reduced-motion: reduce) { .nav-meter { display: none; } .nav-link::after { transition: none; } }
 
 /* Fond des conversations : une trame discrète d'outils et d'ouvrages de menuiserie (fenêtre, équerre, mètre, profilé…), comme le papier peint d'une messagerie. */
-.chat-bg { background-image: url(/brand/chat-pattern-light.svg); background-size: 616px; }
+.chat-bg { background-image: url(/brand/chat-pattern-light.svg); background-size: 640px; }
 [data-theme="dark"] .chat-bg { background-image: url(/brand/chat-pattern-dark.svg); }
