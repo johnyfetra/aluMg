@@ -3,28 +3,42 @@ import Brand from "./Brand";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { ArrowUpRight } from "lucide-react";
-import { LangMenu, ThemeSwitch, UserMenu } from "./Controls";
+import { ArrowUpRight, Moon, Sun } from "lucide-react";
+import { UserMenu } from "./Controls";
+import { setTheme, useTheme } from "@/lib/theme";
 import { homeFor, useSession } from "@/lib/client";
-import { useI18n } from "@/lib/i18n";
+import { LOCALES, type Locale, useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
 
 function PublicNavigation() {
   const { locale, t } = useI18n(); const c = marketing[locale]; const path = usePathname();
-  return <nav aria-label={t("nav.main")} className="flex items-center gap-1 text-sm sm:gap-2">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className="relative whitespace-nowrap rounded-md px-3 py-2.5 focus-visible:outline-offset-2 text-muted transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-muted/50 after:transition-transform after:duration-300 hover:text-ink hover:after:scale-x-100 aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:after:scale-x-100 aria-[current=page]:after:bg-accent">{label}</Link>)}</nav>;
+  return <nav aria-label={t("nav.main")} className="flex items-center gap-0.5 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className="nav-link relative whitespace-nowrap rounded-full px-4 py-2 text-muted transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink">{label}</Link>)}</nav>;
+}
+
+// Langue : trois codes côte à côte (un seul geste, pas de menu) ; thème : un bouton qui bascule.
+function GlassControls() {
+  const { t, locale, setLocale } = useI18n(); const theme = useTheme();
+  const next = theme === "dark" ? "light" : "dark";
+  return <div className="flex items-center gap-1">
+    <div role="group" aria-label={t("lang.label")} className="flex items-center rounded-full bg-black/10 p-0.5 font-mono text-[11px] font-semibold dark:bg-white/10">{(Object.keys(LOCALES) as Locale[]).map(k=><button key={k} type="button" lang={k} aria-pressed={k===locale} title={LOCALES[k]} onClick={()=>setLocale(k)} className={`grid h-8 min-w-9 place-items-center rounded-full px-2 uppercase transition-colors ${k===locale ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}>{k}</button>)}</div>
+    <button type="button" aria-label={t(next === "dark" ? "theme.dark" : "theme.light")} title={t(next === "dark" ? "theme.dark" : "theme.light")} onClick={()=>setTheme(next)} className="grid size-10 place-items-center rounded-full text-muted transition-colors hover:bg-black/10 hover:text-ink dark:hover:bg-white/10">{theme === "dark" ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}</button>
+  </div>;
 }
 
 export default function PublicShell({ children }: { children: ReactNode }) {
   const { t, locale } = useI18n(); const c = marketing[locale]; const { data: me } = useSession();
   return <div className="flex min-h-screen flex-col">
     <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:p-3">{t("nav.skip")}</a>
-    <header className="sticky top-0 z-30 border-b border-line bg-bg">
-      <div className="public-container flex min-h-20 flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3">
-        <Link href="/" aria-label={`AluMg, ${c.home}`} className="shrink-0"><Brand /></Link>
-        <div className="hidden xl:block"><Suspense fallback={null}><PublicNavigation /></Suspense></div>
-        <div className="flex items-center gap-1 sm:gap-2"><LangMenu /><ThemeSwitch />{me ? <><Link href={homeFor(me.role)} className="btn-secondary hidden sm:inline-flex">{t("pub.myspace")}</Link><UserMenu /></> : <><Link href="/connexion" className="btn-ghost hidden sm:inline-flex">{t("pub.login")}</Link><Link href="/inscription" className="btn-primary hidden md:inline-flex">{c.start}<ArrowUpRight size={15} aria-hidden /></Link></>}</div>
+    <header className="sticky top-3 z-30 px-3 pt-3 sm:px-6">
+      <div className="glass-nav relative mx-auto max-w-[84rem] rounded-[1.75rem] xl:rounded-full">
+        <div className="flex min-h-16 items-center justify-between gap-x-3 px-3 py-2 sm:pl-5 sm:pr-3">
+          <Link href="/" aria-label={`AluMg, ${c.home}`} className="shrink-0"><Brand /></Link>
+          <div className="hidden xl:block"><Suspense fallback={null}><PublicNavigation /></Suspense></div>
+          <div className="flex items-center gap-1 sm:gap-2"><GlassControls />{me ? <><Link href={homeFor(me.role)} className="hidden items-center rounded-full border border-line/70 px-4 py-2 text-sm font-semibold transition-colors hover:bg-black/10 sm:inline-flex dark:hover:bg-white/10">{t("pub.myspace")}</Link><UserMenu /></> : <><Link href="/connexion" className="hidden rounded-full px-4 py-2 text-sm font-semibold text-muted transition-colors hover:text-ink sm:inline-flex">{t("pub.login")}</Link><Link href="/inscription" className="btn-accent hidden !rounded-full !px-5 md:inline-flex">{c.start}<ArrowUpRight size={15} aria-hidden /></Link></>}</div>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-1 border-t border-line/40 px-2 py-1 xl:hidden"><Suspense fallback={null}><PublicNavigation /></Suspense>{!me && <Link href="/connexion" className="rounded-full px-4 py-2 text-sm font-semibold text-muted sm:hidden">{t("pub.login")}</Link>}</div>
+        <span aria-hidden className="nav-meter pointer-events-none absolute inset-x-8 bottom-0 h-0.5 origin-left rounded-full bg-accent" />
       </div>
-      <div className="flex flex-wrap items-center justify-center gap-1 border-t border-line px-2 py-1 xl:hidden"><Suspense fallback={null}><PublicNavigation /></Suspense>{!me && <Link href="/connexion" className="btn-ghost sm:hidden">{t("pub.login")}</Link>}</div>
     </header>
     <main id="main" className="vitrine min-w-0 flex-1">{children}</main>
     <footer className="border-t border-line bg-bg"><div className="public-container grid gap-10 py-14 md:grid-cols-[2fr_1fr_1fr]"><div><Link href="/"><Brand /></Link><p className="mt-4 max-w-xs text-sm leading-7 text-muted">{c.footer}</p><p className="mt-5 text-xs text-muted">© AluMg</p></div><div><h2 className="eyebrow">{c.explore}</h2><ul className="mt-5 space-y-3 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></div><div><h2 className="eyebrow">{c.account}</h2><ul className="mt-5 space-y-3 text-sm">{[["/connexion",t("pub.login")],["/inscription?role=client",c.client],["/inscription?role=menuisier",c.pro]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></div></div></footer>
