@@ -15,14 +15,14 @@ export default function MenuisierCard({ m }: { m: DirectoryEntry }) {
         <Photo src={m.cover} alt={m.name} grade className="h-full w-full" />
         <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
         {m.verified && (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-emerald-700 shadow">
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-surface/95 px-2.5 py-1 text-xs font-bold text-ok shadow">
             <BadgeCheck size={14} aria-hidden />
             {t("dir.verified")}
           </span>
         )}
         {m.reviews > 0 && (
           <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-xs font-bold text-white backdrop-blur">
-            <span aria-hidden style={{ color: "#f5a524" }}>★</span>
+            <span aria-hidden style={{ color: "var(--rating)" }}>★</span>
             {m.rating.toFixed(1)}
           </span>
         )}

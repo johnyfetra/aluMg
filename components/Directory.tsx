@@ -101,7 +101,7 @@ export default function Directory() {
                 t("dir.any")
               ) : (
                 <span className="inline-flex items-center gap-1.5">
-                  <Star size={14} aria-hidden fill="#f5a524" stroke="#f5a524" />
+                  <Star size={14} aria-hidden fill="var(--rating)" stroke="var(--rating)" />
                   {r} {t("dir.andMore")}
                 </span>
               )}

@@ -30,6 +30,7 @@
   --c3: #5b7fa3;
   --c4: #8a8d86;
   --logo: #243b32;
+  --rating: #d98a00;
   --accent: #c58a58; /* le bois : appels à l'action et mises en avant, avec parcimonie */
   --on-accent: #1f140a;
   /* bulles « moi » de la messagerie : vert très pâle */
@@ -50,6 +51,7 @@
 }
 
 [data-theme="dark"] {
+  --rating: #f5a524;
   --bg: #141916;
   --surface: #1c231f;
   --surface-2: #27302b;
@@ -355,8 +357,8 @@ aside :focus-visible {
 @keyframes show-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .show-in { animation: show-in 0.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
 .door::before, .door::after { content: ""; position: absolute; top: 0; bottom: 0; z-index: 2; width: 50.4%; will-change: transform; }
-.door::before { left: 0; background: linear-gradient(90deg, #16231d 0 calc(100% - 9px), #3a5a4b calc(100% - 9px)); animation: door-left 1.2s cubic-bezier(0.7, 0, 0.2, 1) 0.3s both; }
-.door::after { right: 0; background: linear-gradient(270deg, #16231d 0 calc(100% - 9px), #3a5a4b calc(100% - 9px)); animation: door-right 1.2s cubic-bezier(0.7, 0, 0.2, 1) 0.3s both; }
+.door::before { left: 0; background: linear-gradient(90deg, var(--hero-from) 0 calc(100% - 9px), color-mix(in srgb, var(--hero-from), white 16%) calc(100% - 9px)); animation: door-left 1.2s cubic-bezier(0.7, 0, 0.2, 1) 0.3s both; }
+.door::after { right: 0; background: linear-gradient(270deg, var(--hero-from) 0 calc(100% - 9px), color-mix(in srgb, var(--hero-from), white 16%) calc(100% - 9px)); animation: door-right 1.2s cubic-bezier(0.7, 0, 0.2, 1) 0.3s both; }
 @keyframes door-left { to { transform: translateX(-102%); } }
 @keyframes door-right { to { transform: translateX(102%); } }
 @media (prefers-reduced-motion: reduce) { .deck { animation: none !important; } .layer { transition: none; } .door::before, .door::after { display: none; } .float-in { animation: none; } .slide-img { transform: none; transition: opacity 0.4s; } .vitrine :is(h2, .eyebrow, p, figure, article, details, li, a, .border-t) { animation: none; } }

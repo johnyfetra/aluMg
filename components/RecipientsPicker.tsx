@@ -29,7 +29,7 @@ export default function RecipientsPicker({ value, onChange, directory, known, pr
           aria-label={t("req.joiner")}
           options={directory.map((m) => ({
             value: m.slug, label: m.name, description: m.city || undefined, leading: <Avatar name={m.name} src={m.logo} size={32} />,
-            meta: m.reviews > 0 ? <span className="inline-flex items-center gap-1"><Star size={12} aria-hidden className="fill-[#f5a524] text-[#f5a524]" />{m.rating.toFixed(1)} ({m.reviews})</span> : undefined,
+            meta: m.reviews > 0 ? <span className="inline-flex items-center gap-1"><Star size={12} aria-hidden className="fill-[var(--rating)] text-[var(--rating)]" />{m.rating.toFixed(1)} ({m.reviews})</span> : undefined,
           }))}
         />
         <p className="text-xs text-muted">{t("req.multiHint")} ({MAX_RECIPIENTS} max)</p>

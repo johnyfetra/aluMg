@@ -164,7 +164,7 @@ export function Stars({ value, size = 16, label }: { value: number; size?: numbe
               <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" />
             </svg>
             <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
-              <svg viewBox="0 0 24 24" width={size} height={size} className="text-warn" fill="currentColor" style={{ color: "#f5a524" }}>
+              <svg viewBox="0 0 24 24" width={size} height={size} className="text-warn" fill="currentColor" style={{ color: "var(--rating)" }}>
                 <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" />
               </svg>
             </span>
@@ -194,7 +194,7 @@ export function StarInput({ value, onChange, label }: { value: number; onChange:
     <div role="group" aria-label={label} className="flex gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
         <button key={n} type="button" aria-pressed={value === n} aria-label={`${n} / 5`} onClick={() => onChange(n)} className="grid size-11 place-items-center rounded-lg hover:bg-surface-2">
-          <svg viewBox="0 0 24 24" width={28} height={28} fill={n <= value ? "#f5a524" : "none"} stroke={n <= value ? "#f5a524" : "currentColor"} strokeWidth={1.6} className={n <= value ? "" : "text-muted"}>
+          <svg viewBox="0 0 24 24" width={28} height={28} fill={n <= value ? "var(--rating)" : "none"} stroke={n <= value ? "var(--rating)" : "currentColor"} strokeWidth={1.6} className={n <= value ? "" : "text-muted"}>
             <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" />
           </svg>
         </button>
