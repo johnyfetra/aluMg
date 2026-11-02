@@ -444,6 +444,7 @@ export const fr = {
   "spec.sur-mesure": "Sur mesure",
   "pub.menuisiers": "Menuisiers",
   "pub.login": "Se connecter",
+  "pub.top": "Haut de page",
   "pub.signup": "Créer un compte",
   "pub.myspace": "Mon espace",
   "pub.footer": "Mettre en relation clients et menuisiers aluminium à Madagascar.",

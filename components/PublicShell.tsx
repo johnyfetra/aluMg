@@ -3,7 +3,7 @@ import Brand from "./Brand";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
-import { ArrowUpRight, Moon, Sun } from "lucide-react";
+import { ArrowUp, ArrowUpRight, Moon, Sun } from "lucide-react";
 import { UserMenu } from "./Controls";
 import { setTheme, useTheme } from "@/lib/theme";
 import { homeFor, useSession } from "@/lib/client";
@@ -41,6 +41,22 @@ export default function PublicShell({ children }: { children: ReactNode }) {
       </div>
     </header>
     <main id="main" className="vitrine min-w-0 flex-1">{children}</main>
-    <footer className="border-t border-line bg-bg"><div className="public-container grid gap-10 py-14 md:grid-cols-[2fr_1fr_1fr]"><div><Link href="/"><Brand /></Link><p className="mt-4 max-w-xs text-sm leading-7 text-muted">{c.footer}</p><p className="mt-5 text-xs text-muted">© AluMg</p></div><div><h2 className="eyebrow">{c.explore}</h2><ul className="mt-5 space-y-3 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></div><div><h2 className="eyebrow">{c.account}</h2><ul className="mt-5 space-y-3 text-sm">{[["/connexion",t("pub.login")],["/inscription?role=client",c.client],["/inscription?role=menuisier",c.pro]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></div></div></footer>
+    <footer className="border-t border-line bg-bg">
+      <div className="public-container grid gap-8 py-10 md:grid-cols-[2fr_1fr_1fr] md:gap-10 md:py-14">
+        <div className="flex flex-col items-center text-center md:items-start md:text-left">
+          <Link href="/"><Brand /></Link>
+          <p className="mt-4 max-w-xs text-sm leading-7 text-muted">{c.footer}</p>
+        </div>
+        {/* mobile : deux colonnes centrées séparées par un filet vertical ; bureau : colonnes à plat dans la grille */}
+        <div className="grid grid-cols-2 divide-x divide-line border-y border-line py-8 text-center md:contents md:divide-x-0 md:border-0 md:py-0 md:text-left">
+          <nav aria-label={c.explore} className="px-3 md:px-0"><h2 className="eyebrow">{c.explore}</h2><ul className="mt-5 space-y-3 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></nav>
+          <nav aria-label={c.account} className="px-3 md:px-0"><h2 className="eyebrow">{c.account}</h2><ul className="mt-5 space-y-3 text-sm">{[["/connexion",t("pub.login")],["/inscription?role=client",c.client],["/inscription?role=menuisier",c.pro]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></nav>
+        </div>
+        <div className="flex flex-col items-center gap-3 text-xs text-muted md:col-span-3 md:flex-row md:justify-between md:border-t md:border-line md:pt-6">
+          <p>© AluMg</p>
+          <a href="#main" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors hover:text-ink"><ArrowUp size={14} aria-hidden />{t("pub.top")}</a>
+        </div>
+      </div>
+    </footer>
   </div>;
 }

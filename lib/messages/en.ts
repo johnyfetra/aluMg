@@ -444,6 +444,7 @@ export const en: Messages = {
   "spec.sur-mesure": "Made to measure",
   "pub.menuisiers": "Joiners",
   "pub.login": "Sign in",
+  "pub.top": "Back to top",
   "pub.signup": "Create an account",
   "pub.myspace": "My space",
   "pub.footer": "Connecting clients and aluminium joiners in Madagascar.",

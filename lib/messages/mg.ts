@@ -446,6 +446,7 @@ export const mg: Messages = {
   "spec.sur-mesure": "Araka ny refy",
   "pub.menuisiers": "Mpanao varavarankely",
   "pub.login": "Hiditra",
+  "pub.top": "Miakatra",
   "pub.signup": "Hamorona kaonty",
   "pub.myspace": "Ny toerako",
   "pub.footer": "Mampifandray ny mpanjifa sy ny mpanao aluminium eto Madagasikara.",
