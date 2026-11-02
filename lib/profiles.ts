@@ -83,13 +83,15 @@ export const portfolioSchema = z.object({
   description: text(1500),
   category: z.enum(SPECIALTIES).or(z.literal("")),
   year: z.number().int().min(1990).max(2100).nullable(),
+  project: text(100),
+  city: text(80),
   images: z.array(image).min(1).max(8),
   thumb: image.max(120_000),
 });
 export type PortfolioInput = z.infer<typeof portfolioSchema>;
 export type PortfolioItem = PortfolioInput & { id: string };
 
-const toItem = (r: typeof schema.portfolioItems.$inferSelect): PortfolioItem => ({ id: r.id, title: r.title, description: r.description, category: (r.category as PortfolioItem["category"]) ?? "", year: r.year, images: r.images, thumb: r.thumb });
+const toItem = (r: typeof schema.portfolioItems.$inferSelect): PortfolioItem => ({ id: r.id, title: r.title, description: r.description, category: (r.category as PortfolioItem["category"]) ?? "", year: r.year, project: r.project, city: r.city, images: r.images, thumb: r.thumb });
 
 export async function listPortfolio(userId: string): Promise<PortfolioItem[]> {
   const db = await getDb();
@@ -112,6 +114,21 @@ export async function deletePortfolioItem(userId: string, id: string) {
   const db = await getDb();
   const r = await db.delete(schema.portfolioItems).where(and(eq(schema.portfolioItems.id, id), eq(schema.portfolioItems.userId, userId))).returning({ id: schema.portfolioItems.id });
   return r.length > 0;
+}
+
+// Réalisations de tous les menuisiers publiés, pour la galerie publique : vignettes seulement (les photos complètes restent sur le profil).
+export type PublicWork = { id: string; title: string; description: string; category: string; project: string; city: string; year: number | null; photos: number; thumb: string; menuisier: { slug: string; name: string; verified: boolean } };
+export async function listPublicWorks(f: { category?: string; project?: string; city?: string } = {}): Promise<PublicWork[]> {
+  const db = await getDb();
+  const rows = await db
+    .select({ it: schema.portfolioItems, slug: schema.menuisierProfiles.slug, name: schema.menuisierProfiles.displayName, verified: schema.menuisierProfiles.verified, pcity: schema.menuisierProfiles.city, photos: sql<number>`jsonb_array_length(${schema.portfolioItems.images})::int` })
+    .from(schema.portfolioItems)
+    .innerJoin(schema.menuisierProfiles, and(eq(schema.menuisierProfiles.userId, schema.portfolioItems.userId), eq(schema.menuisierProfiles.published, true)))
+    .orderBy(desc(schema.portfolioItems.createdAt))
+    .limit(200);
+  return rows
+    .map((r) => ({ id: r.it.id, title: r.it.title, description: r.it.description, category: r.it.category, project: r.it.project, city: r.it.city || r.pcity, year: r.it.year, photos: r.photos, thumb: r.it.thumb ? `/api/public/works/${r.it.id}/img` : "", menuisier: { slug: r.slug, name: r.name, verified: r.verified } }))
+    .filter((w) => (!f.category || w.category === f.category) && (!f.project || norm(w.project).includes(norm(f.project))) && (!f.city || norm(w.city).includes(norm(f.city))));
 }
 
 // ---------- Annuaire public ----------

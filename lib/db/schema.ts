@@ -84,6 +84,8 @@ export const portfolioItems = pgTable(
     description: text("description").notNull().default(""),
     category: text("category").notNull().default(""),
     year: integer("year"),
+    project: text("project").notNull().default(""), // nom du chantier
+    city: text("city").notNull().default(""),
     images: jsonb("images").$type<string[]>().notNull().default([]),
     thumb: text("thumb").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
