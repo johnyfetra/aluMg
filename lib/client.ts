@@ -2,7 +2,7 @@
 import useSWR from "swr";
 import type { SessionUser } from "./auth";
 import { type Market, type Quote, type Settings } from "./model";
-import type { DirectoryEntry, PortfolioInput, PortfolioItem, Profile, ProfileInput, PublicMenuisier } from "./profiles";
+import type { DirectoryEntry, PortfolioInput, PortfolioItem, Profile, ProfileInput, PublicMenuisier, PublicWork } from "./profiles";
 import type { ClientQuote, EventView, LineComment } from "./workflow";
 import type { NotificationView } from "./notifications";
 import type { ContactView } from "./contacts";
@@ -148,3 +148,7 @@ export function useNotifications() {
 // Page où mène une notification : le devis, et l'ouvrage visé s'il y en a un (?ligne=).
 export const notificationHref = (role: SessionInfo["role"] | undefined, n: Pick<NotificationView, "quoteId" | "lineId">) =>
   `${role === "client" ? "/espace-client/devis/" : "/devis/"}${n.quoteId}${n.lineId ? `?ligne=${n.lineId}` : ""}`;
+export const usePublicWorks = (params: Record<string, string>) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return useSWR<PublicWork[]>(`/api/public/works${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
+};

@@ -10,8 +10,8 @@ import type { PortfolioItem } from "@/lib/profiles";
 import Select from "@/components/Select";
 import { useConfirm } from "@/components/ConfirmDialog";
 
-type Draft = { id?: string; title: string; description: string; category: PortfolioItem["category"]; year: number | null; images: string[] };
-const EMPTY: Draft = { title: "", description: "", category: "", year: new Date().getFullYear(), images: [] };
+type Draft = { id?: string; title: string; description: string; category: PortfolioItem["category"]; year: number | null; project: string; city: string; images: string[] };
+const EMPTY: Draft = { title: "", description: "", category: "", year: new Date().getFullYear(), project: "", city: "", images: [] };
 
 export default function PortfolioPage() {
   const { t } = useI18n();
@@ -41,7 +41,7 @@ export default function PortfolioPage() {
     }
     setBusy(true);
     try {
-      await save({ title: draft.title, description: draft.description, category: draft.category, year: draft.year, images: draft.images, thumb: await thumbnail(draft.images[0]) }, draft.id);
+      await save({ title: draft.title, description: draft.description, category: draft.category, year: draft.year, project: draft.project.trim(), city: draft.city.trim(), images: draft.images, thumb: await thumbnail(draft.images[0]) }, draft.id);
       setDraft(null);
       setMsg("");
     } catch {
@@ -86,6 +86,14 @@ export default function PortfolioPage() {
                 <input id="pt-year" type="number" className="input" min={1990} max={2100} value={draft.year ?? ""} onChange={(e) => setDraft({ ...draft, year: e.target.value ? Number(e.target.value) : null })} />
               </Field>
             </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field htmlFor="pt-project" label={t("port.project")}>
+              <input id="pt-project" className="input" maxLength={100} placeholder={t("port.projectHint")} value={draft.project} onChange={(e) => setDraft({ ...draft, project: e.target.value })} />
+            </Field>
+            <Field htmlFor="pt-city" label={t("port.city")}>
+              <input id="pt-city" className="input" maxLength={80} value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} />
+            </Field>
           </div>
           <Field htmlFor="pt-desc" label={t("port.description")}>
             <textarea id="pt-desc" className="input min-h-24" maxLength={1500} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
@@ -141,9 +149,9 @@ export default function PortfolioPage() {
               <img src={it.thumb || it.images[0]} alt="" className="aspect-[4/3] w-full object-cover" loading="lazy" />
               <div className="space-y-2 p-4">
                 <p className="font-semibold">{it.title}</p>
-                <p className="text-xs text-muted">{[it.category && t(`spec.${it.category as "fenetres"}`), it.year, `${it.images.length} ${t("port.photosCount")}`].filter(Boolean).join(" · ")}</p>
+                <p className="text-xs text-muted">{[it.category && t(`spec.${it.category as "fenetres"}`), it.project, it.year, `${it.images.length} ${t("port.photosCount")}`].filter(Boolean).join(" · ")}</p>
                 <div className="flex gap-2">
-                  <button type="button" className="btn-secondary !min-h-9" onClick={() => setDraft({ id: it.id, title: it.title, description: it.description, category: it.category, year: it.year, images: it.images })}>
+                  <button type="button" className="btn-secondary !min-h-9" onClick={() => setDraft({ id: it.id, title: it.title, description: it.description, category: it.category, year: it.year, project: it.project, city: it.city, images: it.images })}>
                     <Pencil size={14} aria-hidden />
                     {t("common.edit")}
                   </button>

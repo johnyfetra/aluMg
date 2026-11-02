@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
 import ProductShowcase from "./ProductShowcase";
 import Photo from "./Photo";
+import { Suspense } from "react";
 import ProjectGallery from "./ProjectGallery";
 import { FinalCta } from "./MarketingHome";
 
@@ -25,7 +26,7 @@ export function PublicProjects() {
   const { locale } = useI18n(); const c = marketing[locale];
   return <>
     <header className="border-b border-line"><div className="public-container grid items-center gap-10 py-12 sm:py-20 lg:grid-cols-[1.2fr_1fr]"><div><p className="eyebrow">{c.projectsEyebrow}</p><h1 className="mt-4 text-4xl font-medium leading-tight sm:text-5xl">{c.projectsTitle}</h1><p className="mt-5 max-w-xl leading-8 text-muted">{c.projectsIntro}</p><Link href="/menuisiers" className="btn-primary mt-7 !min-h-12">{c.find}<ArrowRight size={17} aria-hidden /></Link></div><figure><Photo src="/brand/architecture-aluminium.webp" alt={c.heroAlt} priority className="aspect-[3/2] rounded-xl" /><figcaption className="mt-2 text-xs text-muted">{c.editorial}</figcaption></figure></div></header>
-    <section className="public-container py-14 sm:py-20"><h2 className="mb-3 text-2xl font-semibold">{c.gallery}</h2><p className="mb-8 max-w-2xl text-sm leading-7 text-muted">{c.galleryNote}</p><ProjectGallery /></section>
+    <section className="public-container py-14 sm:py-20"><h2 className="mb-3 text-2xl font-semibold">{c.gallery}</h2><p className="mb-8 max-w-2xl text-sm leading-7 text-muted">{c.galleryNote}</p><Suspense><ProjectGallery filters /></Suspense></section>
     <FinalCta />
   </>;
 }
