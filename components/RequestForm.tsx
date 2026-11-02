@@ -20,7 +20,9 @@ export default function RequestForm() {
   const { t } = useI18n();
   const router = useRouter();
   const toast = useToast();
-  const preset = useSearchParams().get("menuisier") ?? "";
+  const params = useSearchParams();
+  const preset = params.get("menuisier") ?? "";
+  const ref = params.get("ref")?.slice(0, 200) ?? ""; // « Je veux la même » depuis une réalisation
   const { data: directory = [] } = useDirectory({});
   // les professionnels déjà connus du client (devis reçus, conversations) : choix rapide quand l'annuaire n'est pas ouvert
   const { data: mine = [] } = useClientQuotes();
@@ -30,7 +32,7 @@ export default function RequestForm() {
     ...mine.map((c) => [c.menuisier.slug, { slug: c.menuisier.slug, name: c.menuisier.name, logo: c.menuisier.logo, city: c.menuisier.city, phone: c.menuisier.phone }] as const), // les devis reçus donnent lieu et numéro : ils l'emportent
   ].filter(([k]) => !!k)).values()];
   const [slugs, setSlugs] = useState<string[]>(preset ? [preset] : []);
-  const [project, setProject] = useState("");
+  const [project, setProject] = useState(ref);
   const [message, setMessage] = useState("");
   const [siteAddress, setSiteAddress] = useState("");
   const [wantedDate, setWantedDate] = useState("");

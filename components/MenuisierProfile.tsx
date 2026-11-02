@@ -1,7 +1,9 @@
 "use client";
-import { ArrowLeft, BadgeCheck, CalendarDays, Hammer, Images, MapPin } from "lucide-react";
+import { ArrowLeft, Award, BadgeCheck, CalendarDays, Hammer, Images, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import BeforeAfter from "./BeforeAfter";
+import ShareButton from "./ShareButton";
 import Photo from "./marketing/Photo";
 import { LoadingState, ErrorState } from "./Feedback";
 import ChatButton from "./ChatButton";
@@ -16,6 +18,7 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
   const { data: m, error, isLoading, mutate } = useMenuisier(slug);
   const { data: me } = useSession();
   const [open, setOpen] = useState<{ item: PortfolioItem; i: number } | null>(null);
+  const [cat, setCat] = useState("");
   const date = (iso: string) => new Date(iso).toLocaleDateString(DATE_LOCALE[locale], { year: "numeric", month: "long" });
 
   if (isLoading) return <div className="public-container py-12"><LoadingState /></div>;
@@ -33,9 +36,12 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
 
   const next = `/espace-client/nouvelle?menuisier=${m.slug}`;
   const total = m.reviews || 1;
+  const years = m.sinceYear ? new Date().getFullYear() - m.sinceYear : 0;
+  const cats = [...new Set(m.items.map((i) => i.category).filter(Boolean))];
+  const items = cat ? m.items.filter((i) => i.category === cat) : m.items;
 
   return (
-    <div className="mx-auto w-full max-w-[86rem] px-4 py-8 sm:px-8 xl:px-10">
+    <div className="mx-auto w-full max-w-[86rem] px-4 py-8 pb-24 sm:px-8 xl:px-10 xl:pb-8">
       <Link href="/menuisiers" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
         <ArrowLeft size={16} aria-hidden />
         {t("mp.back")}
@@ -44,10 +50,10 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
       <header className="card relative overflow-hidden !p-0">
         <Photo src={m.cover} alt={m.name} priority className="h-56 sm:h-80" />
         <div className="flex flex-wrap items-end gap-5 px-6 pb-6">
-          <div className="-mt-12 rounded-2xl bg-surface p-1.5 shadow-md">
+          <div className="relative -mt-12 rounded-2xl bg-surface p-1.5 shadow-md">
             <Avatar name={m.name} src={m.logo} size={88} />
           </div>
-          <div className="min-w-0 flex-1 pt-3">
+          <div className="min-w-[14rem] flex-1 pt-3">
             <h1 className="flex flex-wrap items-center gap-2 text-3xl font-extrabold tracking-tight">
               {m.name}
               {m.verified && (
@@ -68,6 +74,12 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
                 <CalendarDays size={14} aria-hidden />
                 {t("mp.since")} {date(m.since)}
               </span>
+              {years > 0 && (
+                <span className="inline-flex items-center gap-1 font-medium text-ink">
+                  <Award size={14} aria-hidden />
+                  {years} {t("mp.yearsShort")} {t("mp.experience")}
+                </span>
+              )}
               <span className="inline-flex items-center gap-1">
                 <Hammer size={14} aria-hidden />
                 {m.completed} {t("dir.completed")}
@@ -78,7 +90,7 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
               </span>
             </p>
           </div>
-          <div className="text-right">
+          <div className="w-full sm:w-auto sm:text-right">
             {m.reviews > 0 ? (
               <>
                 <p className="text-3xl font-extrabold leading-none">{m.rating.toFixed(1)}</p>
@@ -101,6 +113,13 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
               {t("mp.about")}
             </h2>
             <p className="whitespace-pre-line text-muted">{m.bio || t("mp.noBio")}</p>
+            {m.zones.length > 0 && (
+              <p className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+                <MapPin size={15} aria-hidden className="text-primary" />
+                <span className="font-semibold">{t("mp.zones")}</span>
+                <span className="text-muted">{m.zones.join(" · ")}</span>
+              </p>
+            )}
             {m.specialties.length > 0 && (
               <>
                 <h3 className="mb-2 mt-5 text-sm font-semibold">{t("mp.specialties")}</h3>
@@ -119,13 +138,24 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
             <h2 id="h-port" className="mb-4 text-lg font-semibold">
               {t("mp.portfolio")}
             </h2>
+            {cats.length > 1 && (
+              <div role="group" aria-label={t("port.category")} className="mb-4 flex flex-wrap gap-2">
+                {["", ...cats].map((c) => (
+                  <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} className={`min-h-10 rounded-full border px-4 text-sm font-medium transition-colors ${cat === c ? "border-primary bg-primary text-on-primary" : "border-line hover:bg-surface-2"}`}>
+                    {c ? t(`spec.${c as "fenetres"}`) : t("mp.allCats")}
+                  </button>
+                ))}
+              </div>
+            )}
             {m.items.length === 0 ? (
               <p className="text-sm text-muted">{t("mp.noPortfolio")}</p>
             ) : (
               <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {m.items.map((it) => (
-                  <li key={it.id}>
-                    <button type="button" onClick={() => setOpen({ item: it, i: 0 })} className="group block w-full overflow-hidden rounded-xl border border-line bg-surface text-left transition-shadow hover:shadow-md" aria-label={`${t("mp.openPhoto")} : ${it.title}`}>
+                {items.map((it) => (
+                  <li key={it.id} className="flex flex-col">
+                    {it.before && <BeforeAfter before={it.before} after={it.images[0]} alt={it.title} className="aspect-[4/3] rounded-t-xl border border-b-0 border-line" />}
+                    {!it.before && (
+                    <button type="button" onClick={() => setOpen({ item: it, i: 0 })} className="group block w-full overflow-hidden rounded-t-xl border border-b-0 border-line bg-surface text-left transition-shadow hover:shadow-md" aria-label={`${t("mp.openPhoto")} : ${it.title}`}>
                       <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
                         <Photo src={it.thumb || it.images[0]} alt={it.title} className="h-full w-full" />
                         {it.images.length > 1 && (
@@ -137,10 +167,15 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
                       </div>
                       <div className="p-3">
                         <p className="font-semibold">{it.title}</p>
-                        <p className="text-xs text-muted">{[it.category && t(`spec.${it.category as "fenetres"}`), it.year].filter(Boolean).join(" · ")}</p>
+                        <p className="text-xs text-muted">{[it.category && t(`spec.${it.category as "fenetres"}`), it.project, it.city, it.year].filter(Boolean).join(" · ")}</p>
                         {it.description && <p className="mt-1 line-clamp-2 text-sm text-muted">{it.description}</p>}
                       </div>
                     </button>
+                    )}
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-b-xl border border-t-0 border-line px-3 py-2">
+                      {it.before ? <button type="button" className="text-sm font-medium text-primary hover:underline" onClick={() => setOpen({ item: it, i: 0 })}>{t("mp.openPhoto")}</button> : <span />}
+                      <Link href={`${next}&ref=${encodeURIComponent(`${it.title}${it.category ? ` (${t(`spec.${it.category as "fenetres"}`)})` : ""}`)}`} className="text-sm font-semibold text-primary hover:underline">{t("mp.sameOne")}</Link>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -163,7 +198,7 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
                       <li key={n} className="flex items-center gap-2 text-xs">
                         <span className="w-4 text-right">{n}</span>
                         <span className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2">
-                          <span className="block h-full rounded-full" style={{ width: `${(m.distribution[n - 1] / total) * 100}%`, background: "#f5a524" }} />
+                          <span className="block h-full rounded-full" style={{ width: `${(m.distribution[n - 1] / total) * 100}%`, background: "var(--rating)" }} />
                         </span>
                         <span className="w-5 text-muted">{m.distribution[n - 1]}</span>
                       </li>
@@ -222,8 +257,14 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
               {t("mp.needClient")}
             </p>
           )}
+          <ShareButton title={m.name} path={`/menuisiers/${m.slug}`} className="btn-secondary !min-h-10 flex-1 justify-center" />
         </aside>
       </div>
+      {me?.role !== "menuisier" && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 p-3 backdrop-blur xl:hidden">
+          <Link href={me ? next : `/connexion?next=${encodeURIComponent(next)}`} className="btn-primary w-full !whitespace-normal text-center">{t("mp.requestQuote")}</Link>
+        </div>
+      )}
 
       {open && <Lightbox images={open.item.images} index={open.i} onIndex={(i) => setOpen({ ...open, i })} onClose={() => setOpen(null)} label={open.item.title} caption={open.item.description} />}
     </div>

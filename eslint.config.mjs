@@ -29,6 +29,8 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // Exception : cette page est un composant serveur, elle lit le profil pour ses balises de partage (titre, image).
+  { files: ["app/(public)/menuisiers/[[]slug]/page.tsx"], rules: { "@typescript-eslint/no-restricted-imports": "off" } },
 ]);
 
 export default eslintConfig;
