@@ -7,6 +7,7 @@ import ShareButton from "./ShareButton";
 import Photo from "./marketing/Photo";
 import { LoadingState, ErrorState } from "./Feedback";
 import ChatButton from "./ChatButton";
+import { NotFoundView } from "./ErrorPages";
 import Lightbox from "./Lightbox";
 import { Avatar, Stars } from "./ui";
 import { useMenuisier, useSession } from "@/lib/client";
@@ -22,17 +23,8 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
   const date = (iso: string) => new Date(iso).toLocaleDateString(DATE_LOCALE[locale], { year: "numeric", month: "long" });
 
   if (isLoading) return <div className="public-container py-12"><LoadingState /></div>;
-  if (error && error.status !== 404) return <div className="public-container py-12"><ErrorState retry={() => { void mutate(); }} /></div>;
-  if (error || !m) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p className="text-muted">{t("mp.notFound")}</p>
-        <Link href="/menuisiers" className="btn-primary mt-4">
-          {t("mp.back")}
-        </Link>
-      </div>
-    );
-  }
+  if (error && error.status !== 404) return <div className="public-container py-12"><ErrorState error={error} retry={() => { void mutate(); }} /></div>;
+  if (error || !m) return <NotFoundView embedded />;
 
   const next = `/espace-client/nouvelle?menuisier=${m.slug}`;
   const total = m.reviews || 1;

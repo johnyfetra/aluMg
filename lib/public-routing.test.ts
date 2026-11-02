@@ -9,12 +9,17 @@ describe("accès à la vitrine sans session", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
   });
-  it.each(["/realisations", "/profil-public", "/devis", "/espace-client"])("garde %s protégé", path => {
+  it.each(["/realisations", "/profil-public", "/devis", "/devis/abc", "/espace-client", "/messages", "/compte", "/reglages"])("garde %s protégé", path => {
     const response = proxy(new NextRequest(origin + path));
     expect(response.status).toBe(307);
     const target = new URL(response.headers.get("location")!);
     expect(target.pathname).toBe("/connexion");
     expect(target.searchParams.get("next")).toBe(path);
+  });
+  it("laisse une adresse inconnue arriver jusqu'à la page 404", () => {
+    const response = proxy(new NextRequest(origin + "/page-qui-nexiste-pas"));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
   });
   it("préserve le contrôle d'origine des mutations", () => {
     const response = proxy(new NextRequest(origin + "/api/profile", { method: "PUT", headers: { origin: "https://another.example" } }));
