@@ -20,8 +20,8 @@ export const profileSchema = z.object({
   bio: text(1500),
   specialties: z.array(z.enum(SPECIALTIES)).max(SPECIALTIES.length),
   logo: image.or(z.literal("")),
-  zones: z.array(text(60).min(1)).max(10),
-  sinceYear: z.number().int().min(1950).max(2100).nullable(),
+  zones: z.array(text(60).min(1)).max(10).default([]),
+  sinceYear: z.number().int().min(1950).max(2100).nullable().default(null),
   published: z.boolean(),
 });
 export type ProfileInput = z.infer<typeof profileSchema>;
@@ -85,9 +85,9 @@ export const portfolioSchema = z.object({
   description: text(1500),
   category: z.enum(SPECIALTIES).or(z.literal("")),
   year: z.number().int().min(1990).max(2100).nullable(),
-  project: text(100),
-  city: text(80),
-  before: image.or(z.literal("")),
+  project: text(100).default(""),
+  city: text(80).default(""),
+  before: image.or(z.literal("")).default(""),
   images: z.array(image).min(1).max(8),
   thumb: image.max(120_000),
 });
