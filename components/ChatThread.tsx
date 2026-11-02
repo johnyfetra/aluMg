@@ -235,7 +235,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
 
       {header && <ChatQuotes conv={conv} onCite={pickQuote} t={t} />}
 
-      <div ref={box} className={`min-h-0 flex-1 space-y-1 overflow-y-auto bg-surface-2/40 ${compact ? "px-3 py-3" : "px-4 py-4"}`} role="log" aria-live="polite" aria-label={t("msg.thread")}>
+      <div ref={box} className={`chat-bg min-h-0 flex-1 space-y-1 overflow-y-auto bg-surface-2/40 ${compact ? "px-3 py-3" : "px-4 py-4"}`} role="log" aria-live="polite" aria-label={t("msg.thread")}>
         {msgs.length === 0 && <p className="py-10 text-center text-sm text-muted">{t("msg.startHint")}</p>}
         {msgs.map((m, i) => {
           const newDay = i === 0 || new Date(msgs[i - 1].at).toDateString() !== new Date(m.at).toDateString();
