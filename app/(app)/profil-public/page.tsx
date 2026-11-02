@@ -3,7 +3,7 @@ import { BadgeCheck, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Avatar, Field } from "@/components/ui";
-import { ApiError, useProfile } from "@/lib/client";
+import { ApiError, usePortfolio, useProfile } from "@/lib/client";
 import { fileToDataUrl } from "@/lib/image";
 import { useI18n } from "@/lib/i18n";
 import { SPECIALTIES } from "@/lib/model";
@@ -17,9 +17,15 @@ export default function PublicProfilePage() {
 function Form({ initial }: { initial: Profile }) {
   const { t } = useI18n();
   const { save } = useProfile();
+  const works = usePortfolio().items?.length ?? 0;
   const [p, setP] = useState(initial);
+  const [zonesText, setZonesText] = useState(initial.zones.join(", "));
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const set = (patch: Partial<Profile>) => setP((cur) => ({ ...cur, ...patch }));
+
+  const checks: [boolean, string][] = [[!!p.logo, t("pp.todoLogo")], [p.bio.trim().length >= 80, t("pp.todoBio")], [p.zones.length > 0, t("pp.todoZones")], [p.sinceYear !== null, t("pp.todoYear")], [p.specialties.length > 0, t("mp.specialties")], [works > 0, t("pp.todoWorks")]];
+  const pct = Math.round((checks.filter(([ok]) => ok).length / checks.length) * 100);
+  const todo = checks.filter(([ok]) => !ok).map(([, l]) => l);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +57,10 @@ function Form({ initial }: { initial: Profile }) {
         </div>
       </div>
       <p className="max-w-3xl text-sm text-muted">{t("pp.hint")}</p>
+      <div className="max-w-xl" role="group" aria-label={t("pp.complete")}>
+        <div className="mb-1 flex justify-between text-sm"><span className="font-medium">{t("pp.complete")} {pct} %</span><span className="text-muted">{todo.join(" · ")}</span></div>
+        <div className="h-2 overflow-hidden rounded-full bg-surface-2"><div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${pct}%` }} /></div>
+      </div>
       <p role="status" className={`text-sm font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>
         {msg?.text}
       </p>
@@ -77,6 +87,14 @@ function Form({ initial }: { initial: Profile }) {
           <Field htmlFor="pp-city" label={t("dir.city")} hint={t("pp.cityHint")}>
             <input id="pp-city" className="input" maxLength={80} value={p.city} onChange={(e) => set({ city: e.target.value })} />
           </Field>
+          <div className="grid grid-cols-[1fr_9rem] gap-4">
+            <Field htmlFor="pp-zones" label={t("pp.zones")} hint={t("pp.zonesHint")}>
+              <input id="pp-zones" className="input" maxLength={400} value={zonesText} onChange={(e) => { setZonesText(e.target.value); set({ zones: e.target.value.split(",").map((z) => z.trim()).filter(Boolean).slice(0, 10) }); }} />
+            </Field>
+            <Field htmlFor="pp-since" label={t("pp.sinceYear")}>
+              <input id="pp-since" type="number" className="input" min={1950} max={new Date().getFullYear()} value={p.sinceYear ?? ""} onChange={(e) => set({ sinceYear: e.target.value ? Number(e.target.value) : null })} />
+            </Field>
+          </div>
           <Field htmlFor="pp-slug" label={t("pp.slug")} hint={`/menuisiers/${p.slug}`}>
             <input id="pp-slug" className="input" pattern="[a-z0-9]+(-[a-z0-9]+)*" minLength={3} maxLength={60} value={p.slug} onChange={(e) => set({ slug: e.target.value.toLowerCase() })} />
           </Field>

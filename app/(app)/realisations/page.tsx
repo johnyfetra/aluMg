@@ -10,8 +10,8 @@ import type { PortfolioItem } from "@/lib/profiles";
 import Select from "@/components/Select";
 import { useConfirm } from "@/components/ConfirmDialog";
 
-type Draft = { id?: string; title: string; description: string; category: PortfolioItem["category"]; year: number | null; project: string; city: string; images: string[] };
-const EMPTY: Draft = { title: "", description: "", category: "", year: new Date().getFullYear(), project: "", city: "", images: [] };
+type Draft = { id?: string; title: string; description: string; category: PortfolioItem["category"]; year: number | null; project: string; city: string; before: string; images: string[] };
+const EMPTY: Draft = { title: "", description: "", category: "", year: new Date().getFullYear(), project: "", city: "", before: "", images: [] };
 
 export default function PortfolioPage() {
   const { t } = useI18n();
@@ -41,7 +41,7 @@ export default function PortfolioPage() {
     }
     setBusy(true);
     try {
-      await save({ title: draft.title, description: draft.description, category: draft.category, year: draft.year, project: draft.project.trim(), city: draft.city.trim(), images: draft.images, thumb: await thumbnail(draft.images[0]) }, draft.id);
+      await save({ title: draft.title, description: draft.description, category: draft.category, year: draft.year, project: draft.project.trim(), city: draft.city.trim(), before: draft.before, images: draft.images, thumb: await thumbnail(draft.images[0]) }, draft.id);
       setDraft(null);
       setMsg("");
     } catch {
@@ -123,6 +123,23 @@ export default function PortfolioPage() {
             </ul>
             <p className="text-xs text-muted">{t("port.photosHint")}</p>
           </div>
+          <div>
+            <p className="mb-1 text-sm font-medium">{t("port.before")}</p>
+            <p className="mb-2 text-xs text-muted">{t("port.beforeHint")}</p>
+            {draft.before ? (
+              <div className="relative inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={draft.before} alt="" className="h-24 w-32 rounded-lg border border-line object-cover" />
+                <button type="button" className="absolute -right-2 -top-2 grid size-7 place-items-center rounded-full bg-danger text-white shadow" aria-label={t("common.remove")} onClick={() => setDraft({ ...draft, before: "" })}><X size={14} aria-hidden /></button>
+              </div>
+            ) : (
+              <label className="flex h-24 w-32 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-line text-xs text-muted hover:bg-surface-2 focus-within:outline-3 focus-within:outline-primary">
+                <ImagePlus size={20} aria-hidden />
+                {t("port.addBefore")}
+                <input type="file" accept="image/*" className="sr-only" onChange={async (e) => { const f = e.target.files?.[0]; if (f && draft) setDraft({ ...draft, before: await compressImage(f) }); }} />
+              </label>
+            )}
+          </div>
           {msg && (
             <p role="alert" className="text-sm font-medium text-danger">
               {msg}
@@ -151,7 +168,7 @@ export default function PortfolioPage() {
                 <p className="font-semibold">{it.title}</p>
                 <p className="text-xs text-muted">{[it.category && t(`spec.${it.category as "fenetres"}`), it.project, it.year, `${it.images.length} ${t("port.photosCount")}`].filter(Boolean).join(" · ")}</p>
                 <div className="flex gap-2">
-                  <button type="button" className="btn-secondary !min-h-9" onClick={() => setDraft({ id: it.id, title: it.title, description: it.description, category: it.category, year: it.year, project: it.project, city: it.city, images: it.images })}>
+                  <button type="button" className="btn-secondary !min-h-9" onClick={() => setDraft({ id: it.id, title: it.title, description: it.description, category: it.category, year: it.year, project: it.project, city: it.city, before: it.before, images: it.images })}>
                     <Pencil size={14} aria-hidden />
                     {t("common.edit")}
                   </button>

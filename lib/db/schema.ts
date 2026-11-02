@@ -67,6 +67,8 @@ export const menuisierProfiles = pgTable("menuisier_profiles", {
   bio: text("bio").notNull().default(""),
   specialties: jsonb("specialties").$type<string[]>().notNull().default([]),
   logo: text("logo").notNull().default(""),
+  zones: jsonb("zones").$type<string[]>().notNull().default([]), // villes et régions d'intervention
+  sinceYear: integer("since_year"), // début de l'activité
   published: boolean("published").notNull().default(false),
   verified: boolean("verified").notNull().default(false), // accordé par l'équipe de la plateforme
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -86,6 +88,7 @@ export const portfolioItems = pgTable(
     year: integer("year"),
     project: text("project").notNull().default(""), // nom du chantier
     city: text("city").notNull().default(""),
+    before: text("before").notNull().default(""), // photo « avant » pour le comparateur
     images: jsonb("images").$type<string[]>().notNull().default([]),
     thumb: text("thumb").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

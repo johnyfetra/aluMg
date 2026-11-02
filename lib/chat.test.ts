@@ -16,7 +16,7 @@ beforeAll(async () => {
   c1 = (await repo.createUser("c1@ex.mg", "Hery Rakoto", "h", "client", "033 33 333 33"))!;
   c2 = (await repo.createUser("c2@ex.mg", "Noro Andry", "h", "client", "033 44 444 44"))!;
   slug1 = (await pf.getOwnProfile(m1, "Rabe Alu")).slug;
-  await pf.saveOwnProfile(m1, "Rabe Alu", { displayName: "Rabe Alu", city: "Tana", bio: "", specialties: [], logo: "", published: true });
+  await pf.saveOwnProfile(m1, "Rabe Alu", { displayName: "Rabe Alu", city: "Tana", bio: "", specialties: [], logo: "", zones: [], sinceYear: null, published: true });
   slug2 = (await pf.getOwnProfile(m2, "Sud Alu")).slug; // non publié
 });
 

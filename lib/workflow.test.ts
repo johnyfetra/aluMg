@@ -34,7 +34,7 @@ beforeAll(async () => {
   // m1 a un profil publié ; m2 un profil non publié
   const p1 = await pf.getOwnProfile(m1, "Rabe Alu");
   slug1 = p1.slug;
-  await pf.saveOwnProfile(m1, "Rabe Alu", { displayName: "Rabe Alu", city: "Antananarivo", bio: "Menuiserie alu", specialties: ["fenetres", "volets"], logo: "", published: true });
+  await pf.saveOwnProfile(m1, "Rabe Alu", { displayName: "Rabe Alu", city: "Antananarivo", bio: "Menuiserie alu", specialties: ["fenetres", "volets"], logo: "", zones: [], sinceYear: null, published: true });
   await pf.getOwnProfile(m2, "Autre Menuisier");
 });
 
@@ -219,10 +219,10 @@ describe("annuaire public et profils", () => {
     expect(JSON.stringify(list)).not.toMatch(/034 11|m1@ex\.mg/);
   });
   it("un profil ne peut pas être publié sans ville", async () => {
-    expect(await pf.saveOwnProfile(m2, "x", { displayName: "Autre", city: "", bio: "", specialties: [], logo: "", published: true })).toBe("incomplete");
+    expect(await pf.saveOwnProfile(m2, "x", { displayName: "Autre", city: "", bio: "", specialties: [], logo: "", zones: [], sinceYear: null, published: true })).toBe("incomplete");
   });
   it("filtres : ville (sans accent), spécialité, recherche, note minimale", async () => {
-    await pf.saveOwnProfile(m2, "x", { displayName: "Fenêtres du Sud", city: "Toliara", bio: "Spécialiste vitrerie", specialties: ["vitrerie"], logo: "", published: true });
+    await pf.saveOwnProfile(m2, "x", { displayName: "Fenêtres du Sud", city: "Toliara", bio: "Spécialiste vitrerie", specialties: ["vitrerie"], logo: "", zones: [], sinceYear: null, published: true });
     expect((await pf.listPublicMenuisiers({ city: "antananarivo" })).map((e) => e.name)).toEqual(["Rabe Alu"]);
     expect((await pf.listPublicMenuisiers({ city: "TOLIARA" })).map((e) => e.name)).toEqual(["Fenêtres du Sud"]);
     expect((await pf.listPublicMenuisiers({ specialty: "volets" })).map((e) => e.name)).toEqual(["Rabe Alu"]);
@@ -243,10 +243,10 @@ describe("annuaire public et profils", () => {
   });
   it("portfolio : isolé par compte", async () => {
     const img = "data:image/jpeg;base64,AAAA";
-    const item = await pf.createPortfolioItem(m1, { title: "Baie vitrée", description: "", category: "fenetres", year: 2025, project: "", city: "", images: [img], thumb: img });
+    const item = await pf.createPortfolioItem(m1, { title: "Baie vitrée", description: "", category: "fenetres", year: 2025, project: "", city: "", before: "", images: [img], thumb: img });
     expect((await pf.listPortfolio(m1)).map((i) => i.id)).toEqual([item.id]);
     expect(await pf.listPortfolio(m2)).toEqual([]);
-    expect(await pf.updatePortfolioItem(m2, item.id, { title: "x", description: "", category: "", year: null, project: "", city: "", images: [img], thumb: img })).toBeNull();
+    expect(await pf.updatePortfolioItem(m2, item.id, { title: "x", description: "", category: "", year: null, project: "", city: "", before: "", images: [img], thumb: img })).toBeNull();
     expect(await pf.deletePortfolioItem(m2, item.id)).toBe(false);
     expect((await pf.getPublicMenuisier(slug1))!.items).toHaveLength(1);
     // les listes donnent une adresse d'image mise en cache (au lieu de la data URL, qui pèse dans chaque liste)

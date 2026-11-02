@@ -20,6 +20,8 @@ export const profileSchema = z.object({
   bio: text(1500),
   specialties: z.array(z.enum(SPECIALTIES)).max(SPECIALTIES.length),
   logo: image.or(z.literal("")),
+  zones: z.array(text(60).min(1)).max(10),
+  sinceYear: z.number().int().min(1950).max(2100).nullable(),
   published: z.boolean(),
 });
 export type ProfileInput = z.infer<typeof profileSchema>;
@@ -59,7 +61,7 @@ export async function getOwnProfile(userId: string, accountName: string): Promis
 }
 
 const toProfile = (r: typeof schema.menuisierProfiles.$inferSelect): Profile => ({
-  displayName: r.displayName, slug: r.slug, city: r.city, bio: r.bio, logo: r.logo, published: r.published, verified: r.verified,
+  displayName: r.displayName, slug: r.slug, city: r.city, bio: r.bio, logo: r.logo, zones: r.zones, sinceYear: r.sinceYear, published: r.published, verified: r.verified,
   specialties: r.specialties.filter((s): s is (typeof SPECIALTIES)[number] => (SPECIALTIES as readonly string[]).includes(s)),
 });
 
@@ -71,7 +73,7 @@ export async function saveOwnProfile(userId: string, accountName: string, input:
   const db = await getDb();
   const [row] = await db
     .update(schema.menuisierProfiles)
-    .set({ displayName: input.displayName, slug, city: input.city, bio: input.bio, specialties: input.specialties, logo: input.logo, published: input.published })
+    .set({ displayName: input.displayName, slug, city: input.city, bio: input.bio, specialties: input.specialties, logo: input.logo, zones: input.zones, sinceYear: input.sinceYear, published: input.published })
     .where(eq(schema.menuisierProfiles.userId, userId))
     .returning();
   return toProfile(row);
@@ -85,13 +87,14 @@ export const portfolioSchema = z.object({
   year: z.number().int().min(1990).max(2100).nullable(),
   project: text(100),
   city: text(80),
+  before: image.or(z.literal("")),
   images: z.array(image).min(1).max(8),
   thumb: image.max(120_000),
 });
 export type PortfolioInput = z.infer<typeof portfolioSchema>;
 export type PortfolioItem = PortfolioInput & { id: string };
 
-const toItem = (r: typeof schema.portfolioItems.$inferSelect): PortfolioItem => ({ id: r.id, title: r.title, description: r.description, category: (r.category as PortfolioItem["category"]) ?? "", year: r.year, project: r.project, city: r.city, images: r.images, thumb: r.thumb });
+const toItem = (r: typeof schema.portfolioItems.$inferSelect): PortfolioItem => ({ id: r.id, title: r.title, description: r.description, category: (r.category as PortfolioItem["category"]) ?? "", year: r.year, project: r.project, city: r.city, before: r.before, images: r.images, thumb: r.thumb });
 
 export async function listPortfolio(userId: string): Promise<PortfolioItem[]> {
   const db = await getDb();
@@ -133,7 +136,7 @@ export async function listPublicWorks(f: { category?: string; project?: string; 
 
 // ---------- Annuaire public ----------
 export type DirectoryEntry = {
-  slug: string; name: string; city: string; bio: string; specialties: string[]; logo: string; cover: string;
+  slug: string; name: string; city: string; zones: string[]; sinceYear: number | null; bio: string; specialties: string[]; logo: string; cover: string;
   verified: boolean; rating: number; reviews: number; completed: number; portfolio: number; since: string;
   owner: { name: string; photo: string }; // interlocuteur : prénom et photo de profil (jamais de coordonnées)
 };
@@ -163,13 +166,13 @@ export async function listPublicMenuisiers(f: DirectoryFilter = {}): Promise<Dir
   }
 
   let out: DirectoryEntry[] = profiles.map((p) => ({
-    slug: p.slug, name: p.displayName, city: p.city, bio: p.bio, specialties: p.specialties, logo: imageSrc(p.slug, "logo", p.logo), cover: imageSrc(p.slug, "cover", cover.get(p.userId) ?? ""),
+    slug: p.slug, name: p.displayName, city: p.city, zones: p.zones, sinceYear: p.sinceYear, bio: p.bio, specialties: p.specialties, logo: imageSrc(p.slug, "logo", p.logo), cover: imageSrc(p.slug, "cover", cover.get(p.userId) ?? ""),
     verified: p.verified, rating: Math.round((rating.get(p.userId)?.avg ?? 0) * 10) / 10, reviews: rating.get(p.userId)?.n ?? 0,
     completed: completed.get(p.userId) ?? 0, portfolio: count.get(p.userId) ?? 0, since: p.createdAt.toISOString(),
     owner: { name: (owners.get(p.userId)?.name ?? "").split(/\s+/)[0], photo: imageSrc(p.slug, "owner", owners.get(p.userId)?.avatar ?? "") },
   }));
   if (f.q) out = out.filter((e) => norm(`${e.name} ${e.bio} ${e.city}`).includes(norm(f.q!)));
-  if (f.city) out = out.filter((e) => norm(e.city).includes(norm(f.city!)));
+  if (f.city) out = out.filter((e) => norm([e.city, ...e.zones].join(" ")).includes(norm(f.city!)));
   if (f.specialty) out = out.filter((e) => e.specialties.includes(f.specialty!));
   if (f.minRating) out = out.filter((e) => e.reviews > 0 && e.rating >= f.minRating!);
   if (f.verified) out = out.filter((e) => e.verified);
@@ -211,8 +214,10 @@ export async function getPublicMenuisier(slug: string): Promise<PublicMenuisier 
       .orderBy(desc(schema.reviews.createdAt)),
   ]);
   const distribution = [1, 2, 3, 4, 5].map((n) => rv.filter((r) => r.rating === n).length);
+  // photos servies par adresse (mises en cache) : le profil ne transporte plus de data URL
+  const light = items.map((it) => ({ ...it, thumb: `/api/public/works/${it.id}/img`, before: it.before ? `/api/public/works/${it.id}/img?k=before` : "", images: it.images.map((_, n) => `/api/public/works/${it.id}/img?n=${n}`) }));
   // seul le prénom du client est affiché
-  return { ...entry, items, reviewList: rv.map((r) => ({ rating: r.rating, comment: r.comment, at: r.at.toISOString(), client: (r.client ?? "").split(/\s+/)[0] })), distribution };
+  return { ...entry, items: light, reviewList: rv.map((r) => ({ rating: r.rating, comment: r.comment, at: r.at.toISOString(), client: (r.client ?? "").split(/\s+/)[0] })), distribution };
 }
 
 // Badge « Vérifié » : accordé ou retiré par l'équipe (rôle admin).
