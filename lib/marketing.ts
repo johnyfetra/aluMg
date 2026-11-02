@@ -32,6 +32,10 @@ const fr = {
   cap3: "Le client valide ouvrage par ouvrage, met un ouvrage en attente, pose une question précise ou accepte tout d’un coup.",
   cap4: "Le même devis se consulte et se décide depuis un téléphone, avec les mêmes actions à portée de pouce.",
   showNote: "Données d’exemple.",
+  pickTitle: "Quel ouvrage pour votre projet ?",
+  statPros: "menuisiers publiés",
+  statWorks: "réalisations en ligne",
+  statDone: "chantiers terminés",
 };
 type Copy = { [K in keyof typeof fr]: (typeof fr)[K] extends readonly string[] ? readonly string[] : string };
 const en: Copy = {
@@ -54,6 +58,10 @@ const en: Copy = {
   cap3: "The customer approves item by item, puts one on hold, asks a specific question or accepts everything at once.",
   cap4: "The same quote is read and decided on from a phone, with the same actions within thumb reach.",
   showNote: "Sample data.",
+  pickTitle: "Which opening is your project about?",
+  statPros: "joiners listed",
+  statWorks: "projects online",
+  statDone: "completed jobs",
 };
 const mg: Copy = {
   app: "Ny rindranasa", gallery: "Asa vita", joiners: "Mpandrafitra", home: "Fandraisana", discover: "Fantaro AluMg", find: "Mitadiava mpandrafitra", pro: "Mpandrafitra aho", client: "Mpanjifa aho", start: "Hamorona kaonty", view: "Hijery ny mombamomba", all: "Ny mpandrafitra rehetra",
@@ -75,6 +83,10 @@ const mg: Copy = {
   cap3: "Manamarina asa isan-karazany ny mpanjifa, mametraka mitazona, manontany na manaiky ny rehetra.",
   cap4: "Azo jerena sy hanapahana hevitra amin'ny finday ny tolotra iray ihany.",
   showNote: "Angona ohatra.",
+  pickTitle: "Inona ny asa tianao hatao ?",
+  statPros: "mpandrafitra voasoratra",
+  statWorks: "asa vita an-tserasera",
+  statDone: "asa vita tanteraka",
 };
 export const marketing: Record<Locale, Copy> = { fr, en, mg };
 

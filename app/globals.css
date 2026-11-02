@@ -336,6 +336,14 @@ aside :focus-visible {
 .vitrine .group:hover img { transform: scale(1.04); }
 .vitrine a svg { transition: transform 0.2s ease; }
 .vitrine a:hover svg.lucide-arrow-right, .vitrine a:hover svg.lucide-arrow-up-right { transform: translateX(3px); }
+/* Profilé qui se dessine : le trait se trace quand le schéma entre à l'écran ; sans cette fonction du navigateur, le dessin est complet d'emblée. */
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@supports (animation-timeline: view()) {
+  .draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw linear both; animation-timeline: view(); animation-range: entry calc(5% + var(--i, 0) * 12%) entry calc(60% + var(--i, 0) * 12%); }
+}
+/* Vitrage qui se teinte : un voile bleu-gris se pose sur la photo au survol, comme un verre fumé. */
+.vitrine .group .relative.overflow-hidden::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(135deg, rgb(91 127 163 / 0.45), rgb(20 25 22 / 0.35)); opacity: 0; transition: opacity 0.5s ease; }
+.vitrine .group:hover .relative.overflow-hidden::after, .vitrine .group:focus-within .relative.overflow-hidden::after { opacity: 1; }
 /* Pile de fenêtres en 3D : chaque couche recule, monte et se décale selon sa profondeur --d (0 = devant) */
 .stage { perspective: 1600px; overflow-x: clip; padding-block: 1.5rem; }
 .tilt { transform-style: preserve-3d; transform: rotateX(calc(var(--my, 0) * -4deg)) rotateY(calc(var(--mx, 0) * 6deg)); transition: transform 0.35s ease-out; will-change: transform; }
@@ -361,7 +369,7 @@ aside :focus-visible {
 .door::after { right: 0; background: linear-gradient(270deg, var(--hero-from) 0 calc(100% - 9px), color-mix(in srgb, var(--hero-from), white 16%) calc(100% - 9px)); animation: door-right 1.2s cubic-bezier(0.7, 0, 0.2, 1) 0.3s both; }
 @keyframes door-left { to { transform: translateX(-102%); } }
 @keyframes door-right { to { transform: translateX(102%); } }
-@media (prefers-reduced-motion: reduce) { .deck { animation: none !important; } .layer { transition: none; } .door::before, .door::after { display: none; } .float-in { animation: none; } .slide-img { transform: none; transition: opacity 0.4s; } .vitrine :is(h2, .eyebrow, p, figure, article, details, li, a, .border-t) { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .deck { animation: none !important; } .layer { transition: none; } .door::before, .door::after { display: none; } .float-in { animation: none; } .slide-img { transform: none; transition: opacity 0.4s; } .vitrine :is(h2, .eyebrow, p, figure, article, details, li, a, .border-t) { animation: none; } .draw { animation: none !important; stroke-dashoffset: 0 !important; } }
 
 /* Captures de la vitrine : l'image du thème actif seulement */
 [data-theme="dark"] .dark-hidden { display: none; }
