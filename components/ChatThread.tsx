@@ -13,7 +13,7 @@ import { fmt } from "@/lib/calc";
 import type { Messages } from "@/lib/messages/fr";
 import { ApiError, request, useCitableQuotes, useMessages, useTyping } from "@/lib/client";
 import { DATE_LOCALE, type T, useI18n } from "@/lib/i18n";
-import { compressImage } from "@/lib/image";
+import { compressImage, dataUrlToBlob } from "@/lib/image";
 import type { ConversationView, MessageView, Receipt } from "@/lib/chat";
 import type { Status } from "@/lib/model";
 import { errorText } from "@/lib/errors";
@@ -97,14 +97,16 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
     const next = [...pending];
     for (const f of list) {
       if (next.length >= ATTACH.maxFiles) return setError(t("msg.tooMany"));
+      let photo = false;
       try {
         let file: Blob = f;
         let name = f.name || "photo.jpg";
         let mime = f.type || mimeOfName(name);
+        photo = isImageMime(mime);
         let preview = "";
         if (isImageMime(mime) && mime !== "image/gif") {
           const url = await compressImage(f, 1600, 0.82);
-          file = await (await fetch(url)).blob();
+          file = dataUrlToBlob(url);
           mime = "image/jpeg";
           name = `${name.replace(/\.[^.]+$/, "")}.jpg`;
           preview = url;
@@ -113,7 +115,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
         if (file.size > ATTACH.maxFile || next.reduce((s, p) => s + p.size, 0) + file.size > ATTACH.maxTotal) return setError(t("msg.tooBig"));
         next.push({ id: crypto.randomUUID(), name, mime, size: file.size, data: await toBase64(file), preview });
       } catch {
-        return setError(t("msg.badFile"));
+        return setError(t(photo ? "msg.badImage" : "msg.badFile")); // une photo que le navigateur ne sait pas lire (HEIC…) n'est pas « un type refusé »
       } finally {
         setPending([...next]);
       }

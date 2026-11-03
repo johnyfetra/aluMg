@@ -965,6 +965,7 @@ export const en: Messages = {
   "msg.quoteWord": "Quote",
   "msg.tooBig": "File too large: 3 MB per file and 3.5 MB in total.",
   "msg.badFile": "File type not accepted (photos, PDF, Word, Excel, text).",
+  "msg.badImage": "This photo can't be read. Try a JPEG or PNG photo.",
   "msg.tooMany": "6 attachments maximum per message.",
   "msg.pickQuote": "Tag a quote",
   "msg.noQuote": "No quote has been sent to this client yet.",

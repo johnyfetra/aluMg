@@ -37,6 +37,13 @@ export async function compressImage(file: File, max = 1280, quality = 0.8) {
   }
 }
 
+// data URL → Blob, sans fetch : la politique de sécurité du site (connect-src 'self') interdit de lire une adresse data: avec fetch.
+export function dataUrlToBlob(url: string): Blob {
+  const [head, data = ""] = url.split(",");
+  const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+  return new Blob([bytes], { type: /^data:([^;,]+)/.exec(head)?.[1] ?? "application/octet-stream" });
+}
+
 // Miniature d'une image déjà chargée (data URL) : utilisée comme couverture dans l'annuaire.
 export async function thumbnail(dataUrl: string, max = 480, quality = 0.72) {
   const img = new Image();

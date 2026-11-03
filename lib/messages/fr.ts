@@ -965,6 +965,7 @@ export const fr = {
   "msg.quoteWord": "Devis",
   "msg.tooBig": "Fichier trop lourd : 3 Mo maximum par fichier et 3,5 Mo au total.",
   "msg.badFile": "Type de fichier non accepté (photos, PDF, Word, Excel, texte).",
+  "msg.badImage": "Cette photo ne peut pas être lue. Essayez une photo JPEG ou PNG.",
   "msg.tooMany": "6 pièces jointes au maximum par message.",
   "msg.pickQuote": "Citer un devis",
   "msg.noQuote": "Aucun devis envoyé à ce client pour l'instant.",

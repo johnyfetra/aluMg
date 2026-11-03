@@ -967,6 +967,7 @@ export const mg: Messages = {
   "msg.quoteWord": "Tolotra",
   "msg.tooBig": "Be loatra ny rakitra: 3 Mo farafahabetsany isaky ny rakitra ary 3,5 Mo ny fitambarany.",
   "msg.badFile": "Tsy ekena ity karazana rakitra ity (sary, PDF, Word, Excel, lahatsoratra).",
+  "msg.badImage": "Tsy azo vakiana ity sary ity. Andramo sary JPEG na PNG.",
   "msg.tooMany": "6 farafahabetsany ny rakitra isaky ny hafatra.",
   "msg.pickQuote": "Manonona tolotra",
   "msg.noQuote": "Mbola tsy misy tolotra nalefa tamin'ity mpanjifa ity.",
