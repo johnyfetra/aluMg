@@ -8,7 +8,7 @@ import { listPublicMenuisiers } from "@/lib/profiles";
 export async function generateMetadata({ params }: Pick<PageProps<"/menuisiers/[slug]">, "params">): Promise<Metadata> {
   const { slug } = await params;
   await connection(); // le profil vient de la base : métadonnées calculées à chaque requête
-  const m = (await listPublicMenuisiers()).find((e) => e.slug === slug);
+  const [m] = await listPublicMenuisiers({ slug, limit: 1 });
   if (!m) return { title: "Menuisier · AluMg" };
   const title = `${m.name}${m.city ? ` · ${m.city}` : ""} · AluMg`;
   const description = (m.bio || `Menuisier aluminium${m.city ? ` à ${m.city}` : ""} : réalisations, avis et demande de devis.`).slice(0, 160);

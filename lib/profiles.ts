@@ -1,5 +1,4 @@
-import { imageSrc } from "./logo";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "./db";
 import { dataImage } from "./image-schema";
@@ -140,50 +139,88 @@ export type DirectoryEntry = {
   verified: boolean; rating: number; reviews: number; completed: number; portfolio: number; since: string;
   owner: { name: string; photo: string }; // interlocuteur : prénom et photo de profil (jamais de coordonnées)
 };
-export type DirectoryFilter = { q?: string; city?: string; specialty?: string; minRating?: number; verified?: boolean; sort?: "rating" | "recent" | "name" | "completed" };
+export type DirectoryFilter = { q?: string; city?: string; specialty?: string; minRating?: number; verified?: boolean; slug?: string; sort?: "rating" | "recent" | "name" | "completed"; limit?: number; offset?: number };
+
+export const DIRECTORY_PAGE_MAX = 100; // un client ne peut jamais réclamer tout l'annuaire d'un coup
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+// Même pliage (minuscules, sans accents) côté SQL et côté JS : « Fenêtres » se trouve en tapant « fenetres ».
+const fold = (col: unknown) => sql`translate(lower(${col}), 'àâäãåáéèêëíìîïóòôöõúùûüçñ', 'aaaaaaeeeeiiiiooooouuuucn')`;
+const contains = (col: unknown, term: string) => sql`${fold(col)} like ${`%${norm(term).replace(/[\\%_]/g, "\\$&")}%`} escape '\\'`;
+// Les images d'un profil (data URL) ne voyagent jamais dans une liste : seule leur longueur sert de clé de cache (voir lib/logo.ts).
+const imgUrl = (slug: string, kind: "logo" | "cover" | "owner", isData: boolean, len: number, plain: string) => (isData && slug ? `/api/public/menuisiers/${encodeURIComponent(slug)}/img?k=${kind}&v=${len}` : plain);
 
-// shortcut: filtre et tri en mémoire sur les profils publiés (suffisant pour quelques centaines de menuisiers) ; passer en SQL paginé ensuite.
+// Filtre, tri et pagination en SQL : seule la page demandée quitte la base.
+// shortcut: la recherche texte est un LIKE '%mot%' sur les profils publiés (rapide jusqu'à quelques dizaines de milliers) ; passer à pg_trgm (index GIN) au-delà.
 export async function listPublicMenuisiers(f: DirectoryFilter = {}): Promise<DirectoryEntry[]> {
   const db = await getDb();
-  const profiles = await db.select().from(schema.menuisierProfiles).where(eq(schema.menuisierProfiles.published, true));
-  if (!profiles.length) return [];
-  const owners = new Map((await db.select({ id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar }).from(schema.users).where(inArray(schema.users.id, profiles.map((p) => p.userId)))).map((u) => [u.id, u]));
-  const ids = profiles.map((p) => p.userId);
-  const [rv, done, items] = await Promise.all([
-    db.select({ id: schema.reviews.menuisierId, avg: sql<number>`avg(${schema.reviews.rating})::float`, n: sql<number>`count(*)::int` }).from(schema.reviews).where(inArray(schema.reviews.menuisierId, ids)).groupBy(schema.reviews.menuisierId),
-    db.select({ id: schema.quotes.userId, n: sql<number>`count(*)::int` }).from(schema.quotes).where(and(inArray(schema.quotes.userId, ids), eq(schema.quotes.status, "completed"))).groupBy(schema.quotes.userId),
-    db.select({ userId: schema.portfolioItems.userId, thumb: schema.portfolioItems.thumb, at: schema.portfolioItems.createdAt }).from(schema.portfolioItems).where(inArray(schema.portfolioItems.userId, ids)).orderBy(desc(schema.portfolioItems.createdAt)),
-  ]);
-  const rating = new Map(rv.map((r) => [r.id, r]));
-  const completed = new Map(done.map((r) => [r.id, r.n]));
-  const cover = new Map<string, string>();
-  const count = new Map<string, number>();
-  for (const it of items) {
-    if (!cover.has(it.userId) && it.thumb) cover.set(it.userId, it.thumb);
-    count.set(it.userId, (count.get(it.userId) ?? 0) + 1);
-  }
+  const P = schema.menuisierProfiles;
+  const U = schema.users;
+  const rv = db.select({ id: schema.reviews.menuisierId, avg: sql<number>`avg(${schema.reviews.rating})::float`.as("rv_avg"), n: sql<number>`count(*)::int`.as("rv_n") }).from(schema.reviews).groupBy(schema.reviews.menuisierId).as("rv");
+  const done = db.select({ id: schema.quotes.userId, n: sql<number>`count(*)::int`.as("done_n") }).from(schema.quotes).where(eq(schema.quotes.status, "completed")).groupBy(schema.quotes.userId).as("done");
+  const works = db.select({ id: schema.portfolioItems.userId, n: sql<number>`count(*)::int`.as("works_n") }).from(schema.portfolioItems).groupBy(schema.portfolioItems.userId).as("works");
+  const rating = sql<number>`coalesce(${rv.avg}, 0)`;
+  const reviews = sql<number>`coalesce(${rv.n}, 0)`;
+  const completed = sql<number>`coalesce(${done.n}, 0)`;
+  const cover = sql<number | null>`(select length(${schema.portfolioItems.thumb}) from ${schema.portfolioItems} where ${schema.portfolioItems.userId} = ${P.userId} and ${schema.portfolioItems.thumb} <> '' order by ${schema.portfolioItems.createdAt} desc limit 1)`;
 
-  let out: DirectoryEntry[] = profiles.map((p) => ({
-    slug: p.slug, name: p.displayName, city: p.city, zones: p.zones, sinceYear: p.sinceYear, bio: p.bio, specialties: p.specialties, logo: imageSrc(p.slug, "logo", p.logo), cover: imageSrc(p.slug, "cover", cover.get(p.userId) ?? ""),
-    verified: p.verified, rating: Math.round((rating.get(p.userId)?.avg ?? 0) * 10) / 10, reviews: rating.get(p.userId)?.n ?? 0,
-    completed: completed.get(p.userId) ?? 0, portfolio: count.get(p.userId) ?? 0, since: p.createdAt.toISOString(),
-    owner: { name: (owners.get(p.userId)?.name ?? "").split(/\s+/)[0], photo: imageSrc(p.slug, "owner", owners.get(p.userId)?.avatar ?? "") },
+  const where = [
+    eq(P.published, true),
+    f.slug ? eq(P.slug, f.slug) : undefined,
+    f.q ? or(contains(P.displayName, f.q), contains(P.bio, f.q), contains(P.city, f.q)) : undefined,
+    f.city ? or(contains(P.city, f.city), contains(sql`${P.zones}::text`, f.city)) : undefined,
+    f.specialty ? sql`${P.specialties} @> ${JSON.stringify([f.specialty])}::jsonb` : undefined,
+    f.minRating ? sql`${reviews} > 0 and ${rating} >= ${f.minRating}` : undefined,
+    f.verified ? eq(P.verified, true) : undefined,
+  ];
+  // meilleure note d'abord ; à note égale, plus d'avis ; sans avis en dernier ; l'adresse départage pour que les pages se suivent sans doublon
+  const order =
+    f.sort === "name" ? [sql`lower(${P.displayName})`]
+    : f.sort === "recent" ? [desc(P.createdAt)]
+    : f.sort === "completed" ? [desc(completed), desc(rating)]
+    : [desc(sql`case when ${reviews} > 0 then round(${rating}::numeric, 1) else -1 end`), desc(reviews), desc(P.verified)];
+
+  const rows = await db
+    .select({
+      slug: P.slug, name: P.displayName, city: P.city, zones: P.zones, sinceYear: P.sinceYear, bio: P.bio, specialties: P.specialties, verified: P.verified, since: P.createdAt,
+      logoIsData: sql<boolean>`${P.logo} like 'data:%'`, logoLen: sql<number>`length(${P.logo})`, logoPlain: sql<string>`case when ${P.logo} like 'data:%' then '' else ${P.logo} end`,
+      ownerName: U.name, ownerIsData: sql<boolean>`coalesce(${U.avatar}, '') like 'data:%'`, ownerLen: sql<number>`length(coalesce(${U.avatar}, ''))`, ownerPlain: sql<string>`case when coalesce(${U.avatar}, '') like 'data:%' then '' else coalesce(${U.avatar}, '') end`,
+      rating, reviews, completed, portfolio: sql<number>`coalesce(${works.n}, 0)`, coverLen: cover,
+    })
+    .from(P)
+    .innerJoin(U, eq(U.id, P.userId))
+    .leftJoin(rv, eq(rv.id, P.userId))
+    .leftJoin(done, eq(done.id, P.userId))
+    .leftJoin(works, eq(works.id, P.userId))
+    .where(and(...where))
+    .orderBy(...order, asc(P.slug))
+    .limit(Math.min(Math.max(1, f.limit ?? DIRECTORY_PAGE_MAX), DIRECTORY_PAGE_MAX))
+    .offset(Math.max(0, f.offset ?? 0));
+
+  return rows.map((r) => ({
+    slug: r.slug, name: r.name, city: r.city, zones: r.zones, sinceYear: r.sinceYear, bio: r.bio, specialties: r.specialties,
+    logo: imgUrl(r.slug, "logo", r.logoIsData, r.logoLen, r.logoPlain), cover: r.coverLen ? imgUrl(r.slug, "cover", true, r.coverLen, "") : "",
+    verified: r.verified, rating: Math.round(r.rating * 10) / 10, reviews: r.reviews, completed: r.completed, portfolio: r.portfolio, since: r.since.toISOString(),
+    owner: { name: (r.ownerName ?? "").split(/\s+/)[0], photo: imgUrl(r.slug, "owner", r.ownerIsData, r.ownerLen, r.ownerPlain) },
   }));
-  if (f.q) out = out.filter((e) => norm(`${e.name} ${e.bio} ${e.city}`).includes(norm(f.q!)));
-  if (f.city) out = out.filter((e) => norm([e.city, ...e.zones].join(" ")).includes(norm(f.city!)));
-  if (f.specialty) out = out.filter((e) => e.specialties.includes(f.specialty!));
-  if (f.minRating) out = out.filter((e) => e.reviews > 0 && e.rating >= f.minRating!);
-  if (f.verified) out = out.filter((e) => e.verified);
-  const sort = f.sort ?? "rating";
-  out.sort((a, b) =>
-    sort === "name" ? a.name.localeCompare(b.name)
-    : sort === "recent" ? b.since.localeCompare(a.since)
-    : sort === "completed" ? b.completed - a.completed || b.rating - a.rating
-    // meilleure note d'abord ; à note égale, plus d'avis ; sans avis en dernier
-    : (b.reviews > 0 ? b.rating : -1) - (a.reviews > 0 ? a.rating : -1) || b.reviews - a.reviews || Number(b.verified) - Number(a.verified));
-  return out;
+}
+
+// Chiffres de l'annuaire (total, villes, spécialités, réalisations, chantiers terminés) calculés en SQL : les facettes des filtres et la bande de chiffres
+// de l'accueil n'ont plus besoin de télécharger tous les profils.
+export type DirectorySummary = { total: number; works: number; completed: number; cities: { city: string; n: number }[]; specialties: Record<string, number> };
+export async function getDirectorySummary(): Promise<DirectorySummary> {
+  const db = await getDb();
+  const P = schema.menuisierProfiles;
+  const published = eq(P.published, true);
+  const bySpecialty = Object.fromEntries(SPECIALTIES.map((s) => [s, sql<number>`count(*) filter (where ${P.specialties} @> ${JSON.stringify([s])}::jsonb)::int`]));
+  const [[head], cities, [w], [d]] = await Promise.all([
+    db.select({ total: sql<number>`count(*)::int`, ...bySpecialty }).from(P).where(published),
+    db.select({ city: P.city, n: sql<number>`count(*)::int` }).from(P).where(and(published, sql`${P.city} <> ''`)).groupBy(P.city).orderBy(desc(sql`count(*)`), asc(P.city)).limit(50),
+    db.select({ n: sql<number>`count(*)::int` }).from(schema.portfolioItems).innerJoin(P, and(eq(P.userId, schema.portfolioItems.userId), published)),
+    db.select({ n: sql<number>`count(*)::int` }).from(schema.quotes).innerJoin(P, and(eq(P.userId, schema.quotes.userId), published)).where(eq(schema.quotes.status, "completed")),
+  ]);
+  const { total, ...specialties } = head;
+  return { total, works: w.n, completed: d.n, cities, specialties };
 }
 
 export type PublicMenuisier = DirectoryEntry & {
@@ -203,7 +240,7 @@ export async function getPublicMenuisier(slug: string): Promise<PublicMenuisier 
   const db = await getDb();
   const [p] = await db.select().from(schema.menuisierProfiles).where(and(eq(schema.menuisierProfiles.slug, slug), eq(schema.menuisierProfiles.published, true)));
   if (!p) return null;
-  const entry = (await listPublicMenuisiers()).find((e) => e.slug === slug)!;
+  const [entry] = await listPublicMenuisiers({ slug, limit: 1 });
   const [items, rv] = await Promise.all([
     listPortfolio(p.userId),
     db

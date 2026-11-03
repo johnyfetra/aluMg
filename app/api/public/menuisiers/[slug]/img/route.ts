@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import type { ProfileImage } from "@/lib/logo";
 
@@ -12,7 +12,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   let data = "";
   if (kind === "logo") data = p.logo;
   else if (kind === "owner") data = (await db.select({ a: schema.users.avatar }).from(schema.users).where(eq(schema.users.id, p.userId)))[0]?.a ?? "";
-  else if (kind === "cover") data = (await db.select({ t: schema.portfolioItems.thumb }).from(schema.portfolioItems).where(eq(schema.portfolioItems.userId, p.userId)).limit(1))[0]?.t ?? "";
+  else if (kind === "cover") data = (await db.select({ t: schema.portfolioItems.thumb }).from(schema.portfolioItems).where(and(eq(schema.portfolioItems.userId, p.userId), ne(schema.portfolioItems.thumb, ""))).orderBy(desc(schema.portfolioItems.createdAt)).limit(1))[0]?.t ?? "";
   const m = /^data:(image\/[a-z+.-]+);base64,([\s\S]+)$/.exec(data);
   if (!m) return new Response(null, { status: 404 });
   return new Response(Buffer.from(m[2], "base64"), { headers: { "Content-Type": m[1], "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800" } });

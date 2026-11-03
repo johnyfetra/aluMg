@@ -2,7 +2,7 @@
 import useSWR from "swr";
 import type { SessionUser } from "./auth";
 import { type Market, type Quote, type Settings } from "./model";
-import type { DirectoryEntry, PortfolioInput, PortfolioItem, Profile, ProfileInput, PublicMenuisier, PublicWork } from "./profiles";
+import type { DirectoryEntry, DirectorySummary, PortfolioInput, PortfolioItem, Profile, ProfileInput, PublicMenuisier, PublicWork } from "./profiles";
 import type { ClientQuote, EventView, LineComment } from "./workflow";
 import type { NotificationView } from "./notifications";
 import type { ContactView } from "./contacts";
@@ -91,6 +91,7 @@ export const useDirectory = (params: Record<string, string>) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
   return useSWR<DirectoryEntry[]>(`/api/public/menuisiers${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
 };
+export const useDirectorySummary = () => useSWR<DirectorySummary>("/api/public/directory", fetcher, { revalidateOnFocus: false });
 export const useMenuisier = (slug: string) => useSWR<PublicMenuisier>(`/api/public/menuisiers/${slug}`, fetcher, { revalidateOnFocus: false });
 
 export const useClientQuotes = () => useSWR<ClientQuote[]>("/api/client/quotes", fetcher, { revalidateOnFocus: false });

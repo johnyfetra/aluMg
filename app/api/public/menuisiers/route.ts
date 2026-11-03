@@ -1,7 +1,7 @@
-import { json } from "@/lib/api";
+import { json, PUBLIC_CACHE } from "@/lib/api";
 import { type DirectoryFilter, listPublicMenuisiers } from "@/lib/profiles";
 
-// Public : aucun compte nécessaire. Ne renvoie jamais de coordonnées (téléphone, e-mail).
+// Public : aucun compte nécessaire. Ne renvoie jamais de coordonnées (téléphone, e-mail). Paginé : `limit` (plafonné côté serveur) et `offset`.
 export async function GET(req: Request) {
   const u = new URL(req.url).searchParams;
   const sort = u.get("sort");
@@ -12,6 +12,8 @@ export async function GET(req: Request) {
     minRating: Number(u.get("minRating")) || undefined,
     verified: u.get("verified") === "1",
     sort: sort === "recent" || sort === "name" || sort === "completed" ? sort : "rating",
+    limit: Number(u.get("limit")) || undefined,
+    offset: Number(u.get("offset")) || undefined,
   };
-  return json(await listPublicMenuisiers(f));
+  return json(await listPublicMenuisiers(f), 200, PUBLIC_CACHE);
 }

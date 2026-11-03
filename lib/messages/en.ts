@@ -500,6 +500,7 @@ export const en: Messages = {
   "dir.sort.name": "Name (A to Z)",
   "dir.verifiedOnly": "Verified only",
   "dir.results": "joiner(s) found",
+  "dir.loadMore": "Show more joiners",
   "dir.empty": "No joiner matches your search.",
   "dir.reset": "Reset filters",
   "dir.reviews": "reviews",

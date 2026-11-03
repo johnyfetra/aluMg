@@ -500,6 +500,7 @@ export const fr = {
   "dir.sort.name": "Nom (A à Z)",
   "dir.verifiedOnly": "Vérifiés seulement",
   "dir.results": "menuisier(s) trouvé(s)",
+  "dir.loadMore": "Voir plus de menuisiers",
   "dir.empty": "Aucun menuisier ne correspond à votre recherche.",
   "dir.reset": "Réinitialiser les filtres",
   "dir.reviews": "avis",

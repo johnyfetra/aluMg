@@ -502,6 +502,7 @@ export const mg: Messages = {
   "dir.sort.name": "Anarana (A hatramin'ny Z)",
   "dir.verifiedOnly": "Voamarina ihany",
   "dir.results": "mpanao hita",
+  "dir.loadMore": "Asehoy hafa",
   "dir.empty": "Tsy misy mpanao mifanaraka amin'ny fikarohanao.",
   "dir.reset": "Averina ny sivana",
   "dir.reviews": "hevitra",

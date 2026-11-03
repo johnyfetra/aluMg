@@ -3,7 +3,9 @@ import type { ZodType } from "zod";
 import { currentUser, type SessionUser } from "./auth";
 import { rateLimit } from "./ratelimit";
 
-export const json = (body: unknown, status = 200) => NextResponse.json(body, { status });
+export const json = (body: unknown, status = 200, headers?: HeadersInit) => NextResponse.json(body, { status, headers });
+// Réponses publiques identiques pour tout le monde : cache partagé court (CDN, navigateur), rafraîchi en arrière-plan.
+export const PUBLIC_CACHE = { "Cache-Control": "public, max-age=30, s-maxage=60, stale-while-revalidate=300" };
 export const fail = (status: number, error: string) => json({ error }, status);
 
 // Renvoie l'utilisateur connecté, ou la réponse 401 à retourner telle quelle.
@@ -21,7 +23,7 @@ export async function requireRole(...roles: SessionUser["role"][]): Promise<Sess
 }
 // Toutes les routes /api/admin/* : session valide en base, compte admin non suspendu (currentUser écarte les comptes suspendus).
 export const requireAdmin = () => requireRole("admin");
-export const isResponse =(x: unknown): x is NextResponse => x instanceof NextResponse;
+export const isResponse = (x: unknown): x is NextResponse => x instanceof NextResponse;
 
 // Taille maximale d'un corps de requête (octets) : 2 Mo par défaut (réglages avec logo et signature) ; la messagerie accepte plus (pièces jointes).
 export const BODY_LIMIT = 2_000_000;

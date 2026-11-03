@@ -233,6 +233,23 @@ describe("annuaire public et profils", () => {
     expect((await pf.listPublicMenuisiers({ sort: "rating" })).map((e) => e.name)).toEqual(["Rabe Alu", "Fenêtres du Sud"]);
     expect((await pf.listPublicMenuisiers({ sort: "name" })).map((e) => e.name)).toEqual(["Fenêtres du Sud", "Rabe Alu"]);
   });
+  it("pagination : les pages se suivent sans doublon, la taille est plafonnée", async () => {
+    const names = async (o: Parameters<typeof pf.listPublicMenuisiers>[0]) => (await pf.listPublicMenuisiers({ sort: "name", ...o })).map((e) => e.name);
+    expect([...(await names({ limit: 1 })), ...(await names({ limit: 1, offset: 1 }))]).toEqual(["Fenêtres du Sud", "Rabe Alu"]);
+    expect(await names({ offset: 5 })).toEqual([]);
+    expect((await pf.listPublicMenuisiers({ limit: 10_000 })).length).toBeLessThanOrEqual(pf.DIRECTORY_PAGE_MAX);
+  });
+  it("recherche : % et _ sont des caractères comme les autres, pas des jokers", async () => {
+    expect(await pf.listPublicMenuisiers({ q: "%" })).toEqual([]);
+    expect(await pf.listPublicMenuisiers({ q: "_" })).toEqual([]);
+  });
+  it("résumé : total, villes, spécialités calculés en SQL", async () => {
+    const s = await pf.getDirectorySummary();
+    expect(s.total).toBe(2);
+    expect(s.cities.map((c) => c.city).sort()).toEqual(["Antananarivo", "Toliara"]);
+    expect(s.specialties.volets).toBe(1);
+    expect(s.specialties.vitrerie).toBe(1);
+  });
   it("slug unique : deux menuisiers de même nom obtiennent des adresses différentes", async () => {
     const a = (await repo.createUser("m3@ex.mg", "Alu Test", "h", "menuisier", "034 55 555 55"))!;
     const b = (await repo.createUser("m4@ex.mg", "Alu Test", "h", "menuisier", "034 66 666 66"))!;
