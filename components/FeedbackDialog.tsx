@@ -6,6 +6,7 @@ import { Field } from "./ui";
 import { ApiError, request } from "@/lib/client";
 import { errorText } from "@/lib/errors";
 import { useI18n } from "@/lib/i18n";
+import { supportUrl } from "@/lib/support";
 import { FEEDBACK_KINDS, FEEDBACK_MESSAGE_MAX, FEEDBACK_MESSAGE_MIN, type FeedbackKind } from "@/lib/model";
 
 const ICONS = { bug: Bug, idea: Lightbulb, remark: MessageCircle } as const;
@@ -89,12 +90,15 @@ export default function FeedbackButton({ role }: { role: "client" | "menuisier" 
             <p className="text-right text-xs text-muted">{message.length}/{FEEDBACK_MESSAGE_MAX}</p>
           </Field>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+            <a href={supportUrl(t("support.msg"))} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-[16rem] items-start gap-2 text-xs leading-snug text-muted hover:text-ink"><MessageCircle size={14} aria-hidden className="mt-0.5 shrink-0 text-primary" />{t("support.fast")}</a>
+            <div className="ml-auto flex gap-2">
             <button type="button" className="btn-secondary" onClick={() => setOpen(false)}>{t("fb.cancel")}</button>
             <button type="submit" disabled={busy} className="btn-primary">
               {busy ? <Loader2 size={16} aria-hidden className="animate-spin" /> : <Send size={16} aria-hidden />}
               {t("fb.send")}
             </button>
+            </div>
           </div>
         </form>
       </dialog>

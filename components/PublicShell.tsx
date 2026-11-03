@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { ArrowUp, ArrowUpRight, ChevronRight, Images, LayoutGrid, Moon, Smartphone, Sun, Users } from "lucide-react";
+import { ArrowUp, ArrowUpRight, ChevronRight, Images, LayoutGrid, MessageCircle, Moon, Smartphone, Sun, Users } from "lucide-react";
 import { UserMenu } from "./Controls";
 import { setTheme, useTheme } from "@/lib/theme";
 import { homeFor, useSession } from "@/lib/client";
 import { LOCALES, type Locale, useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
+import { SUPPORT_PHONE_DISPLAY, supportUrl } from "@/lib/support";
 
 // Le logo mène à l'accueil ; déjà sur l'accueil, il remonte en haut de page (un lien vers la page courante ne fait rien de lui-même).
 // L'adresse est lue au clic plutôt qu'avec usePathname : le pied de page se prérend sans Suspense.
@@ -95,6 +96,10 @@ function MobileMenu({ myHref }: { myHref: string | null }) {
               <Link href="/inscription" onClick={close} className="btn-accent !rounded-full">{c.start}<ArrowUpRight size={15} aria-hidden /></Link>
               <Link href="/connexion" onClick={close} className="btn-secondary !rounded-full">{t("pub.login")}</Link></>}
           </div>
+          <a href={supportUrl(t("support.msg"))} target="_blank" rel="noopener noreferrer" onClick={close} className="menu-item mt-3 flex items-center gap-3 rounded-2xl px-3 py-2 text-muted transition-colors hover:text-ink" style={{ "--i": 7 } as CSSProperties}>
+            <span className="grid size-9 shrink-0 place-items-center rounded-full border border-line/70"><MessageCircle size={16} aria-hidden /></span>
+            <span className="text-sm font-medium"><span className="block">{t("support.contact")}</span><span className="block text-xs font-normal text-muted/80">{t("support.via")} · {SUPPORT_PHONE_DISPLAY}</span></span>
+          </a>
         </div>
         {/* lame finale du volet, avec sa poignée */}
         <div aria-hidden className="mx-auto mt-1.5 grid h-3 w-[calc(100%-1.5rem)] place-items-center rounded-b-xl rounded-t-sm bg-[repeating-linear-gradient(to_bottom,color-mix(in_srgb,var(--text)_14%,transparent)_0_1px,transparent_1px_4px)]"><span className="h-1 w-10 rounded-full bg-accent/70" /></div>
@@ -127,7 +132,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
         {/* mobile : deux colonnes centrées séparées par un filet vertical ; bureau : colonnes à plat dans la grille */}
         <div className="grid grid-cols-2 divide-x divide-line border-y border-line py-8 text-center md:contents md:divide-x-0 md:border-0 md:py-0 md:text-left">
           <nav aria-label={c.explore} className="px-3 md:px-0"><h2 className="eyebrow">{c.explore}</h2><ul className="mt-5 space-y-3 text-sm">{navLinks(c).map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></nav>
-          <nav aria-label={c.account} className="px-3 md:px-0"><h2 className="eyebrow">{c.account}</h2><ul className="mt-5 space-y-3 text-sm">{[["/connexion",t("pub.login")],["/inscription?role=client",c.client],["/inscription?role=menuisier",c.pro]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></nav>
+          <nav aria-label={c.account} className="px-3 md:px-0"><h2 className="eyebrow">{c.account}</h2><ul className="mt-5 space-y-3 text-sm">{[["/connexion",t("pub.login")],["/inscription?role=client",c.client],["/inscription?role=menuisier",c.pro]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}<li><a href={supportUrl(t("support.msg"))} target="_blank" rel="noopener noreferrer" title={`WhatsApp ${SUPPORT_PHONE_DISPLAY}`} className="inline-flex items-center gap-1.5 text-muted hover:text-primary hover:underline"><MessageCircle size={14} aria-hidden />{t("support.contact")}</a></li></ul></nav>
         </div>
         <div className="flex flex-col items-center gap-3 text-xs text-muted md:col-span-3 md:flex-row md:justify-between md:border-t md:border-line md:pt-6">
           <p>© AluMg</p>

@@ -1,5 +1,5 @@
 "use client";
-import { BookOpen, Check, ChevronDown, LogOut, Moon, Settings, ShieldCheck, Sun, UserCircle } from "lucide-react";
+import { BookOpen, Check, ChevronDown, LogOut, MessageCircle, Moon, Settings, ShieldCheck, Sun, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Menu, { menuItem } from "./Menu";
@@ -7,6 +7,7 @@ import Flag from "./Flag";
 import { Avatar } from "./ui";
 import { request, useMe } from "@/lib/client";
 import { LOCALES, type Locale, useI18n } from "@/lib/i18n";
+import { supportUrl } from "@/lib/support";
 import { type Theme, setTheme, useTheme } from "@/lib/theme";
 
 // Commutateur de thème : deux boutons (clair, sombre), l'actif est mis en évidence et annoncé (aria-pressed).
@@ -130,6 +131,7 @@ export function UserMenu() {
           <Link href="/compte" role="menuitem" className={menuItem} onClick={close}><UserCircle size={17} aria-hidden className="text-muted" />{t("nav.account")}</Link>
           <Link href="/reglages" role="menuitem" className={menuItem} onClick={close}><Settings size={17} aria-hidden className="text-muted" />{t("nav.settings")}</Link>
           {me?.role === "menuisier" && <Link href="/guide" role="menuitem" className={menuItem} onClick={close}><BookOpen size={17} aria-hidden className="text-muted" />{t("nav.guide")}</Link>}
+          <a href={supportUrl(t("support.msg"))} target="_blank" rel="noopener noreferrer" role="menuitem" className={menuItem} onClick={close}><MessageCircle size={17} aria-hidden className="text-muted" />{t("support.contact")}</a>
           <div className="my-1 border-t border-line" />
           <button type="button" role="menuitem" className={`${menuItem} text-danger`} onClick={logout}><LogOut size={17} aria-hidden />{t("menu.logout")}</button>
         </>
