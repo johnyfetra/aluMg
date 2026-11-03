@@ -48,3 +48,6 @@ next-env.d.ts
 # base locale
 .data/
 /.next-t/
+
+# copies de travail temporaires des agents
+/.claude/worktrees/

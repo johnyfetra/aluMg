@@ -94,7 +94,11 @@ requested ─(menuisier prépare)→ draft ─send→ sent ─accept→ accepted
 
 ## Annuaire public
 
-`GET /api/public/menuisiers` (filtres : texte, ville, spécialité, note minimale, vérifiés, tri) et `/[slug]` ne renvoient que les profils publiés et **jamais de coordonnées**. Les coordonnées du menuisier ne sont visibles que dans le suivi d'un devis, par le client concerné. Un profil ne peut être publié qu'avec nom et ville. Le filtrage se fait en mémoire (shortcut pour quelques centaines de profils) : à passer en SQL paginé ensuite.
+`GET /api/public/menuisiers` (filtres : texte, ville ou zone, spécialité, note minimale, vérifiés, tri ; `limit` plafonné à 100 et `offset`) et `/[slug]` ne renvoient que les profils publiés et **jamais de coordonnées**. Les coordonnées du menuisier ne sont visibles que dans le suivi d'un devis, par le client concerné. Un profil ne peut être publié qu'avec nom et ville.
+
+Filtre, tri et pagination se font **en SQL** (`listPublicMenuisiers`, `lib/profiles.ts`) : seule la page demandée quitte la base, et les images (logo, couverture, photo) ne voyagent jamais dans une liste, seulement une adresse mise en cache. `GET /api/public/directory` donne les chiffres de l'annuaire (total, villes, nombre par spécialité, réalisations, chantiers terminés) calculés en SQL : les facettes des filtres et la bande de chiffres de l'accueil n'ont pas besoin de la liste. Les deux réponses sont publiques et mises en cache quelques dizaines de secondes (`PUBLIC_CACHE`, `lib/api.ts`). Index : `reviews(menuisier_id)`, `quotes(user_id, status)`.
+
+shortcut: la recherche texte est un `LIKE '%mot%'` sur les profils publiés (suffisant jusqu'à quelques dizaines de milliers) ; passer à `pg_trgm` (index GIN, déjà activé pour l'administration) au-delà. Les images des réalisations restent en base (data URL) : les déplacer vers un stockage de fichiers avant la montée en charge.
 
 ## Configuration d'un ouvrage
 
@@ -274,3 +278,5 @@ Accessible sans session, y compris en mode MVP : `/`, `/application`, `/menuisie
 
 - **Illustrations du produit** : `components/marketing/ProductShowcase.tsx` affiche de vraies captures de l'application (tableau de bord, devis du menuisier, validation par le client, téléphone), en clair et en sombre selon le thème, dans `public/marketing/*.webp`. Elles viennent de `npm run seed:local` (données d'exemple). Pour les refaire : relancer l'application locale puis le script de capture.
 - **Photos de réalisations** : celles que publient les menuisiers ; un traitement commun (`.photo-grade`) assagit les couleurs pour que des clichés de sources différentes forment un ensemble. Les visuels d'inspiration générés sont signalés comme tels.
+- **Hero** : `HeroSlider` (photo plein cadre qui défile) sous un volet roulant (`RollerShutter`, variable CSS `--p`, aucun rendu React pendant le glissé) ; le texte reste derrière le volet tant qu'il n'est pas entièrement fermé. Une fenêtre coulissante à vitres transparentes s'ouvre derrière quand le volet est levé, puis s'efface. Sans JavaScript ou avec moins d'animations, le volet n'est pas affiché et le hero reste lisible. Les apparitions au défilement passent par `Reveal` (une observation partagée, contenu visible si l'animation échoue).
+- **Pages d'erreur** : `app/not-found.tsx` (404, avec la barre et le pied de la vitrine), `app/error.tsx` (erreur inattendue, volontairement sans la barre de navigation) et `app/global-error.tsx` (dernier filet, autonome). `proxy.ts` ne renvoie vers la connexion que les sections privées (`PRIVATE`) : une adresse inconnue donne un vrai 404. Les messages d'erreur d'API (réseau coupé, session expirée, accès refusé, introuvable, trop de tentatives, panne) viennent de `lib/errors.ts`.
