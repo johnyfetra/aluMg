@@ -18,7 +18,7 @@ function HomeLink({ className, ...rest }: Omit<React.ComponentProps<typeof Link>
 
 function PublicNavigation() {
   const { locale, t } = useI18n(); const c = marketing[locale]; const path = usePathname();
-  return <nav aria-label={t("nav.main")} className="flex items-center gap-0.5 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className="nav-link relative whitespace-nowrap rounded-full px-4 py-2 text-muted transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink">{label}</Link>)}</nav>;
+  return <nav aria-label={t("nav.main")} className="flex items-center gap-0.5 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery],["/telecharger",c.android]].map(([href,label])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className="nav-link relative whitespace-nowrap rounded-full px-4 py-2 text-muted transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink">{label}</Link>)}</nav>;
 }
 
 // Langue : trois codes côte à côte (un seul geste, pas de menu) ; thème : un bouton qui bascule.
@@ -55,7 +55,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
         </div>
         {/* mobile : deux colonnes centrées séparées par un filet vertical ; bureau : colonnes à plat dans la grille */}
         <div className="grid grid-cols-2 divide-x divide-line border-y border-line py-8 text-center md:contents md:divide-x-0 md:border-0 md:py-0 md:text-left">
-          <nav aria-label={c.explore} className="px-3 md:px-0"><h2 className="eyebrow">{c.explore}</h2><ul className="mt-5 space-y-3 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></nav>
+          <nav aria-label={c.explore} className="px-3 md:px-0"><h2 className="eyebrow">{c.explore}</h2><ul className="mt-5 space-y-3 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery],["/telecharger",c.android]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></nav>
           <nav aria-label={c.account} className="px-3 md:px-0"><h2 className="eyebrow">{c.account}</h2><ul className="mt-5 space-y-3 text-sm">{[["/connexion",t("pub.login")],["/inscription?role=client",c.client],["/inscription?role=menuisier",c.pro]].map(([href,label])=><li key={href}><Link href={href} className="text-muted hover:text-primary hover:underline">{label}</Link></li>)}</ul></nav>
         </div>
         <div className="flex flex-col items-center gap-3 text-xs text-muted md:col-span-3 md:flex-row md:justify-between md:border-t md:border-line md:pt-6">
