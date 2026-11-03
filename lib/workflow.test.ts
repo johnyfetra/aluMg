@@ -516,3 +516,39 @@ describe("avis du client par ouvrage", () => {
   });
 });
 
+
+describe("même demande envoyée à plusieurs menuisiers : ce qui est validé n'est plus valable ailleurs", () => {
+  const group = crypto.randomUUID();
+  const base = { project: "Maison", message: "", siteAddress: "", wantedDate: "", group, lines: [{ ...line, width: 1500, height: 1200 }, { ...line, id: crypto.randomUUID(), width: 900, height: 2100 }] };
+  const sendTo = async (owner: string, slug: string) => {
+    const r = (await wf.createRequest(c2, { ...base, menuisier: slug })) as Quote;
+    await upd(owner, r.id, quoteSchema.parse(r));
+    await wf.applyAction(owner, r.id, A({ type: "send" }));
+    return (await repo.getQuote(owner, r.id))!;
+  };
+  let slug2: string;
+  beforeAll(async () => {
+    const p = await pf.getOwnProfile(m2, "Autre Menuisier");
+    slug2 = p.slug;
+    await pf.saveOwnProfile(m2, "Autre Menuisier", { ...p, displayName: "Autre Menuisier", published: true });
+  });
+
+  it("valider un ouvrage le retire de l'autre devis et prévient l'autre menuisier ; le reste vit", async () => {
+    const a = await sendTo(m1, slug1), b = await sendTo(m2, slug2);
+    expect(a.lines.map((l) => l.ref)).toEqual(b.lines.map((l) => l.ref)); // mêmes ouvrages, même référence
+    expect((await wf.applyAction(c2, a.id, A({ type: "review_line", lineId: a.lines[0].id, state: "approved", rev: await revOf(m1, a.id) }))).ok).toBe(true);
+    const other = (await repo.getQuote(m2, b.id))!;
+    expect(other.taken?.[b.lines[0].id]).toMatchObject({ by: expect.any(String) });
+    expect(other.taken?.[b.lines[1].id]).toBeUndefined();
+    expect(other.status).toBe("sent");
+    expect(await wf.applyAction(c2, b.id, A({ type: "review_line", lineId: b.lines[0].id, state: "approved", rev: await revOf(m2, b.id) }))).toEqual({ ok: false, error: "line_taken" });
+    expect((await notif.listNotifications(m2)).items.some((n) => n.quoteId === b.id && n.kind === "taken")).toBe(true);
+  });
+  it("accepter tout un devis ferme l'autre devis dont tous les ouvrages sont pris", async () => {
+    const a = await sendTo(m1, slug1), b = await sendTo(m2, slug2);
+    expect((await wf.applyAction(c2, a.id, A({ type: "approve_all", rev: await revOf(m1, a.id) }))).ok).toBe(true);
+    const other = (await repo.getQuote(m2, b.id))!;
+    expect(other.status).toBe("rejected");
+    expect(Object.keys(other.taken ?? {})).toHaveLength(2);
+  });
+});

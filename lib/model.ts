@@ -229,11 +229,13 @@ export const lineSchema = z.object({
   qty: z.number().int().min(1).max(999),
   room: text(60).optional(), // où l'ouvrage se pose (« Chambre 1, façade sud »)
   note: text(300).optional(), // remarque libre sur l'ouvrage (visible du client)
+  ref: z.string().max(64).optional(), // même ouvrage demandé à plusieurs menuisiers : posé par le serveur à la demande, il relie les devis d'une même demande
   unit: z.number().min(0).max(1e10), // prix unitaire en Ar : calculé puis modifiable à la main
 });
 export type Line = z.infer<typeof lineSchema>;
 
 const requestSchema = z.object({
+  group: z.string().max(64).optional(), // demande envoyée à plusieurs menuisiers : identifiant commun à tous les devis qui en découlent
   message: text(1500),
   siteAddress: text(200),
   wantedDate: text(40),
@@ -294,6 +296,8 @@ export const quoteSchema = z.object({
   warranty: z.number().int().min(0).max(240).optional(), // garantie en mois (absent ou 0 : non indiquée)
   docStyle: docStyleSchema.optional(), // modèle propre à ce devis ; absent : le modèle des réglages
   discount: z.number().min(0).max(100).default(0), // remise en % sur le total HT
+  // ouvrages qui ne sont plus valables : le client les a validés chez un autre menuisier (posé par le serveur ; ils ne comptent plus dans le prix)
+  taken: z.record(z.string(), z.object({ by: z.string().max(120), at: z.string().max(40) })).optional(),
   lineReviews: z.record(z.string(), lineReviewSchema).optional(), // avis du client par ouvrage (posé par le serveur ; une modification d'un ouvrage efface son avis)
   changeTopic: z.enum(CHANGE_TOPICS).optional(), // objet de la dernière demande de modification du client (posé par le serveur, effacé à l'envoi)
   lostReason: z.enum(CLOSE_REASONS).optional(), // motif de clôture, posé par le serveur : refus du client (avec son motif) ou demande écartée par le menuisier

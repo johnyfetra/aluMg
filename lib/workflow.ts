@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ne } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { normalize } from "./calc";
 import { salePrice } from "./costing";
@@ -78,6 +78,7 @@ export const requestSchema = z.object({
   siteAddress: z.string().trim().max(200).default(""),
   wantedDate: z.string().trim().max(40).default(""),
   lines: z.array(lineSchema).max(30).default([]), // vide : les ouvrages sont déduits du texte du client (lib/intake.ts)
+  group: z.uuid().optional(), // la même demande envoyée à plusieurs menuisiers (un envoi par menuisier) : identifiant commun choisi par le formulaire
 });
 
 // Crée un devis « requested » chez le menuisier : ses tarifs et majorations remplissent déjà les prix (le client ne les voit pas encore).
@@ -94,11 +95,13 @@ export async function createRequest(clientId: string, input: z.infer<typeof requ
   const parsed = input.lines.length ? null : analyze(`${input.project}. ${input.message}`);
   if (parsed && !parsed.items.length) return "intake_empty";
   const given = parsed ? parsed.items.map((i) => toLine(i.spec)) : input.lines;
-  const lines = given.map((l) => {
+  // Le n-ième ouvrage a la même référence chez chaque menuisier de la demande : c'est ce qui permet de le retirer des autres devis quand le client le valide.
+  const lines = given.map((l, k) => {
     const n = normalize(l);
-    return { ...n, id: crypto.randomUUID(), unit: salePrice(n, settings) };
+    return { ...n, id: crypto.randomUUID(), unit: salePrice(n, settings), ...(input.group ? { ref: `${input.group}-${k}` } : {}) };
   });
   const request: QuoteRequest = {
+    ...(input.group ? { group: input.group } : {}),
     message: input.message, siteAddress: input.siteAddress || parsed?.address || "", wantedDate: input.wantedDate,
     ...(parsed ? { intake: { auto: true, checks: parsed.items.map((i, k) => ({ lineId: lines[k].id, keys: i.assumptions })).filter((c) => c.keys.length), unsupported: parsed.unsupported, urgent: parsed.urgent } } : {}),
   };
@@ -146,9 +149,9 @@ export async function listEvents(quoteId: string): Promise<EventView[]> {
   }));
 }
 
-export type ClientQuote = { quote: Quote; menuisier: { id: string; name: string; slug: string; logo: string; city: string; phone: string; email: string; verified: boolean }; issuer: Issuer; reviewed: boolean };
+export type ClientQuote = { siblings: SiblingQuote[]; quote: Quote; menuisier: { id: string; name: string; slug: string; logo: string; city: string; phone: string; email: string; verified: boolean }; issuer: Issuer; reviewed: boolean };
 
-async function toClientQuote(row: typeof schema.quotes.$inferSelect): Promise<ClientQuote> {
+async function toClientQuote(row: typeof schema.quotes.$inferSelect, withSiblings = false): Promise<ClientQuote> {
   const db = await getDb();
   const [m] = await db
     .select({ name: schema.users.name, phone: schema.users.phone, email: schema.users.email })
@@ -158,6 +161,7 @@ async function toClientQuote(row: typeof schema.quotes.$inferSelect): Promise<Cl
   const [r] = await db.select({ id: schema.reviews.id }).from(schema.reviews).where(eq(schema.reviews.quoteId, row.id));
   const settings = await getSettings(row.userId);
   return {
+    siblings: withSiblings ? await openSiblings(row) : [], // seule la fiche d'un devis en a besoin (la liste n'en fait pas la requête)
     quote: clientView({ ...row.data, status: row.status as Status, progress: row.progress }),
     issuer: Object.fromEntries(ISSUER_KEYS.map((k) => [k, settings[k]])) as Issuer,
     menuisier: { id: row.userId, name: p?.displayName || m?.name || "", slug: p?.slug ?? "", logo: imageSrc(p?.slug ?? "", "logo", p?.logo ?? ""), city: p?.city ?? "", phone: m?.phone ?? "", email: m?.email ?? "", verified: p?.verified ?? false },
@@ -169,16 +173,62 @@ export async function listClientQuotes(clientId: string): Promise<ClientQuote[]>
   const db = await getDb();
   const rows = await db.select().from(schema.quotes).where(eq(schema.quotes.clientId, clientId)).orderBy(desc(schema.quotes.createdAt));
   // la liste n'a pas besoin du logo ni de la signature de l'entreprise (lourds, répétés à chaque devis) : seule la fiche d'un devis les porte
-  return (await Promise.all(rows.map(toClientQuote))).map((c) => ({ ...c, issuer: { ...c.issuer, logo: "", signature: "" } }));
+  return (await Promise.all(rows.map((r) => toClientQuote(r)))).map((c) => ({ ...c, issuer: { ...c.issuer, logo: "", signature: "" } }));
 }
 
 export async function getClientQuote(clientId: string, id: string): Promise<ClientQuote | null> {
   const s = await sideOf(clientId, id);
-  return s && s.side === "client" ? toClientQuote(s.row) : null;
+  return s && s.side === "client" ? toClientQuote(s.row, true) : null;
+}
+
+// ---------- Une même demande envoyée à plusieurs menuisiers ----------
+// Chaque menuisier a son devis (même `request.group`, mêmes `ref` d'ouvrages). Dès que le client valide un ouvrage, ou le devis entier, chez l'un d'eux,
+// cet ouvrage n'est plus valable chez les autres : il y est marqué (`taken`), ne compte plus dans le prix, et le menuisier concerné est prévenu
+// (nom du menuisier retenu, devis, nombre d'ouvrages). Seul ce qui est validé tombe : les autres ouvrages des autres devis restent valables.
+const OPEN_STATUSES: Status[] = ["requested", "draft", "sent", "negotiation"];
+type Tx = Parameters<Parameters<Awaited<ReturnType<typeof getDb>>["transaction"]>[0]>[0];
+
+async function menuisierName(db: Pick<Awaited<ReturnType<typeof getDb>>, "select">, userId: string) {
+  const [p] = await db.select({ name: schema.menuisierProfiles.displayName }).from(schema.menuisierProfiles).where(eq(schema.menuisierProfiles.userId, userId));
+  if (p?.name) return p.name;
+  const [u] = await db.select({ name: schema.users.name }).from(schema.users).where(eq(schema.users.id, userId));
+  return u?.name ?? "";
+}
+
+// Devis encore ouverts de la même demande, hors celui-ci.
+const siblingsOf = (db: Pick<Awaited<ReturnType<typeof getDb>>, "select">, row: typeof schema.quotes.$inferSelect) =>
+  row.clientId && row.data.request?.group
+    ? db.select().from(schema.quotes).where(and(eq(schema.quotes.clientId, row.clientId), ne(schema.quotes.id, row.id), inArray(schema.quotes.status, OPEN_STATUSES), sql`${schema.quotes.data}->'request'->>'group' = ${row.data.request.group}`))
+    : Promise.resolve([]);
+
+async function cascadeTaken(tx: Tx, winner: typeof schema.quotes.$inferSelect, refs: string[], whole: boolean) {
+  const siblings = await siblingsOf(tx, winner);
+  if (!siblings.length) return;
+  const by = await menuisierName(tx, winner.userId);
+  const at = new Date().toISOString();
+  for (const s of siblings) {
+    const hit = s.data.lines.filter((l) => l.ref && refs.includes(l.ref) && !s.data.taken?.[l.id]);
+    if (!hit.length) continue;
+    const taken = { ...(s.data.taken ?? {}), ...Object.fromEntries(hit.map((l) => [l.id, { by, at }])) };
+    const closed = s.data.lines.every((l) => taken[l.id]); // plus aucun ouvrage valable : le devis est annulé
+    const lineReviews = Object.fromEntries(Object.entries(s.data.lineReviews ?? {}).filter(([id]) => !taken[id]));
+    const status: Status = closed ? "rejected" : (s.status as Status);
+    await tx.update(schema.quotes).set({ status, data: { ...s.data, status, taken, lineReviews: Object.keys(lineReviews).length ? lineReviews : undefined, ...(closed ? { lostReason: "competitor" as const } : {}) } }).where(eq(schema.quotes.id, s.id));
+    await tx.insert(schema.quoteEvents).values({ quoteId: s.id, actorId: winner.clientId, kind: "taken", message: by, data: { by, lines: hit.map((l) => l.id), whole, closed } });
+    await notify(tx, { userId: s.userId, quoteId: s.id, kind: "taken", message: JSON.stringify({ by, n: hit.length, whole, closed }) });
+  }
+}
+
+// Pour l'avertissement du client avant de valider : les autres menuisiers de la demande et les ouvrages qui leur restent (références).
+export type SiblingQuote = { menuisier: string; number: string; refs: string[] };
+async function openSiblings(row: typeof schema.quotes.$inferSelect): Promise<SiblingQuote[]> {
+  const db = await getDb();
+  const rows = await siblingsOf(db, row);
+  return Promise.all(rows.map(async (s) => ({ menuisier: await menuisierName(db, s.userId), number: s.number, refs: s.data.lines.filter((l) => l.ref && !s.data.taken?.[l.id]).map((l) => l.ref!) })));
 }
 
 // ---------- Appliquer une action ----------
-export type ActionResult = { ok: true; quote: Quote } | { ok: false; error: "not_found" | "invalid_transition" | "incomplete" | "already_reviewed" | "no_client_account" | "quote_changed" | "message_required" | "nothing_to_accept" };
+export type ActionResult = { ok: true; quote: Quote } | { ok: false; error: "not_found" | "invalid_transition" | "incomplete" | "already_reviewed" | "no_client_account" | "quote_changed" | "message_required" | "nothing_to_accept" | "line_taken" };
 
 export async function applyAction(actorId: string, quoteId: string, a: Action): Promise<ActionResult> {
   const found = await sideOf(actorId, quoteId);
@@ -210,15 +260,17 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
   let reviews: Record<string, LineReview> | undefined = row.data.lineReviews;
   if (a.type === "review_line") {
     if (!row.data.lines.some((l) => l.id === a.lineId)) return { ok: false, error: "not_found" };
+    if (row.data.taken?.[a.lineId] && a.state !== "clear") return { ok: false, error: "line_taken" }; // validé chez un autre menuisier
     if (a.state === "request" && !a.message?.trim()) return { ok: false, error: "message_required" };
     const { [a.lineId]: _old, ...rest } = reviews ?? {};
     void _old;
     reviews = a.state === "clear" ? rest : { ...rest, [a.lineId]: { state: a.state, ...(a.state === "request" && a.topic ? { topic: a.topic } : {}), message: a.message?.trim() ?? "", at: now } };
   } else if (a.type === "approve_all" || a.type === "accept") {
     // accepter avec tous les ouvrages en attente n'a pas de sens : rien à faire poser
-    if (a.type === "accept" && row.data.lines.every((l) => reviews?.[l.id]?.state === "hold")) return { ok: false, error: "nothing_to_accept" };
+    const live = row.data.lines.filter((l) => !row.data.taken?.[l.id]); // un ouvrage validé chez un autre menuisier ne peut plus l'être ici
+    if (!live.length || (a.type === "accept" && live.every((l) => reviews?.[l.id]?.state === "hold"))) return { ok: false, error: "nothing_to_accept" };
     // les ouvrages en attente le restent ; à l'acceptation, une demande non traitée aussi
-    reviews = Object.fromEntries(row.data.lines.map((l) => {
+    reviews = Object.fromEntries(live.map((l) => {
       const r = reviews?.[l.id];
       return [l.id, r?.state === "hold" || (a.type === "accept" && r?.state === "request") ? r : { state: "approved" as const, message: r?.state === "approved" ? r.message : "", at: r?.at ?? now }];
     }));
@@ -226,6 +278,10 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
     reviews = Object.fromEntries(Object.entries(reviews).filter(([, r]) => r.state === "approved")); // les demandes sont traitées par le nouvel envoi
   }
   const reviewsChanged = JSON.stringify(reviews ?? null) !== JSON.stringify(row.data.lineReviews ?? null);
+  // Ouvrages que le client valide maintenant : ils cessent d'être valables chez les autres menuisiers de la même demande.
+  const validated = side === "client" && (a.type === "review_line" ? a.state === "approved" : a.type === "approve_all" || a.type === "accept")
+    ? row.data.lines.filter((l) => l.ref && reviews?.[l.id]?.state === "approved" && (a.type !== "review_line" || l.id === a.lineId)).map((l) => l.ref!)
+    : [];
 
   const progress = a.type === "progress" ? a.progress : row.progress;
   const quote: Quote = { ...row.data, status: next, progress, clientId, lineReviews: reviews, ...(a.type === "reject" && a.reason ? { lostReason: a.reason } : {}), ...(a.type === "send" ? { lostReason: undefined, changeTopic: undefined } : {}), ...(a.type === "request_change" && a.topic ? { changeTopic: a.topic } : {}), ...(a.type === "decline" ? { lostReason: "declined" as const } : {}) };
@@ -236,6 +292,7 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
       const done = await tx.update(schema.quotes).set({ status: next, progress, clientId, data: quote }).where(and(eq(schema.quotes.id, quoteId), unchanged(row.status, row.data.rev ?? 0))).returning({ id: schema.quotes.id });
       if (!done.length) throw new StaleQuote();
     }
+    if (validated.length) await cascadeTaken(tx, row, validated, a.type !== "review_line");
     // l'autre partie est prévenue des étapes du devis
     const other = side === "menuisier" ? clientId : row.userId;
     const told = ["send", "decline", "accept", "reject", "request_change", "review", "approve_all", "message"].includes(a.type) || (a.type === "review_line" && a.state === "request") || (a.type === "progress" && progress !== row.progress);
