@@ -18,7 +18,7 @@ function HomeLink({ className, ...rest }: Omit<React.ComponentProps<typeof Link>
 
 function PublicNavigation() {
   const { locale, t } = useI18n(); const c = marketing[locale]; const path = usePathname();
-  return <nav aria-label={t("nav.main")} className="flex items-center gap-0.5 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery],["/telecharger",c.android]].map(([href,label])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className="nav-link relative whitespace-nowrap rounded-full px-4 py-2 text-muted transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink">{label}</Link>)}</nav>;
+  return <nav aria-label={t("nav.main")} className="grid w-full max-w-sm grid-cols-2 justify-items-center text-sm sm:flex sm:w-auto sm:max-w-full sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-0.5">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery],["/telecharger",c.android]].map(([href,label])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className="nav-link relative whitespace-nowrap rounded-full px-4 py-2 text-muted transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink">{label}</Link>)}</nav>;
 }
 
 // Langue : trois codes côte à côte (un seul geste, pas de menu) ; thème : un bouton qui bascule.
