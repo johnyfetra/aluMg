@@ -1274,7 +1274,7 @@ export const en: Messages = {
   "auth.nameCompany": "Your company name",
   "auth.tooMany": "Too many attempts. Please wait a few minutes and try again.",
   "auth.demoClientShort": "Client account",
-  "auth.demoMenuisierShort": "Joiner account",
+  "auth.demoMenuisierShort": "Joiner Alu Mada",
   "auth.emailOptional": "E-mail (optional)",
   "auth.identifier": "Phone or e-mail",
   "auth.phoneRequired": "Phone number",

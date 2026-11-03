@@ -1274,7 +1274,7 @@ export const fr = {
   "auth.nameCompany": "Nom de votre entreprise",
   "auth.tooMany": "Trop de tentatives. Patientez quelques minutes avant de réessayer.",
   "auth.demoClientShort": "Compte client",
-  "auth.demoMenuisierShort": "Compte menuisier",
+  "auth.demoMenuisierShort": "Menuisier Alu Mada",
   "auth.emailOptional": "E-mail (facultatif)",
   "auth.identifier": "Téléphone ou e-mail",
   "auth.phoneRequired": "Numéro de téléphone",

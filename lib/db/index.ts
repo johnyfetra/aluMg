@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import * as schema from "./schema";
 import { SUPABASE_CA } from "./supabase-ca";
@@ -6,15 +7,39 @@ import { SUPABASE_CA } from "./supabase-ca";
 export type Db = PgDatabase<any, typeof schema>;
 export { schema };
 
-const g = globalThis as { __alumgDb?: Promise<Db> };
+const g = globalThis as { __alumgDb?: Promise<Db>; __alumgSchemaV?: number; __alumgMigrating?: Promise<void> };
 
 // Postgres partout : DATABASE_URL (Neon, Supabase…) en production, PGlite (Postgres embarqué, fichier local) en développement.
 // PGLITE_DIR=memory:// donne une base jetable pour les tests.
-export const getDb = () =>
-  (g.__alumgDb ??= init().catch((e) => {
+export async function getDb(): Promise<Db> {
+  const db = await (g.__alumgDb ??= init().catch((e) => {
     g.__alumgDb = undefined; // un échec d'initialisation ne doit pas rester en cache
     throw e;
   }));
+  await catchUpMigrations(db);
+  return db;
+}
+
+// Développement, base embarquée : la base ne migre qu'au démarrage du serveur, or `npm run dev` reste lancé pendant qu'on ajoute des migrations. Sans ceci, le nouveau code
+// écrit dans des tables qui n'existent pas encore (500 à l'inscription, à la connexion…) jusqu'à un redémarrage. On rejoue donc les migrations quand le journal change.
+const journalSize = () => {
+  try {
+    return (JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8")) as { entries: unknown[] }).entries.length;
+  } catch {
+    return 0;
+  }
+};
+async function catchUpMigrations(db: Db) {
+  if (process.env.NODE_ENV === "production" || process.env.DATABASE_URL || process.env.POSTGRES_URL) return;
+  const n = journalSize();
+  if (n !== g.__alumgSchemaV) {
+    g.__alumgSchemaV = n;
+    g.__alumgMigrating = import("drizzle-orm/pglite/migrator")
+      .then(({ migrate }) => migrate(db as never, { migrationsFolder: "drizzle" })) // idempotent : seules les migrations manquantes s'appliquent
+      .finally(() => { g.__alumgMigrating = undefined; });
+  }
+  await g.__alumgMigrating; // les requêtes simultanées attendent la même mise à jour
+}
 
 async function init(): Promise<Db> {
   const migrationsFolder = "drizzle";
@@ -43,6 +68,7 @@ async function init(): Promise<Db> {
   if (!dir.startsWith("memory://")) (await import("node:fs")).mkdirSync(dir, { recursive: true });
   const db = drizzle(new PGlite(dir, { extensions: { pg_trgm } }), { schema });
   await migrate(db, { migrationsFolder });
+  g.__alumgSchemaV = journalSize(); // à jour au démarrage : rien à rattraper tant que le journal ne change pas
   return db;
 }
 

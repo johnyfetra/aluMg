@@ -1276,7 +1276,7 @@ export const mg: Messages = {
   "auth.nameCompany": "Anaran'ny orinasanao",
   "auth.tooMany": "Be loatra ny andrana. Miandrasa minitra vitsy.",
   "auth.demoClientShort": "Kaonty mpanjifa",
-  "auth.demoMenuisierShort": "Kaonty mpanamboatra",
+  "auth.demoMenuisierShort": "Mpandrafitra Alu Mada",
   "auth.emailOptional": "Mailaka (tsy voatery)",
   "auth.identifier": "Finday na mailaka",
   "auth.phoneRequired": "Laharana finday",
