@@ -10,6 +10,12 @@ import { homeFor, useSession } from "@/lib/client";
 import { LOCALES, type Locale, useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
 
+// Le logo mène à l'accueil ; déjà sur l'accueil, il remonte en haut de page (un lien vers la page courante ne fait rien de lui-même).
+function HomeLink({ className, ...rest }: Omit<React.ComponentProps<typeof Link>, "href">) {
+  const path = usePathname();
+  return <Link href="/" className={className} onClick={(e) => { if (path === "/") { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); } }} {...rest} />;
+}
+
 function PublicNavigation() {
   const { locale, t } = useI18n(); const c = marketing[locale]; const path = usePathname();
   return <nav aria-label={t("nav.main")} className="flex items-center gap-0.5 text-sm">{[["/application",c.app],["/menuisiers",c.joiners],["/realisations-menuiserie",c.gallery]].map(([href,label])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className="nav-link relative whitespace-nowrap rounded-full px-4 py-2 text-muted transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink">{label}</Link>)}</nav>;
@@ -32,7 +38,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
     <header className="sticky top-3 z-30 px-3 pt-3 sm:px-6">
       <div className="glass-nav relative mx-auto max-w-[84rem] rounded-[1.75rem] xl:rounded-full">
         <div className="flex min-h-16 items-center justify-between gap-x-3 px-3 py-2 sm:pl-5 sm:pr-3">
-          <Link href="/" aria-label={`AluMg, ${c.home}`} className="shrink-0"><Brand /></Link>
+          <HomeLink aria-label={`AluMg, ${c.home}`} className="shrink-0"><Brand /></HomeLink>
           <div className="hidden xl:block"><Suspense fallback={null}><PublicNavigation /></Suspense></div>
           <div className="flex items-center gap-1 sm:gap-2"><GlassControls />{me ? <><Link href={homeFor(me.role)} className="hidden items-center rounded-full border border-line/70 px-4 py-2 text-sm font-semibold transition-colors hover:bg-black/10 sm:inline-flex dark:hover:bg-white/10">{t("pub.myspace")}</Link><UserMenu /></> : <><Link href="/connexion" className="hidden rounded-full px-4 py-2 text-sm font-semibold text-muted transition-colors hover:text-ink sm:inline-flex">{t("pub.login")}</Link><Link href="/inscription" className="btn-accent hidden !rounded-full !px-5 md:inline-flex">{c.start}<ArrowUpRight size={15} aria-hidden /></Link></>}</div>
         </div>
@@ -44,7 +50,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
     <footer className="border-t border-line bg-bg">
       <div className="public-container grid gap-8 py-10 md:grid-cols-[2fr_1fr_1fr] md:gap-10 md:py-14">
         <div className="flex flex-col items-center text-center md:items-start md:text-left">
-          <Link href="/"><Brand /></Link>
+          <HomeLink><Brand /></HomeLink>
           <p className="mt-4 max-w-xs text-sm leading-7 text-muted">{c.footer}</p>
         </div>
         {/* mobile : deux colonnes centrées séparées par un filet vertical ; bureau : colonnes à plat dans la grille */}
