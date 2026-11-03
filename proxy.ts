@@ -5,7 +5,7 @@ import { HIDDEN, MVP } from "@/lib/mvp";
 // en base, se fait dans chaque route d'API) ; (2) défense en profondeur contre le CSRF — une requête d'API qui modifie des données et dont
 // l'en-tête Origin désigne un autre site est refusée (en plus du cookie SameSite=Lax).
 const SAFE = new Set(["GET", "HEAD", "OPTIONS"]);
-const PRIVATE = ["/tableau-de-bord", "/devis", "/realisations", "/profil-public", "/reglages", "/clients", "/fournisseurs", "/modele-devis", "/chantiers", "/espace-client", "/compte", "/messages", "/verification", "/admin"];
+const PRIVATE = ["/tableau-de-bord", "/devis", "/realisations", "/profil-public", "/reglages", "/clients", "/fournisseurs", "/modele-devis", "/chantiers", "/espace-client", "/compte", "/messages", "/guide", "/verification", "/admin"];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
