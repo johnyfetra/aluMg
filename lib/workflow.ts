@@ -92,7 +92,7 @@ export async function createRequest(clientId: string, input: z.infer<typeof requ
   const settings = await getSettings(profile.userId);
   const discount = await discountFor(profile.userId, { clientUserId: clientId, email: client.email ?? "" }); // remise habituelle de ce client
   // Sans ouvrages saisis, l'assistant les déduit de la description (titre + message) ; rien de compris : on redemande au client.
-  const parsed = input.lines.length ? null : analyze(`${input.project}. ${input.message}`);
+  const parsed = input.lines.length ? null : analyze(input.message.trim() || input.project);
   if (parsed && !parsed.items.length) return "intake_empty";
   const given = parsed ? parsed.items.map((i) => toLine(i.spec)) : input.lines;
   // Le n-ième ouvrage a la même référence chez chaque menuisier de la demande : c'est ce qui permet de le retirer des autres devis quand le client le valide.
@@ -163,7 +163,7 @@ async function toClientQuote(row: typeof schema.quotes.$inferSelect, withSibling
   return {
     siblings: withSiblings ? await openSiblings(row) : [], // seule la fiche d'un devis en a besoin (la liste n'en fait pas la requête)
     quote: clientView({ ...row.data, status: row.status as Status, progress: row.progress }),
-    issuer: Object.fromEntries(ISSUER_KEYS.map((k) => [k, settings[k]])) as Issuer,
+    issuer: { ...(Object.fromEntries(ISSUER_KEYS.map((k) => [k, settings[k]])) as Issuer), company: settings.company || p?.displayName || m?.name || "" }, // entête jamais remplie : le nom du menuisier plutôt qu'un tiret
     menuisier: { id: row.userId, name: p?.displayName || m?.name || "", slug: p?.slug ?? "", logo: imageSrc(p?.slug ?? "", "logo", p?.logo ?? ""), city: p?.city ?? "", phone: m?.phone ?? "", email: m?.email ?? "", verified: p?.verified ?? false },
     reviewed: !!r,
   };

@@ -74,7 +74,7 @@ describe("réglages", () => {
     await repo.saveSettings(a, withDefaults({ company: "Alu Mada", tva: 0 }));
     const s = await repo.getSettings(a);
     expect(s.company).toBe("Alu Mada");
-    expect((await repo.getSettings(b)).company).toBe("");
+    expect((await repo.getSettings(b)).company).toBe("Bob"); // repris du nom saisi à l'inscription
   });
 });
 

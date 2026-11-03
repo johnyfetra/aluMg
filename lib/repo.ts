@@ -165,7 +165,7 @@ export async function createUser(email: string, name: string, passwordHash: stri
     if (isUniqueViolation(e)) return null; // course : le numéro vient d'être ajouté à un autre compte
     throw e;
   }
-  if (u && role === "menuisier") await db.insert(schema.settings).values({ userId: u.id }).onConflictDoNothing();
+  if (u && role === "menuisier") await db.insert(schema.settings).values({ userId: u.id, data: withDefaults({ company: name }) }).onConflictDoNothing(); // le nom saisi à l'inscription devient l'entête des devis
   return u?.id ?? null; // null : e-mail ou téléphone déjà utilisé
 }
 
