@@ -64,30 +64,36 @@ function QuotesView() {
     toast.success(t("toast.duplicated"), `${q.number} → ${copy.number}`);
     router.push(`/devis/${copy.id}`);
   };
-  const actions = (q: Quote) => (
-    <div className="flex flex-wrap gap-2">
-      <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => pdf(q)} aria-label={`${t("quotes.pdf")} ${q.number}`}>
-        <Download size={16} aria-hidden />
-        PDF
-      </button>
-      <Link href={`/devis/${q.id}/apercu`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("preview.open")} ${q.number}`} data-tooltip={t("preview.open")}>
-        <Eye size={16} aria-hidden />
-        <span className="max-xl:hidden">{t("preview.view")}</span>
-      </Link>
-      <Link href={`/devis/${q.id}`} className="btn-secondary !min-h-9 !px-3" aria-label={`${t("common.edit")} ${q.number}`}>
-        <Pencil size={16} aria-hidden />
-      </Link>
-      <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => duplicate(q)} aria-label={`${t("quotes.duplicate")} ${q.number}`} data-tooltip={t("quotes.duplicate")}>
-        <Copy size={16} aria-hidden />
-      </button>
-      <button type="button" className="btn-danger !min-h-9 !px-3" aria-label={`${t("common.delete")} ${q.number}`} onClick={async () => (await ask({ message: t("common.confirmDelete"), tone: "danger", confirmLabel: t("common.delete") })) && (await remove(q.id), toast.success(t("toast.deleted"), q.number))}>
-        <Trash2 size={16} aria-hidden />
-      </button>
-    </div>
-  );
+  // Tableau : icônes seules sur une seule ligne (infobulle + libellé accessible) ; cartes : boutons avec texte, qui passent à la ligne si besoin.
+  const actions = (q: Quote, compact = false) => {
+    // Dans le tableau, infobulle native (title) : data-tooltip dépasserait de la carte à défilement horizontal et créerait un faux débordement.
+    const label = (key: Parameters<typeof t>[0]) => ({ "aria-label": `${t(key)} ${q.number}`, ...(compact ? { title: t(key) } : { "data-tooltip": t(key) }) });
+    const text = (key: Parameters<typeof t>[0]) => !compact && <span>{t(key)}</span>;
+    return (
+      <div className={compact ? "flex flex-nowrap justify-end gap-1.5" : "flex flex-wrap gap-2"}>
+        <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => pdf(q)} {...label("quotes.pdf")}>
+          <Download size={16} aria-hidden />
+          {!compact && "PDF"}
+        </button>
+        <Link href={`/devis/${q.id}/apercu`} className="btn-secondary !min-h-9 !px-3" {...label("preview.open")}>
+          <Eye size={16} aria-hidden />
+          {text("preview.view")}
+        </Link>
+        <Link href={`/devis/${q.id}`} className="btn-secondary !min-h-9 !px-3" {...label("common.edit")}>
+          <Pencil size={16} aria-hidden />
+        </Link>
+        <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => duplicate(q)} {...label("quotes.duplicate")}>
+          <Copy size={16} aria-hidden />
+        </button>
+        <button type="button" className="btn-danger !min-h-9 !px-3" {...label("common.delete")} onClick={async () => (await ask({ message: t("common.confirmDelete"), tone: "danger", confirmLabel: t("common.delete") })) && (await remove(q.id), toast.success(t("toast.deleted"), q.number))}>
+          <Trash2 size={16} aria-hidden />
+        </button>
+      </div>
+    );
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="@container space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("quotes.title")}</h1>
         <Link href="/devis/nouveau" className="btn-primary">
@@ -130,43 +136,43 @@ function QuotesView() {
         <EmptyState message={t("quotes.noResult")} />
       ) : (
         <>
-          {/* Tableau sur grand écran */}
-          <div className="card hidden overflow-x-auto !p-0 md:block">
+          {/* Tableau quand la zone est assez large (mesurée sur la zone, pas sur la fenêtre : le menu latéral en prend une partie) */}
+          <div className="card hidden overflow-x-auto !p-0 @5xl:block">
             <table className="w-full text-sm">
               <thead className="bg-surface-2 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>
-                  <th scope="col" className="px-4 py-3 font-semibold">{t("quotes.col.number")}</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">{t("quotes.col.client")}</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">{t("quotes.col.date")}</th>
-                  <th scope="col" className="px-4 py-3 text-right font-semibold">{t("quotes.col.total")}</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">{t("quotes.col.status")}</th>
-                  <th scope="col" className="px-4 py-3 text-right font-semibold">{t("quotes.col.actions")}</th>
+                  <th scope="col" className="px-3 py-3 font-semibold">{t("quotes.col.number")}</th>
+                  <th scope="col" className="px-3 py-3 font-semibold">{t("quotes.col.client")}</th>
+                  <th scope="col" className="px-3 py-3 font-semibold">{t("quotes.col.date")}</th>
+                  <th scope="col" className="px-3 py-3 text-right font-semibold">{t("quotes.col.total")}</th>
+                  <th scope="col" className="px-3 py-3 font-semibold">{t("quotes.col.status")}</th>
+                  <th scope="col" className="px-3 py-3 text-right font-semibold">{t("quotes.col.actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {shown.map((q) => (
                   <tr key={q.id} className="transition-colors hover:bg-surface-2/60">
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3">
                       <Link href={`/devis/${q.id}`} className="whitespace-nowrap font-semibold text-primary hover:underline">
                         {q.number}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3">
                       <p className="font-medium">{q.client.name || t("quotes.noClient")}</p>
-                      {q.project && <p className="max-w-64 truncate text-xs text-muted">{q.project}</p>}
+                      {q.project && <p className="max-w-48 truncate text-xs text-muted">{q.project}</p>}
                     </td>
-                    <td className="px-4 py-3 text-muted">{date(q)}</td>
-                    <td className="px-4 py-3 text-right font-semibold">
+                    <td className="px-3 py-3 text-muted">{date(q)}</td>
+                    <td className="whitespace-nowrap px-3 py-3 text-right font-semibold">
                       {fmt(totals(q).ttc)} {t("common.currency")}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3">
                       <div className="flex items-center gap-2">
                         <StatusBadge status={q.status} label={t(`status.${q.status}`)} />
                         {statusSelect(q)}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end">{actions(q)}</div>
+                    <td className="px-3 py-3">
+                      {actions(q, true)}
                     </td>
                   </tr>
                 ))}
@@ -174,8 +180,8 @@ function QuotesView() {
             </table>
           </div>
 
-          {/* Cartes sur mobile */}
-          <ul className="space-y-3 md:hidden">
+          {/* Cartes quand la zone est étroite : deux colonnes dès que la place le permet */}
+          <ul className="grid gap-3 @2xl:grid-cols-2 @5xl:hidden">
             {shown.map((q) => (
               <li key={q.id} className="card space-y-3 !p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -186,7 +192,7 @@ function QuotesView() {
                     <p className="text-sm">{q.client.name || t("quotes.noClient")}</p>
                     <p className="text-xs text-muted">{date(q)}</p>
                   </div>
-                  <p className="font-semibold">
+                  <p className="whitespace-nowrap font-semibold">
                     {fmt(totals(q).ttc)} {t("common.currency")}
                   </p>
                 </div>
