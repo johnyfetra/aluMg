@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useDirectory } from "@/lib/client";
+import { useDirectorySummary } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
 
@@ -33,19 +33,18 @@ function CountUp({ to }: { to: number }) {
   return <span ref={ref}>{n}</span>;
 }
 
-// Chiffres réels de la plateforme, tirés de l'annuaire public : rien d'inventé.
+// Chiffres réels de la plateforme, tirés de l'annuaire public : rien d'inventé. Posés sous le titre du hero ; la ligne garde sa hauteur pendant le chargement.
 export default function Stats() {
   const { locale } = useI18n();
   const c = marketing[locale];
-  const { data } = useDirectory({});
-  if (!data?.length) return null;
-  const stats = [[data.length, c.statPros], [data.reduce((a, m) => a + m.portfolio, 0), c.statWorks], [data.reduce((a, m) => a + m.completed, 0), c.statDone]] as const;
+  const { data } = useDirectorySummary();
+  const stats = data?.total ? [[data.total, c.statPros], [data.works, c.statWorks], [data.completed, c.statDone]] as const : [];
   return (
-    <ul className="public-container grid grid-cols-3 gap-4 py-8 text-center sm:py-10">
+    <ul className="grid min-h-[4.75rem] grid-cols-3 gap-4 sm:flex sm:min-h-10 sm:flex-wrap sm:gap-x-8 sm:gap-y-2">
       {stats.map(([n, label]) => (
-        <li key={label}>
-          <p className="font-[family-name:var(--font-display)] text-4xl text-primary sm:text-6xl"><CountUp to={n} /></p>
-          <p className="mt-1 text-xs text-muted sm:text-sm">{label}</p>
+        <li key={label} className="sm:flex sm:items-baseline sm:gap-2">
+          <span className="block font-[family-name:var(--font-display)] text-3xl tabular-nums sm:text-4xl"><CountUp to={n} /></span>
+          <span className="block text-xs leading-5 text-white/75 sm:text-sm">{label}</span>
         </li>
       ))}
     </ul>
