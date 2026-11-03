@@ -36,7 +36,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   };
   const fail = (err: unknown) => {
     const code = err instanceof ApiError ? err.code : "";
-    setError(code === "email_taken" ? t("auth.taken") : code === "phone_taken" ? t("auth.phoneTaken") : code === "invalid_credentials" ? t("auth.invalid") : code === "invalid_body" ? (signup ? t("auth.weakPassword") : t("auth.badInput")) : code === "too_many_requests" ? t("auth.tooMany") : t("common.error"));
+    setError(code === "email_taken" ? t("auth.taken") : code === "phone_taken" ? t("auth.phoneTaken") : code === "invalid_credentials" ? t("auth.invalid") : code === "suspended" ? t("auth.suspended") : code === "invalid_body" ? (signup ? t("auth.weakPassword") : t("auth.badInput")) : code === "too_many_requests" ? t("auth.tooMany") : t("common.error"));
     setBusy(false);
   };
 

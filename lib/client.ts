@@ -7,6 +7,7 @@ import type { ClientQuote, EventView, LineComment } from "./workflow";
 import type { NotificationView } from "./notifications";
 import type { ContactView } from "./contacts";
 import type { ConversationView, MessageView } from "./chat";
+import type { AdminStats, AdminUser, AdminUserRow, AuditRow, PageOf } from "./admin";
 
 class ApiError extends Error {
   constructor(public status: number, public code: string) {
@@ -84,7 +85,7 @@ export const useSession = () =>
   );
 
 // Où envoyer un utilisateur selon son rôle.
-export const homeFor = (role?: SessionInfo["role"]) => (role === "client" ? "/espace-client" : "/tableau-de-bord");
+export const homeFor = (role?: SessionInfo["role"]) => (role === "client" ? "/espace-client" : role === "admin" ? "/admin" : "/tableau-de-bord");
 
 export const useDirectory = (params: Record<string, string>) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
@@ -151,6 +152,15 @@ export function useNotifications() {
 // Page où mène une notification : le devis, et l'ouvrage visé s'il y en a un (?ligne=).
 export const notificationHref = (role: SessionInfo["role"] | undefined, n: Pick<NotificationView, "quoteId" | "lineId">) =>
   `${role === "client" ? "/espace-client/devis/" : "/devis/"}${n.quoteId}${n.lineId ? `?ligne=${n.lineId}` : ""}`;
+// ---------- Administration (pagination côté serveur, 25 par page) ----------
+export const useAdminStats = () => useSWR<AdminStats>("/api/admin/stats", fetcher, { refreshInterval: 60000 });
+export const useAdminUsers = (params: Record<string, string>) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return useSWR<PageOf<AdminUserRow>>(`/api/admin/users${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
+};
+export const useAdminUser = (id: string) => useSWR<AdminUser & { self: boolean }>(`/api/admin/users/${id}`, fetcher, { revalidateOnFocus: false });
+export const useAdminAudit = (page: number) => useSWR<PageOf<AuditRow>>(`/api/admin/audit?page=${page}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
+
 export const usePublicWorks = (params: Record<string, string>) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
   return useSWR<PublicWork[]>(`/api/public/works${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });

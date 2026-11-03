@@ -12,7 +12,7 @@ import { Avatar } from "./ui";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
-import { Boxes, Briefcase, ClipboardList, Images, LayoutTemplate, Search, Store, Users } from "lucide-react";
+import { Boxes, Briefcase, ClipboardList, Gauge, Images, LayoutTemplate, ScrollText, Search, Store, Users } from "lucide-react";
 import { request, useSession, useUnread } from "@/lib/client";
 import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
@@ -74,6 +74,22 @@ const FULL_CLIENT: Nav = {
 const CLIENT: Nav = MVP
   ? { home: FULL_CLIENT.home, cta: FULL_CLIENT.cta, groups: FULL_CLIENT.groups.map((g) => ({ ...g, items: g.items.filter((i) => !HIDDEN_CLIENT.includes(i.href)) })) }
   : FULL_CLIENT;
+
+// L'administrateur garde l'accès aux écrans du menuisier, sous l'espace « Administration ».
+const ADMIN: Nav = {
+  home: "/admin",
+  groups: [
+    {
+      label: "nav.group.admin",
+      items: [
+        { href: "/admin", key: "admin.dashboard", Icon: Gauge, match: (p) => p === "/admin" },
+        { href: "/admin/comptes", key: "admin.accounts", Icon: Users, match: starts("/admin/comptes") },
+        { href: "/admin/journal", key: "admin.audit", Icon: ScrollText, match: starts("/admin/journal") },
+      ],
+    },
+    ...MENUISIER.groups,
+  ],
+};
 
 // usePathname() est lu à l'exécution : isolé dans Suspense pour garder le reste du layout prérendu.
 function NavLinks({ nav, onNavigate }: { nav: Nav; onNavigate: () => void }) {
@@ -159,7 +175,7 @@ function DrawerUser({ name, email, avatar }: { name: string; email?: string | nu
 export default function Shell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const { data: me } = useSession();
-  const nav = me?.role === "client" ? CLIENT : MENUISIER;
+  const nav = me?.role === "client" ? CLIENT : me?.role === "admin" ? ADMIN : MENUISIER;
   const [open, setOpen] = useState(false);
 
   const sidebar = useRef<HTMLElement>(null);
@@ -208,7 +224,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             <Brand light compact />
             <span>
               <span className="block text-xl font-bold leading-tight tracking-tight text-white">AluMg</span>
-              <span className="block text-xs leading-tight text-(--side-muted)">{t(me?.role === "client" ? "ui.client" : "ui.professional")}</span>
+              <span className="block text-xs leading-tight text-(--side-muted)">{t(me?.role === "client" ? "ui.client" : me?.role === "admin" ? "nav.group.admin" : "ui.professional")}</span>
             </span>
           </Link>
           <button type="button" className="grid size-10 place-items-center rounded-full bg-(--side-hover) text-(--side-fg) transition-colors hover:bg-(--side-active) lg:hidden" onClick={() => { setOpen(false); toggle.current?.focus(); }} aria-label={t("menu.close")}>
