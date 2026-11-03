@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import PhonesCard from "@/components/PhonesCard";
 import { Avatar, Field } from "@/components/ui";
 import { compressImage } from "@/lib/image";
 import { ApiError, request, useMe } from "@/lib/client";
@@ -88,6 +89,7 @@ export default function AccountPage() {
           {msg?.text}
         </p>
       </form>
+      <PhonesCard />
     </div>
   );
 }

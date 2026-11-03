@@ -3,6 +3,7 @@ import { getDb, schema } from "./db";
 import { notify } from "./notifications";
 import { normalizePhone } from "./phone";
 import { type Market, type Quote, type QuoteRequest, type Role, type Settings, editMode, withDefaults } from "./model";
+import { isUniqueViolation, phoneOwner } from "./phones";
 
 // Accès aux données, toujours borné à un utilisateur (userId) : un compte ne lit ni n'écrit les données d'un autre.
 
@@ -150,11 +151,19 @@ export async function deleteQuote(userId: string, id: string): Promise<boolean |
 // email facultatif (chaîne vide = aucun) ; le téléphone est normalisé (+261…) et unique. `verified` : compte déjà vérifié (démo, admin).
 export async function createUser(email: string, name: string, passwordHash: string, role: Role = "client", phone = "", opts: { verified?: boolean } = {}) {
   const db = await getDb();
-  const [u] = await db
-    .insert(schema.users)
-    .values({ email: email.trim().toLowerCase() || null, name, passwordHash, role, phone: phone.trim(), phoneNorm: normalizePhone(phone), ...(opts.verified ? { phoneVerifiedAt: new Date() } : {}) })
-    .onConflictDoNothing()
-    .returning({ id: schema.users.id });
+  const norm = normalizePhone(phone);
+  if (norm && (await phoneOwner(norm))) return null; // déjà le numéro d'un compte (principal ou supplémentaire)
+  let u: { id: string } | undefined;
+  try {
+    [u] = await db
+      .insert(schema.users)
+      .values({ email: email.trim().toLowerCase() || null, name, passwordHash, role, phone: phone.trim(), phoneNorm: norm, ...(opts.verified ? { phoneVerifiedAt: new Date() } : {}) })
+      .onConflictDoNothing()
+      .returning({ id: schema.users.id });
+  } catch (e) {
+    if (isUniqueViolation(e)) return null; // course : le numéro vient d'être ajouté à un autre compte
+    throw e;
+  }
   if (u && role === "menuisier") await db.insert(schema.settings).values({ userId: u.id }).onConflictDoNothing();
   return u?.id ?? null; // null : e-mail ou téléphone déjà utilisé
 }
@@ -173,8 +182,10 @@ export async function findUserById(id: string) {
 export async function findUserByPhone(phone: string) {
   const norm = normalizePhone(phone);
   if (!norm) return null;
+  const owner = await phoneOwner(norm);
+  if (!owner) return null;
   const db = await getDb();
-  const [u] = await db.select().from(schema.users).where(eq(schema.users.phoneNorm, norm));
+  const [u] = await db.select().from(schema.users).where(eq(schema.users.id, owner));
   return u ?? null;
 }
 

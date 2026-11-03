@@ -5,6 +5,7 @@ import { USER_SEARCH } from "./db/schema";
 import type { AuditAction, Role } from "./model";
 import { hashPassword } from "./password";
 import { normalizePhone } from "./phone";
+import { phoneOwner } from "./phones";
 
 // Espace d'administration : statistiques, comptes, journal. Appelé seulement par les routes /api/admin/* (requireAdmin, session vérifiée en base).
 // Chaque action sensible s'exécute en une transaction avec sa ligne de journal : l'action et sa trace réussissent ou échouent ensemble.
@@ -172,6 +173,7 @@ export async function createAccount(actor: Actor, input: { role: Role; name: str
   const phoneNorm = normalizePhone(input.phone);
   const password = tempPassword();
   const passwordHash = await hashPassword(password); // hors transaction : le hachage est volontairement lent
+  if (phoneNorm && (await phoneOwner(phoneNorm))) return { error: "phone_taken" } as const; // principal ou supplémentaire d'un autre compte
   return db.transaction(async (tx) => {
     if (email && (await tx.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.email, email))).length) return { error: "email_taken" } as const;
     const now = new Date();

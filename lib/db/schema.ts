@@ -188,6 +188,24 @@ export const reports = pgTable("reports", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Numéros supplémentaires d'un compte (le numéro principal reste dans users.phone). Un numéro n'appartient qu'à un seul compte, principal ou non :
+// l'unicité est garantie dans la base (index unique ici, et déclencheur qui compare avec users.phone_norm, voir la migration).
+export const userPhones = pgTable(
+  "user_phones",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    phone: text("phone").notNull(), // tel que saisi, pour l'affichage
+    phoneNorm: text("phone_norm").notNull(), // +261… : unique
+    label: text("label").notNull().default(""), // « Bureau », « WhatsApp »…
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull().defaultNow(), // un numéro n'est ajouté qu'après confirmation par code
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("user_phones_norm_idx").on(t.phoneNorm), index("user_phones_user_idx").on(t.userId)],
+);
+
 // Retours des utilisateurs (problème, idée de fonction, remarque). Le compte peut disparaître : le message reste, signé du nom d'alors.
 export const feedback = pgTable(
   "feedback",
@@ -350,6 +368,7 @@ export const verifications = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     channel: text("channel", { enum: ["sms", "call", "email"] }).notNull(),
+    purpose: text("purpose", { enum: ["account", "phone"] }).notNull().default("account"), // « phone » : ajout d'un numéro supplémentaire (le compte n'est pas vérifié par ce code)
     target: text("target").notNull(), // numéro normalisé ou e-mail visé
     codeHash: text("code_hash").notNull(),
     attempts: integer("attempts").notNull().default(0),

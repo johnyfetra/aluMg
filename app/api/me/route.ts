@@ -6,6 +6,7 @@ import { getDb, schema } from "@/lib/db";
 import { dataImage } from "@/lib/image-schema";
 import { passwordSchema } from "@/lib/password-policy";
 import { normalizePhone } from "@/lib/phone";
+import { isUniqueViolation, phoneOwner } from "@/lib/phones";
 
 // Accessible aux comptes non vérifiés : c'est l'écran de vérification qui lit l'état de la session.
 export async function GET() {
@@ -34,8 +35,9 @@ export async function PATCH(req: Request) {
   if (p.data.phone) {
     const norm = normalizePhone(p.data.phone);
     if (!norm) return fail(400, "invalid_body");
-    const [taken] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.phoneNorm, norm));
-    if (taken && taken.id !== user.id) return fail(409, "phone_taken");
+    const owner = await phoneOwner(norm);
+    if (owner && owner !== user.id) return fail(409, "phone_taken");
+    if (owner && norm !== normalizePhone(user.phone)) return fail(409, "phone_taken"); // déjà un de vos numéros supplémentaires : on le retire d'abord
     set.phone = p.data.phone;
     if (norm !== normalizePhone(user.phone)) {
       set.phoneNorm = norm;
@@ -50,7 +52,12 @@ export async function PATCH(req: Request) {
     set.passwordHash = await hashPassword(p.data.newPassword);
     passwordChanged = true;
   }
-  if (Object.keys(set).length) await db.update(schema.users).set(set).where(eq(schema.users.id, user.id));
+  try {
+    if (Object.keys(set).length) await db.update(schema.users).set(set).where(eq(schema.users.id, user.id));
+  } catch (e) {
+    if (isUniqueViolation(e)) return fail(409, "phone_taken"); // course : un autre compte vient de prendre ce numéro
+    throw e;
+  }
   if (passwordChanged) await destroyOtherSessions(user.id); // les autres appareils doivent se reconnecter
   return json({ ...user, name: set.name ?? user.name, phone: set.phone ?? user.phone, avatar: set.avatar ?? user.avatar });
 }

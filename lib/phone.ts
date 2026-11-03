@@ -21,3 +21,9 @@ export const maskEmail = (e: string) => {
   const [u, d] = e.split("@");
   return `${u.slice(0, 1)}${"•".repeat(Math.max(1, Math.min(6, u.length - 1)))}@${d}`;
 };
+
+// Affichage d'un numéro normalisé : « +261340000000 » → « +261 34 00 000 00 » (format malgache) ; les autres pays restent tels quels.
+export function formatPhone(norm: string): string {
+  const m = /^\+261(\d{2})(\d{2})(\d{3})(\d{2})$/.exec(norm);
+  return m ? `+261 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : norm;
+}

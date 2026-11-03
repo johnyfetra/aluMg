@@ -2,6 +2,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "./db";
 import { normalizePhone } from "./phone";
+import { phoneOwner } from "./phones";
 
 // Carnet de clients : toujours borné au menuisier (userId). Le compte client est retrouvé par l'e-mail, jamais choisi par l'appelant.
 export const contactSchema = z.object({
@@ -26,7 +27,9 @@ export async function clientAccountFor({ email, phone }: { email?: string; phone
   }
   const pn = phone ? normalizePhone(phone) : null;
   if (!pn) return null;
-  const [u] = await db.select(pick).from(schema.users).where(and(eq(schema.users.phoneNorm, pn), eq(schema.users.role, "client")));
+  const owner = await phoneOwner(pn);
+  if (!owner) return null;
+  const [u] = await db.select(pick).from(schema.users).where(and(eq(schema.users.id, owner), eq(schema.users.role, "client")));
   return u ?? null;
 }
 

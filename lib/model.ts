@@ -46,6 +46,8 @@ export const AUDIT_ACTIONS = ["create", "reset", "suspend", "reactivate", "role"
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 // Retours des utilisateurs sur l'application : un problème, une idée de fonction, une remarque. Le statut suit le traitement par l'équipe.
+export const MAX_EXTRA_PHONES = 4; // numéros supplémentaires d'un compte (avec le principal : 5 au plus)
+
 export const FEEDBACK_KINDS = ["bug", "idea", "remark"] as const;
 export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
 export const FEEDBACK_MESSAGE_MIN = 10; // « ça ne marche pas » ne dit rien : on demande une phrase
