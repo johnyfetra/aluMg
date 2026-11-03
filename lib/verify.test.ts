@@ -235,3 +235,21 @@ describe("limitation de débit", () => {
     expect(await rateLimit(key, 3, 60)).toEqual({ ok: true }); // fenêtre écoulée
   });
 });
+
+describe("vérification désactivable (aucun canal d'envoi configuré)", () => {
+  const user = { phoneVerifiedAt: null, emailVerifiedAt: null };
+  it("est exigée par défaut", () => {
+    delete process.env.ALUMG_SKIP_VERIFICATION;
+    expect(v.verificationRequired()).toBe(true);
+    expect(v.isVerified(user)).toBe(false);
+    expect(v.isVerified({ ...user, phoneVerifiedAt: new Date() })).toBe(true);
+  });
+  it("ALUMG_SKIP_VERIFICATION=1 la désactive, et seulement cette valeur", () => {
+    process.env.ALUMG_SKIP_VERIFICATION = "1";
+    expect(v.verificationRequired()).toBe(false);
+    expect(v.isVerified(user)).toBe(true);
+    process.env.ALUMG_SKIP_VERIFICATION = "true"; // pas de valeur « presque vraie » qui désactiverait par erreur
+    expect(v.isVerified(user)).toBe(false);
+    delete process.env.ALUMG_SKIP_VERIFICATION;
+  });
+});

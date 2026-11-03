@@ -3,6 +3,7 @@ import { clientIp, fail, json, limited, parseBody } from "@/lib/api";
 import { createSession, hashPassword } from "@/lib/auth";
 import { isPhone } from "@/lib/phone";
 import { passwordSchema } from "@/lib/password-policy";
+import { verificationRequired } from "@/lib/verify";
 import { createUser, findUserByEmail, findUserByPhone } from "@/lib/repo";
 
 // Contact : le téléphone est obligatoire (identifiant et canal de vérification) ; l'e-mail est facultatif.
@@ -25,5 +26,5 @@ export async function POST(req: Request) {
   const id = await createUser(p.data.email, p.data.name, await hashPassword(p.data.password), p.data.role, p.data.phone);
   if (!id) return fail(409, "phone_taken"); // course : un autre compte vient de prendre l'e-mail ou le numéro
   await createSession(id);
-  return json({ id, name: p.data.name, email: p.data.email.toLowerCase(), role: p.data.role, verified: false }, 201);
+  return json({ id, name: p.data.name, email: p.data.email.toLowerCase(), role: p.data.role, verified: !verificationRequired() }, 201);
 }
