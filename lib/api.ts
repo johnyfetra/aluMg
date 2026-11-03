@@ -19,7 +19,9 @@ export async function requireRole(...roles: SessionUser["role"][]): Promise<Sess
   if (isResponse(user)) return user;
   return roles.includes(user.role) ? user : fail(403, "forbidden");
 }
-export const isResponse = (x: unknown): x is NextResponse => x instanceof NextResponse;
+// Toutes les routes /api/admin/* : session valide en base, compte admin non suspendu (currentUser écarte les comptes suspendus).
+export const requireAdmin = () => requireRole("admin");
+export const isResponse =(x: unknown): x is NextResponse => x instanceof NextResponse;
 
 // Taille maximale d'un corps de requête (octets) : 2 Mo par défaut (réglages avec logo et signature) ; la messagerie accepte plus (pièces jointes).
 export const BODY_LIMIT = 2_000_000;

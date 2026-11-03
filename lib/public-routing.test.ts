@@ -9,7 +9,7 @@ describe("accès à la vitrine sans session", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
   });
-  it.each(["/realisations", "/profil-public", "/devis", "/devis/abc", "/espace-client", "/messages", "/compte", "/reglages"])("garde %s protégé", path => {
+  it.each(["/realisations", "/profil-public", "/devis", "/devis/abc", "/espace-client", "/messages", "/compte", "/reglages", "/admin", "/admin/comptes"])("garde %s protégé", path => {
     const response = proxy(new NextRequest(origin + path));
     expect(response.status).toBe(307);
     const target = new URL(response.headers.get("location")!);

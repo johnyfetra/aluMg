@@ -23,6 +23,7 @@ export async function POST(req: Request) {
   const user = await findUserByIdentifier(identifier);
   const ok = await verifyPassword(p.data.password, user?.passwordHash ?? (await dummy));
   if (!user || !ok) return fail(401, "invalid_credentials");
+  if (user.suspendedAt) return fail(403, "suspended"); // annoncé seulement avec le bon mot de passe : ne révèle rien à un tiers
   if (needsRehash(user.passwordHash)) await setPasswordHash(user.id, await hashPassword(p.data.password)); // paramètres de hachage renforcés
   await createSession(user.id);
   return json({ id: user.id, name: user.name, email: user.email ?? "", role: user.role, verified: isVerified(user) });

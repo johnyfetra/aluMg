@@ -38,9 +38,10 @@ async function init(): Promise<Db> {
   const { PGlite } = await import("@electric-sql/pglite");
   const { drizzle } = await import("drizzle-orm/pglite");
   const { migrate } = await import("drizzle-orm/pglite/migrator");
+  const { pg_trgm } = await import("@electric-sql/pglite/contrib/pg_trgm"); // recherche de l'administration (index trigrammes)
   const dir = process.env.PGLITE_DIR ?? ".data/pglite";
   if (!dir.startsWith("memory://")) (await import("node:fs")).mkdirSync(dir, { recursive: true });
-  const db = drizzle(new PGlite(dir), { schema });
+  const db = drizzle(new PGlite(dir, { extensions: { pg_trgm } }), { schema });
   await migrate(db, { migrationsFolder });
   return db;
 }

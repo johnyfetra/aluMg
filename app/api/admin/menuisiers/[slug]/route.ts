@@ -1,13 +1,14 @@
 import { z } from "zod";
-import { fail, isResponse, json, parseBody, requireRole } from "@/lib/api";
-import { setVerified } from "@/lib/profiles";
+import { fail, isResponse, json, parseBody, requireAdmin } from "@/lib/api";
+import { FAIL_STATUS, setBadge } from "@/lib/admin";
 
 // Réservé à l'administrateur : accorder ou retirer le badge « Vérifié ».
 export async function PATCH(req: Request, { params }: RouteContext<"/api/admin/menuisiers/[slug]">) {
-  const user = await requireRole("admin");
+  const user = await requireAdmin();
   if (isResponse(user)) return user;
   const { slug } = await params;
   const p = await parseBody(req, z.object({ verified: z.boolean() }));
   if ("res" in p) return p.res;
-  return (await setVerified(slug.slice(0, 80), p.data.verified)) ? json({ ok: true }) : fail(404, "not_found");
+  const r = await setBadge(user, slug.slice(0, 80), p.data.verified);
+  return "error" in r ? fail(FAIL_STATUS[r.error], r.error) : json(r);
 }

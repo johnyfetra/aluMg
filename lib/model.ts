@@ -41,6 +41,9 @@ export const CLOSE_REASONS = [...LOSS_REASONS, "declined"] as const; // « decli
 export const REPORT_REASONS = ["quality", "no_response", "price", "behavior", "fraud", "other"] as const;
 export const ROLES = ["client", "menuisier", "admin"] as const;
 export type Role = (typeof ROLES)[number];
+// Actions inscrites au journal de l'administration (admin_audit.action) ; libellés « admin.act.* ».
+export const AUDIT_ACTIONS = ["create", "reset", "suspend", "reactivate", "role", "delete", "badge_on", "badge_off"] as const;
+export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 export type Category = (typeof CATEGORIES)[number];
 export type Opening = (typeof OPENINGS)[number];

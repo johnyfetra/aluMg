@@ -1,5 +1,9 @@
+import { sql } from "drizzle-orm";
 import { type AnyPgColumn, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import type { Market, Quote, Settings } from "../model";
+import { AUDIT_ACTIONS, type Market, type Quote, type Settings } from "../model";
+
+// Texte cherché par l'administration ; la requête (lib/admin.ts) reprend exactement cette expression pour que l'index serve.
+export const USER_SEARCH = sql.raw(`lower(name || ' ' || coalesce(email, '') || ' ' || regexp_replace(phone, '[^0-9]', '', 'g'))`);
 
 export const users = pgTable(
   "users",
@@ -15,19 +19,61 @@ export const users = pgTable(
   phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   avatar: text("avatar").notNull().default(""), // photo de profil (data URL réduite), facultative
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }), // suspendu par un administrateur : ni connexion, ni session valide
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 },
-  (t) => [uniqueIndex("users_phone_norm_idx").on(t.phoneNorm)],
+  (t) => [
+    uniqueIndex("users_phone_norm_idx").on(t.phoneNorm),
+    index("users_created_idx").on(t.createdAt),
+    index("users_role_idx").on(t.role, t.createdAt), // filtre par rôle de l'administration, déjà dans l'ordre d'affichage
+    // recherche de l'administration (nom, e-mail, téléphone en chiffres) : trigrammes, sert les « contient » (ILIKE '%…%')
+    index("users_search_idx").using("gin", sql`(${USER_SEARCH}) gin_trgm_ops`),
+  ],
 );
 
 // L'identifiant est l'empreinte SHA-256 du jeton du cookie : une fuite de la base ne donne pas de session utilisable.
-export const sessions = pgTable("sessions", {
-  id: text("id").primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-});
+// `lastSeenAt` : présence (« connectés en ce moment »), rafraîchie au plus une fois par minute (lib/auth.ts).
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("sessions_user_idx").on(t.userId), index("sessions_seen_idx").on(t.lastSeenAt)],
+);
+
+// Une ligne par connexion réussie (les sessions disparaissent à la déconnexion) : statistiques de l'administration.
+export const logins = pgTable(
+  "logins",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("logins_created_idx").on(t.createdAt)],
+);
+
+// Journal de l'administration. La cible est recopiée (id et libellé, sans clé étrangère) pour survivre à la suppression du compte.
+export const adminAudit = pgTable(
+  "admin_audit",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+    actorName: text("actor_name").notNull(),
+    action: text("action", { enum: AUDIT_ACTIONS }).notNull(),
+    targetId: uuid("target_id"),
+    targetLabel: text("target_label").notNull().default(""),
+    data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("admin_audit_created_idx").on(t.createdAt)],
+);
 
 export const settings = pgTable("settings", {
   userId: uuid("user_id")
@@ -53,7 +99,7 @@ export const quotes = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     data: jsonb("data").$type<Quote>().notNull(),
   },
-  (t) => [index("quotes_user_idx").on(t.userId), index("quotes_client_idx").on(t.clientId), uniqueIndex("quotes_user_number_idx").on(t.userId, t.number)],
+  (t) => [index("quotes_user_idx").on(t.userId), index("quotes_client_idx").on(t.clientId), uniqueIndex("quotes_user_number_idx").on(t.userId, t.number), index("quotes_created_idx").on(t.createdAt)],
 );
 
 // Profil public du menuisier : visible dans l'annuaire seulement s'il est publié.
@@ -110,7 +156,7 @@ export const quoteEvents = pgTable(
     data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("quote_events_quote_idx").on(t.quoteId)],
+  (t) => [index("quote_events_quote_idx").on(t.quoteId), index("quote_events_kind_idx").on(t.kind, t.createdAt)],
 );
 
 // Une seule évaluation par devis, et seulement quand le chantier est terminé.

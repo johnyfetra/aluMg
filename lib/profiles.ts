@@ -219,10 +219,3 @@ export async function getPublicMenuisier(slug: string): Promise<PublicMenuisier 
   // seul le prénom du client est affiché
   return { ...entry, items: light, reviewList: rv.map((r) => ({ rating: r.rating, comment: r.comment, at: r.at.toISOString(), client: (r.client ?? "").split(/\s+/)[0] })), distribution };
 }
-
-// Badge « Vérifié » : accordé ou retiré par l'équipe (rôle admin).
-export async function setVerified(slug: string, verified: boolean) {
-  const db = await getDb();
-  const r = await db.update(schema.menuisierProfiles).set({ verified }).where(eq(schema.menuisierProfiles.slug, slug)).returning({ slug: schema.menuisierProfiles.slug });
-  return r.length > 0;
-}
