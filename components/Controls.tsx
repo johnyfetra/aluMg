@@ -10,7 +10,7 @@ import { LOCALES, type Locale, useI18n } from "@/lib/i18n";
 import { type Theme, setTheme, useTheme } from "@/lib/theme";
 
 // Commutateur de thème : deux boutons (clair, sombre), l'actif est mis en évidence et annoncé (aria-pressed).
-export function ThemeSwitch() {
+export function ThemeSwitch({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
   const theme = useTheme();
   const opt = (value: Theme, Icon: typeof Sun, label: string) => (
@@ -20,9 +20,9 @@ export function ThemeSwitch() {
       aria-label={label}
       title={label}
       onClick={() => setTheme(value)}
-      className={`grid size-9 place-items-center rounded-full transition-colors ${theme === value ? "bg-primary text-on-primary shadow-sm" : "text-muted hover:text-ink"}`}
+      className={`grid ${compact ? "size-7" : "size-9"} place-items-center rounded-full transition-colors ${theme === value ? "bg-primary text-on-primary shadow-sm" : "text-muted hover:text-ink"}`}
     >
-      <Icon size={16} aria-hidden />
+      <Icon size={compact ? 14 : 16} aria-hidden />
     </button>
   );
   return (
@@ -33,16 +33,16 @@ export function ThemeSwitch() {
   );
 }
 
-export function LangMenu() {
+export function LangMenu({ compact = false }: { compact?: boolean }) {
   const { t, locale, setLocale } = useI18n();
   return (
     <Menu
       label={`${t("lang.label")}, ${LOCALES[locale]}`}
       width="w-52"
-      triggerClass="flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 text-sm font-medium transition-colors hover:bg-surface-2"
+      triggerClass={`flex ${compact ? "h-8 gap-1.5 px-2.5 text-[13px]" : "h-10 gap-2 px-3 text-sm"} items-center rounded-full border border-line bg-surface font-medium transition-colors hover:bg-surface-2`}
       trigger={
         <>
-          <Flag code={locale} size={22} />
+          <Flag code={locale} size={compact ? 18 : 22} />
           <span className="hidden sm:inline">{LOCALES[locale]}</span>
           <span className="text-[11px] font-bold uppercase text-muted sm:hidden">{locale}</span>
           <ChevronDown size={14} aria-hidden className="text-muted" />
