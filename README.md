@@ -46,9 +46,9 @@ npm run admin:create -- --email moi@exemple.mg --name "Moi"   # e-mail et nom ch
 npm run admin:create -- --password "MonMotDePasse"            # mot de passe imposé
 ```
 
-Le mot de passe généré est affiché **une seule fois** : notez-le. Relancer la commande avec le même e-mail réinitialise le mot de passe. En local, arrêtez `npm run dev` avant (par précaution : la base embarquée est prévue pour un seul processus à la fois). En production, définissez `DATABASE_URL` pour viser la bonne base.
+Le mot de passe généré est affiché **une seule fois** : notez-le. Relancer la commande avec le même e-mail réinitialise le mot de passe, lève une éventuelle suspension et ferme les sessions ouvertes. L'e-mail du compte est tenu pour vérifié. Les comptes protégés (`PROTECTED` dans `lib/admin.ts`) sont refusés. En local, arrêtez `npm run dev` avant (la base embarquée est prévue pour un seul processus à la fois) ; `PGLITE_DIR` désigne une autre base locale. En production, définissez `DATABASE_URL` pour viser la bonne base.
 
-Le rôle `admin` est enregistré en base mais aucun écran d'administration n'existe encore (voir `docs/user-stories.md`, epic 5). Les comptes créés avant l'arrivée des rôles sont devenus des comptes menuisier.
+L'administrateur se connecte comme tout le monde et arrive sur `/admin` : vue d'ensemble (comptes, connectés, inscriptions, connexions, devis, chantiers terminés), gestion des comptes (`/admin/comptes`) et journal des actions (`/admin/journal`). Voir `docs/architecture.md`, « Administration ».
 
 ## Écrans
 
@@ -65,6 +65,7 @@ Le rôle `admin` est enregistré en base mais aucun écran d'administration n'ex
 | Menuisier | `/reglages`, `/reglages/profils` | Entête, signature, tarifs, majorations, longueur de barre ; marché des profilés (prix et longueurs) |
 | Client | `/espace-client`, `/espace-client/nouvelle`, `/espace-client/devis/[id]` | Mes demandes, nouvelle demande, suivi d'un devis |
 | Commun | `/compte` | Nom, téléphone, mot de passe |
+| Admin | `/admin`, `/admin/comptes`, `/admin/comptes/[id]`, `/admin/journal` | Statistiques de la plateforme, comptes (recherche, création, réinitialisation, suspension, rôle, badge, suppression), journal |
 
 Transversal : thème clair/sombre (barre latérale identique), 3 langues (français, English, Malagasy), mobile-first, accessible au clavier et aux lecteurs d'écran.
 
@@ -79,7 +80,7 @@ Transversal : thème clair/sombre (barre latérale identique), 3 langues (franç
 - Les tarifs et majorations affichés au départ sont des exemples.
 - Les listes d'options (couleurs, verres, gammes) viennent de `lib/model.ts` et restent à valider avec des menuisiers malgaches.
 - Pas de limitation des tentatives de connexion ni des demandes de devis, pas de vérification d'e-mail ni de mot de passe oublié : à ajouter avant l'ouverture au public.
-- Le badge « Vérifié » et le traitement des signalements n'ont pas encore d'écran d'administration (les données existent en base).
+- Le traitement des signalements n'a pas encore d'écran d'administration (les données existent en base).
 - Un devis envoyé au client est verrouillé ; pour un devis sans compte client, « Créer une nouvelle version » en repart d'une copie.
 - Les photos sont stockées en base (réduites côté navigateur) : à déplacer vers un stockage de fichiers avant la montée en charge.
 - Le client ne peut pas encore télécharger le PDF du devis (le menuisier l'envoie).

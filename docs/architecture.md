@@ -50,7 +50,7 @@ Règle : `lib/calc.ts` ne dépend ni de React ni du navigateur. Toute règle mé
 
 ## Données
 
-Tables : `users` (e-mail unique, téléphone, rôle), `sessions`, `settings` (JSON par menuisier + compteur de numéros), `quotes` (numéro, statut, `client_id`, `progress` + document JSON complet), `quote_events` (historique), `reviews` (une seule par devis), `reports` (signalements, confidentiels), `menuisier_profiles` (profil public, publié ou non, vérifié), `portfolio_items` (photos).
+Tables : `users` (e-mail unique, téléphone, rôle), `sessions`, `settings` (JSON par menuisier + compteur de numéros), `quotes` (numéro, statut, `client_id`, `progress` + document JSON complet), `quote_events` (historique), `reviews` (une seule par devis), `reports` (signalements, confidentiels), `menuisier_profiles` (profil public, publié ou non, vérifié), `portfolio_items` (photos), `logins` et `admin_audit` (administration, voir plus bas).
 
 - Un devis garde ses `terms` (TVA, acompte, validité) et le prix unitaire de chaque ligne **figés** : changer les réglages ne modifie pas un devis déjà émis.
 - Le numéro `DV-AAAA-NNNN` est attribué par le serveur, de façon atomique. Le client de l'API ne choisit jamais numéro, client lié, demande ni avancement (le serveur les ignore).
@@ -127,7 +127,26 @@ Tout part de `lib/model.ts` : les catalogues (`FINISHES`, `GLASSES`, `THICKNESSE
 - Cookie de session `httpOnly`, `sameSite=lax`, `secure` en production, 30 jours. La base ne stocke que l'empreinte du jeton.
 - Chaque route d'API vérifie la session en base, puis valide le corps avec zod (bornes, listes fermées, images en `data:image/` uniquement).
 - `proxy.ts` n'est qu'un contrôle optimiste (présence du cookie) ; la vraie vérification est dans l'API.
-- **À ajouter avant l'ouverture au public** : limitation des tentatives de connexion et des demandes de devis, vérification d'e-mail, mot de passe oublié, journal d'audit, modération des signalements, stockage de fichiers pour les photos.
+- **À ajouter avant l'ouverture au public** : mot de passe oublié, modération des signalements, stockage de fichiers pour les photos.
+
+## Administration (`/admin`, `lib/admin.ts`)
+
+- **Couches** : route `/api/admin/*` fine (`requireAdmin()` de `lib/api.ts` : session valide en base, rôle `admin`, compte non suspendu ; zod ; `limited()`) → service `lib/admin.ts` (règles, journal) → requêtes drizzle. Les pages (`app/(admin)/`, `components/admin/`) n'ont aucune règle métier ; les types (`AdminStats`, `AdminUserRow`, `AuditRow`, `PageOf`) sont importés en `import type`, les hooks SWR sont dans `lib/client.ts`.
+- **Tables** : `users.suspended_at`, `sessions.last_seen_at` (présence), `logins` (une ligne par connexion réussie, les sessions disparaissant à la déconnexion), `admin_audit` (acteur, action, cible recopiée en id + libellé pour survivre à la suppression, détails ; jamais de mot de passe).
+- **Statistiques** : tout est compté en SQL. Une requête `count(*) filter (…)` pour les comptes par rôle et suspendus ; chaque série (inscriptions, connexions, devis créés, chantiers terminés = événement `completed`) est un `generate_series` (30 jours, 12 mois, 5 ans, heure de Madagascar) joint par intervalle à la colonne de date indexée : les périodes vides valent 0.
+- **Présence** : « connecté » = session non expirée active depuis moins de `ONLINE_MINUTES` (5). `currentUser` ne réécrit `last_seen_at` que si la valeur a plus d'une minute (`SEEN_EVERY_MS`) : au plus une écriture par minute et par session, sans verrou.
+- **Actions** : création (mot de passe temporaire affiché une seule fois), réinitialisation (nouveau hachage + révocation de toutes les sessions), suspension (sessions révoquées ; `currentUser` ignore un compte suspendu, la connexion répond `suspended`), rôle, badge Vérifié, suppression (l'administrateur retape l'e-mail ou le téléphone). Chacune s'exécute en **une transaction** avec sa ligne de journal, la ligne du compte verrouillée (`FOR UPDATE`) ; suspendre, réactiver, changer de rôle et le badge sont idempotents (rien n'est écrit si l'état ne change pas). Création et réinitialisation sont limitées par administrateur (`limited`).
+- **Garde-fous** : un administrateur ne peut ni se supprimer, ni se suspendre, ni changer son propre rôle ; les comptes de `PROTECTED` (`lib/admin.ts`) ne sont jamais supprimés, réinitialisés, suspendus ni changés de rôle, y compris par `npm run admin:create` et par les tests.
+- **Listes** : pagination côté serveur, 25 par page, offset plafonné à `MAX_PAGE` (400 pages, 10 000 lignes), tri `created_at desc` indexé ; la dernière activité est une sous-requête corrélée servie par `sessions(user_id)` (une requête pour toute la page, pas de N+1).
+
+### Recherche : Postgres, pas Elasticsearch
+
+La recherche de comptes (nom, e-mail, téléphone en chiffres) est un `LIKE '%…%'` sur `lower(name || ' ' || coalesce(email, '') || ' ' || chiffres du téléphone)`, servi par un **index GIN trigrammes** (`pg_trgm`, `users_search_idx`). `pg_trgm` est chargé par PGlite (`lib/db/index.ts`) et disponible sur Neon et Supabase ; la migration `0014_admin` fait `CREATE EXTENSION IF NOT EXISTS pg_trgm` (il faut donc ce droit sur la base de production). Les jokers saisis (`%`, `_`) sont neutralisés.
+
+Elasticsearch n'est pas utilisé : c'est un service de plus à héberger, sécuriser et synchroniser avec Postgres, inutile pour des dizaines de milliers de comptes, et impossible à embarquer en local (PGlite). Seuil pour passer à un moteur dédié (Elasticsearch, Meilisearch, Typesense) : recherche plein texte sur les **devis** ou les messages (millions de lignes, pertinence, fautes de frappe, facettes), ou recherche de comptes au-delà d'environ un million de lignes avec des temps > 200 ms malgré l'index. Avant cela, `tsvector` + GIN dans Postgres suffit.
+
+shortcut: pagination par offset (plafonnée à 10 000 lignes), à remplacer par un curseur (`created_at`, `id`) si l'on doit parcourir des listes plus longues.
+shortcut: le total exact (`count(*)`) est recalculé à chaque page ; au-delà de quelques centaines de milliers de comptes, afficher une estimation ou le mettre en cache.
 
 ## Thème
 

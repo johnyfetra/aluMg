@@ -10,6 +10,7 @@
  */
 import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
+import { isProtected } from "../lib/admin";
 import { getDb, schema } from "../lib/db";
 import { hashPassword } from "../lib/password";
 
@@ -23,6 +24,10 @@ const name = arg("name") ?? "Administrateur";
 const generated = !arg("password");
 const password = arg("password") ?? randomBytes(15).toString("base64url"); // 20 caractères
 
+if (isProtected(email)) {
+  console.error("Ce compte est protégé : il ne se crée ni ne se réinitialise par script.");
+  process.exit(1);
+}
 if (password.length < 8) {
   console.error("Le mot de passe doit contenir au moins 8 caractères.");
   process.exit(1);
@@ -33,10 +38,13 @@ async function main() {
   const passwordHash = await hashPassword(password);
   const [existing] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.email, email));
 
+  // e-mail tenu pour vérifié (sinon l'API répond « unverified ») ; une suspension est levée et les sessions ouvertes coupées
+  const set = { passwordHash, role: "admin" as const, name, emailVerifiedAt: new Date(), suspendedAt: null };
   if (existing) {
-    await db.update(schema.users).set({ passwordHash, role: "admin", name }).where(eq(schema.users.id, existing.id));
+    await db.update(schema.users).set(set).where(eq(schema.users.id, existing.id));
+    await db.delete(schema.sessions).where(eq(schema.sessions.userId, existing.id));
   } else {
-    const [u] = await db.insert(schema.users).values({ email, name, passwordHash, role: "admin" }).returning({ id: schema.users.id });
+    const [u] = await db.insert(schema.users).values({ email, ...set }).returning({ id: schema.users.id });
     await db.insert(schema.settings).values({ userId: u.id }).onConflictDoNothing();
   }
 
