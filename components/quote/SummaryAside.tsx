@@ -101,7 +101,7 @@ export default function SummaryAside({ t, q, setQ, totals, margin, plan, persist
               <label className="sr-only" htmlFor="q-note">{t("editor.noteToClient")}</label>
               <textarea id="q-note" rows={2} className="input min-h-14 text-[13px]" placeholder={t("editor.noteToClient")} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
               <div className="flex gap-2">
-                <button type="button" className="btn-primary flex-1" onClick={() => onAct("send")}>
+                <button type="button" data-tour="send" className="btn-primary flex-1" onClick={() => onAct("send")}>
                   <Send size={15} aria-hidden />
                   {q.status === "rejected" ? t("editor.resend") : t("editor.sendShort")}
                 </button>

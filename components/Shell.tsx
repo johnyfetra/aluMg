@@ -3,8 +3,9 @@ import Brand from "./Brand";
 import TariffsPanel, { openTariffs } from "./TariffsPanel";
 import ChatWidget from "./ChatWidget";
 import FeedbackButton from "./FeedbackDialog";
+import GuideTour from "./GuideTour";
 import NotificationBell from "./NotificationBell";
-import { AlignLeft, BadgePercent, FilePlus2, MessageCircle, FileText, LayoutDashboard, LogOut, Settings, UserCircle, X } from "lucide-react";
+import { AlignLeft, BadgePercent, BookOpen, FilePlus2, MessageCircle, FileText, LayoutDashboard, LogOut, Settings, UserCircle, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
@@ -45,6 +46,7 @@ const FULL_MENUISIER: Nav = {
         { href: "/profil-public", key: "nav.publicProfile", Icon: Store, match: starts("/profil-public") },
         { href: "/modele-devis", key: "nav.docDesign", Icon: LayoutTemplate, match: starts("/modele-devis") },
         { href: "/reglages", key: "nav.settings", Icon: Settings, match: starts("/reglages") },
+        { href: "/guide", key: "nav.guide", Icon: BookOpen, match: starts("/guide") },
         { href: "/compte", key: "nav.account", Icon: UserCircle, match: starts("/compte") },
       ],
     },
@@ -254,6 +256,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             <PageTitle nav={nav} />
           </Suspense>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            {me?.role === "menuisier" && <GuideTour userId={me.id} />}
             {me && <FeedbackButton role={me.role} />}
             {me?.role === "client" && (
               <Link href="/espace-client/nouvelle" className="btn-primary !min-h-10 !rounded-full !px-0 max-sm:w-10 sm:!px-4" aria-label={t("cl.newRequest")} data-tooltip={t("cl.newRequest")}>
@@ -262,7 +265,7 @@ export default function Shell({ children }: { children: ReactNode }) {
               </Link>
             )}
             {me?.role === "menuisier" && (
-              <button type="button" onClick={openTariffs} className="hidden h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 text-sm font-medium transition-colors hover:bg-surface-2 lg:flex" data-tooltip={t("tariffs.sub")}>
+              <button type="button" data-tour="tariffs" onClick={openTariffs} className="hidden h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 text-sm font-medium transition-colors hover:bg-surface-2 lg:flex" data-tooltip={t("tariffs.sub")}>
                 <BadgePercent size={16} aria-hidden className="text-primary" />
                 {t("tariffs.title")}
               </button>

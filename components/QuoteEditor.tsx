@@ -484,6 +484,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             {!locked && (
               <button
                 type="button"
+                data-tour="add-line"
                 className="btn-secondary"
                 onClick={() => {
                   const nl = newLine(eff);
