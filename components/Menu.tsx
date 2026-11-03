@@ -42,13 +42,19 @@ export default function Menu({
     }
   };
 
+  // le survol prend le focus : une seule ligne est mise en avant (sinon l'élément focalisé à l'ouverture reste surligné sous la souris)
+  const follow = (e: React.PointerEvent) => {
+    const item = (e.target as HTMLElement).closest<HTMLElement>('[role^="menuitem"]');
+    if (item && item !== document.activeElement) item.focus({ preventScroll: true });
+  };
+
   return (
     <div ref={root} className="relative" onKeyDown={onKey}>
       <button ref={btn} type="button" aria-label={label} aria-haspopup="menu" aria-expanded={open} className={triggerClass} onClick={() => setOpen((o) => !o)}>
         {trigger}
       </button>
       {open && (
-        <div role="menu" aria-label={label} className={`select-pop absolute z-40 mt-2 ${width} origin-top overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.35)] ring-1 ring-black/5 ${align === "right" ? "right-0" : "left-0"}`}>
+        <div role="menu" aria-label={label} onPointerOver={follow} className={`select-pop absolute z-40 mt-2 ${width} origin-top overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.35)] ring-1 ring-black/5 ${align === "right" ? "right-0" : "left-0"}`}>
           {children(() => setOpen(false))}
         </div>
       )}

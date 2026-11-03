@@ -428,13 +428,12 @@ aside :focus-visible {
 [data-theme="dark"] .chat-bg { background-image: url(/brand/chat-pattern-dark.svg); }
 
 /* Éléments de liste des menus et des sélecteurs : un seul langage pour tous.
-   Survol / clavier = voile neutre ; élément choisi = voile cuivré + trait à gauche. Les deux se lisent même superposés, en clair comme en sombre. */
+   Survol / clavier = voile neutre ; élément choisi = voile cuivré (la couleur seule change : ni trait, ni contour). Les deux se lisent même superposés, en clair comme en sombre. */
 .pop-item { position: relative; display: flex; align-items: center; gap: 0.75rem; border-radius: 0.75rem; padding-inline: 0.625rem; cursor: pointer; transition: background-color 0.12s; }
 .pop-item:hover, .pop-item[data-active="true"], .pop-item:focus-visible { background: color-mix(in srgb, var(--text) 8%, transparent); outline: none; }
 .pop-item[aria-selected="true"], .pop-item[aria-checked="true"] { background: color-mix(in srgb, var(--accent) 15%, transparent); }
 .pop-item[aria-selected="true"]:hover, .pop-item[aria-selected="true"][data-active="true"], .pop-item[aria-checked="true"]:hover, .pop-item[aria-checked="true"]:focus-visible { background: color-mix(in srgb, var(--accent) 24%, transparent); }
-.pop-item[aria-selected="true"]::before, .pop-item[aria-checked="true"]::before { content: ""; position: absolute; left: 0; top: 24%; bottom: 24%; width: 3px; border-radius: 2px; background: var(--accent); }
-.pop-item:focus-visible { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 22%, transparent); }
+.select-pop:has(.pop-item:is(:hover, :focus-visible)) .pop-item:is([aria-selected="true"], [aria-checked="true"]):not(:hover, :focus-visible) { background: transparent; } /* une autre ligne est visée : la ligne choisie ne garde que sa coche */
 /* pastille (code de langue, icône) : toujours plus marquée que le fond de la ligne */
 .pop-chip { display: grid; place-items: center; border-radius: 0.5rem; background: color-mix(in srgb, var(--text) 11%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent); color: var(--muted); }
 .pop-label { padding: 0.5rem 0.75rem 0.25rem; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
