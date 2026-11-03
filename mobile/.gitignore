@@ -1,0 +1,12 @@
+node_modules/
+# la clé de signature et ses mots de passe ne sont JAMAIS versionnés : sans elle, plus aucune mise à jour de l'application n'est possible, la sauvegarder à part
+alumg-release.keystore
+keystore.properties
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json

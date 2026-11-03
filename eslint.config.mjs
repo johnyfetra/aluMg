@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     ".next*/**",
     ".data/**",
     ".claude/**",
+    // Coque Android (Capacitor) : sous-projet séparé, ses fichiers générés ne sont pas du code de l'application web.
+    "mobile/**",
   ]),
   // Le navigateur ne doit jamais embarquer les modules serveur (base de données, sessions, API) : seuls les `import type` sont permis.
   // Une constante partagée appartient à lib/model.ts. (Voir docs/architecture.md.)

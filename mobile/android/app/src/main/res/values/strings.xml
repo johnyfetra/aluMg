@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AluMg</string>
+    <string name="title_activity_main">AluMg</string>
+    <string name="package_name">mg.alumg.app</string>
+    <string name="custom_url_scheme">mg.alumg.app</string>
+</resources>

@@ -1,0 +1,15 @@
+{
+  "name": "alumg-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Coque Android (Capacitor) qui ouvre l'application web AluMg",
+  "scripts": {
+    "sync": "cap sync android",
+    "apk": "bash build-apk.sh"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.1",
+    "@capacitor/cli": "6.2.1",
+    "@capacitor/core": "6.2.1"
+  }
+}

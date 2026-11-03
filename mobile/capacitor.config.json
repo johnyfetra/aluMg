@@ -1,0 +1,12 @@
+{
+  "appId": "mg.alumg.app",
+  "appName": "AluMg",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": ["alumg.vercel.app"]
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

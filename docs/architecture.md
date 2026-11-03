@@ -300,3 +300,7 @@ Tout est dans la base Postgres, rien sur un stockage de fichiers : devis (`quote
 
 shortcut: images et pièces jointes en base. À déplacer vers Supabase Storage (déjà dans l'abonnement) ou Vercel Blob, en ne gardant que l'adresse en base, avant d'approcher la limite de la formule (500 Mo en gratuit) : l'envoi en base64 dans le JSON est aussi plafonné à 4,5 Mo par requête sur Vercel.
 
+
+## Application Android (`mobile/`)
+
+Coque Capacitor qui ouvre le site dans un WebView : même backend, même API, même session par cookie, rien à dupliquer. L'écran de démarrage embarqué (`mobile/www/index.html`) gère l'absence de réseau et un WebView trop ancien. L'APK signé est servi par `public/downloads/AluMg.apk` et présenté sur `/telecharger` (lien dans le menu et le pied de page de la vitrine). La clé de signature n'est jamais versionnée ; procédure de build, de version et de restauration de la clé : `mobile/README.md`. Le sous-projet est exclu d'ESLint et de `tsc`.

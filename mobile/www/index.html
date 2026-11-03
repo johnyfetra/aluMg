@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#243B32">
+<title>AluMg</title>
+<style>
+  /* Écran de démarrage de la coque Android : vérifie le WebView et la connexion, puis ouvre le site. ES5 seulement : il doit fonctionner même sur un vieux WebView. */
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; align-items: center; justify-content: center; background: #243B32; color: #F6F3ED; font-family: -apple-system, Roboto, "Segoe UI", sans-serif; text-align: center; padding: 24px; box-sizing: border-box; }
+  .box { max-width: 22rem; }
+  .mark { width: 72px; height: 72px; margin: 0 auto 20px; display: block; }
+  h1 { font-size: 20px; margin: 0 0 10px; }
+  p { font-size: 15px; line-height: 1.5; margin: 0 0 22px; color: #d9d4c9; }
+  a.btn, button.btn { display: inline-block; background: #C58A58; color: #1b2a23; border: 0; border-radius: 999px; padding: 13px 26px; font-size: 15px; font-weight: 700; text-decoration: none; }
+  .spin { width: 28px; height: 28px; margin: 0 auto; border: 3px solid rgba(246,243,237,.25); border-top-color: #C58A58; border-radius: 50%; -webkit-animation: s .8s linear infinite; animation: s .8s linear infinite; }
+  @-webkit-keyframes s { to { -webkit-transform: rotate(360deg); } }
+  @keyframes s { to { transform: rotate(360deg); } }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="box">
+  <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#2f4d41"/><path d="M4 4h8v16h16v8H4z" fill="#F6F3ED"/><path d="M16 4h12v12H16z" fill="#C58A58"/></svg>
+  <div id="load"><div class="spin"></div></div>
+  <div id="offline" hidden><h1 id="offT"></h1><p id="offP"></p><button id="retry" class="btn" type="button"></button></div>
+  <div id="old" hidden><h1 id="oldT"></h1><p id="oldP"></p><a id="upd" class="btn" href="https://play.google.com/store/apps/details?id=com.google.android.webview"></a></div>
+</div>
+<script>
+(function () {
+  var URL = "https://alumg.vercel.app/";
+  var MIN_CHROME = 111; // le site (Tailwind v4, conteneurs CSS) demande un WebView Chrome 111 ou plus
+  var T = {
+    fr: { offT: "Pas de connexion", offP: "AluMg a besoin d'internet. Vérifiez votre réseau puis réessayez.", retry: "Réessayer", oldT: "Mise à jour nécessaire", oldP: "Le composant « Android System WebView » de votre téléphone est trop ancien. Mettez-le à jour dans le Play Store, puis rouvrez AluMg.", upd: "Mettre à jour" },
+    en: { offT: "No connection", offP: "AluMg needs internet. Check your network and try again.", retry: "Try again", oldT: "Update required", oldP: "Your phone's “Android System WebView” is too old. Update it in the Play Store, then reopen AluMg.", upd: "Update" },
+    mg: { offT: "Tsy misy fifandraisana", offP: "Mila internet ny AluMg. Jereo ny tambajotra dia andramo indray.", retry: "Andramo indray", oldT: "Ilaina ny fanavaozana", oldP: "Efa antitra loatra ny « Android System WebView » ao amin'ny findainao. Havaozy ao amin'ny Play Store, dia sokafy indray ny AluMg.", upd: "Havaozy" }
+  };
+  var lang = String(navigator.language || "fr").slice(0, 2);
+  var t = T[lang] || T.fr;
+  document.documentElement.lang = T[lang] ? lang : "fr";
+  function $(id) { return document.getElementById(id); }
+  $("offT").textContent = t.offT; $("offP").textContent = t.offP; $("retry").textContent = t.retry;
+  $("oldT").textContent = t.oldT; $("oldP").textContent = t.oldP; $("upd").textContent = t.upd;
+  function show(id) { $("load").hidden = id !== "load"; $("offline").hidden = id !== "offline"; $("old").hidden = id !== "old"; }
+
+  var m = /Chrome\/(\d+)/.exec(navigator.userAgent);
+  if (m && parseInt(m[1], 10) < MIN_CHROME) { show("old"); return; }
+
+  function go() {
+    show("load");
+    var done = false;
+    var timer = setTimeout(function () { if (!done) { done = true; show("offline"); } }, 9000);
+    var x = new XMLHttpRequest();
+    x.open("GET", URL + "favicon.ico?ts=" + new Date().getTime(), true);
+    x.onload = x.onerror = function () {
+      if (done) return;
+      done = true; clearTimeout(timer);
+      // une réponse HTTP (même une erreur) prouve que le réseau passe ; l'échec réseau (status 0) affiche l'écran hors ligne
+      if (x.status) window.location.replace(URL); else show("offline");
+    };
+    x.send();
+  }
+  $("retry").onclick = go;
+  go();
+})();
+</script>
+</body>
+</html>
