@@ -46,7 +46,7 @@ export default function RequestForm() {
   const [busy, setBusy] = useState(false);
   // tant que le client ne détaille pas lui-même ses ouvrages, la demande est préparée à partir de sa description (assistant)
   const [touched, setTouched] = useState(false);
-  const described = useMemo(() => (touched ? [] : analyze(`${project}. ${message}`).items), [touched, project, message]);
+  const described = useMemo(() => (touched ? [] : analyze(message.trim() || project).items), [touched, project, message]);
   const valid = (l: Line) => lineSchema.safeParse(l).success;
   const setLine = (i: number, patch: Partial<Line>) => (setTouched(true), setLines((cur) => cur.map((l, j) => (j === i ? normalize({ ...l, ...patch }) : l))));
   const num = (v: string) => Number(v) || 0;
