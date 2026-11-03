@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Dossiers locaux qui n'existent pas dans un clone propre (builds de test, bases embarquées, copies de travail des agents).
+    ".next*/**",
+    ".data/**",
+    ".claude/**",
   ]),
   // Le navigateur ne doit jamais embarquer les modules serveur (base de données, sessions, API) : seuls les `import type` sont permis.
   // Une constante partagée appartient à lib/model.ts. (Voir docs/architecture.md.)

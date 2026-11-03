@@ -1,0 +1,52 @@
+# Vérification automatique à CHAQUE push et à chaque merge request : lint, types, tests, cohérence des migrations, build de production.
+# Les mêmes commandes tournent en local avec `npm run ci`. Aucune base ni service externe : les tests utilisent PGlite en mémoire.
+image: node:20
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS # pas de doublon quand une merge request est ouverte
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+variables:
+  NEXT_TELEMETRY_DISABLED: "1"
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+
+default:
+  interruptible: true # un nouveau push annule la vérification devenue inutile
+  cache:
+    key:
+      files: [package-lock.json]
+    paths: [.npm/]
+  before_script:
+    - npm ci --prefer-offline --no-audit --no-fund
+
+stages: [verify]
+
+lint:
+  stage: verify
+  script: npm run lint
+
+typecheck:
+  stage: verify
+  script: npm run typecheck
+
+test:
+  stage: verify
+  script: npx vitest run --reporter=default --reporter=junit --outputFile.junit=junit.xml
+  artifacts:
+    when: always
+    reports:
+      junit: junit.xml
+
+migrations:
+  stage: verify
+  script: npx drizzle-kit check # journal et instantanés des migrations cohérents
+
+# Le build qui avait échoué en production (usePathname sans Suspense) : il détecte les erreurs de prérendu que les tests ne voient pas.
+build:
+  stage: verify
+  variables:
+    PGLITE_DIR: "memory://" # le prérendu n'a pas de vraie base
+  script: npm run build

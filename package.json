@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "admin:create": "tsx scripts/create-admin.ts",
     "test:e2e": "E2E=1 vitest run",
@@ -16,7 +17,8 @@
     "demo:photos": "node scripts/fetch-demo-photos.mjs",
     "dev:local": "DATABASE_URL= POSTGRES_URL= POSTGRES_URL_NON_POOLING= POSTGRES_PRISMA_URL= RATE_LIMIT=off NEXT_DIST_DIR=.next-local next dev -p 3200",
     "seed:local": "bash scripts/seed-local.sh",
-    "dev:remote": "next dev"
+    "dev:remote": "next dev",
+    "ci": "npm run lint && npm run typecheck && npm test && npx drizzle-kit check && PGLITE_DIR=memory:// npm run build"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.10",

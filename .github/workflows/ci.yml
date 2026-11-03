@@ -1,0 +1,53 @@
+# Vérification automatique à CHAQUE push et à chaque pull request : lint, types, tests, cohérence des migrations, build de production.
+# Les mêmes commandes tournent en local avec `npm run ci`. Aucune base ni service externe : les tests utilisent PGlite en mémoire.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true # un nouveau push annule la vérification devenue inutile
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npx drizzle-kit check # journal et instantanés des migrations cohérents
+
+  # Le build qui avait échoué en production (usePathname sans Suspense) : il détecte les erreurs de prérendu que les tests ne voient pas.
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PGLITE_DIR: memory:// # le prérendu n'a pas de vraie base
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
