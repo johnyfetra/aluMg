@@ -167,11 +167,11 @@ La page principale occupe toute la largeur disponible (jusqu'à 110 rem) ; l'éd
 
 Lien d'évitement, un `h1` par page, champs avec `label`, cibles tactiles de 44 px minimum, focus visible, `aria-current` sur la navigation, menus déroulants au clavier (flèches, Échap), choix en radios natifs, erreurs en `role="alert"`, confirmations en `role="status"`, statuts avec icône et texte (jamais la couleur seule), graphique avec alternative textuelle, `prefers-reduced-motion` respecté.
 
-## Déploiement (Vercel + Neon)
+## Déploiement (Vercel + Supabase)
 
-1. Créer une base Postgres (Neon via le Marketplace Vercel) et définir `DATABASE_URL`.
-2. Les migrations du dossier `drizzle/` s'appliquent au premier accès. Pour la production, mieux vaut les lancer en CI (`drizzle-kit migrate`) ; vérifier alors que le dossier `drizzle/` est bien inclus dans le déploiement.
-3. Créer l'administrateur : `DATABASE_URL=… npm run admin:create`.
+1. Base Postgres : l'intégration Supabase du Marketplace Vercel fournit `POSTGRES_URL` (pooler) ; `DATABASE_URL` reste prioritaire si on le définit (Neon ou autre Postgres fonctionnent aussi). `lib/db/index.ts` n'utilise Supabase que comme **hôte Postgres** (aucune API Supabase : ni Storage, ni Auth) ; `max: 3` connexions par instance.
+2. Les migrations du dossier `drizzle/` s'appliquent au premier accès en production (au démarrage en local, et en développement dès que le journal change). La migration 0014 active `pg_trgm` : la base doit l'autoriser.
+3. Créer l'administrateur : `DATABASE_URL=… npm run admin:create -- --email …` (voir README).
 4. `.data/` n'est jamais versionné ni déployé : c'est la base de développement.
 
 ## Tests
@@ -280,3 +280,22 @@ Accessible sans session, y compris en mode MVP : `/`, `/application`, `/menuisie
 - **Photos de réalisations** : celles que publient les menuisiers ; un traitement commun (`.photo-grade`) assagit les couleurs pour que des clichés de sources différentes forment un ensemble. Les visuels d'inspiration générés sont signalés comme tels.
 - **Hero** : `HeroSlider` (photo plein cadre qui défile) sous un volet roulant (`RollerShutter`, variable CSS `--p`, aucun rendu React pendant le glissé) ; le texte reste derrière le volet tant qu'il n'est pas entièrement fermé. Une fenêtre coulissante à vitres transparentes s'ouvre derrière quand le volet est levé, puis s'efface. Sans JavaScript ou avec moins d'animations, le volet n'est pas affiché et le hero reste lisible. Les apparitions au défilement passent par `Reveal` (une observation partagée, contenu visible si l'animation échoue).
 - **Pages d'erreur** : `app/not-found.tsx` (404, avec la barre et le pied de la vitrine), `app/error.tsx` (erreur inattendue, volontairement sans la barre de navigation) et `app/global-error.tsx` (dernier filet, autonome). `proxy.ts` ne renvoie vers la connexion que les sections privées (`PRIVATE`) : une adresse inconnue donne un vrai 404. Les messages d'erreur d'API (réseau coupé, session expirée, accès refusé, introuvable, trop de tentatives, panne) viennent de `lib/errors.ts`.
+
+## Numéros de téléphone d'un compte
+
+Le numéro principal (`users.phone`, obligatoire à l'inscription) identifie le compte. D'autres numéros (`user_phones`, 4 au plus, `MAX_EXTRA_PHONES`) s'ajoutent dans « Mon compte » (`PhonesCard`) : un code SMS est envoyé au **nouveau** numéro (`sendPhoneCode`, `confirmPhoneCode` dans `lib/verify.ts`) et le numéro n'est rattaché qu'après confirmation, pour que personne ne s'attribue le numéro d'un autre. Ce code (`verifications.purpose = 'phone'`) ne vérifie jamais le compte, et inversement.
+
+**Un numéro = un seul compte**, principal ou supplémentaire : `phoneOwner()` (`lib/phones.ts`) répond clairement (« déjà utilisé ») à l'inscription, à la création par l'admin, au changement du numéro principal et à l'ajout ; la base le garantit en plus (index unique sur chaque table et déclencheurs de la migration 0017 qui comparent les deux tables sous un verrou par numéro, donc même pour deux écritures simultanées). La connexion par téléphone et la recherche d'un client par numéro (`lib/contacts.ts`) acceptent n'importe quel numéro du compte. Un numéro retiré redevient libre.
+
+shortcut: la recherche de l'administration (`USER_SEARCH`) ne porte que sur le numéro principal ; y ajouter les numéros supplémentaires si le support en a besoin.
+
+## Retours des utilisateurs (`lib/feedback.ts`)
+
+Tout compte connecté signale un problème, propose une idée ou laisse une remarque (bouton de la barre du haut, `FeedbackDialog`) : `POST /api/feedback`, 5 par 10 minutes, message de 10 à 2000 caractères, écran d'origine joint (chemin seul). L'administration les lit dans `/admin/retours` (filtres type et statut, `new` → `seen` → `done`). Le message reste, signé du nom d'alors, si le compte est supprimé.
+
+## Où sont stockées les données en production
+
+Tout est dans la base Postgres, rien sur un stockage de fichiers : devis (`quotes.data`, JSON : lignes, prix, schémas), comptes, messages, **et les images**, enregistrées en data URL / base64 : logo et signature (`settings`), photo de profil (`users.avatar`), logo du profil (`menuisier_profiles.logo`), réalisations (`portfolio_items.images`, `thumb`, `before`), pièces jointes et vocaux de la messagerie (`message_attachments.data`, 3 Mo au plus chacune). Mesure sur la base de démonstration : 37 réalisations ≈ 10,5 Mo (≈ 280 Ko l'une), 56 devis ≈ 0,1 Mo. Les listes publiques ne transportent jamais ces images (adresses mises en cache, voir « Annuaire public »).
+
+shortcut: images et pièces jointes en base. À déplacer vers Supabase Storage (déjà dans l'abonnement) ou Vercel Blob, en ne gardant que l'adresse en base, avant d'approcher la limite de la formule (500 Mo en gratuit) : l'envoi en base64 dans le JSON est aussi plafonné à 4,5 Mo par requête sur Vercel.
+
