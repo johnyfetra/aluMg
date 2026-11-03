@@ -474,6 +474,7 @@ export const en: Messages = {
   "pub.top": "Back to top",
   "pub.signup": "Create an account",
   "pub.myspace": "My space",
+  "pub.menu": "Navigation menu",
   "pub.footer": "Connecting clients and aluminium joiners in Madagascar.",
   "land.title": "Find the right aluminium joiner, get quotes online in a few clicks",
   "land.subtitle": "Compare verified joiners, browse their work and reviews, request a quote and follow your project.",

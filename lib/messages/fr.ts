@@ -474,6 +474,7 @@ export const fr = {
   "pub.top": "Haut de page",
   "pub.signup": "Créer un compte",
   "pub.myspace": "Mon espace",
+  "pub.menu": "Menu de navigation",
   "pub.footer": "Mettre en relation clients et menuisiers aluminium à Madagascar.",
   "land.title": "Trouvez le bon menuisier aluminium, devis en ligne en quelques clics",
   "land.subtitle": "Comparez des menuisiers vérifiés, consultez leurs réalisations et leurs avis, demandez un devis et suivez votre chantier.",

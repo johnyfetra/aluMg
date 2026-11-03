@@ -476,6 +476,7 @@ export const mg: Messages = {
   "pub.top": "Miakatra",
   "pub.signup": "Hamorona kaonty",
   "pub.myspace": "Ny toerako",
+  "pub.menu": "Menio fandehanana",
   "pub.footer": "Mampifandray ny mpanjifa sy ny mpanao aluminium eto Madagasikara.",
   "land.title": "Tadiavo ny mpanao aluminium mety, devis an-tserasera",
   "land.subtitle": "Mampitaha mpanao voamarina, jereo ny asany sy ny hevitry ny mpanjifa, mangataha devis ary araho ny asa.",
