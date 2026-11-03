@@ -99,7 +99,7 @@ export const quotes = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     data: jsonb("data").$type<Quote>().notNull(),
   },
-  (t) => [index("quotes_user_idx").on(t.userId), index("quotes_client_idx").on(t.clientId), uniqueIndex("quotes_user_number_idx").on(t.userId, t.number), index("quotes_created_idx").on(t.createdAt)],
+  (t) => [index("quotes_user_idx").on(t.userId), index("quotes_client_idx").on(t.clientId), uniqueIndex("quotes_user_number_idx").on(t.userId, t.number), index("quotes_created_idx").on(t.createdAt), index("quotes_user_status_idx").on(t.userId, t.status)], // chantiers terminés par menuisier (annuaire)
 );
 
 // Profil public du menuisier : visible dans l'annuaire seulement s'il est publié.
@@ -173,7 +173,7 @@ export const reviews = pgTable("reviews", {
   rating: integer("rating").notNull(),
   comment: text("comment").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [index("reviews_menuisier_idx").on(t.menuisierId)]); // note moyenne de l'annuaire : avis regroupés par menuisier
 
 export const reports = pgTable("reports", {
   id: uuid("id").primaryKey().defaultRandom(),
