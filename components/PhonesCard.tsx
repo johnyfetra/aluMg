@@ -40,8 +40,12 @@ export default function PhonesCard() {
     setBusy(true);
     setError(null);
     try {
-      const r = await request<{ to: string; devCode?: string }>("POST", "/api/me/phones", { phone, lang: locale });
-      setSent({ to: r.to, devCode: r.devCode });
+      const r = await request<{ added?: boolean; to?: string; devCode?: string }>("POST", "/api/me/phones", { phone, label, lang: locale });
+      if (r.added) { // vérification non exigée : le numéro est déjà ajouté
+        await mutate();
+        toast.success(t("ph.added"));
+        reset();
+      } else setSent({ to: r.to ?? "", devCode: r.devCode });
     } catch (err) {
       const c = err instanceof ApiError ? err.code : "";
       setError(c === "phone_taken" ? { field: "phone", text: t("auth.phoneTaken") } : c === "invalid_phone" ? { field: "phone", text: t("auth.err.phone") } : c === "cooldown" ? { field: "form", text: t("ph.wait") } : c === "limit" ? { field: "form", text: t("ph.limit") } : c === "channel_unavailable" ? { field: "form", text: t("ph.noSms") } : { field: "form", text: errorText(err, t) });

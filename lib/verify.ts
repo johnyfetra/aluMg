@@ -17,9 +17,10 @@ export const RESEND_COOLDOWN_S = 30;
 const hash = (id: string, userId: string, code: string) => createHash("sha256").update(`${id}:${userId}:${code}`).digest();
 
 export type VerifyUser = { phoneVerifiedAt: Date | null; emailVerifiedAt: Date | null };
-// Exigée par défaut. ALUMG_SKIP_VERIFICATION=1 la désactive : à n'utiliser que tant qu'aucun canal d'envoi n'est configuré (ni Twilio, ni Resend), sans quoi un compte neuf
-// ne pourrait jamais être vérifié et resterait bloqué. Les numéros restent uniques par compte ; seule la preuve de possession du numéro manque.
-export const verificationRequired = () => process.env.ALUMG_SKIP_VERIFICATION !== "1";
+// La vérification du compte (code par SMS, appel ou e-mail) n'est PAS exigée pour l'instant : un compte neuf est utilisable tout de suite, sans preuve de possession du numéro ni de l'e-mail
+// (les numéros restent uniques par compte). ALUMG_REQUIRE_VERIFICATION=1 la rétablit : à faire seulement quand un canal d'envoi réel est configuré (Twilio, Resend…),
+// sans quoi les comptes neufs resteraient bloqués sur l'écran de vérification.
+export const verificationRequired = () => process.env.ALUMG_REQUIRE_VERIFICATION === "1";
 export const isVerified = (u: VerifyUser) => !verificationRequired() || !!(u.phoneVerifiedAt || u.emailVerifiedAt);
 
 export type SendOutcome =

@@ -236,20 +236,25 @@ describe("limitation de débit", () => {
   });
 });
 
-describe("vérification désactivable (aucun canal d'envoi configuré)", () => {
+describe("vérification facultative (réglage de déploiement)", () => {
   const user = { phoneVerifiedAt: null, emailVerifiedAt: null };
-  it("est exigée par défaut", () => {
-    delete process.env.ALUMG_SKIP_VERIFICATION;
-    expect(v.verificationRequired()).toBe(true);
-    expect(v.isVerified(user)).toBe(false);
-    expect(v.isVerified({ ...user, phoneVerifiedAt: new Date() })).toBe(true);
+  const withSetting = (value: string | undefined, run: () => void) => {
+    const before = process.env.ALUMG_REQUIRE_VERIFICATION;
+    if (value === undefined) delete process.env.ALUMG_REQUIRE_VERIFICATION; else process.env.ALUMG_REQUIRE_VERIFICATION = value;
+    try { run(); } finally { if (before === undefined) delete process.env.ALUMG_REQUIRE_VERIFICATION; else process.env.ALUMG_REQUIRE_VERIFICATION = before; }
+  };
+  it("n'est pas exigée par défaut : un compte neuf est utilisable", () => {
+    withSetting(undefined, () => {
+      expect(v.verificationRequired()).toBe(false);
+      expect(v.isVerified(user)).toBe(true);
+    });
   });
-  it("ALUMG_SKIP_VERIFICATION=1 la désactive, et seulement cette valeur", () => {
-    process.env.ALUMG_SKIP_VERIFICATION = "1";
-    expect(v.verificationRequired()).toBe(false);
-    expect(v.isVerified(user)).toBe(true);
-    process.env.ALUMG_SKIP_VERIFICATION = "true"; // pas de valeur « presque vraie » qui désactiverait par erreur
-    expect(v.isVerified(user)).toBe(false);
-    delete process.env.ALUMG_SKIP_VERIFICATION;
+  it("ALUMG_REQUIRE_VERIFICATION=1 la rétablit, et seulement cette valeur", () => {
+    withSetting("1", () => {
+      expect(v.verificationRequired()).toBe(true);
+      expect(v.isVerified(user)).toBe(false);
+      expect(v.isVerified({ ...user, phoneVerifiedAt: new Date() })).toBe(true);
+    });
+    withSetting("true", () => expect(v.isVerified(user)).toBe(true)); // pas de valeur « presque vraie » qui active par erreur
   });
 });
