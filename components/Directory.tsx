@@ -6,7 +6,7 @@ import { ErrorState } from "./Feedback";
 import { marketing } from "@/lib/marketing";
 import Photo from "./marketing/Photo";
 import MenuisierCard from "./MenuisierCard";
-import { useDirectory } from "@/lib/client";
+import { useDirectory, useDirectorySummary } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { SPECIALTIES } from "@/lib/model";
 import Select from "./Select";
@@ -14,6 +14,7 @@ import Select from "./Select";
 type F = { q: string; city: string; specialty: string; minRating: string; verified: string; sort: string };
 const EMPTY: F = { q: "", city: "", specialty: "", minRating: "", verified: "", sort: "rating" };
 const KEYS = Object.keys(EMPTY) as (keyof F)[];
+const PAGE = 24; // menuisiers affichés par « page » : la liste grandit par paliers, le serveur ne renvoie jamais tout l'annuaire
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -34,8 +35,15 @@ export default function Directory() {
   const [f, setF] = useState<F>(() => Object.fromEntries(KEYS.map((k) => [k, params.get(k) ?? EMPTY[k]])) as F);
   const [open, setOpen] = useState(false);
   const drawer = useRef<HTMLDialogElement>(null);
-  const { data, isLoading, error, mutate } = useDirectory(Object.fromEntries(KEYS.map((k) => [k, k === "sort" && f.sort === "rating" ? "" : f[k]])));
-  const { data: all = [] } = useDirectory({}); // sans filtre : sert à proposer les villes et à compter les spécialités
+  // le nombre de pages revient à 1 dès que les filtres changent (il est lié à leur signature, sans effet de bord)
+  const sig = KEYS.map((k) => f[k]).join("|");
+  const [grown, setGrown] = useState({ sig, pages: 1 });
+  const pages = grown.sig === sig ? grown.pages : 1;
+  // on demande un résultat de plus que la page : c'est ce qui dit s'il en reste, sans second appel
+  const { data: fetched, isLoading, error, mutate } = useDirectory({ ...Object.fromEntries(KEYS.map((k) => [k, k === "sort" && f.sort === "rating" ? "" : f[k]])), limit: String(pages * PAGE + 1) });
+  const data = fetched?.slice(0, pages * PAGE);
+  const hasMore = (fetched?.length ?? 0) > pages * PAGE;
+  const { data: summary } = useDirectorySummary(); // villes et nombre par spécialité, calculés par le serveur sur tout l'annuaire
   const set = (patch: Partial<F>) => setF((cur) => ({ ...cur, ...patch }));
 
   // l'adresse reflète les filtres (lien partageable) sans recharger la page
@@ -51,8 +59,8 @@ export default function Directory() {
     if (!open && d.open) d.close();
   }, [open]);
 
-  const cities = Object.entries(all.reduce<Record<string, number>>((a, m) => (m.city ? { ...a, [m.city]: (a[m.city] ?? 0) + 1 } : a), {})).sort((a, b) => b[1] - a[1]);
-  const specCount = (s: string) => all.filter((m) => m.specialties.includes(s)).length;
+  const cities = (summary?.cities ?? []).map((c) => [c.city, c.n] as const);
+  const specCount = (s: string) => summary?.specialties[s] ?? 0;
   const chips = [
     f.q && { k: "q", label: `“${f.q}”` },
     f.city && { k: "city", label: f.city },
@@ -167,7 +175,7 @@ export default function Directory() {
             <p className="text-sm text-muted" aria-live="polite">
               {isLoading && !data ? t("common.loading") : (
                 <>
-                  <strong className="text-ink">{data?.length ?? 0}</strong> {t("dir.results")}
+                  <strong className="text-ink">{data?.length ?? 0}{hasMore ? "+" : ""}</strong> {t("dir.results")}
                 </>
               )}
             </p>
@@ -217,6 +225,13 @@ export default function Directory() {
               ))}
             </div>
           )}
+          {hasMore && (
+            <div className="text-center">
+              <button type="button" className="btn-secondary !px-6" onClick={() => setGrown({ sig, pages: pages + 1 })}>
+                {t("dir.loadMore")}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -232,7 +247,7 @@ export default function Directory() {
           <div className="flex-1 overflow-y-auto p-4">{panel("mobile")}</div>
           <div className="border-t border-line p-4">
             <button type="button" className="btn-primary w-full" onClick={() => setOpen(false)}>
-              {data?.length ?? 0} {t("dir.results")}
+              {data?.length ?? 0}{hasMore ? "+" : ""} {t("dir.results")}
             </button>
           </div>
         </div>
