@@ -2,6 +2,7 @@
 import Brand from "./Brand";
 import TariffsPanel, { openTariffs } from "./TariffsPanel";
 import ChatWidget from "./ChatWidget";
+import FeedbackButton from "./FeedbackDialog";
 import NotificationBell from "./NotificationBell";
 import { AlignLeft, BadgePercent, FilePlus2, MessageCircle, FileText, LayoutDashboard, LogOut, Settings, UserCircle, X } from "lucide-react";
 import Link from "next/link";
@@ -12,7 +13,7 @@ import { Avatar } from "./ui";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
-import { Boxes, Briefcase, ClipboardList, Gauge, Images, LayoutTemplate, ScrollText, Search, Store, Users } from "lucide-react";
+import { Boxes, Briefcase, ClipboardList, Gauge, Images, LayoutTemplate, MessageSquareText, ScrollText, Search, Store, Users } from "lucide-react";
 import { request, useSession, useUnread } from "@/lib/client";
 import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
@@ -84,6 +85,7 @@ const ADMIN: Nav = {
       items: [
         { href: "/admin", key: "admin.dashboard", Icon: Gauge, match: (p) => p === "/admin" },
         { href: "/admin/comptes", key: "admin.accounts", Icon: Users, match: starts("/admin/comptes") },
+        { href: "/admin/retours", key: "admin.feedback", Icon: MessageSquareText, match: starts("/admin/retours") },
         { href: "/admin/journal", key: "admin.audit", Icon: ScrollText, match: starts("/admin/journal") },
       ],
     },
@@ -252,6 +254,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             <PageTitle nav={nav} />
           </Suspense>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            {me && <FeedbackButton role={me.role} />}
             {me?.role === "client" && (
               <Link href="/espace-client/nouvelle" className="btn-primary !min-h-10 !rounded-full !px-0 max-sm:w-10 sm:!px-4" aria-label={t("cl.newRequest")} data-tooltip={t("cl.newRequest")}>
                 <FilePlus2 size={18} aria-hidden />

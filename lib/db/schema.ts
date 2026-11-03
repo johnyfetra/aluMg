@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { type AnyPgColumn, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import { AUDIT_ACTIONS, type Market, type Quote, type Settings } from "../model";
+import { AUDIT_ACTIONS, type FeedbackKind, type FeedbackStatus, type Market, type Quote, type Settings } from "../model";
 
 // Texte cherché par l'administration ; la requête (lib/admin.ts) reprend exactement cette expression pour que l'index serve.
 export const USER_SEARCH = sql.raw(`lower(name || ' ' || coalesce(email, '') || ' ' || regexp_replace(phone, '[^0-9]', '', 'g'))`);
@@ -187,6 +187,23 @@ export const reports = pgTable("reports", {
   status: text("status").notNull().default("open"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// Retours des utilisateurs (problème, idée de fonction, remarque). Le compte peut disparaître : le message reste, signé du nom d'alors.
+export const feedback = pgTable(
+  "feedback",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    authorName: text("author_name").notNull(),
+    authorRole: text("author_role").notNull(),
+    kind: text("kind").$type<FeedbackKind>().notNull(),
+    message: text("message").notNull(),
+    page: text("page").notNull().default(""), // écran d'où part le retour : aide à reproduire un problème
+    status: text("status").$type<FeedbackStatus>().notNull().default("new"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("feedback_status_idx").on(t.status, t.createdAt), index("feedback_created_idx").on(t.createdAt)],
+);
 
 // Messagerie : une conversation par couple (client, menuisier) ; les messages sont rattachés à la conversation.
 // Le « lu » se mémorise par participant (date de dernière lecture) : non lus = messages de l'autre postérieurs à cette date.

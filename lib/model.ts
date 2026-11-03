@@ -45,6 +45,14 @@ export type Role = (typeof ROLES)[number];
 export const AUDIT_ACTIONS = ["create", "reset", "suspend", "reactivate", "role", "delete", "badge_on", "badge_off"] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
+// Retours des utilisateurs sur l'application : un problème, une idée de fonction, une remarque. Le statut suit le traitement par l'équipe.
+export const FEEDBACK_KINDS = ["bug", "idea", "remark"] as const;
+export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
+export const FEEDBACK_MESSAGE_MIN = 10; // « ça ne marche pas » ne dit rien : on demande une phrase
+export const FEEDBACK_MESSAGE_MAX = 2000;
+export const FEEDBACK_STATUSES = ["new", "seen", "done"] as const;
+export type FeedbackStatus = (typeof FEEDBACK_STATUSES)[number];
+
 export type Category = (typeof CATEGORIES)[number];
 export type Opening = (typeof OPENINGS)[number];
 export type Status = (typeof STATUSES)[number];

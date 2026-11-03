@@ -7,6 +7,7 @@ import type { ClientQuote, EventView, LineComment } from "./workflow";
 import type { NotificationView } from "./notifications";
 import type { ContactView } from "./contacts";
 import type { ConversationView, MessageView } from "./chat";
+import type { FeedbackRow } from "./feedback";
 import type { AdminStats, AdminUser, AdminUserRow, AuditRow, PageOf } from "./admin";
 
 class ApiError extends Error {
@@ -160,6 +161,10 @@ export const useAdminUsers = (params: Record<string, string>) => {
   return useSWR<PageOf<AdminUserRow>>(`/api/admin/users${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
 };
 export const useAdminUser = (id: string) => useSWR<AdminUser & { self: boolean }>(`/api/admin/users/${id}`, fetcher, { revalidateOnFocus: false });
+export const useAdminFeedback = (params: Record<string, string>) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return useSWR<PageOf<FeedbackRow> & { news: number }>(`/api/admin/feedback${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
+};
 export const useAdminAudit = (page: number) => useSWR<PageOf<AuditRow>>(`/api/admin/audit?page=${page}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
 
 export const usePublicWorks = (params: Record<string, string>) => {
