@@ -2,6 +2,10 @@
 // Pays par défaut : Madagascar (+261) ; un « 0 » initial est le préfixe national (034 00 000 00 → +261340000000).
 export const DEFAULT_COUNTRY = "261";
 
+// Saisie acceptée : chiffres, espaces et ponctuation courante, avec un « + » facultatif ; la forme normalisée doit ensuite être un numéro international valide.
+export const PHONE = /^\+?[0-9][0-9 ().-]{5,22}$/;
+export const isPhone = (raw: string) => PHONE.test(raw.trim()) && normalizePhone(raw) !== null;
+
 export function normalizePhone(raw: string): string | null {
   const s = raw.trim();
   const digits = s.replace(/\D/g, "");

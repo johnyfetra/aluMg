@@ -1,17 +1,16 @@
 import { z } from "zod";
 import { clientIp, fail, json, limited, parseBody } from "@/lib/api";
 import { createSession, hashPassword } from "@/lib/auth";
-import { normalizePhone } from "@/lib/phone";
+import { isPhone } from "@/lib/phone";
 import { passwordSchema } from "@/lib/password-policy";
 import { createUser, findUserByEmail, findUserByPhone } from "@/lib/repo";
 
 // Contact : le téléphone est obligatoire (identifiant et canal de vérification) ; l'e-mail est facultatif.
-export const PHONE = /^\+?[0-9][0-9 ().-]{5,22}$/;
 const body = z.object({
   role: z.enum(["client", "menuisier"]),
   name: z.string().trim().min(1).max(80),
   email: z.union([z.literal(""), z.email().max(160)]).default(""),
-  phone: z.string().trim().regex(PHONE).refine((p) => normalizePhone(p) !== null, "invalid_phone"),
+  phone: z.string().trim().refine(isPhone, "invalid_phone"),
   password: passwordSchema,
 });
 

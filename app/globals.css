@@ -508,3 +508,7 @@ aside :focus-visible {
   background: linear-gradient(to bottom, color-mix(in srgb, var(--hero-from), white 34%), color-mix(in srgb, var(--hero-from), white 18%)); box-shadow: 0 -2px 0 var(--alu-dark), inset 0 2px 0 rgb(255 255 255 / 0.25); }
 .shutter-rail:active { cursor: grabbing; }
 .shutter-grip { width: 40px; height: 6px; border-radius: 3px; background: rgb(0 0 0 / 0.4); box-shadow: 0 1px 0 rgb(255 255 255 / 0.2); }
+
+/* Champ en erreur : liseré rouge (le message est dessous, voir FieldError). */
+.input[aria-invalid="true"] { border-color: color-mix(in srgb, var(--danger) 75%, var(--border)); }
+.input[aria-invalid="true"]:focus, .input[aria-invalid="true"]:focus-visible { border-color: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent); }

@@ -1,11 +1,21 @@
 import { FinishSwatch, SwatchCheck } from "./Swatch";
-import { CheckCheck, CheckCircle2, Clock, FileEdit, Hammer, Inbox, MessageSquareWarning, XCircle } from "lucide-react";
+import { CheckCheck, CheckCircle2, CircleAlert, Clock, FileEdit, Hammer, Inbox, MessageSquareWarning, XCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import InfoTip, { type HelpTerm } from "./InfoTip";
 import { FINISHES, FINISH_GROUPS, type FinishId } from "@/lib/model";
 import type { T } from "@/lib/i18n";
 
-export function Field({ label, hint, children, htmlFor, help }: { label: string; hint?: string; children: ReactNode; htmlFor: string; help?: HelpTerm }) {
+// Erreur sous un champ : courte, avec une icône (la couleur seule ne porte pas l'information) ; le champ porte aria-invalid et aria-describedby={`${id}-error`}.
+export function FieldError({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <p id={id} role="alert" className="flex items-start gap-1.5 text-xs font-medium text-danger">
+      <CircleAlert size={13} aria-hidden className="mt-px shrink-0" />
+      {children}
+    </p>
+  );
+}
+
+export function Field({ label, hint, children, htmlFor, help, error }: { label: string; hint?: string; children: ReactNode; htmlFor: string; help?: HelpTerm; error?: string }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center">
@@ -15,7 +25,7 @@ export function Field({ label, hint, children, htmlFor, help }: { label: string;
         {help && <InfoTip term={help} />}
       </div>
       {children}
-      {hint && <p className="text-xs text-muted">{hint}</p>}
+      {error ? <FieldError id={`${htmlFor}-error`}>{error}</FieldError> : hint && <p className="text-xs text-muted">{hint}</p>}
     </div>
   );
 }

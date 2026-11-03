@@ -2,7 +2,7 @@
 import { CircleAlert, HardHat, Loader2, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { mutate } from "swr";
 import AtelierShowcase, { type Variant } from "./access/AtelierShowcase";
 import Brand from "./Brand";
@@ -11,10 +11,13 @@ import { LangMenu, ThemeSwitch } from "./Controls";
 import { Field } from "./ui";
 import { ApiError, homeFor, request } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
+import { errorText } from "@/lib/errors";
+import { isPhone } from "@/lib/phone";
 
 // Seuls les chemins internes sont acceptés comme destination (pas de redirection vers un autre site).
 const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith("//") && !n.includes("\\") ? n : null);
 type Role = "client" | "menuisier";
+type Errors = Partial<Record<"name" | "phone" | "email" | "identifier" | "password" | "form", string>>; // « form » : panne ou refus qui ne tient à aucun champ
 
 // Connexion et inscription : moitié présentation (AtelierShowcase), moitié formulaire.
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
@@ -23,7 +26,8 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
   const [role, setRole] = useState<Role>(params.get("role") === "client" ? "client" : "menuisier");
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Errors>({});
+  const formRef = useRef<HTMLFormElement>(null);
   const [busy, setBusy] = useState(false);
   const signup = mode === "signup";
   const suffix = next ? `?next=${encodeURIComponent(next)}` : "";
@@ -34,18 +38,60 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     // compte pas encore vérifié : SMS, appel ou e-mail d'abord
     router.replace(me.verified === false ? `/verification${suffix}` : (next ?? homeFor(me.role)));
   };
+  // Un message court sous le champ concerné ; le bandeau du bas ne sert qu'aux pannes (réseau, serveur, trop d'essais, compte suspendu).
+  const show = (e: Errors) => {
+    setErrors(e);
+    setBusy(false);
+    requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
+  };
+  const clear = (k: keyof Errors) => setErrors((e) => (e[k] || e.form ? { ...e, [k]: undefined, form: undefined } : e));
+  const nameMsg = t(role === "menuisier" ? "auth.err.nameCompany" : "auth.err.name");
+
+  // Les mêmes règles que le serveur, sans la bulle native du navigateur (formulaire en noValidate) : mêmes mots en français, anglais et malgache.
+  const validate = (f: FormData): Errors => {
+    const v = (k: string) => String(f.get(k) ?? "").trim();
+    const pw = String(f.get("password") ?? "");
+    if (signup) {
+      return {
+        name: v("name") ? undefined : nameMsg,
+        phone: isPhone(v("phone")) ? undefined : t("auth.err.phone"),
+        email: !v("email") || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v("email")) ? undefined : t("auth.err.email"),
+        password: pw.length >= 8 ? undefined : t("auth.err.password"),
+      };
+    }
+    return { identifier: v("identifier") ? undefined : t("auth.err.identifier"), password: pw ? undefined : t("auth.err.passwordRequired") };
+  };
+  const hasErrors = (e: Errors) => Object.values(e).some(Boolean);
+
+  // Réponse du serveur : « invalid_body » liste les champs en cause (« phone: … ») ; on les range sous le bon champ.
   const fail = (err: unknown) => {
     const code = err instanceof ApiError ? err.code : "";
-    setError(code === "email_taken" ? t("auth.taken") : code === "phone_taken" ? t("auth.phoneTaken") : code === "invalid_credentials" ? t("auth.invalid") : code === "suspended" ? t("auth.suspended") : code === "invalid_body" ? (signup ? t("auth.weakPassword") : t("auth.badInput")) : code === "too_many_requests" ? t("auth.tooMany") : t("common.error"));
-    setBusy(false);
+    if (code === "email_taken") return show({ email: t("auth.taken") });
+    if (code === "phone_taken") return show({ phone: t("auth.phoneTaken") });
+    if (code === "invalid_credentials") return show({ password: t("auth.invalid") });
+    if (code === "invalid_body" && err instanceof ApiError) {
+      const e: Errors = {};
+      for (const issue of err.issues) {
+        const [field, ...msg] = issue.split(":");
+        if (!signup) continue;
+        if (field === "name") e.name = nameMsg;
+        else if (field === "phone") e.phone = t("auth.err.phone");
+        else if (field === "email") e.email = t("auth.err.email");
+        else if (field === "password") e.password = /common_password|too_simple/.test(msg.join(":")) ? t("auth.err.passwordWeak") : t("auth.err.password");
+      }
+      return show(hasErrors(e) ? e : { form: t("auth.badInput") });
+    }
+    show({ form: code === "suspended" ? t("auth.suspended") : code === "too_many_requests" ? t("auth.tooMany") : errorText(err, t) });
   };
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (busy) return;
     const f = new FormData(e.currentTarget);
+    const problems = validate(f);
+    if (hasErrors(problems)) return show(problems);
     setBusy(true);
-    setError("");
+    setErrors({});
     try {
       await enter(await request("POST", signup ? "/api/auth/signup" : "/api/auth/login", signup ? { role, name: f.get("name"), email: f.get("email"), phone: f.get("phone"), password: f.get("password") } : { identifier: f.get("identifier"), password: f.get("password") }));
     } catch (err) {
@@ -54,7 +100,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   };
   const demo = async (r: Role) => {
     setBusy(true);
-    setError("");
+    setErrors({});
     try {
       await enter(await request("POST", `/api/auth/demo-${r}`));
     } catch (err) {
@@ -93,7 +139,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
             <p className="text-sm text-muted">{signup ? t("auth.signupSub") : t("auth.loginSub")}</p>
           </div>
 
-          <form aria-busy={busy} onSubmit={submit} className="space-y-4" noValidate={false}>
+          <form ref={formRef} aria-busy={busy} onSubmit={submit} className="space-y-4" noValidate>
             {signup && (
               <fieldset className="space-y-2">
                 <legend className="mb-1.5 text-[13px] font-medium">{t("auth.role")}</legend>
@@ -104,30 +150,30 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
               </fieldset>
             )}
             {signup && (
-              <Field htmlFor="name" label={role === "menuisier" ? t("auth.nameCompany") : t("auth.name")}>
-                <input id="name" name="name" required maxLength={80} autoComplete={role === "menuisier" ? "organization" : "name"} className="input" />
+              <Field htmlFor="name" label={role === "menuisier" ? t("auth.nameCompany") : t("auth.name")} error={errors.name}>
+                <input id="name" name="name" required maxLength={80} autoComplete={role === "menuisier" ? "organization" : "name"} className="input" aria-invalid={errors.name ? true : undefined} aria-describedby={errors.name ? "name-error" : undefined} onInput={() => clear("name")} />
               </Field>
             )}
             {signup ? (
               <>
-                <Field htmlFor="phone" label={t("auth.phoneRequired")} hint={t("auth.phoneHint2")}>
-                  <input id="phone" name="phone" type="tel" required pattern="\+?[0-9][0-9 ().\-]{5,22}" inputMode="tel" autoComplete="tel" placeholder="034 00 000 00" className="input" />
+                <Field htmlFor="phone" label={t("auth.phoneRequired")} hint={t("auth.phoneHint2")} error={errors.phone}>
+                  <input id="phone" name="phone" type="tel" required inputMode="tel" autoComplete="tel" placeholder="034 00 000 00" className="input" aria-invalid={errors.phone ? true : undefined} aria-describedby={errors.phone ? "phone-error" : undefined} onInput={() => clear("phone")} />
                 </Field>
-                <Field htmlFor="email" label={t("auth.emailOptional")}>
-                  <input id="email" name="email" type="email" maxLength={160} autoComplete="email" className="input" />
+                <Field htmlFor="email" label={t("auth.emailOptional")} error={errors.email}>
+                  <input id="email" name="email" type="email" maxLength={160} autoComplete="email" className="input" aria-invalid={errors.email ? true : undefined} aria-describedby={errors.email ? "email-error" : undefined} onInput={() => clear("email")} />
                 </Field>
               </>
             ) : (
-              <Field htmlFor="identifier" label={t("auth.identifier")}>
-                <input id="identifier" name="identifier" required maxLength={160} autoComplete="username" aria-invalid={!!error} aria-describedby={error ? "auth-error" : undefined} className="input" />
+              <Field htmlFor="identifier" label={t("auth.identifier")} error={errors.identifier}>
+                <input id="identifier" name="identifier" required maxLength={160} autoComplete="username" aria-invalid={errors.identifier || errors.password === t("auth.invalid") ? true : undefined} aria-describedby={errors.identifier ? "identifier-error" : undefined} className="input" onInput={() => clear("identifier")} />
               </Field>
             )}
-            <PasswordField id="password" name="password" label={t("auth.password")} signup={signup} />
+            <PasswordField id="password" name="password" label={t("auth.password")} signup={signup} error={errors.password} onInput={() => clear("password")} />
 
-            {error && (
-              <p id="auth-error" role="alert" className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-[13px] font-medium text-danger">
+            {errors.form && (
+              <p role="alert" className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-[13px] font-medium text-danger">
                 <CircleAlert size={15} aria-hidden className="mt-0.5 shrink-0" />
-                {error}
+                {errors.form}
               </p>
             )}
 

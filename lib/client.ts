@@ -10,7 +10,7 @@ import type { ConversationView, MessageView } from "./chat";
 import type { AdminStats, AdminUser, AdminUserRow, AuditRow, PageOf } from "./admin";
 
 class ApiError extends Error {
-  constructor(public status: number, public code: string) {
+  constructor(public status: number, public code: string, public issues: string[] = []) {
     super(code);
   }
 }
@@ -25,7 +25,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   const data = await res.json().catch(() => ({}));
   // compte pas encore vérifié : toute action est refusée, on renvoie vers l'écran de vérification
   if (res.status === 403 && data.error === "unverified" && typeof location !== "undefined" && !location.pathname.startsWith("/verification")) location.replace("/verification");
-  if (!res.ok) throw new ApiError(res.status, data.error ?? "error");
+  if (!res.ok) throw new ApiError(res.status, data.error ?? "error", Array.isArray(data.issues) ? data.issues : []);
   return data as T;
 }
 export const fetcher = <T,>(url: string) => request<T>("GET", url);
