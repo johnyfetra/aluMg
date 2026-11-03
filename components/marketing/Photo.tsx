@@ -9,6 +9,6 @@ export default function Photo({ src, alt, className = "", priority = false, posi
     {src && failed !== src ? (
       // eslint-disable-next-line @next/next/no-img-element
       <img src={src} alt={alt} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : undefined} decoding="async" onError={() => setFailed(src)} width={1536} height={1024} className={`h-full w-full object-cover ${grade ? "photo-grade" : ""}`} style={{ objectPosition: position }} />
-    ) : <div role="img" aria-label={alt} className="flex h-full min-h-40 items-center justify-center text-muted"><ImageOff size={28} aria-hidden /></div>}
+    ) : <div role="img" aria-label={alt} className="flex h-full min-h-40 items-center justify-center bg-gradient-to-br from-primary/15 via-surface-2 to-surface-2 text-muted"><ImageOff size={28} aria-hidden /></div>}
   </div>;
 }
