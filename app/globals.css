@@ -171,6 +171,19 @@ body {
   animation: select-pop 0.14s ease-out;
 }
 
+/* Menu burger de la vitrine : le panneau descend comme un volet roulant, puis les lignes apparaissent l'une après l'autre. */
+@keyframes shutter-down {
+  from { clip-path: inset(0 0 100% 0 round 1.75rem); }
+  to { clip-path: inset(0 0 0 0 round 1.75rem); }
+}
+@keyframes menu-item {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
+.menu-shutter { animation: shutter-down 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.menu-item { animation: menu-item 0.3s ease-out both; animation-delay: calc(var(--i, 0) * 50ms + 120ms); }
+@media (prefers-reduced-motion: reduce) { .menu-shutter, .menu-item { animation: none; } }
+
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(-12px) scale(0.98); }
   to { opacity: 1; transform: none; }

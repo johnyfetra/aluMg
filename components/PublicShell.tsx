@@ -2,8 +2,9 @@
 import Brand from "./Brand";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowUp, ArrowUpRight, Images, LayoutGrid, Menu, Moon, Smartphone, Sun, Users, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { ArrowUp, ArrowUpRight, ChevronRight, Images, LayoutGrid, Moon, Smartphone, Sun, Users } from "lucide-react";
 import { UserMenu } from "./Controls";
 import { setTheme, useTheme } from "@/lib/theme";
 import { homeFor, useSession } from "@/lib/client";
@@ -34,14 +35,32 @@ function GlassControls() {
   </div>;
 }
 
-// Menu burger : sous 1280 px la barre de liens ne tient plus. Panneau vitré sous l'en-tête, fermé par Échap, un clic à côté, un clic sur un lien ou un retour au grand écran.
+// Menu burger : sous 1280 px la barre de liens ne tient plus. Le panneau descend comme un volet roulant et reprend le langage du métier :
+// cadre de profilé aluminium, cotes de plan, numéros de référence, poignée en laiton, lame finale de volet. Fermé par Échap, un clic à côté, un clic sur un lien ou un retour au grand écran.
 // Langue, thème et connexion y sont repris sur petit écran, où l'en-tête n'a plus la place de les afficher.
 function PanelLinks({ onNavigate }: { onNavigate: () => void }) {
   const { locale, t } = useI18n(); const c = marketing[locale]; const path = usePathname();
-  return <nav aria-label={t("nav.main")}><ul className="space-y-1">{navLinks(c).map(([href,label,Icon])=>{
-    const here = path === href || path.startsWith(href+"/"); const app = href === "/telecharger";
-    return <li key={href}><Link href={href} onClick={onNavigate} aria-current={here ? "page" : undefined} className={`flex min-h-12 items-center gap-3 rounded-2xl px-4 text-[15px] font-medium transition-colors ${app ? "bg-accent/15 text-ink hover:bg-accent/25" : here ? "bg-black/5 text-ink dark:bg-white/10" : "text-muted hover:bg-black/5 hover:text-ink dark:hover:bg-white/10"}`}><Icon size={18} aria-hidden className={app || here ? "text-accent" : ""} /><span className="flex-1">{label}</span>{app && <ArrowUpRight size={16} aria-hidden className="text-accent" />}</Link></li>;
-  })}</ul></nav>;
+  const links = navLinks(c); const app = links[links.length - 1]; const pages = links.slice(0, -1); const AppIcon = app[2];
+  const here = (href: string) => path === href || path.startsWith(href + "/");
+  return <nav aria-label={t("nav.main")}>
+    {/* cote de plan : un trait avec deux repères, comme sur un dessin d'exécution */}
+    <p className="menu-item mb-1 flex items-center gap-2 px-3 pt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted" style={{ "--i": 0 } as CSSProperties}>
+      <span aria-hidden className="h-3 w-px bg-line" /><span aria-hidden className="h-px w-2 bg-line" />{c.explore}<span aria-hidden className="h-px flex-1 bg-line" /><span aria-hidden className="h-3 w-px bg-line" />
+    </p>
+    <ul>{pages.map(([href, label, Icon], n) => <li key={href} className="menu-item" style={{ "--i": n + 1 } as CSSProperties}>
+      <Link href={href} onClick={onNavigate} aria-current={here(href) ? "page" : undefined} className="group relative flex min-h-14 items-center gap-3 rounded-2xl pl-6 pr-4 text-[15px] font-medium text-muted transition-colors hover:bg-black/5 hover:text-ink aria-[current=page]:bg-accent/10 aria-[current=page]:font-semibold aria-[current=page]:text-ink dark:hover:bg-white/10">
+        {/* poignée de fenêtre : apparaît au survol, reste sur la page courante */}
+        <span aria-hidden className="absolute left-2 top-1/2 h-6 w-1 -translate-x-1 -translate-y-1/2 rounded-full bg-accent opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-70 group-aria-[current=page]:translate-x-0 group-aria-[current=page]:opacity-100" />
+        <span aria-hidden className="w-5 font-mono text-[11px] tabular-nums text-muted/80">{String(n + 1).padStart(2, "0")}</span>
+        <Icon size={18} aria-hidden className="shrink-0" /><span className="flex-1">{label}</span>
+        <ChevronRight size={16} aria-hidden className="shrink-0 opacity-0 transition-opacity group-hover:opacity-60" />
+      </Link></li>)}</ul>
+    <Link href={app[0]} onClick={onNavigate} aria-current={here(app[0]) ? "page" : undefined} className="menu-item group mt-2 flex items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 p-3 transition-colors hover:bg-accent/20" style={{ "--i": pages.length + 1 } as CSSProperties}>
+      <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-accent/50 bg-surface text-accent"><AppIcon size={20} aria-hidden /></span>
+      <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold text-ink">{app[1]}</span><span className="block truncate text-xs text-muted">{c.getAppSub}</span></span>
+      <ArrowUpRight size={18} aria-hidden className="shrink-0 text-accent transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+    </Link>
+  </nav>;
 }
 
 function MobileMenu({ myHref }: { myHref: string | null }) {
@@ -57,17 +76,30 @@ function MobileMenu({ myHref }: { myHref: string | null }) {
     return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", key); wide.removeEventListener("change", grow); };
   }, [open]);
   const close = () => setOpen(false);
+  // trois lames de volet roulant : la lame du milieu rentre, les deux autres se croisent
+  const lame = "absolute left-0 h-0.5 rounded-full bg-current transition-all duration-300";
   return <div ref={root} className="xl:hidden">
-    <button ref={btn} type="button" aria-label={t("pub.menu")} aria-expanded={open} aria-controls="public-menu" onClick={() => setOpen((o) => !o)} className="grid size-10 place-items-center rounded-full text-ink transition-colors hover:bg-black/10 dark:hover:bg-white/10">{open ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}</button>
-    {open && <div id="public-menu" className="select-pop absolute inset-x-0 top-full z-40 mt-2 max-h-[calc(100dvh-7.5rem)] origin-top overflow-y-auto rounded-[1.75rem] border border-line bg-surface p-3 shadow-[0_18px_48px_rgba(0,0,0,0.35)]">
-      <Suspense fallback={null}><PanelLinks onNavigate={close} /></Suspense>
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-line/60 px-2 pt-3 sm:hidden"><span className="text-xs font-semibold uppercase tracking-wide text-muted">{t("lang.label")}</span><GlassControls /></div>
-      <div className="mt-3 grid gap-2 border-t border-line/60 pt-3 md:hidden">
-        {myHref ? <Link href={myHref} onClick={close} className="btn-accent !rounded-full">{t("pub.myspace")}<ArrowUpRight size={15} aria-hidden /></Link> : <>
-          <Link href="/inscription" onClick={close} className="btn-accent !rounded-full">{c.start}<ArrowUpRight size={15} aria-hidden /></Link>
-          <Link href="/connexion" onClick={close} className="btn-secondary !rounded-full">{t("pub.login")}</Link></>}
+    <button ref={btn} type="button" aria-label={t("pub.menu")} aria-expanded={open} aria-controls="public-menu" onClick={() => setOpen((o) => !o)} className="grid size-10 place-items-center rounded-full text-ink transition-colors hover:bg-black/10 dark:hover:bg-white/10">
+      <span aria-hidden className="relative block h-3.5 w-5"><span className={`${lame} top-0 w-5 ${open ? "translate-y-[6px] rotate-45" : ""}`} /><span className={`${lame} top-[6px] ${open ? "w-0 opacity-0" : "w-3.5"}`} /><span className={`${lame} top-3 w-5 ${open ? "-translate-y-[6px] -rotate-45" : ""}`} /></span>
+    </button>
+    {open && <>
+      {/* voile derrière l'en-tête : hors de l'en-tête, dont le flou limiterait un élément fixed à sa propre taille */}
+      {createPortal(<div aria-hidden onClick={close} className="fixed inset-0 z-[25] bg-black/35 backdrop-blur-[2px]" />, document.body)}
+      <div id="public-menu" className="menu-shutter absolute inset-x-0 top-full z-40 mt-2 max-h-[calc(100dvh-7.5rem)] overflow-y-auto rounded-[1.75rem] border border-line bg-gradient-to-b from-surface to-surface-2 p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
+        {/* cadre de profilé : un second filet intérieur, comme la chambre d'un dormant aluminium */}
+        <div className="rounded-[1.4rem] border border-line/60 p-2">
+          <Suspense fallback={null}><PanelLinks onNavigate={close} /></Suspense>
+          <div className="menu-item mt-3 flex items-center justify-between gap-3 border-t border-line/60 px-2 pt-3 sm:hidden" style={{ "--i": 5 } as CSSProperties}><span className="text-xs font-semibold uppercase tracking-wide text-muted">{t("lang.label")}</span><GlassControls /></div>
+          <div className="menu-item mt-3 grid gap-2 border-t border-line/60 pt-3 md:hidden" style={{ "--i": 6 } as CSSProperties}>
+            {myHref ? <Link href={myHref} onClick={close} className="btn-accent !rounded-full">{t("pub.myspace")}<ArrowUpRight size={15} aria-hidden /></Link> : <>
+              <Link href="/inscription" onClick={close} className="btn-accent !rounded-full">{c.start}<ArrowUpRight size={15} aria-hidden /></Link>
+              <Link href="/connexion" onClick={close} className="btn-secondary !rounded-full">{t("pub.login")}</Link></>}
+          </div>
+        </div>
+        {/* lame finale du volet, avec sa poignée */}
+        <div aria-hidden className="mx-auto mt-1.5 grid h-3 w-[calc(100%-1.5rem)] place-items-center rounded-b-xl rounded-t-sm bg-[repeating-linear-gradient(to_bottom,color-mix(in_srgb,var(--text)_14%,transparent)_0_1px,transparent_1px_4px)]"><span className="h-1 w-10 rounded-full bg-accent/70" /></div>
       </div>
-    </div>}
+    </>}
   </div>;
 }
 
