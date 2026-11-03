@@ -11,9 +11,9 @@ import { LOCALES, type Locale, useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
 
 // Le logo mène à l'accueil ; déjà sur l'accueil, il remonte en haut de page (un lien vers la page courante ne fait rien de lui-même).
+// L'adresse est lue au clic plutôt qu'avec usePathname : le pied de page se prérend sans Suspense.
 function HomeLink({ className, ...rest }: Omit<React.ComponentProps<typeof Link>, "href">) {
-  const path = usePathname();
-  return <Link href="/" className={className} onClick={(e) => { if (path === "/") { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); } }} {...rest} />;
+  return <Link href="/" className={className} onClick={(e) => { if (location.pathname === "/") { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); } }} {...rest} />;
 }
 
 function PublicNavigation() {
