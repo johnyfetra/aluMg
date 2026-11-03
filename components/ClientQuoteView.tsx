@@ -52,7 +52,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
       </p>
     );
   }
-  const { quote: q, menuisier: m, reviewed } = data;
+  const { quote: q, menuisier: m, reviewed, siblings } = data;
   const priced = q.status !== "requested" && q.status !== "draft";
   const tot = totals(q);
   const cur = t("common.currency");
@@ -60,6 +60,12 @@ export default function ClientQuoteView({ id }: { id: string }) {
   const rejected = q.status === "rejected";
   const marks = lineMarks(q.lines);
 
+  // menuisiers dont un autre devis (même demande) perdrait ces ouvrages si on les valide ici
+  const warn = (ls: { id: string; ref?: string }[]) => {
+    const refs = new Set(ls.filter((l) => !q.taken?.[l.id]).map((l) => l.ref).filter(Boolean));
+    const names = siblings.filter((s) => s.refs.some((r) => refs.has(r))).map((s) => s.menuisier);
+    return names.length ? ` ${t("taken.warn")} ${names.join(", ")}.` : "";
+  };
   const act = async (body: Record<string, unknown>, ok: string): Promise<boolean> => {
     setBusy(true);
     setMsg(null);
@@ -186,7 +192,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
                     <span className="block h-full rounded-full bg-good transition-[width]" style={{ width: `${(approved / q.lines.length) * 100}%` }} />
                   </div>
                   {q.status === "sent" && approved + held.length < q.lines.length && (
-                    <button type="button" className="btn-primary !min-h-9 !px-3 text-xs" disabled={busy} onClick={async () => (await ask({ message: t("line.confirmAll"), confirmLabel: t("line.approveAll") })) && act({ type: "approve_all" }, t("toast.allApproved"))}>
+                    <button type="button" className="btn-primary !min-h-9 !px-3 text-xs" disabled={busy} onClick={async () => (await ask({ message: t("line.confirmAll") + warn(q.lines.filter((l) => q.lineReviews?.[l.id]?.state !== "hold")), confirmLabel: t("line.approveAll") })) && act({ type: "approve_all" }, t("toast.allApproved"))}>
                       <CheckCheck size={14} aria-hidden />
                       {t("line.approveAll")}
                     </button>
@@ -220,9 +226,10 @@ export default function ClientQuoteView({ id }: { id: string }) {
                   focused={focus === l.id}
                   canComment={priced}
                   review={q.lineReviews?.[l.id]}
+                  taken={q.taken?.[l.id]?.by}
                   canReview={q.status === "sent"}
                   busy={busy}
-                  onReview={(b) => act({ type: "review_line", lineId: l.id, ...b }, t(b.state === "approved" ? "toast.lineApproved" : b.state === "request" ? "toast.lineRequest" : b.state === "hold" ? "toast.lineHold" : "toast.lineCleared"))}
+                  onReview={async (b) => !(b.state === "approved" && warn([l]) && !(await ask({ message: t("taken.confirmLine") + warn([l]), confirmLabel: t("line.approve") }))) && act({ type: "review_line", lineId: l.id, ...b }, t(b.state === "approved" ? "toast.lineApproved" : b.state === "request" ? "toast.lineRequest" : b.state === "hold" ? "toast.lineHold" : "toast.lineCleared"))}
                 />
               ))}
             </ul>
@@ -293,7 +300,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
             </section>
           )}
 
-          <ClientDecision q={q} busy={busy} pending={requests.length} act={act} t={t} />
+          <ClientDecision q={q} busy={busy} pending={requests.length} warn={warn(q.lines.filter((l) => q.lineReviews?.[l.id]?.state !== "hold"))} act={act} t={t} />
 
           {q.status === "completed" && (
             <section className="card space-y-3" aria-labelledby="h-rev">

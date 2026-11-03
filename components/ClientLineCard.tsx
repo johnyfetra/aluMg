@@ -17,7 +17,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // Un ouvrage vu par le client : résumé, puis détail complet (plan, vue 3D, caractéristiques) et fil de commentaires.
 // `focused` : ouvrage visé par une notification (déplié, mis en évidence).
-export default function ClientLineCard({ quoteId, line: l, index, mark, priced, focused, canComment, review, canReview, busy, onReview }: { quoteId: string; line: Line; index: number; mark: string; priced: boolean; focused: boolean; canComment: boolean; review?: LineReview; canReview: boolean; busy: boolean; onReview: (b: ReviewBody) => Promise<boolean> }) {
+export default function ClientLineCard({ quoteId, line: l, index, mark, priced, focused, canComment, review, canReview, busy, onReview, taken }: { taken?: string; quoteId: string; line: Line; index: number; mark: string; priced: boolean; focused: boolean; canComment: boolean; review?: LineReview; canReview: boolean; busy: boolean; onReview: (b: ReviewBody) => Promise<boolean> }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(focused);
   const [view, setView] = useState<"2d" | "3d">("2d");
@@ -70,7 +70,8 @@ export default function ClientLineCard({ quoteId, line: l, index, mark, priced, 
           </button>
         )}
       </div>
-      {priced && (review || canReview) && <LineDecision review={review} canReview={canReview} busy={busy} onReview={onReview} t={t} />}
+      {taken && <p className="border-t border-line bg-warn/10 px-4 py-2.5 text-sm font-medium sm:px-5">{t("taken.line")} {taken}</p>}
+      {priced && !taken && (review || canReview) && <LineDecision review={review} canReview={canReview} busy={busy} onReview={onReview} t={t} />}
       {open && (
         <div id={`${l.id}-detail`} className="space-y-5 border-t border-line p-4 sm:p-5">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">

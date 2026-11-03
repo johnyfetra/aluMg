@@ -9,6 +9,16 @@ import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
 // Cloche de l'en-tête : événements des devis qui concernent l'utilisateur. Un clic ouvre le devis (et l'ouvrage visé) et marque lu.
+// « taken » porte un JSON {by, n, whole, closed} : le texte est composé ici pour suivre la langue de l'interface
+function takenText(raw: string, t: (k: keyof Messages) => string) {
+  try {
+    const d = JSON.parse(raw) as { by: string; n: number; whole: boolean; closed: boolean };
+    return `${d.by} · ${t(d.closed ? "taken.closed" : d.whole ? "taken.whole" : "taken.some")}${d.closed || d.whole ? "" : ` (${d.n})`}`;
+  } catch {
+    return "";
+  }
+}
+
 export default function NotificationBell() {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -106,7 +116,7 @@ export default function NotificationBell() {
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold">{t(`notif.${n.kind}` as keyof Messages)}</span>
                       <span className="block truncate text-xs text-muted">{n.number}{n.project ? ` · ${n.project}` : ""}</span>
-                      {n.message && <span className="mt-0.5 block line-clamp-2 text-sm text-ink/80">« {n.message} »</span>}
+                      {n.message && <span className="mt-0.5 block line-clamp-2 text-sm text-ink/80">{n.kind === "taken" ? takenText(n.message, t) : `« ${n.message} »`}</span>}
                       <span className="mt-0.5 block text-[11px] text-muted">{new Date(n.at).toLocaleString(DATE_LOCALE[locale], { dateStyle: "short", timeStyle: "short" })}</span>
                     </span>
                   </button>

@@ -58,7 +58,7 @@ export default function RequestForm() {
     setBusy(true);
     setError("");
     // une demande par professionnel (chacun répond par son propre devis, comparables ensuite) ; l'échec d'un envoi n'annule pas les autres
-    const body = { project, message, siteAddress, wantedDate, lines: described.length ? [] : lines };
+    const body = { project, message, siteAddress, wantedDate, lines: described.length ? [] : lines, ...(slugs.length > 1 ? { group: crypto.randomUUID() } : {}) };
     const results = await Promise.allSettled(slugs.map((menuisier) => request<{ id: string }>("POST", "/api/requests", { menuisier, ...body })));
     const ok = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
     const failed = results.flatMap((r, i) => (r.status === "rejected" ? [{ slug: slugs[i], err: r.reason }] : []));
