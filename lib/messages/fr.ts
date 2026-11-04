@@ -245,6 +245,7 @@ export const fr = {
   "works.title": "Réalisations de ce type d'ouvrage",
   "works.none": "Aucune réalisation publiée pour ce type d'ouvrage pour l'instant. Les menuisiers les ajoutent depuis « Réalisations ».",
   "works.photos": "photos",
+  "photo.soon": "Photo à venir",
   "editor.tooLong": "Une pièce dépasse la barre de 6 m.",
   "editor.preview": "Illustration",
   "editor.materials": "Besoin en profilés",

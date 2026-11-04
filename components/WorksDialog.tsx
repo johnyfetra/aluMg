@@ -7,6 +7,7 @@ import { lineTitle } from "@/lib/describe";
 import { usePublicWorks } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { type Line, type WorkType, workType } from "@/lib/model";
+import { onImgError } from "@/lib/fallback";
 
 // Spécialité de réalisation qui correspond à chaque type d'ouvrage (les réalisations sont classées par spécialité).
 const SPECIALTY: Record<WorkType, string> = { fenetre: "fenetres", naco: "fenetres", porte: "portes", roulant: "volets", rideau: "volets", "garde-corps": "garde-corps", cloison: "cloisons" };
@@ -71,7 +72,7 @@ function WorksDialog({ line, onClose }: { line: Line; onClose: () => void }) {
               <li key={w.id} className="overflow-hidden rounded-xl border border-line">
                 <button type="button" onClick={() => setZoom({ id: w.id, photos: w.photos, title: w.title, description: w.description, i: 0 })} className="group block w-full text-left">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  {w.thumb ? <img src={w.thumb} alt={w.title} loading="lazy" className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="aspect-[4/3] bg-surface-2" />}
+                  {w.thumb ? <img src={w.thumb} onError={onImgError} alt={w.title} loading="lazy" className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" /> : <div className="aspect-[4/3] bg-surface-2" />}
                   <div className="space-y-1 p-3">
                     <p className="font-semibold leading-snug">{w.title}</p>
                     <p className="flex flex-wrap items-center gap-x-3 text-xs text-muted">

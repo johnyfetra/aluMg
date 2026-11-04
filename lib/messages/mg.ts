@@ -247,6 +247,7 @@ export const mg: Messages = {
   "works.title": "Asa vita amin'ity karazana asa ity",
   "works.none": "Mbola tsy misy asa vita napetraka amin'ity karazana asa ity. Ny mpanamboatra no manampy azy ao amin'ny « Asa vita ».",
   "works.photos": "sary",
+  "photo.soon": "Sary tsy ho ela",
   "editor.tooLong": "Misy ampahany lava noho ny hazo 6 m.",
   "editor.preview": "Sary",
   "editor.materials": "Profilé ilaina",

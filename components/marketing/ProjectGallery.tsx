@@ -44,7 +44,7 @@ export default function ProjectGallery({ limit, filters }: { limit?: number; fil
     : !works.length ? <EmptyState message={filters ? t("gal.none") : c.projectsEmpty}><Link href="/menuisiers" className="btn-secondary">{c.find}</Link></EmptyState>
     : <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">{works.map(w => <article key={w.id} className="group reveal">
       <Link href={`/menuisiers/${w.menuisier.slug}#h-port`} className="block rounded-xl focus-visible:outline-offset-4">
-        <div className="relative overflow-hidden rounded-xl"><Photo src={w.thumb} alt={w.title} grade className="aspect-[4/3] rounded-xl transition-transform duration-500 group-hover:scale-[1.03]" />
+        <div className="relative overflow-hidden rounded-xl"><Photo src={w.thumb} category={w.category} alt={w.title} grade className="aspect-[4/3] rounded-xl transition-transform duration-500 group-hover:scale-[1.03]" />
           {w.category && <span className="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">{t(`spec.${w.category as "fenetres"}`)}</span>}
         </div>
         <h3 className="mt-4 font-semibold">{w.title}</h3>

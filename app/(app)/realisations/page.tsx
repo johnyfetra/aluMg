@@ -9,6 +9,7 @@ import { SPECIALTIES } from "@/lib/model";
 import type { PortfolioItem } from "@/lib/profiles";
 import Select from "@/components/Select";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { onImgError } from "@/lib/fallback";
 
 type Draft = { id?: string; title: string; description: string; category: PortfolioItem["category"]; year: number | null; project: string; city: string; before: string; images: string[] };
 const EMPTY: Draft = { title: "", description: "", category: "", year: new Date().getFullYear(), project: "", city: "", before: "", images: [] };
@@ -163,7 +164,7 @@ export default function PortfolioPage() {
           {items.map((it) => (
             <li key={it.id} className="card overflow-hidden !p-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={it.thumb || it.images[0]} alt="" className="aspect-[4/3] w-full object-cover" loading="lazy" />
+              <img src={it.thumb || it.images[0]} onError={onImgError} alt="" className="aspect-[4/3] w-full object-cover" loading="lazy" />
               <div className="space-y-2 p-4">
                 <p className="font-semibold">{it.title}</p>
                 <p className="text-xs text-muted">{[it.category && t(`spec.${it.category as "fenetres"}`), it.project, it.year, `${it.images.length} ${t("port.photosCount")}`].filter(Boolean).join(" · ")}</p>

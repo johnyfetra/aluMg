@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
 import RollerShutter from "./RollerShutter";
 import Stats from "./Stats";
+import { onImgError } from "@/lib/fallback";
 
 // Hero plein cadre : une fenêtre coulissante à vitres transparentes s'ouvre sur la photo, une promesse fixe (rendue sans JS) et les deux parcours, client et menuisier.
 // Seules les photos défilent (fondu enchaîné, suspendu au survol, sur un onglet masqué ou si l'on préfère moins d'animation).
@@ -61,7 +62,7 @@ export default function HeroSlider() {
       {SLIDES.map((s, n) => (armed || n === 0 || n === i) && (
         <picture key={s.src}>
           {s.mobile && <source media="(max-width: 640px)" srcSet={s.mobile} />}
-          <img src={s.src} alt={alts[n]} aria-hidden={n !== i} width={1536} height={1024} fetchPriority={n === 0 ? "high" : "low"} decoding={n === 0 ? "sync" : "async"} draggable={false} className={`slide-img absolute inset-0 -z-10 h-full w-full select-none object-cover ${n === i ? "is-on" : ""}`} style={{ objectPosition: s.pos }} />
+          <img src={s.src} onError={onImgError} alt={alts[n]} aria-hidden={n !== i} width={1536} height={1024} fetchPriority={n === 0 ? "high" : "low"} decoding={n === 0 ? "sync" : "async"} draggable={false} className={`slide-img absolute inset-0 -z-10 h-full w-full select-none object-cover ${n === i ? "is-on" : ""}`} style={{ objectPosition: s.pos }} />
         </picture>
       ))}
       <span aria-hidden className="hero-scrim pointer-events-none absolute inset-0 -z-10" />

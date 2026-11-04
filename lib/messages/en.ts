@@ -245,6 +245,7 @@ export const en: Messages = {
   "works.title": "Completed projects of this type",
   "works.none": "No completed project published for this type yet. Joiners add them from “Portfolio”.",
   "works.photos": "photos",
+  "photo.soon": "Photo coming soon",
   "editor.tooLong": "A piece is longer than the 6 m bar.",
   "editor.preview": "Illustration",
   "editor.materials": "Profiles needed",

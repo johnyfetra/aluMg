@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
+import { onImgError } from "@/lib/fallback";
 
 // Vraies captures de l'application (données d'exemple), empilées en fenêtres inclinées : celle choisie passe devant, les autres restent en profondeur.
 // À l'écran, la pile se redresse doucement quand on défile (voir .deck dans globals.css).
@@ -79,7 +80,7 @@ function Shot({ id, alt, cls }: { id: string; alt: string; cls: string }) {
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/marketing/${id}-light.webp`} alt={alt} loading="lazy" decoding="async" className={`block h-auto w-full dark-hidden ${cls}`} />
+      <img src={`/marketing/${id}-light.webp`} onError={onImgError} alt={alt} loading="lazy" decoding="async" className={`block h-auto w-full dark-hidden ${cls}`} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/marketing/${id}-dark.webp`} alt="" aria-hidden loading="lazy" decoding="async" className={`hidden h-auto w-full dark-shown ${cls}`} />
     </>

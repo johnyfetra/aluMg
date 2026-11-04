@@ -544,3 +544,24 @@ aside :focus-visible {
   .social-btn, .social-btn::before, .social-btn svg { transition: none; }
   .social-btn:hover, .social-btn:focus-visible, .social-btn:hover svg, .social-btn:focus-visible svg { transform: none; }
 }
+
+/* Illustration de repli des images (FallbackArt) : couleurs du thème, comme .plan — rien n'est figé dans le composant, clair et sombre suivent les jetons. */
+.fb-wall { fill: color-mix(in srgb, var(--text) 5%, var(--surface-2)); }
+.fb-lawn { fill: color-mix(in srgb, var(--primary) 20%, var(--surface-2)); }
+.fb-edge { fill: color-mix(in srgb, var(--text) 14%, var(--surface-2)); }
+.fb-bush { fill: color-mix(in srgb, var(--primary) 40%, var(--surface-2)); }
+.fb-sill { fill: color-mix(in srgb, var(--text) 22%, var(--surface-2)); }
+.fb-rail { fill: color-mix(in srgb, var(--text) 24%, var(--surface-2)); }
+.fb-panel { fill: color-mix(in srgb, var(--text) 8%, var(--surface-2)); }
+.fb-dark { fill: color-mix(in srgb, var(--text) 70%, var(--surface)); }
+.fb-guide { fill: color-mix(in srgb, var(--text) 55%, var(--surface)); }
+.fb-slat-a { fill: color-mix(in srgb, var(--text) 32%, var(--surface)); }
+.fb-slat-b { fill: color-mix(in srgb, var(--text) 38%, var(--surface)); }
+.fb-frame { fill: none; stroke: var(--text); stroke-opacity: 0.82; stroke-linejoin: round; }
+.fb-thin { stroke: var(--text); stroke-opacity: 0.22; stroke-width: 2.5; fill: none; }
+.fb-groove { stroke: var(--text); stroke-opacity: 0.5; stroke-width: 1.6; }
+.fb-ink { fill: var(--text); opacity: 0.8; }
+.fb-pill { fill: color-mix(in srgb, var(--surface) 88%, transparent); }
+.fb-label { fill: var(--muted); font-weight: 600; font-size: 19px; font-family: inherit; }
+.fb-glass-a { stop-color: color-mix(in srgb, var(--primary) 22%, var(--surface)); }
+.fb-glass-b { stop-color: color-mix(in srgb, var(--primary) 6%, var(--surface)); }

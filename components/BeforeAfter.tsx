@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { onImgError } from "@/lib/fallback";
 
 // Comparateur avant/après : un curseur natif (clavier et tactile gratuits) pilote le découpage de la photo « après ».
 export default function BeforeAfter({ before, after, alt, className = "" }: { before: string; after: string; alt: string; className?: string }) {
@@ -9,9 +10,9 @@ export default function BeforeAfter({ before, after, alt, className = "" }: { be
   return (
     <div className={`relative select-none overflow-hidden bg-surface-2 ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={before} alt={`${alt} — ${t("mp.before")}`} className="absolute inset-0 h-full w-full object-cover" loading="lazy" decoding="async" />
+      <img src={before} onError={onImgError} alt={`${alt} — ${t("mp.before")}`} className="absolute inset-0 h-full w-full object-cover" loading="lazy" decoding="async" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={after} alt={`${alt} — ${t("mp.after")}`} className="absolute inset-0 h-full w-full object-cover" style={{ clipPath: `inset(0 0 0 ${pos}%)` }} loading="lazy" decoding="async" />
+      <img src={after} onError={onImgError} alt={`${alt} — ${t("mp.after")}`} className="absolute inset-0 h-full w-full object-cover" style={{ clipPath: `inset(0 0 0 ${pos}%)` }} loading="lazy" decoding="async" />
       <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">{t("mp.before")}</span>
       <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">{t("mp.after")}</span>
       <span aria-hidden className="pointer-events-none absolute inset-y-0 w-0.5 bg-white shadow" style={{ left: `${pos}%` }}>

@@ -12,7 +12,7 @@ export default function MenuisierCard({ m }: { m: DirectoryEntry }) {
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition duration-300 hover:border-primary/40 hover:shadow-md">
       <div className="relative aspect-[16/10] overflow-hidden bg-surface-2">
-        <Photo src={m.cover} alt={m.name} grade className="h-full w-full" />
+        <Photo src={m.cover} category={m.specialties[0]} alt={m.name} grade className="h-full w-full" />
         <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
         {m.verified && (
           <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-surface/95 px-2.5 py-1 text-xs font-bold text-ok shadow">
