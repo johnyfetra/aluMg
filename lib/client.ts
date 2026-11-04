@@ -8,7 +8,7 @@ import type { NotificationView } from "./notifications";
 import type { ContactView } from "./contacts";
 import type { ConversationView, MessageView } from "./chat";
 import type { FeedbackRow } from "./feedback";
-import type { AdminStats, AdminUser, AdminUserRow, AuditRow, PageOf } from "./admin";
+import type { AccountConfig, AdminQuote, AdminQuoteRow, AdminStats, AdminUser, AdminUserRow, AuditRow, PageOf } from "./admin";
 
 class ApiError extends Error {
   constructor(public status: number, public code: string, public issues: string[] = []) {
@@ -165,6 +165,12 @@ export const useAdminFeedback = (params: Record<string, string>) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
   return useSWR<PageOf<FeedbackRow> & { news: number }>(`/api/admin/feedback${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
 };
+export const useAdminQuotes = (params: Record<string, string>) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return useSWR<PageOf<AdminQuoteRow>>(`/api/admin/quotes${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
+};
+export const useAdminQuote = (id: string) => useSWR<AdminQuote>(`/api/admin/quotes/${id}`, fetcher, { revalidateOnFocus: false });
+export const useAccountConfig = (id: string) => useSWR<AccountConfig>(`/api/admin/users/${id}/config`, fetcher, { revalidateOnFocus: false });
 export const useAdminAudit = (page: number) => useSWR<PageOf<AuditRow>>(`/api/admin/audit?page=${page}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
 
 export const usePublicWorks = (params: Record<string, string>) => {
