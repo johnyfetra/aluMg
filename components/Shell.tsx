@@ -147,6 +147,13 @@ function NavLinks({ nav, onNavigate }: { nav: Nav; onNavigate: () => void }) {
   );
 }
 
+// Le contenu défile dans son propre cadre (≥ lg) : le routeur ne le remonte pas, on le fait à chaque changement de page.
+function ScrollTop() {
+  const path = usePathname();
+  useEffect(() => { document.getElementById("scroller")?.scrollTo(0, 0); }, [path]);
+  return null;
+}
+
 function PageTitle({ nav }: { nav: Nav }) {
   const { t } = useI18n();
   const path = usePathname();
@@ -214,14 +221,14 @@ export default function Shell({ children }: { children: ReactNode }) {
   }, [open]);
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[17rem_1fr]">
+    <div className="min-h-screen lg:grid lg:h-dvh lg:grid-cols-[17rem_1fr] lg:overflow-hidden">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:p-3">
         {t("nav.skip")}
       </a>
 
       {open && <div className="fixed inset-0 z-30 bg-black/55 backdrop-blur-[2px] lg:hidden" onClick={() => setOpen(false)} aria-hidden />}
       <aside ref={sidebar} id="app-navigation"
-        className={`fixed inset-y-0 left-0 z-40 flex w-[min(20rem,86vw)] flex-col overflow-y-auto overscroll-contain rounded-r-3xl bg-(--side-bg) pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 shadow-2xl transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 lg:rounded-none lg:pb-6 lg:shadow-none ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-[min(20rem,86vw)] flex-col overflow-y-auto overscroll-contain rounded-r-3xl bg-(--side-bg) pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 shadow-2xl transition-transform duration-200 lg:static lg:h-dvh lg:w-auto lg:translate-x-0 lg:rounded-none lg:pb-6 lg:shadow-none ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="mb-8 flex items-start justify-between px-6">
           <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-3">
@@ -247,12 +254,13 @@ export default function Shell({ children }: { children: ReactNode }) {
         {me && <DrawerUser name={me.name} email={me.email || me.phone} avatar={me.avatar} />}
       </aside>
 
-      <div className="min-w-0">
+      <div id="scroller" className="min-w-0 lg:h-dvh lg:overflow-y-auto lg:overscroll-contain">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-line bg-surface px-3 sm:gap-3 sm:px-8">
           <button ref={toggle} aria-controls="app-navigation" type="button" className="-ml-1 grid size-11 shrink-0 place-items-center rounded-xl text-ink transition-colors hover:bg-surface-2 active:bg-surface-2 lg:hidden" onClick={() => setOpen(true)} aria-label={t("menu.open")} aria-expanded={open}>
             <AlignLeft size={24} strokeWidth={2} aria-hidden />
           </button>
           <Suspense fallback={null}>
+            <ScrollTop />
             <PageTitle nav={nav} />
           </Suspense>
           <div className="ml-auto flex shrink-0 items-center gap-2">
