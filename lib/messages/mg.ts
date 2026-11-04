@@ -1283,6 +1283,7 @@ export const mg: Messages = {
   "auth.tooMany": "Be loatra ny andrana. Miandrasa minitra vitsy.",
   "auth.demoClientShort": "Kaonty mpanjifa",
   "auth.demoMenuisierShort": "Mpandrafitra Alu Mada",
+  "auth.demoAdminShort": "Super admin",
   "auth.emailOptional": "Mailaka (tsy voatery)",
   "auth.identifier": "Finday na mailaka",
   "auth.phoneRequired": "Laharana finday",

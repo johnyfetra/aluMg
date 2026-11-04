@@ -1,5 +1,5 @@
 "use client";
-import { CircleAlert, HardHat, Loader2, UserRound } from "lucide-react";
+import { CircleAlert, HardHat, Loader2, ShieldCheck, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
@@ -98,7 +98,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       fail(err);
     }
   };
-  const demo = async (r: Role) => {
+  const demo = async (r: Role | "admin") => {
     setBusy(true);
     setErrors({});
     try {
@@ -194,6 +194,10 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
                     {t(r === "client" ? "auth.demoClientShort" : "auth.demoMenuisierShort")}
                   </button>
                 ))}
+                <button type="button" disabled={busy} className="btn-secondary sm:col-span-2" onClick={() => demo("admin")}>
+                  <ShieldCheck size={15} aria-hidden />
+                  {t("auth.demoAdminShort")}
+                </button>
               </div>
             </div>
           )}

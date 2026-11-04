@@ -1281,6 +1281,7 @@ export const fr = {
   "auth.tooMany": "Trop de tentatives. Patientez quelques minutes avant de réessayer.",
   "auth.demoClientShort": "Compte client",
   "auth.demoMenuisierShort": "Menuisier Alu Mada",
+  "auth.demoAdminShort": "Super admin",
   "auth.emailOptional": "E-mail (facultatif)",
   "auth.identifier": "Téléphone ou e-mail",
   "auth.phoneRequired": "Numéro de téléphone",
