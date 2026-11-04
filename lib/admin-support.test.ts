@@ -86,3 +86,18 @@ describe("l'administration écrit à un client ou à un menuisier", () => {
     expect(await chat.readMessages(m1, r.id)).toBeNull(); // un tiers n'entre pas dans la conversation
   });
 });
+
+describe("un client ou un menuisier écrit au support AluMg", () => {
+  it("ouvre le fil avec l'administration sous le profil AluMg, et retrouve le même fil que l'administrateur", async () => {
+    const r = await chat.startConversation({ id: m1, role: "menuisier" }, { support: true });
+    if (!r.ok) throw new Error("support");
+    expect(await chat.startConversation({ id: m1, role: "menuisier" }, { support: true })).toEqual({ ok: true, id: r.id });
+    expect((await chat.startConversation(asAdmin(boss), { user: m1 }))).toEqual({ ok: true, id: r.id });
+    expect((await chat.listConversations(m1)).find((c) => c.id === r.id)!.other).toMatchObject({ name: "AluMg", role: "admin" });
+    await chat.sendMessage(m1, r.id, { body: "Bonjour, une question.", files: [] });
+    expect((await chat.listConversations(boss)).find((c) => c.id === r.id)).toMatchObject({ unread: 1, other: { name: "Rabe Alu", role: "menuisier" } });
+  });
+  it("refuse à l'administration (elle écrit à un compte précis)", async () => {
+    expect(await chat.startConversation(asAdmin(boss), { support: true })).toEqual({ ok: false, error: "forbidden" });
+  });
+});

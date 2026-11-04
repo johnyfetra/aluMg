@@ -21,7 +21,7 @@ export const messageSchema = z
   .refine((m) => m.body.length > 0 || m.files.length > 0 || !!m.quoteId, { message: "empty" });
 export type MessageInput = z.infer<typeof messageSchema>;
 // menuisier : profil public (annuaire) ; menuisierId : le menuisier d'un de mes devis (sans profil publié) ; client : un client qui a reçu ou demandé un de mes devis.
-export const startSchema = z.union([z.object({ menuisier: z.string().min(1).max(80) }), z.object({ menuisierId: z.uuid() }), z.object({ client: z.uuid() }), z.object({ user: z.uuid() })]); // { user } : l'administration écrit à un client ou à un menuisier
+export const startSchema = z.union([z.object({ menuisier: z.string().min(1).max(80) }), z.object({ menuisierId: z.uuid() }), z.object({ client: z.uuid() }), z.object({ user: z.uuid() }), z.object({ support: z.literal(true) })]); // { user } : l'administration écrit à un client ou à un menuisier
 
 export { ATTACH, isAudioMime, isImageMime };
 export type Role = "client" | "menuisier" | "admin";
@@ -57,7 +57,13 @@ export async function startConversation(user: { id: string; role: Role }, target
   const db = await getDb();
   let clientId: string;
   let menuisierId: string;
-  if ("user" in target) {
+  if ("support" in target) {
+    // un client ou un menuisier écrit à la plateforme : le plus ancien compte administrateur la représente (même fil que s'il avait écrit le premier)
+    if (user.role === "admin") return { ok: false, error: "forbidden" };
+    const [a] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.role, "admin")).orderBy(asc(schema.users.createdAt), schema.users.id).limit(1);
+    if (!a) return { ok: false, error: "not_found" };
+    [clientId, menuisierId] = [user.id, a.id];
+  } else if ("user" in target) {
     // l'administration ouvre un échange avec n'importe quel client ou menuisier : la conversation range le destinataire côté « client » et l'administrateur côté « menuisier »
     if (user.role !== "admin") return { ok: false, error: "forbidden" };
     const [u] = await db.select({ role: schema.users.role }).from(schema.users).where(eq(schema.users.id, target.user));

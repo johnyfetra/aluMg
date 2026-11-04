@@ -1,9 +1,10 @@
 "use client";
 import { MessageCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import ChatButton from "./ChatButton";
 import Thread from "./ChatThread";
 import ConversationList from "./ConversationList";
-import { useConversations } from "@/lib/client";
+import { useConversations, useSession } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 
 // Messagerie : liste des conversations à gauche, fil à droite (un seul volet à la fois sur mobile).
@@ -11,6 +12,7 @@ export default function Messenger() {
   const { t } = useI18n();
   const router = useRouter();
   const selected = useSearchParams().get("c");
+  const { data: me } = useSession();
   const { data: convs = [], isLoading } = useConversations();
   const current = convs.find((c) => c.id === selected) ?? null;
 
@@ -21,6 +23,11 @@ export default function Messenger() {
       <div className="-mx-4 -mb-20 -mt-6 grid h-[calc(100dvh-4rem)] grid-cols-[minmax(0,1fr)] overflow-hidden bg-surface sm:-mx-8 lg:mx-0 lg:mb-0 lg:mt-0 lg:h-[calc(100vh-11rem)] lg:min-h-[34rem] lg:grid-cols-[22rem_minmax(0,1fr)] lg:rounded-2xl lg:border lg:border-line lg:shadow-sm">
         <aside className={`min-h-0 flex-col border-line lg:border-r ${current ? "hidden lg:flex" : "flex"}`} aria-label={t("msg.conversations")}>
           <div className="hidden border-b border-line px-4 py-3 text-sm font-semibold lg:block">{t("msg.conversations")}</div>
+          {me && me.role !== "admin" && (
+            <div className="border-b border-line p-3">
+              <ChatButton target={{ support: true }} label={t("msg.support")} />
+            </div>
+          )}
           <ConversationList convs={convs} selected={selected} loading={isLoading} onSelect={(id) => router.replace(`/messages?c=${id}`)} />
         </aside>
 

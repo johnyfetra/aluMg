@@ -1797,6 +1797,7 @@ export const fr = {
   "admin.allQuotes": "Devis",
   "admin.quotePaper": "Devis complet et PDF",
   "msg.team": "Équipe AluMg",
+  "msg.support": "Contacter le support AluMg",
   "admin.downloads": "Téléchargements du PDF",
   "admin.downloadsSplit": "menuisier",
   "admin.downloadsClient": "client",

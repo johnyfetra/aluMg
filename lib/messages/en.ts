@@ -1797,6 +1797,7 @@ export const en: Messages = {
   "admin.allQuotes": "Quotes",
   "admin.quotePaper": "Full quote and PDF",
   "msg.team": "AluMg team",
+  "msg.support": "Contact AluMg support",
   "admin.downloads": "PDF downloads",
   "admin.downloadsSplit": "joiner",
   "admin.downloadsClient": "client",

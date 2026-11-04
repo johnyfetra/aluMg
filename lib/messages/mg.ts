@@ -1799,6 +1799,7 @@ export const mg: Messages = {
   "admin.allQuotes": "Devis",
   "admin.quotePaper": "Devis feno sy PDF",
   "msg.team": "Ekipan'ny AluMg",
+  "msg.support": "Hifandray amin'ny fanohanan'ny AluMg",
   "admin.downloads": "Fampidinana PDF",
   "admin.downloadsSplit": "mpanamboatra",
   "admin.downloadsClient": "mpanjifa",
