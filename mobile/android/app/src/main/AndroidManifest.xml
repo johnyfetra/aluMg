@@ -39,6 +39,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- pastille du nombre de non lus sur l'icône (Android 13 et plus : l'utilisateur l'autorise au premier lancement) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- photos du chat et des réalisations (appareil photo) et dictée vocale des demandes (micro) : le WebView les demande à l'utilisateur au moment voulu -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />

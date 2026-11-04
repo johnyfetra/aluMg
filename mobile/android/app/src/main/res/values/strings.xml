@@ -4,4 +4,9 @@
     <string name="title_activity_main">AluMg</string>
     <string name="package_name">mg.alumg.app</string>
     <string name="custom_url_scheme">mg.alumg.app</string>
+    <string name="unread_channel">Messages et notifications non lus</string>
+    <plurals name="unread_text">
+        <item quantity="one">%d élément non lu</item>
+        <item quantity="other">%d éléments non lus</item>
+    </plurals>
 </resources>

@@ -24,6 +24,12 @@ Le script synchronise Capacitor, construit la version signée et copie `AluMg.ap
 
 Le site se met à jour tout seul (le WebView charge toujours la dernière version). Seule la coque demande un téléchargement : `components/AppUpdate.tsx` compare la version de l'APK installé (marqueur `AluMgApp/<code>` dans l'identifiant du navigateur) à `ANDROID_APP.versionCode` et propose le nouvel APK. La 1.0.0 n'a pas ce marqueur et ne sait pas lancer un téléchargement : elle est reconnue comme « version 1 » et invitée à copier le lien `/telecharger` pour l'ouvrir dans Chrome. À partir de la 1.1.0, le bouton télécharge directement (`DownloadListener` dans `MainActivity`).
 
+## Pastille de non lus sur l'icône
+
+Le total (messages + notifications de devis) est calculé par `GET /api/badge`. L'application l'affiche sur l'icône Android à travers une notification silencieuse qui porte ce nombre (`Badge.java`) : le site le pousse dès qu'il change (`window.AluMgNative.setBadge`, voir `Shell.tsx`), et `UnreadWorker` l'interroge toutes les ~15 min quand l'application est fermée, avec la session du WebView. Android 13 et plus demande l'autorisation des notifications au premier lancement.
+
+Limite (shortcut) : sans service de notifications poussées (Firebase), la pastille d'une application fermée peut avoir jusqu'à 15 min de retard (minimum imposé par Android) ; pour un affichage immédiat, ajouter FCM. Le rendu de la pastille (point ou chiffre) dépend du lanceur du téléphone.
+
 ## Clé de signature : à ne jamais perdre, à ne jamais versionner
 
 `alumg-release.keystore` et `keystore.properties` sont dans `.gitignore`. Android n'installe une mise à jour que si elle est signée par la **même** clé : sans elle, les utilisateurs devraient désinstaller l'application et perdre ses données locales.

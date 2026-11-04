@@ -21,8 +21,13 @@ export async function listNotifications(userId: string): Promise<{ items: Notifi
     .orderBy(desc(schema.notifications.createdAt))
     .limit(40);
   const items = rows.map(({ n, number, data }) => ({ id: n.id, quoteId: n.quoteId, number, project: data.project, lineId: n.lineId, kind: n.kind, message: n.message, read: !!n.readAt, at: n.createdAt.toISOString() }));
+  return { items, unread: await unreadNotifications(userId) }; // compté en base : juste même au-delà des 40 dernières
+}
+
+export async function unreadNotifications(userId: string): Promise<number> {
+  const db = await getDb();
   const [{ n }] = await db.select({ n: count() }).from(schema.notifications).where(and(eq(schema.notifications.userId, userId), isNull(schema.notifications.readAt)));
-  return { items, unread: n }; // compté en base : juste même au-delà des 40 dernières
+  return n;
 }
 
 // Sans id : tout marquer lu. Toujours borné à l'utilisateur.

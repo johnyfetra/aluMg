@@ -8,6 +8,6 @@
   },
   "android": {
     "allowMixedContent": false,
-    "appendUserAgent": "AluMgApp/2"
+    "appendUserAgent": "AluMgApp/3"
   }
 }

@@ -17,7 +17,7 @@ import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
 import { Boxes, Briefcase, Share2, ClipboardList, Gauge, Images, LayoutTemplate, MessageSquareText, ScrollText, Search, Store, Users } from "lucide-react";
-import { request, useSession, useUnread } from "@/lib/client";
+import { request, useNotifications, useSession, useUnread } from "@/lib/client";
 import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
 type Item = { href: string; key: keyof Messages; Icon: typeof Settings; match: (p: string) => boolean };
@@ -187,6 +187,12 @@ export default function Shell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const { data: me } = useSession();
   const unread = useUnread(); // messages non lus : pastille sur le bouton du menu (mobile), la messagerie est dans le tiroir
+  const { data: notif } = useNotifications();
+  const badge = unread + (notif?.unread ?? 0);
+  // application Android : même total sur l'icône (voir mobile/…/MainActivity.java)
+  useEffect(() => {
+    (window as { AluMgNative?: { setBadge(n: number): void } }).AluMgNative?.setBadge(badge);
+  }, [badge]);
   const nav = me?.role === "client" ? CLIENT : me?.role === "admin" ? ADMIN : MENUISIER;
   const [open, setOpen] = useState(false);
 
