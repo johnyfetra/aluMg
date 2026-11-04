@@ -48,7 +48,7 @@ npm run admin:create -- --password "MonMotDePasse"            # mot de passe imp
 
 Le mot de passe généré est affiché **une seule fois** : notez-le. Relancer la commande avec le même e-mail réinitialise le mot de passe, lève une éventuelle suspension et ferme les sessions ouvertes. L'e-mail du compte est tenu pour vérifié. Les comptes protégés (`PROTECTED` dans `lib/admin.ts`) sont refusés. En local, arrêtez `npm run dev` avant (la base embarquée est prévue pour un seul processus à la fois) ; `PGLITE_DIR` désigne une autre base locale. En production, définissez `DATABASE_URL` pour viser la bonne base.
 
-L'administrateur se connecte comme tout le monde et arrive sur `/admin` : vue d'ensemble (comptes, connectés, inscriptions, connexions, devis, chantiers terminés), gestion des comptes (`/admin/comptes`) et journal des actions (`/admin/journal`). Voir `docs/architecture.md`, « Administration ».
+L'administrateur se connecte comme tout le monde et arrive sur `/admin` : vue d'ensemble (comptes, connectés, inscriptions, connexions, devis, chantiers terminés), gestion des comptes (`/admin/comptes`, avec la configuration et les devis de chaque compte), liste de tous les devis (`/admin/devis`, filtrable par menuisier et par client, en lecture seule) et journal des actions (`/admin/journal`). Voir `docs/architecture.md`, « Administration ».
 
 ## Écrans
 
@@ -65,7 +65,7 @@ L'administrateur se connecte comme tout le monde et arrive sur `/admin` : vue d'
 | Menuisier | `/reglages`, `/reglages/profils` | Entête, signature, tarifs, majorations, longueur de barre ; marché des profilés (prix et longueurs) |
 | Client | `/espace-client`, `/espace-client/nouvelle`, `/espace-client/devis/[id]` | Mes demandes, nouvelle demande, suivi d'un devis |
 | Commun | `/compte` | Nom, téléphone, mot de passe |
-| Admin | `/admin`, `/admin/comptes`, `/admin/comptes/[id]`, `/admin/journal` | Statistiques de la plateforme, comptes (recherche, création, réinitialisation, suspension, rôle, badge, suppression), journal |
+| Admin | `/admin`, `/admin/comptes`, `/admin/comptes/[id]`, `/admin/devis`, `/admin/devis/[id]`, `/admin/journal` | Statistiques de la plateforme, comptes (recherche, création, réinitialisation, suspension, rôle, badge, suppression, configuration et devis du compte), devis de toute la plateforme (lecture seule), journal |
 
 Transversal : thème clair/sombre (barre latérale identique), 3 langues (français, English, Malagasy), mobile-first, accessible au clavier et aux lecteurs d'écran.
 
