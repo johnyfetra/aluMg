@@ -1,7 +1,7 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "./db";
-import { normalizePhone } from "./phone";
+import { maskEmail, maskPhone, normalizePhone } from "./phone";
 import { phoneOwner } from "./phones";
 
 // Carnet de clients : toujours borné au menuisier (userId). Le compte client est retrouvé par l'e-mail, jamais choisi par l'appelant.
@@ -31,6 +31,29 @@ export async function clientAccountFor({ email, phone }: { email?: string; phone
   if (!owner) return null;
   const [u] = await db.select(pick).from(schema.users).where(and(eq(schema.users.id, owner), eq(schema.users.role, "client")));
   return u ?? null;
+}
+
+// Compte client actif choisi dans l'annuaire : un identifiant qui ne désigne pas un client (menuisier, administrateur, compte suspendu) n'est jamais accepté.
+export async function clientAccountById(id: string) {
+  const db = await getDb();
+  const [u] = await db.select({ id: schema.users.id, name: schema.users.name, avatar: schema.users.avatar }).from(schema.users).where(and(eq(schema.users.id, id), eq(schema.users.role, "client"), isNull(schema.users.suspendedAt)));
+  return u ?? null;
+}
+
+// Annuaire des clients de la plateforme, pour un menuisier qui prépare un devis. Recherche par nom seulement (jamais par e-mail ou téléphone : pas de moyen de
+// deviner les coordonnées d'un client), coordonnées masquées dans les résultats, comptes vérifiés et actifs seulement, 8 par page.
+export const CLIENTS_PAGE = 8;
+export const MAX_CLIENT_PAGE = 50;
+export type ClientHit = { id: string; name: string; avatar: string; hint: string };
+export async function searchClients(f: { q?: string; page?: number }): Promise<{ items: ClientHit[]; total: number; page: number; pageSize: number }> {
+  const db = await getDb();
+  const u = schema.users;
+  const term = (f.q ?? "").trim().toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`);
+  const page = Math.min(Math.max(1, Math.trunc(f.page ?? 1) || 1), MAX_CLIENT_PAGE);
+  const where = and(eq(u.role, "client"), isNull(u.suspendedAt), or(isNotNull(u.phoneVerifiedAt), isNotNull(u.emailVerifiedAt)), term ? sql`lower(${u.name}) like ${`%${term}%`}` : undefined);
+  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(u).where(where);
+  const rows = await db.select({ id: u.id, name: u.name, avatar: u.avatar, email: u.email, phoneNorm: u.phoneNorm }).from(u).where(where).orderBy(asc(u.name), asc(u.id)).limit(CLIENTS_PAGE).offset((page - 1) * CLIENTS_PAGE);
+  return { items: rows.map((r) => ({ id: r.id, name: r.name, avatar: r.avatar, hint: r.email ? maskEmail(r.email) : r.phoneNorm ? maskPhone(r.phoneNorm) : "" })), total, page, pageSize: CLIENTS_PAGE };
 }
 
 export async function listContacts(userId: string): Promise<ContactView[]> {

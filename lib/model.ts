@@ -333,7 +333,7 @@ export const quoteSchema = z.object({
   number: text(32),
   date: z.string().max(40),
   status: z.enum(STATUSES),
-  client: z.object({ name: text(120), phone: text(40), address: text(200), email: text(160).default("") }), // e-mail : sert à retrouver le compte client à l'envoi
+  client: z.object({ name: text(120), phone: text(40), address: text(200), email: text(160).default(""), accountId: z.uuid().optional() }), // e-mail : sert à retrouver le compte client à l'envoi ; accountId : compte choisi dans l'annuaire des clients (revérifié par le serveur)
   project: text(200),
   delay: text(120),
   notes: text(600),

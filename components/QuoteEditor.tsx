@@ -1,5 +1,5 @@
 "use client";
-import { BadgePercent, Check, Mail, Pencil, Phone, UserCheck, Eye, Inbox, LayoutGrid, Rows3, Table2 } from "lucide-react";
+import { BadgePercent, Check, Mail, Pencil, Phone, UserCheck, Eye, Inbox, LayoutGrid, Rows3, Table2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -9,7 +9,8 @@ import QuoteDiscussion from "./QuoteDiscussion";
 import QuoteStatusBar from "./QuoteStatusBar";
 import { useToast } from "./Toast";
 import { openTariffs } from "./TariffsPanel";
-import ChatButton from "./ChatButton";
+import ClientDirectory from "./ClientDirectory";
+import ClientMessage from "./quote/ClientMessage";
 import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
 import { Avatar, Field } from "./ui";
@@ -146,8 +147,15 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   }, [contacts, existing]); // eslint-disable-line react-hooks/exhaustive-deps
   // Fiche client : résumé compact une fois renseignée ; le formulaire ne s'ouvre que pour ajouter ou modifier.
   const clientReady = q.client.name.trim().length > 0;
-  const linked = contacts.some((c) => c.account && c.email && c.email === q.client.email.trim().toLowerCase());
+  const linked = !!q.client.accountId || contacts.some((c) => c.account && c.email && c.email === q.client.email.trim().toLowerCase());
   const facts = ([[t("editor.project"), q.project], [t("editor.clientAddress"), q.client.address], [t("editor.delay"), q.delay], [t("svc.warranty"), q.warranty ? `${q.warranty} ${t("svc.months")}` : ""], [t("editor.notes"), q.notes]] as [string, string][]).filter(([, v]) => v.trim());
+  const [directory, setDirectory] = useState(false);
+  // client choisi dans l'annuaire de la plateforme : son nom et son compte ; ses coordonnées restent privées (le compte est retrouvé par le serveur à l'envoi)
+  const pickAccount = (c: { id: string; name: string }) => {
+    setQ((cur) => ({ ...cur, client: { ...cur.client, name: c.name, accountId: c.id } }));
+    setDirectory(false);
+    toast.success(t("ct.added"), c.name);
+  };
   const setClient = (patch: Partial<Quote["client"]>) => setQ((c) => ({ ...c, client: { ...c.client, ...patch } }));
   const num = (v: string) => Number(v) || 0;
 
@@ -211,7 +219,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const [note, setNote] = useState("");
   const act = async (type: "send" | "decline") => {
     if (type === "decline" && !(await ask({ message: t("editor.confirmDecline"), tone: "danger", confirmLabel: t("editor.decline") }))) return;
-    if (type === "send" && !q.clientId && !q.client.email.trim()) return setMsg({ ok: false, text: t("editor.needEmail") });
+    if (type === "send" && !q.clientId && !q.client.accountId && !q.client.email.trim()) return setMsg({ ok: false, text: t("editor.needEmail") });
     const saved = await persist();
     if (!saved) return;
     try {
@@ -314,6 +322,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] 2xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-6">
+          {directory && <ClientDirectory onPick={pickAccount} onClose={() => setDirectory(false)} />}
           <section className="card space-y-3 !p-4" aria-labelledby="h-client">
             <div className="flex items-center justify-between gap-3">
               <h2 id="h-client" className="text-base font-semibold">
@@ -336,6 +345,17 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               <fieldset disabled={locked} className="m-0 min-w-0 space-y-4 border-0 p-0">
               <div>
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><span aria-hidden className="h-4 w-1 rounded-full bg-primary" />{t("editor.groupClient")}</h3>
+                {!q.clientId && (
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <button type="button" className="btn-secondary !min-h-9" onClick={() => setDirectory(true)}><Users size={15} aria-hidden />{t("ct.platform")}</button>
+                    {q.client.accountId && (
+                      <span className="inline-flex items-center gap-2 rounded-full bg-ok/15 px-3 py-1 text-xs font-semibold text-ok">
+                        <UserCheck size={13} aria-hidden />{t("ct.accountLinked")}
+                        <button type="button" className="underline" onClick={() => setClient({ accountId: undefined })}>{t("ct.unlink")}</button>
+                      </span>
+                    )}
+                  </div>
+                )}
                 {!q.clientId && contacts.length > 0 && (
                   <div className="mb-3 max-w-sm">
                     <Field htmlFor="ct-pick" label={t("ct.pick")}>
@@ -504,7 +524,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
           <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
             <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
-            {q.clientId && persisted && <ChatButton target={{ client: q.clientId }} label={t("msg.contactClient")} />}
+            <ClientMessage q={q} persisted={persisted} />
             {q.clientId && persisted && <QuoteDiscussion quoteId={q.id} me="menuisier" />}
           </fieldset>
         </div>

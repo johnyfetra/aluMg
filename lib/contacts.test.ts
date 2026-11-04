@@ -83,3 +83,42 @@ describe("remise habituelle d'un client", () => {
     expect(r.discount).toBe(9);
   });
 });
+
+describe("annuaire des clients de la plateforme", () => {
+  let verified: string, suspended: string;
+  const quote = (client: Quote["client"]) => quoteSchema.parse({ id: crypto.randomUUID(), number: "", date: "", status: "draft", client, project: "Villa", delay: "", notes: "", lines: [{ ...line, unit: 100000 }], terms: { tva: 20, deposit: 50, validityDays: 30 } });
+  beforeAll(async () => {
+    verified = (await repo.createUser("rakoto.jean@ex.mg", "Rakoto Jean", "h", "client", "034 55 555 55", { verified: true }))!;
+    await repo.createUser("rakoto.vao@ex.mg", "Rakoto Vao", "h", "client", "034 66 666 66"); // jamais vérifié : absent de l'annuaire
+    suspended = (await repo.createUser("rakoto.sus@ex.mg", "Rakoto Suspendu", "h", "client", "034 77 777 77", { verified: true }))!;
+    const { getDb, schema } = await import("./db");
+    const { eq } = await import("drizzle-orm");
+    await (await getDb()).update(schema.users).set({ suspendedAt: new Date() }).where(eq(schema.users.id, suspended));
+  });
+  it("cherche par nom, comptes clients vérifiés et actifs seulement ; coordonnées masquées", async () => {
+    const r = await ct.searchClients({ q: "rakoto" });
+    expect(r.items.map((c) => c.name)).toEqual(["Rakoto Jean"]); // ni le non vérifié, ni le suspendu, ni les menuisiers
+    expect(r.items[0].hint).toMatch(/•/);
+    expect(r.items[0].hint).not.toContain("rakoto.jean"); // l'e-mail n'est jamais donné en entier
+    expect(JSON.stringify(r)).not.toContain("034 55 555 55");
+  });
+  it("ne se laisse pas interroger par e-mail ni par téléphone, et neutralise les jokers", async () => {
+    expect((await ct.searchClients({ q: "ex.mg" })).total).toBe(0);
+    expect((await ct.searchClients({ q: "034 55" })).total).toBe(0);
+    expect((await ct.searchClients({ q: "%" })).total).toBe(0); // « % » n'est pas un joker
+    expect((await ct.searchClients({})).items.length).toBeGreaterThan(0); // sans recherche : la liste des clients, paginée
+  });
+  it("un devis ne garde que le compte d'un vrai client actif", async () => {
+    const ok = await repo.createQuote(m1, quote({ name: "Rakoto Jean", phone: "", address: "", email: "", accountId: verified }));
+    expect(ok.client.accountId).toBe(verified);
+    for (const bad of [m2, suspended, crypto.randomUUID()]) {
+      const q = await repo.createQuote(m1, quote({ name: "X", phone: "", address: "", email: "", accountId: bad }));
+      expect(q.client.accountId).toBeUndefined(); // un menuisier, un compte suspendu ou un identifiant inconnu : lien retiré
+    }
+  });
+  it("l'envoi lie le devis au compte choisi, sans e-mail ni téléphone saisis", async () => {
+    const q = await repo.createQuote(m1, quote({ name: "Rakoto Jean", phone: "", address: "", email: "", accountId: verified }));
+    expect(await wf.applyAction(m1, q.id, { type: "send" })).toMatchObject({ ok: true });
+    expect((await repo.getQuote(m1, q.id))!.clientId).toBe(verified);
+  });
+});

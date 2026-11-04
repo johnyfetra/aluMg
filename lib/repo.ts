@@ -1,5 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "./db";
+import { clientAccountById } from "./contacts";
 import { notify } from "./notifications";
 import { normalizePhone } from "./phone";
 import { type Market, type Quote, type QuoteRequest, type Role, type Settings, editMode, withDefaults } from "./model";
@@ -43,7 +44,11 @@ async function nextNumber(userId: string) {
 }
 
 // Crée un devis. clientId / request ne viennent jamais du corps de la requête : seul createRequest (côté client) les renseigne.
+// Un compte client choisi dans l'annuaire n'est gardé que s'il désigne bien un client actif (sinon le lien est retiré en silence).
+const withValidAccount = async (q: Quote): Promise<Quote> => (q.client.accountId && !(await clientAccountById(q.client.accountId)) ? { ...q, client: { ...q.client, accountId: undefined } } : q);
+
 export async function createQuote(userId: string, q: Quote, opts: { clientId?: string | null; request?: QuoteRequest | null } = {}): Promise<Quote> {
+  q = await withValidAccount(q);
   const db = await getDb();
   const clientId = opts.clientId ?? null;
   const saved: Quote = {
@@ -85,6 +90,7 @@ const keepReviews = (before: Quote, after: Quote) => {
 };
 
 export async function updateQuote(userId: string, id: string, q: Quote): Promise<Quote | null | "locked" | "incomplete"> {
+  q = await withValidAccount(q);
   const existing = await getQuote(userId, id);
   if (!existing) return null;
   const mode = editMode(existing.status, !!existing.clientId);

@@ -4,7 +4,7 @@ import { normalize } from "./calc";
 import { salePrice } from "./costing";
 import { getDb, schema } from "./db";
 import { type Issuer, CHANGE_TOPICS, ISSUER_KEYS, LOSS_REASONS, type LineReview, type Quote, type QuoteRequest, REPORT_REASONS, type Role, type Status, lineSchema } from "./model";
-import { clientAccountFor, discountFor, ensureContact } from "./contacts";
+import { clientAccountById, clientAccountFor, discountFor, ensureContact } from "./contacts";
 import { analyze, toLine } from "./intake";
 import { imageSrc } from "./logo";
 import { notify } from "./notifications";
@@ -243,7 +243,8 @@ export async function applyAction(actorId: string, quoteId: string, a: Action): 
     if (row.data.lines.some((l) => !(l.unit > 0))) return { ok: false, error: "incomplete" };
     if (!clientId) {
       // devis créé par le menuisier : on retrouve le compte client par l'e-mail saisi, sinon par son téléphone
-      const c = await clientAccountFor({ email: row.data.client.email ?? "", phone: row.data.client.phone });
+      const picked = row.data.client.accountId ? await clientAccountById(row.data.client.accountId) : null; // compte choisi dans l'annuaire
+      const c = picked ?? (await clientAccountFor({ email: row.data.client.email ?? "", phone: row.data.client.phone }));
       if (!c) return { ok: false, error: "no_client_account" };
       clientId = c.id;
     }
