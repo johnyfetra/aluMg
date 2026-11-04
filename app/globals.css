@@ -273,6 +273,13 @@ aside :focus-visible {
 
 /* Impression d'un devis (page d'aperçu) : seule la feuille est imprimée. */
 @media print {
+  /* le cadre de l'application (fixe, contenu défilant à l'intérieur) repasse en flux normal : sinon la feuille imprimée serait coupée à la hauteur de l'écran */
+  .app-frame, #scroller {
+    position: static !important;
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
   body * {
     visibility: hidden;
   }

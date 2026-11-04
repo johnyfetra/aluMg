@@ -222,7 +222,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   }, [open]);
 
   return (
-    <div className="min-h-screen lg:grid lg:h-dvh lg:grid-cols-[17rem_1fr] lg:overflow-hidden">
+    <div className="app-frame min-h-screen lg:fixed lg:inset-0 lg:grid lg:grid-cols-[17rem_1fr] lg:overflow-clip">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:p-3">
         {t("nav.skip")}
       </a>
