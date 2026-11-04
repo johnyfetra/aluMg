@@ -132,6 +132,7 @@ export default function RequestForm() {
             settings={DEFAULT_SETTINGS}
             valid={valid(l)}
             clientMode
+            fresh
             onChange={(p) => setLine(i, p)}
             onRemove={() => (setTouched(true), setLines(lines.filter((_, j) => j !== i)))}
             onDuplicate={() => (setTouched(true), setLines([...lines.slice(0, i + 1), { ...l, id: crypto.randomUUID() }, ...lines.slice(i + 1)]))}

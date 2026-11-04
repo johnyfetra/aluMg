@@ -65,6 +65,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const [layout, setLayout] = useState<"cards" | "table">("cards");
   const [openIds, setOpenIds] = useState<Set<string>>(() => new Set((existing ?? { lines: [first] }).lines.length > 1 ? [] : (existing ?? { lines: [first] }).lines.map((l) => l.id)));
   // Ce que devient une modification selon l'état du devis (voir `editMode` dans lib/model.ts) : seul un chantier terminé est figé.
+  // ouvrages créés pendant cette session : saisie guidée (les ouvrages d'un devis existant s'ouvrent en récapitulatif)
+  const [fresh, setFresh] = useState<Set<string>>(() => new Set(existing ? [] : [first.id]));
   const [focusId, setFocusId] = useState<string | null>(null);
   const [q, setQ] = useState<Quote>(
     () =>
@@ -202,9 +204,9 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       if (withPdf) {
         const { quotePdf } = await import("@/lib/pdf");
         await quotePdf(saved, settings, t, locale, attachCut);
+        trackDownload(saved.id);
         toast.success(t("toast.pdf"), t("toast.pdfText"));
       }
-        trackDownload(saved.id);
     } catch (e) {
       console.error("[alumg] génération du PDF en échec", e);
       toast.error(t("toast.errorTitle"), t("toast.errorText"));
@@ -494,6 +496,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                   quoteId={q.clientId && persisted ? q.id : undefined}
                   focused={focusId === l.id}
                   review={q.lineReviews?.[l.id]}
+                  fresh={fresh.has(l.id)}
                   open={openIds.has(l.id)}
                   onToggle={() => toggleOpen(l.id)}
                   onChange={(p) => setLine(i, p)}
@@ -513,6 +516,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                   const nl = newLine(eff);
                   setQ({ ...q, lines: [...q.lines, nl] });
                   setOpenIds((o) => new Set(o).add(nl.id));
+                  setFresh((o) => new Set(o).add(nl.id));
                   setLayout("cards");
                 }}
               >

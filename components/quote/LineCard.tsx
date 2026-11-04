@@ -1,7 +1,7 @@
 "use client";
 import { FinishSwatch, GlassSwatch } from "../Swatch";
 import { Box, CheckCircle2, ChevronDown, Copy, MessageSquareWarning, PauseCircle, Minus, Plus, Image as ImageIcon, Ruler, Trash2 } from "lucide-react";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import LineComments from "../LineComments";
 import Viewer3DLoader from "../Viewer3DLoader";
 import InfoTip, { type HelpTerm } from "../InfoTip";
@@ -19,7 +19,7 @@ import { cap, price } from "./line";
 
 // Une carte d'ouvrage : configuration (type, dimensions, finitions, prix), aperçu 2D/3D et commentaires.
 export function LineCard({
-  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark, quoteId, focused = false, review,
+  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark, quoteId, focused = false, review, fresh = false,
 }: {
   l: Line;
   i: number;
@@ -39,8 +39,14 @@ export function LineCard({
   quoteId?: string; // devis lié à un client : affiche le fil de commentaires de l'ouvrage
   focused?: boolean; // ouvrage visé par une notification
   review?: LineReview; // avis du client sur cet ouvrage
+  fresh?: boolean; // ouvrage tout juste créé : saisie guidée étape par étape, puis récapitulatif
 }) {
   const [view, setView] = useState<"2d" | "3d" | "section">("2d");
+  // étape courante (null = récapitulatif : toutes les sections, repliables)
+  const steps: Sec[] = clientMode ? ["config", "size", "finish"] : ["config", "size", "finish", "price"];
+  const [step, setStep] = useState<number | null>(fresh ? 0 : null);
+  const [shut, setShut] = useState<Set<Sec>>(new Set());
+  const sec = useMemo<SecState>(() => ({ current: step === null ? null : steps[step], shut, toggle: (n) => setShut((o) => { const c = new Set(o); if (!c.delete(n)) c.add(n); return c; }) }), [step, shut, clientMode]); // eslint-disable-line react-hooks/exhaustive-deps
   const cat = l.category;
   const openable = cat === "fenetre" || cat === "porte";
   const hasGlass = cat === "garde-corps" ? l.guard === "verre" : cat !== "volet" && !(cat === "porte" && l.infill === "pleine");
@@ -64,12 +70,54 @@ export function LineCard({
   const title = `${mark ?? `${t("editor.line")} ${i + 1}`} · ${cap(lineTitle(l, t))}`;
   // Une colonne jusqu'à 2xl (l'illustration passe au-dessus), puis formulaire + illustration fixe à droite.
   const grid = "min-w-0";
+  const finishPanel = (
+        <Panel name="finish" title={t("editor.sectionFinish")} className="order-4 @2xl:order-none">
+          <Choice dense name={p("rg")} legend={t("editor.range")} help="range" value={l.range} options={RANGES.filter((r) => r === l.range || rangeOn(settings.market, r)).map((r) => ({ value: r, label: t(`range.${r}`) }))} onChange={(range) => onChange({ range })} />
+          <FinishPicker dense name={p("fn")} legend={t("editor.finish")} help="finish" value={l.finish} onChange={(finish) => onChange({ finish })} t={t} hide={settings.market.off?.finishes} />
+
+          {hasGlass && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+              <Field htmlFor={p("gt")} label={t("editor.glassType")} help="glassType">
+                <Select id={p("gt")} value={l.glassType} onChange={(v) => onChange({ glassType: v as Line["glassType"] })} options={GLASSES.map((g) => ({ value: g.id, label: t(g.label), leading: <GlassSwatch id={g.id} size={22} /> }))} />
+              </Field>
+              </div>
+              <Field htmlFor={p("th")} label={t("editor.thickness")} help="thickness">
+                <Select id={p("th")} value={l.thickness} onChange={(v) => onChange({ thickness: v as Line["thickness"] })} options={THICKNESSES.map((x) => ({ value: x, label: t(`thickness.${x}`) }))} />
+              </Field>
+              <Field htmlFor={p("pt")} label={t("editor.pattern")} help="pattern">
+                <Select id={p("pt")} disabled={!canPattern} value={canPattern ? l.pattern : "none"} onChange={(v) => onChange({ pattern: v as Line["pattern"] })} options={PATTERNS.map((x) => ({ value: x, label: t(`pattern.${x}`) }))} />
+              </Field>
+            </div>
+          )}
+
+          {openable && (
+            <fieldset>
+              <legend className="mb-1 text-sm font-medium">{t("editor.extras")}</legend>
+              <div className="flex flex-wrap gap-2">
+                {EXTRAS.map((x) => (
+                  <label key={x} className="cursor-pointer">
+                    <input type="checkbox" className="peer sr-only" checked={l.extras.includes(x)} onChange={(e) => onChange({ extras: e.target.checked ? [...l.extras, x] : l.extras.filter((y) => y !== x) })} />
+                    <span className="flex min-h-9 items-center rounded-lg border border-line bg-surface px-2.5 text-sm font-medium peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-primary">{t(`extra.${x}`)}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+        </Panel>
+  );
+  const last = step === steps.length - 1;
   const body = (
-    <>
+    <SecCtx.Provider value={sec}>
+      {step === null && (
+        <div className="mb-3 flex justify-end">
+          <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={() => setStep(0)}>{t("editor.stepReview")}</button>
+        </div>
+      )}
       <div className="@container min-w-0">
        <div className="grid gap-3 @2xl:grid-cols-[1.15fr_1fr] @2xl:items-start">
         <div className="contents @2xl:flex @2xl:min-w-0 @2xl:flex-col @2xl:gap-3">
-        <Panel title={t("editor.sectionConfig")} className="order-2 @2xl:order-none">
+        <Panel name="config" title={t("editor.sectionConfig")} className="order-2 @2xl:order-none">
           <Choice dense name={p("cat")} legend={t("editor.category")} help="category" value={workType(l)} options={WORK_TYPES.map((w) => ({ value: w, label: cap(w === "naco" ? t("opening.jalousie") : w === "roulant" || w === "rideau" ? t(`shutter.${w}`) : t(`cat.${w}`)) }))} onChange={(w) => onChange(workPatch(w, l))} />
 
           {cat === "volet" && (
@@ -149,7 +197,7 @@ export function LineCard({
           {hasLeafConfig(l) && <LeafConfig l={l} t={t} onChange={onChange} id={l.id} />}
         </Panel>
 
-        <Panel title={t("editor.sectionSizePlace")} className="order-3 @2xl:order-none">
+        <Panel name="size" title={t("editor.sectionSizePlace")} className="order-3 @2xl:order-none">
           <div className="grid grid-cols-3 gap-3">
             <Field htmlFor={p("w")} label={cat === "garde-corps" ? t("editor.length") : t("editor.width")} help="dims">
               <input id={p("w")} className="input" type="number" inputMode="numeric" value={l.width || ""} aria-invalid={!valid} onChange={(e) => onChange({ width: num(e.target.value) })} />
@@ -194,7 +242,7 @@ export function LineCard({
         </Panel>
 
         {!clientMode && (
-          <Panel title={t("editor.sectionPrice")} className="order-5 @2xl:order-none">
+          <Panel name="price" title={t("editor.sectionPrice")} className="order-5 @2xl:order-none">
             <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
               <div className="flex flex-wrap items-end gap-3">
                 <div className="w-44">
@@ -230,6 +278,16 @@ export function LineCard({
             )}
             <p className="text-xs text-muted">{t("editor.unitHint")}</p>
           </Panel>
+        )}
+        {step !== null && finishPanel}
+        {step !== null && (
+          <div className="order-6 flex items-center justify-between gap-3 @2xl:order-none">
+            <p className="text-xs font-medium text-muted" aria-live="polite">{t("editor.stepOf").replace("{n}", String(step + 1)).replace("{m}", String(steps.length))}</p>
+            <div className="flex gap-2">
+              {step > 0 && <button type="button" className="btn-secondary" onClick={() => setStep(step - 1)}>{t("editor.stepPrev")}</button>}
+              <button type="button" className="btn-primary" disabled={steps[step] === "size" && !valid} onClick={() => setStep(last ? null : step + 1)}>{last ? t("editor.stepDone") : t("editor.stepNext")}</button>
+            </div>
+          </div>
         )}
         </div>
         <div className="contents @2xl:flex @2xl:min-w-0 @2xl:flex-col @2xl:gap-3">
@@ -285,46 +343,13 @@ export function LineCard({
         </div>
         </div>
       </div>
-        <Panel title={t("editor.sectionFinish")} className="order-4 @2xl:order-none">
-          <Choice dense name={p("rg")} legend={t("editor.range")} help="range" value={l.range} options={RANGES.filter((r) => r === l.range || rangeOn(settings.market, r)).map((r) => ({ value: r, label: t(`range.${r}`) }))} onChange={(range) => onChange({ range })} />
-          <FinishPicker dense name={p("fn")} legend={t("editor.finish")} help="finish" value={l.finish} onChange={(finish) => onChange({ finish })} t={t} hide={settings.market.off?.finishes} />
-
-          {hasGlass && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-              <Field htmlFor={p("gt")} label={t("editor.glassType")} help="glassType">
-                <Select id={p("gt")} value={l.glassType} onChange={(v) => onChange({ glassType: v as Line["glassType"] })} options={GLASSES.map((g) => ({ value: g.id, label: t(g.label), leading: <GlassSwatch id={g.id} size={22} /> }))} />
-              </Field>
-              </div>
-              <Field htmlFor={p("th")} label={t("editor.thickness")} help="thickness">
-                <Select id={p("th")} value={l.thickness} onChange={(v) => onChange({ thickness: v as Line["thickness"] })} options={THICKNESSES.map((x) => ({ value: x, label: t(`thickness.${x}`) }))} />
-              </Field>
-              <Field htmlFor={p("pt")} label={t("editor.pattern")} help="pattern">
-                <Select id={p("pt")} disabled={!canPattern} value={canPattern ? l.pattern : "none"} onChange={(v) => onChange({ pattern: v as Line["pattern"] })} options={PATTERNS.map((x) => ({ value: x, label: t(`pattern.${x}`) }))} />
-              </Field>
-            </div>
-          )}
-
-          {openable && (
-            <fieldset>
-              <legend className="mb-1 text-sm font-medium">{t("editor.extras")}</legend>
-              <div className="flex flex-wrap gap-2">
-                {EXTRAS.map((x) => (
-                  <label key={x} className="cursor-pointer">
-                    <input type="checkbox" className="peer sr-only" checked={l.extras.includes(x)} onChange={(e) => onChange({ extras: e.target.checked ? [...l.extras, x] : l.extras.filter((y) => y !== x) })} />
-                    <span className="flex min-h-9 items-center rounded-lg border border-line bg-surface px-2.5 text-sm font-medium peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-primary">{t(`extra.${x}`)}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          )}
-        </Panel>
+        {step === null && finishPanel}
 
         </div>
        </div>
       </div>
 
-    </>
+    </SecCtx.Provider>
   );
 
   if (!onToggle)
@@ -401,17 +426,35 @@ export function LineCard({
 
 // Bloc de formulaire d'un ouvrage : cadre discret, titre en capitales.
 const LockedCtx = createContext(false);
+type Sec = "config" | "size" | "finish" | "price";
+type SecState = { current: Sec | null; shut: Set<Sec>; toggle: (n: Sec) => void };
+const SecCtx = createContext<SecState>({ current: null, shut: new Set(), toggle: () => {} });
 const CHIP = "min-h-8 rounded-full border border-line px-3 text-xs font-medium hover:bg-surface-2 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-on-primary";
 
-function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
+function Panel({ name, title, children, className = "" }: { name: Sec; title: string; children: React.ReactNode; className?: string }) {
   const locked = useContext(LockedCtx);
+  const { current, shut, toggle } = useContext(SecCtx);
+  if (current !== null && current !== name) return null;
+  const folded = current === null && shut.has(name);
+  const head = (
+    <>
+      <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
+      {title}
+    </>
+  );
   return (
     <fieldset disabled={locked} className={`m-0 min-w-0 space-y-3 rounded-xl border border-line bg-surface-2/30 p-3.5 sm:p-4 ${className}`}>
-      <h4 className="flex items-center gap-2 text-sm font-semibold text-ink">
-        <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
-        {title}
+      <h4 className="text-sm font-semibold text-ink">
+        {current === null ? (
+          <button type="button" aria-expanded={!folded} onClick={() => toggle(name)} className="flex w-full items-center gap-2 text-left">
+            {head}
+            <ChevronDown size={16} aria-hidden className={`ml-auto text-muted transition-transform ${folded ? "-rotate-90" : ""}`} />
+          </button>
+        ) : (
+          <span className="flex items-center gap-2">{head}</span>
+        )}
       </h4>
-      {children}
+      {!folded && children}
     </fieldset>
   );
 }
