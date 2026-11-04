@@ -51,3 +51,6 @@ next-env.d.ts
 
 # copies de travail temporaires des agents
 /.claude/worktrees/
+
+# Visuels de la page Facebook de la plateforme (logo, bannière, publications) : matériel de communication, pas du code
+/public/brand/facebook/
