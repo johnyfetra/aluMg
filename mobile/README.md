@@ -16,9 +16,13 @@ Le script synchronise Capacitor, construit la version signée et copie `AluMg.ap
 
 À chaque nouvelle version diffusée :
 
-1. augmenter `versionCode` (obligatoire : Android refuse une mise à jour dont le code n'augmente pas) et `versionName` dans `android/app/build.gradle` ;
+1. augmenter `versionCode` (obligatoire : Android refuse une mise à jour dont le code n'augmente pas) et `versionName` dans `android/app/build.gradle`, le nombre de `AluMgApp/<code>` dans `capacitor.config.json` (`appendUserAgent`) et `ANDROID_APP` dans `lib/appVersion.ts` ;
 2. mettre à jour la version et la taille affichées (`apkMeta` dans `lib/marketing.ts`) ;
 3. construire, tester l'installation sur un téléphone, puis commiter l'APK.
+
+## Mise à jour chez l'utilisateur
+
+Le site se met à jour tout seul (le WebView charge toujours la dernière version). Seule la coque demande un téléchargement : `components/AppUpdate.tsx` compare la version de l'APK installé (marqueur `AluMgApp/<code>` dans l'identifiant du navigateur) à `ANDROID_APP.versionCode` et propose le nouvel APK. La 1.0.0 n'a pas ce marqueur et ne sait pas lancer un téléchargement : elle est reconnue comme « version 1 » et invitée à copier le lien `/telecharger` pour l'ouvrir dans Chrome. À partir de la 1.1.0, le bouton télécharge directement (`DownloadListener` dans `MainActivity`).
 
 ## Clé de signature : à ne jamais perdre, à ne jamais versionner
 
