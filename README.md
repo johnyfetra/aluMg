@@ -5,7 +5,7 @@ Plateforme pour la menuiserie aluminium et les volets roulants à Madagascar. Vi
 **Version actuelle** : une place de marché complète en deux espaces.
 
 - **Public (sans compte)** : annuaire des menuisiers (recherche, filtres, notes, avis, badge vérifié) et profil détaillé avec réalisations en photos.
-- **Menuisier** : devis configurables (fenêtres, portes, volets, garde-corps, cloisons) avec calcul du besoin en profilés, plan d'achat selon les prix et longueurs du marché, vue 3D animée, PDF professionnel ; réception des demandes des clients, négociation, suivi des chantiers en pourcentage, clients, portfolio, profil public.
+- **Menuisier** : devis configurables (fenêtres, nacos, portes, volets roulants, rideaux métalliques, garde-corps, cloisons ; tailles standard ou sur mesure, série de profilé, aperçu 3D réaliste et coupe) avec calcul du besoin en profilés, plan d'achat selon les prix et longueurs du marché, vue 3D animée, PDF professionnel ; réception des demandes des clients, négociation, suivi des chantiers en pourcentage, clients, portfolio, profil public.
 - **Client** : demande de devis à un menuisier, suivi (demande, devis reçu, accepté, en cours, terminé), acceptation, refus ou demande de modification/remise, messages, évaluation en fin de chantier, signalement.
 
 Le contact (e-mail **et** téléphone) est obligatoire à l'inscription, pour les deux types de compte.

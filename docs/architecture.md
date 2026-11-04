@@ -125,6 +125,18 @@ Tout part de `lib/model.ts` : les catalogues (`FINISHES`, `GLASSES`, `THICKNESSE
 
 `components/Viewer3D.tsx` (three.js via react-three-fiber, chargé à la demande, jamais côté serveur). Le mouvement utilise un ressort critiquement amorti (`useSpring`) : accélération puis freinage sans rebond. Rendu à la demande (`frameloop="demand"`) : aucune image n'est calculée tant que rien ne bouge. `prefers-reduced-motion` supprime l'animation. Les pièces sont étiquetées par élément : survoler une ligne du besoin en profilés surligne les pièces correspondantes.
 
+### Types d'ouvrage, tailles standard et séparateur
+
+- **Types d'ouvrage** (`WORK_TYPES`, `workType`, `workPatch` dans `lib/model.ts`) : fenêtre, naco, porte, volet roulant, rideau métallique, garde-corps, cloison. Chaque type s'appuie sur une catégorie du calcul ; le type affiché se déduit de l'ouvrage, il n'est pas stocké. Les ouvertures masquées de l'éditeur (`HIDDEN_OPENINGS`, ex. l'oscillo-battant, absent du marché malgache) restent valides pour relire les anciens devis.
+- **Tailles standard** (`standardSizes`) : portes battantes (1 vantail 70 à 100 cm, 2 battants 140 à 200 cm), portes coulissantes (2 à 4 vantaux), fenêtres courantes ; la saisie sur mesure reste toujours disponible. Les tailles de fenêtre et de porte coulissante sont à faire valider par des menuisiers.
+- **Séparateur** (`splitAt`, `splitOf`) : position de la traverse en fraction de la hauteur du vantail depuis le haut ; milieu par défaut pour une porte vitrée à traverse, 60 % pour une demi-vitrée. La liste de coupe, le schéma et la 3D lisent la même valeur.
+- **Naco** : `nacoBlades(hauteur)` est l'unique règle du nombre de lames (100 mm, 40 mm de jeu), partagée par la liste de coupe, le schéma, la 3D et la description du devis.
+- **Série de profilé** (`series`, facultative) : K56, T55 Max…, libre avec suggestions ; elle figure sur le devis et le PDF.
+
+### Rendu 3D
+
+`components/Viewer3D.tsx` modélise l'ouvrage (cadres à coupes d'onglet, joints, rails, charnières, poignées assorties à la teinte, panneaux à lames, faux bois veiné par texture canvas) ; `components/Stage3D.tsx` le décor (façade en crépi de la couleur choisie par l'utilisateur, jardin, pièce intérieure au choix : salon, cuisine, douche). Commandes : glisser déplace la vue, molette zoome, clic droit ou Maj tourne à 360°, double-clic recentre ; un doigt déplace et deux doigts zooment et tournent sur mobile. Un glisser sur un vantail, un naco ou un volet le manœuvre progressivement, un clic le bascule. La couleur du mur est mémorisée dans le navigateur (éditeur et vue du client). `components/SectionView.tsx` trace la coupe horizontale au montant, aux épaisseurs réelles.
+
 ## Sécurité
 
 - Mots de passe hachés avec scrypt (sel aléatoire, comparaison à temps constant). Connexion sans fuite sur l'existence d'un e-mail.
