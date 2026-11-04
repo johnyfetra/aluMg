@@ -6,7 +6,7 @@ type Ctx = RouteContext<"/api/conversations/[id]/messages">;
 
 // Messages de la conversation (les ouvrir les marque comme lus). ?after=<date ISO> : seulement les nouveaux.
 export async function GET(req: Request, { params }: Ctx) {
-  const user = await requireRole("client", "menuisier");
+  const user = await requireRole("client", "menuisier", "admin");
   if (isResponse(user)) return user;
   const { id } = await params;
   const msgs = z.uuid().safeParse(id).success ? await readMessages(user.id, id, new URL(req.url).searchParams.get("after") ?? undefined) : null;
@@ -14,7 +14,7 @@ export async function GET(req: Request, { params }: Ctx) {
 }
 
 export async function POST(req: Request, { params }: Ctx) {
-  const user = await requireRole("client", "menuisier");
+  const user = await requireRole("client", "menuisier", "admin");
   if (isResponse(user)) return user;
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) return fail(404, "not_found");

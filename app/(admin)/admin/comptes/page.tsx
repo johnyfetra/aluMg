@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { mutate } from "swr";
 import { AccountStatus, adminError, ListSkeleton, Pager, TempPassword } from "@/components/admin/AdminUi";
+import ChatButton from "@/components/ChatButton";
 import { ErrorState, EmptyState } from "@/components/Feedback";
 import Select from "@/components/Select";
 import { useToast } from "@/components/Toast";
@@ -20,8 +21,8 @@ function Row({ u }: { u: AdminUserRow }) {
   const { t, locale } = useI18n();
   const date = (d: string | Date | null) => (d ? new Date(d).toLocaleDateString(DATE_LOCALE[locale], { day: "numeric", month: "short", year: "numeric" }) : t("admin.never"));
   return (
-    <li>
-      <Link href={`/admin/comptes/${u.id}`} className="card flex items-center gap-3 !p-3 transition-shadow hover:shadow-md sm:grid sm:grid-cols-[minmax(0,2fr)_8rem_8rem_9rem_9rem] sm:gap-4 sm:rounded-none sm:border-x-0 sm:border-t-0 sm:!px-4 sm:shadow-none sm:hover:bg-surface-2">
+    <li className="flex items-center gap-2 sm:gap-0 sm:border-b sm:border-line">
+      <Link href={`/admin/comptes/${u.id}`} className="card min-w-0 flex-1 flex items-center gap-3 !p-3 transition-shadow hover:shadow-md sm:grid sm:grid-cols-[minmax(0,2fr)_8rem_8rem_9rem_9rem] sm:gap-4 sm:rounded-none sm:!border-0 sm:!px-4 sm:shadow-none sm:hover:bg-surface-2">
         <span className="flex min-w-0 flex-1 items-center gap-3">
           <Avatar name={u.name} size={40} round />
           <span className="min-w-0">
@@ -41,6 +42,7 @@ function Row({ u }: { u: AdminUserRow }) {
         <span className="hidden text-sm text-muted sm:block">{date(u.lastSeenAt)}</span>
         <span className="hidden text-sm text-muted sm:block">{date(u.createdAt)}</span>
       </Link>
+      <span className="shrink-0 sm:w-28 sm:pr-3">{u.role !== "admin" && <ChatButton compact short={t("admin.write")} target={{ user: u.id }} label={t("admin.contact")} />}</span>
     </li>
   );
 }
@@ -125,8 +127,8 @@ export default function AccountsPage() {
       {error ? <ErrorState retry={() => retry()} /> : isLoading || !data ? <ListSkeleton /> : data.items.length === 0 ? <EmptyState message={t("admin.empty")} /> : (
         <div className="space-y-4">
           <div className="sm:card sm:overflow-hidden sm:!p-0">
-            <div aria-hidden className="hidden grid-cols-[minmax(0,2fr)_8rem_8rem_9rem_9rem] gap-4 border-b border-line bg-surface-2 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted sm:grid">
-              <span>{t("admin.identity")}</span><span>{t("admin.role")}</span><span>{t("admin.status")}</span><span>{t("admin.lastSeen")}</span><span>{t("admin.createdAt")}</span>
+            <div aria-hidden className="hidden grid-cols-[minmax(0,2fr)_8rem_8rem_9rem_9rem_7rem] gap-4 border-b border-line bg-surface-2 pl-4 pr-0 py-2 text-xs font-semibold uppercase tracking-wide text-muted sm:grid">
+              <span>{t("admin.identity")}</span><span>{t("admin.role")}</span><span>{t("admin.status")}</span><span>{t("admin.lastSeen")}</span><span>{t("admin.createdAt")}</span><span />
             </div>
             <ul className="space-y-2 sm:space-y-0">{data.items.map((u) => <Row key={u.id} u={u} />)}</ul>
           </div>

@@ -17,7 +17,7 @@ export default function ConversationList({ convs, selected, onSelect, loading, c
       {convs.map((c) => (
         <li key={c.id}>
           <button type="button" aria-current={c.id === selected ? "true" : undefined} onClick={() => onSelect(c.id)} className={`flex w-full items-center gap-3 border-b border-line px-4 text-left transition-colors hover:bg-surface-2 ${compact ? "py-2.5" : "py-3"} ${c.id === selected ? "bg-primary/10" : ""}`}>
-            <Avatar name={c.other.name} src={c.other.role === "menuisier" ? c.other.logo || c.other.avatar : c.other.avatar} size={compact ? 40 : 44} round={c.other.role === "client"} />
+            <Avatar name={c.other.name} src={c.other.role !== "client" ? c.other.logo || c.other.avatar : c.other.avatar} size={compact ? 40 : 44} round={c.other.role === "client"} />
             <span className="min-w-0 flex-1">
               <span className="flex items-baseline justify-between gap-2">
                 <span className={`truncate text-sm ${c.unread ? "font-bold" : "font-semibold"}`}>{c.other.name}</span>

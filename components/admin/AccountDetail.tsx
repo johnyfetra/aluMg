@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { mutate } from "swr";
 import AccountConfig from "@/components/admin/AccountConfig";
+import ChatButton from "@/components/ChatButton";
 import { AccountStatus, adminError, ListSkeleton, TempPassword } from "@/components/admin/AdminUi";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { ErrorState } from "@/components/Feedback";
@@ -77,6 +78,8 @@ export default function AccountDetail({ id }: { id: string }) {
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted">{t(`admin.role.${u.role}`)} · <AccountStatus suspended={!!u.suspendedAt} verified={u.verified} /></p>
         </div>
       </div>
+
+      {u.role !== "admin" && !u.self && <div><ChatButton target={{ user: id }} label={t("admin.contact")} className="btn-primary" /></div>}
 
       {locked && <p role="note" className="card flex items-start gap-3 border-warn/40 text-sm"><ShieldAlert size={18} aria-hidden className="mt-0.5 shrink-0 text-warn" />{t(u.protected ? "admin.protected" : "admin.self")}</p>}
       {password && <TempPassword title={t("admin.resetDone")} password={password} onDone={() => setPassword("")} />}

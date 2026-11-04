@@ -11,7 +11,7 @@ import { MicButton, type Recorded, RecorderBar, VoicePlayer } from "./Voice";
 import { ATTACH, ATTACH_MIME, isAudioMime, isImageMime, mimeOfName, sizeLabel } from "@/lib/attach";
 import { fmt } from "@/lib/calc";
 import type { Messages } from "@/lib/messages/fr";
-import { ApiError, request, useCitableQuotes, useMessages, useTyping } from "@/lib/client";
+import { ApiError, request, useCitableQuotes, useMessages, useSession, useTyping } from "@/lib/client";
 import { DATE_LOCALE, type T, useI18n } from "@/lib/i18n";
 import { compressImage, dataUrlToBlob } from "@/lib/image";
 import type { ConversationView, MessageView, Receipt } from "@/lib/chat";
@@ -44,6 +44,8 @@ export function Ticks({ receipt, t, onPrimary = true }: { receipt: Receipt; t: T
 // Fil d'une conversation : messages, pièces jointes, vocaux, réponses, devis cités, accusés, « écrit… » et le champ de saisie.
 export default function Thread({ conv, onBack, header = true, compact = false }: { conv: ConversationView; onBack?: () => void; header?: boolean; compact?: boolean }) {
   const { t, locale } = useI18n();
+  const { data: me } = useSession();
+  const support = me?.role === "admin" || conv.other.role === "admin"; // échange avec la plateforme : ni devis à citer, ni réponses rapides de menuisier
   const { data: msgs = [] } = useMessages(conv.id);
   const { data: live } = useTyping(conv.id);
   const [text, setText] = useState("");
@@ -223,10 +225,10 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
               <ArrowLeft size={18} aria-hidden />
             </button>
           )}
-          <Avatar name={o.name} src={o.role === "menuisier" ? o.logo || o.avatar : o.avatar} size={40} round={o.role === "client"} />
+          <Avatar name={o.name} src={o.role !== "client" ? o.logo || o.avatar : o.avatar} size={40} round={o.role === "client"} />
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold">{o.name}</p>
-            <p className="truncate text-xs text-muted">{typing ? <span className="text-primary">{t(typing === "voice" ? "msg.typingVoice" : "msg.typingText")}…</span> : o.role === "menuisier" ? t("msg.joiner") : t("msg.client")}</p>
+            <p className="truncate text-xs text-muted">{typing ? <span className="text-primary">{t(typing === "voice" ? "msg.typingVoice" : "msg.typingText")}…</span> : o.role === "admin" ? t("msg.team") : o.role === "menuisier" ? t("msg.joiner") : t("msg.client")}</p>
           </div>
           {o.role === "menuisier" && o.slug && (
             <Link href={`/menuisiers/${o.slug}`} className="text-sm font-medium text-primary hover:underline">
@@ -236,7 +238,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
         </header>
       )}
 
-      {header && <ChatQuotes conv={conv} onCite={pickQuote} t={t} />}
+      {header && !support && <ChatQuotes conv={conv} onCite={pickQuote} t={t} />}
 
       <div ref={box} className={`chat-bg min-h-0 flex-1 space-y-1 overflow-y-auto bg-surface-2/40 ${compact ? "px-3 py-3" : "px-4 py-4"}`} role="log" aria-live="polite" aria-label={t("msg.thread")}>
         {msgs.length === 0 && <p className="py-10 text-center text-sm text-muted">{t("msg.startHint")}</p>}
@@ -317,7 +319,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
       </div>
 
       <form onSubmit={send} className={`relative border-t border-line bg-surface ${compact ? "px-3 pb-3.5 pt-3" : "px-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-5 sm:pt-4"}`}>
-        {!text.trim() && !pending.length && (
+        {!text.trim() && !pending.length && !support && (
           <div role="group" aria-label={t("msg.qr.title")} className="no-scrollbar -mx-1 mb-2 flex gap-1.5 overflow-x-auto px-1">
             {([1, 2, 3, 4] as const).map((n) => {
               const label = t(`msg.qr.${conv.other.role === "client" ? "menuisier" : "client"}${n}` as keyof Messages);

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ListSkeleton } from "@/components/admin/AdminUi";
 import { QuoteStatus } from "@/components/admin/QuoteRows";
+import ChatButton from "@/components/ChatButton";
 import { ErrorState } from "@/components/Feedback";
 import QuoteDiscussion from "@/components/QuoteDiscussion";
 import QuotePaper from "@/components/QuotePaper";
@@ -63,7 +64,13 @@ export default function QuoteDetail({ id }: { id: string }) {
             {row(t("settings.tva"), `${q.terms.tva} %`)}
             {row(t("settings.deposit"), `${q.terms.deposit} %`)}
             {row(t("settings.validity"), String(q.terms.validityDays))}
+            {row(t("admin.downloads"), d.downloads.total ? `${d.downloads.total} · ${d.downloads.menuisier} ${t("admin.downloadsSplit")}, ${d.downloads.client} ${t("admin.downloadsClient")} · ${t("admin.downloadsLast")} ${new Date(d.downloads.last!).toLocaleDateString(DATE_LOCALE[locale], { day: "numeric", month: "short", year: "numeric" })}` : t("admin.downloadsNone"))}
           </dl>
+          {/* l'administration écrit sous le profil AluMg : le destinataire voit la plateforme, pas un compte personnel */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <ChatButton target={{ user: d.ownerId }} label={t("admin.contactOwner")} className="btn-secondary !min-h-10" />
+            {d.clientId && <ChatButton target={{ user: d.clientId }} label={t("admin.contactClient")} className="btn-secondary !min-h-10" />}
+          </div>
         </section>
       </div>
 

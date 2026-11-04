@@ -6,7 +6,7 @@ import { getAttachment } from "@/lib/chat";
 // Pièce jointe d'un message : réservée aux deux participants. Photos et vocaux s'affichent dans la page (les vocaux se lisent et se parcourent
 // grâce aux requêtes par plages d'octets), le reste se télécharge.
 export async function GET(req: Request, { params }: RouteContext<"/api/attachments/[id]">) {
-  const user = await requireRole("client", "menuisier");
+  const user = await requireRole("client", "menuisier", "admin");
   if (isResponse(user)) return user;
   const { id } = await params;
   const f = z.uuid().safeParse(id).success ? await getAttachment(user.id, id) : null;

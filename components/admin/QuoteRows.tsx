@@ -1,5 +1,7 @@
 "use client";
+import { Download } from "lucide-react";
 import Link from "next/link";
+import ChatButton from "../ChatButton";
 import type { AdminQuoteRow } from "@/lib/admin";
 import { fmt } from "@/lib/calc";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
@@ -14,17 +16,21 @@ export function QuoteStatus({ status }: { status: string }) {
 export function QuoteRow({ q }: { q: AdminQuoteRow }) {
   const { t, locale } = useI18n();
   return (
-    <li>
-      <Link href={`/admin/devis/${q.id}`} className="card flex flex-col gap-1 !p-3 transition-shadow hover:shadow-md sm:grid sm:grid-cols-[7rem_minmax(0,2fr)_minmax(0,1fr)_8rem_8rem] sm:items-center sm:gap-4 sm:rounded-none sm:border-x-0 sm:border-t-0 sm:!px-4 sm:shadow-none sm:hover:bg-surface-2">
+    <li className="flex items-center gap-2 sm:gap-0 sm:border-b sm:border-line">
+      <Link href={`/admin/devis/${q.id}`} className="card min-w-0 flex-1 flex flex-col gap-1 !p-3 transition-shadow hover:shadow-md sm:grid sm:grid-cols-[7rem_minmax(0,2fr)_minmax(0,1fr)_8rem_8rem] sm:items-center sm:gap-4 sm:rounded-none sm:!border-0 sm:!px-4 sm:shadow-none sm:hover:bg-surface-2">
         <span className="font-mono text-sm font-semibold">{q.number}</span>
         <span className="min-w-0">
           <span className="block truncate font-medium">{q.clientName || "—"}</span>
           <span className="block truncate text-sm text-muted">{q.project || "—"}</span>
         </span>
         <span className="min-w-0 truncate text-sm text-muted">{t("admin.owner")} {q.ownerName}</span>
-        <span className="flex items-center gap-2 sm:block"><QuoteStatus status={q.status} /><span className="text-xs text-muted sm:mt-1 sm:block">{new Date(q.createdAt).toLocaleDateString(DATE_LOCALE[locale], { day: "numeric", month: "short", year: "numeric" })}</span></span>
+        <span className="flex items-center gap-2 sm:block"><QuoteStatus status={q.status} /><span className="inline-flex items-center gap-1 text-xs text-muted sm:mt-1 sm:flex" title={t("admin.downloads")}><Download size={12} aria-hidden />{q.downloads}</span><span className="text-xs text-muted sm:mt-1 sm:block">{new Date(q.createdAt).toLocaleDateString(DATE_LOCALE[locale], { day: "numeric", month: "short", year: "numeric" })}</span></span>
         <span className="text-sm font-semibold sm:text-right">{fmt(q.ttc)} Ar</span>
       </Link>
+      <span className="flex shrink-0 flex-col gap-1 sm:w-28 sm:pr-3">
+        <ChatButton compact short={t("admin.writeOwner")} target={{ user: q.ownerId }} label={t("admin.contactOwner")} />
+        {q.clientId && <ChatButton compact short={t("admin.writeClient")} target={{ user: q.clientId }} label={t("admin.contactClient")} />}
+      </span>
     </li>
   );
 }

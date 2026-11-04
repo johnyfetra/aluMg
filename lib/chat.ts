@@ -21,11 +21,13 @@ export const messageSchema = z
   .refine((m) => m.body.length > 0 || m.files.length > 0 || !!m.quoteId, { message: "empty" });
 export type MessageInput = z.infer<typeof messageSchema>;
 // menuisier : profil public (annuaire) ; menuisierId : le menuisier d'un de mes devis (sans profil publié) ; client : un client qui a reçu ou demandé un de mes devis.
-export const startSchema = z.union([z.object({ menuisier: z.string().min(1).max(80) }), z.object({ menuisierId: z.uuid() }), z.object({ client: z.uuid() })]);
+export const startSchema = z.union([z.object({ menuisier: z.string().min(1).max(80) }), z.object({ menuisierId: z.uuid() }), z.object({ client: z.uuid() }), z.object({ user: z.uuid() })]); // { user } : l'administration écrit à un client ou à un menuisier
 
 export { ATTACH, isAudioMime, isImageMime };
 export type Role = "client" | "menuisier" | "admin";
-export type Other = { id: string; name: string; avatar: string; role: "client" | "menuisier"; slug: string; logo: string };
+export type Other = { id: string; name: string; avatar: string; role: "client" | "menuisier" | "admin"; slug: string; logo: string };
+// L'administration écrit sous le profil de la plateforme : nom et logo AluMg, jamais le compte personnel de l'administrateur.
+export const BRAND = { name: "AluMg", logo: "/brand/mark.svg" } as const;
 export type ConversationView = {
   id: string;
   other: Other;
@@ -55,7 +57,14 @@ export async function startConversation(user: { id: string; role: Role }, target
   const db = await getDb();
   let clientId: string;
   let menuisierId: string;
-  if ("menuisierId" in target) {
+  if ("user" in target) {
+    // l'administration ouvre un échange avec n'importe quel client ou menuisier : la conversation range le destinataire côté « client » et l'administrateur côté « menuisier »
+    if (user.role !== "admin") return { ok: false, error: "forbidden" };
+    const [u] = await db.select({ role: schema.users.role }).from(schema.users).where(eq(schema.users.id, target.user));
+    if (!u) return { ok: false, error: "not_found" };
+    if (u.role === "admin") return { ok: false, error: "forbidden" };
+    [clientId, menuisierId] = [target.user, user.id];
+  } else if ("menuisierId" in target) {
     if (user.role !== "client") return { ok: false, error: "forbidden" };
     const [q] = await db.select({ id: schema.quotes.id }).from(schema.quotes).where(and(eq(schema.quotes.userId, target.menuisierId), eq(schema.quotes.clientId, user.id))).limit(1);
     if (!q) return { ok: false, error: "forbidden" };
@@ -110,14 +119,16 @@ export async function listConversations(userId: string): Promise<ConversationVie
       const side = c.clientId === userId ? "client" : "menuisier";
       const otherId = side === "client" ? c.menuisierId : c.clientId;
       const readAt = side === "client" ? c.clientReadAt : c.menuisierReadAt;
-      const [u] = await db.select({ name: schema.users.name, avatar: schema.users.avatar }).from(schema.users).where(eq(schema.users.id, otherId));
+      const [u] = await db.select({ name: schema.users.name, avatar: schema.users.avatar, role: schema.users.role }).from(schema.users).where(eq(schema.users.id, otherId));
       const [p] = await db.select({ slug: schema.menuisierProfiles.slug, name: schema.menuisierProfiles.displayName, logo: schema.menuisierProfiles.logo }).from(schema.menuisierProfiles).where(eq(schema.menuisierProfiles.userId, otherId));
       const [last] = await db.select().from(schema.messages).where(eq(schema.messages.conversationId, c.id)).orderBy(desc(schema.messages.createdAt)).limit(1);
       const [{ files }] = last ? await db.select({ files: sql<number>`count(*)::int` }).from(schema.messageAttachments).where(eq(schema.messageAttachments.messageId, last.id)) : [{ files: 0 }];
       const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.messages).where(and(eq(schema.messages.conversationId, c.id), ne(schema.messages.senderId, userId), gt(schema.messages.createdAt, readAt)));
       return {
         id: c.id,
-        other: { id: otherId, name: side === "client" ? (p?.name || u?.name || "") : (u?.name ?? ""), avatar: u?.avatar ?? "", role: side === "client" ? "menuisier" : "client", slug: side === "client" ? (p?.slug ?? "") : "", logo: side === "client" ? imageSrc(p?.slug ?? "", "logo", p?.logo ?? "") : "" },
+        other: u?.role === "admin"
+          ? { id: otherId, name: BRAND.name, avatar: "", role: "admin" as const, slug: "", logo: BRAND.logo }
+          : { id: otherId, name: side === "client" ? (p?.name || u?.name || "") : (u?.name ?? ""), avatar: u?.avatar ?? "", role: (side === "client" ? "menuisier" : u?.role === "menuisier" ? "menuisier" : "client") as "client" | "menuisier", slug: side === "client" ? (p?.slug ?? "") : "", logo: side === "client" ? imageSrc(p?.slug ?? "", "logo", p?.logo ?? "") : "" },
         last: last ? { body: last.body, at: last.createdAt.toISOString(), mine: last.senderId === userId, files, quote: !!last.quoteId, receipt: last.senderId === userId ? receiptOf(c, side, last.createdAt) : null } : null,
         unread: n,
         updatedAt: c.lastMessageAt.toISOString(),

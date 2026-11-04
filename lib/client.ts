@@ -134,13 +134,13 @@ export const useCitableQuotes = (id: string, enabled: boolean) => useSWR<{ id: s
 // Nombre de messages non lus (pastille de la navigation) ; rien n'est demandé si personne n'est connecté.
 export function useUnread() {
   const { data: me } = useSession();
-  const on = !!me?.verified && (me.role === "client" || me.role === "menuisier");
+  const on = !!me?.verified && (me.role === "client" || me.role === "menuisier" || me.role === "admin"); // l'administration aussi : les réponses à ses messages
   const { data } = useSWR<{ count: number }>(on ? "/api/messages/unread" : null, fetcher, { refreshInterval: 12000 });
   return on ? (data?.count ?? 0) : 0;
 }
 
 // Ouvre (ou crée) la conversation avec un menuisier (par son adresse publique) ou un client (par son identifiant) et renvoie son id.
-export const openConversation = (target: { menuisier: string } | { menuisierId: string } | { client: string }) => request<{ id: string }>("POST", "/api/conversations", target).then((r) => r.id);
+export const openConversation = (target: { menuisier: string } | { menuisierId: string } | { client: string } | { user: string }) => request<{ id: string }>("POST", "/api/conversations", target).then((r) => r.id);
 
 // ---------- Carnet de clients ----------
 export const useContacts = (enabled = true) => useSWR<ContactView[]>(enabled ? "/api/contacts" : null, fetcher, { revalidateOnFocus: false });

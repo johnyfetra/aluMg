@@ -2,13 +2,13 @@ import { fail, isResponse, json, parseBody, requireRole } from "@/lib/api";
 import { listConversations, startConversation, startSchema } from "@/lib/chat";
 
 export async function GET() {
-  const user = await requireRole("client", "menuisier");
+  const user = await requireRole("client", "menuisier", "admin");
   return isResponse(user) ? user : json(await listConversations(user.id));
 }
 
-// Ouvre (ou retrouve) la conversation avec un menuisier publié (client) ou avec un client qui a demandé un devis (menuisier).
+// Ouvre (ou retrouve) la conversation avec un menuisier publié (client), avec un client qui a demandé un devis (menuisier) ou, pour l'administration, avec n'importe quel client ou menuisier.
 export async function POST(req: Request) {
-  const user = await requireRole("client", "menuisier");
+  const user = await requireRole("client", "menuisier", "admin");
   if (isResponse(user)) return user;
   const p = await parseBody(req, startSchema);
   if ("res" in p) return p.res;
