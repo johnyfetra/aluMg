@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import QuotePaper from "./QuotePaper";
 import { StatusBadge } from "./ui";
-import { useClientQuote } from "@/lib/client";
+import { trackDownload, useClientQuote } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import type { Settings } from "@/lib/model";
 
@@ -32,7 +32,8 @@ export default function ClientQuotePreview({ id }: { id: string }) {
     setError("");
     try {
       const { quotePdf } = await import("@/lib/pdf");
-      await quotePdf(q, issuer as Settings, t, locale, false); // sans la fiche de débit (usage d'atelier) : elle n'utilise que les mentions de l'entreprise
+      await quotePdf(q, issuer as Settings, t, locale, false);
+      trackDownload(q.id); // sans la fiche de débit (usage d'atelier) : elle n'utilise que les mentions de l'entreprise
     } catch {
       setError(t("common.error"));
     } finally {

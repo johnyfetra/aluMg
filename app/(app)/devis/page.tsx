@@ -7,7 +7,7 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/Feedback";
 import { useToast } from "@/components/Toast";
 import { StatusBadge } from "@/components/ui";
 import { fmt } from "@/lib/calc";
-import { useQuotes, useSettings } from "@/lib/client";
+import { trackDownload, useQuotes, useSettings } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import { STATUSES, type Quote, type Status } from "@/lib/model";
 import { totals } from "@/lib/totals";
@@ -45,6 +45,7 @@ function QuotesView() {
     if (!settings) return;
     const { quotePdf } = await import("@/lib/pdf");
     await quotePdf(q, settings, t, locale, false);
+    trackDownload(q.id);
     toast.success(t("toast.pdf"), q.number);
   };
   const date = (q: Quote) => new Date(q.date).toLocaleDateString(DATE_LOCALE[locale]);

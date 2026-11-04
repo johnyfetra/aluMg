@@ -153,6 +153,21 @@ export const portfolioItems = pgTable(
   (t) => [index("portfolio_user_idx").on(t.userId)],
 );
 
+// Téléchargements du PDF d'un devis, par le menuisier qui l'a établi ou par le client qui l'a reçu : l'administration en lit le nombre sur chaque devis.
+export const quoteDownloads = pgTable(
+  "quote_downloads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    quoteId: uuid("quote_id")
+      .notNull()
+      .references(() => quotes.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    role: text("role", { enum: ["menuisier", "client"] }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("quote_downloads_quote_idx").on(t.quoteId)],
+);
+
 // Historique d'un devis : ce qui s'est passé, par qui, avec le message éventuel.
 export const quoteEvents = pgTable(
   "quote_events",

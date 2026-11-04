@@ -18,7 +18,7 @@ import { allPieces, cuttingPlan, normalize, planTotals } from "@/lib/calc";
 import { quoteMargin } from "@/lib/costing";
 import { initSim, simulate } from "@/lib/procure";
 import { useContacts } from "@/lib/client";
-import { ApiError, request, useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
+import { ApiError, request, trackDownload, useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { type EditMode, editMode, type Line, lineMarks, type Quote, type Settings, lineSchema } from "@/lib/model";
 import Select from "./Select";
@@ -204,6 +204,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         await quotePdf(saved, settings, t, locale, attachCut);
         toast.success(t("toast.pdf"), t("toast.pdfText"));
       }
+        trackDownload(saved.id);
     } catch (e) {
       console.error("[alumg] génération du PDF en échec", e);
       toast.error(t("toast.errorTitle"), t("toast.errorText"));

@@ -7,6 +7,7 @@ import { hashPassword } from "./password";
 import { normalizePhone } from "./phone";
 import { phoneOwner } from "./phones";
 import { getSettings } from "./repo";
+import { type DownloadStats, downloadStats } from "./downloads";
 import { listEvents, type LineComment } from "./workflow";
 import { totals } from "./totals";
 
@@ -287,7 +288,7 @@ export async function listAllQuotes(f: QuoteFilter) {
   const page = clampPage(f.page);
   const [{ total }] = await db.select({ total: count() }).from(q).innerJoin(o, eq(o.id, q.userId)).where(where);
   const rows = await db
-    .select({ id: q.id, number: q.number, status: q.status, createdAt: q.createdAt, ownerId: o.id, ownerName: o.name, data: q.data })
+    .select({ id: q.id, number: q.number, status: q.status, createdAt: q.createdAt, ownerId: o.id, ownerName: o.name, clientId: q.clientId, data: q.data, downloads: sql<number>`(select count(*)::int from quote_downloads d where d.quote_id = ${q.id})` })
     .from(q)
     .innerJoin(o, eq(o.id, q.userId))
     .where(where)
@@ -313,8 +314,9 @@ export async function getAdminQuote(id: string) {
   const notes = await db.select().from(schema.quoteEvents).where(and(eq(schema.quoteEvents.quoteId, id), eq(schema.quoteEvents.kind, "line_comment"))).orderBy(asc(schema.quoteEvents.createdAt));
   const comments: LineComment[] = notes.map((e) => ({ id: e.id, lineId: String(e.data.lineId ?? ""), body: e.message, at: e.createdAt.toISOString(), side: e.actorId === row.ownerId ? "menuisier" : "client" }));
   // réglages complets du menuisier (logo et signature compris) : ils servent à la feuille et au PDF, comme chez le client
-  return { ...row, totals: totals(row.quote), settings: await getSettings(row.ownerId), thread: await listEvents(id), comments };
+  return { ...row, totals: totals(row.quote), settings: await getSettings(row.ownerId), thread: await listEvents(id), comments, downloads: await downloadStats(id) };
 }
+export type { DownloadStats };
 export type AdminQuote = NonNullable<Awaited<ReturnType<typeof getAdminQuote>>>;
 
 // Tout ce que le compte a réglé : entreprise, chiffrage, tarifs, profil public. Le logo et la signature (images volumineuses) sont réduits à « présent ou non ».

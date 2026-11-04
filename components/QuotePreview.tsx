@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import QuotePaper from "./QuotePaper";
 import { StatusBadge } from "./ui";
-import { useQuotes, useSettings } from "@/lib/client";
+import { trackDownload, useQuotes, useSettings } from "@/lib/client";
 import { DATE_LOCALE, type T, useI18n } from "@/lib/i18n";
 import type { Quote, Settings } from "@/lib/model";
 
@@ -39,6 +39,7 @@ function Document({ q, s, t, locale }: { q: Quote; s: Settings; t: T; locale: ke
     try {
       const { quotePdf } = await import("@/lib/pdf");
       await quotePdf(q, s, t, locale, false);
+      trackDownload(q.id);
     } catch {
       setError(t("common.error"));
     } finally {

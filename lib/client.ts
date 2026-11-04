@@ -172,6 +172,8 @@ export const useAdminQuotes = (params: Record<string, string>) => {
 };
 export const useAdminQuote = (id: string) => useSWR<AdminQuote>(`/api/admin/quotes/${id}`, fetcher, { revalidateOnFocus: false });
 export const useAccountConfig = (id: string) => useSWR<AccountConfig>(`/api/admin/users/${id}/config`, fetcher, { revalidateOnFocus: false });
+// Compte un téléchargement de PDF pour l'administration. Silencieux : un échec du compteur ne doit jamais gêner le téléchargement.
+export const trackDownload = (quoteId: string) => void request("POST", `/api/quotes/${quoteId}/download`).catch(() => {});
 export const useClientDirectory = (q: string, page: number) =>
   useSWR<{ items: { id: string; name: string; avatar: string; hint: string }[]; total: number; page: number; pageSize: number }>(`/api/clients/search?${new URLSearchParams({ ...(q ? { q } : {}), page: String(page) })}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
 export const usePublicSocial = () => useSWR<PublicSocial[]>("/api/public/social", fetcher, { revalidateOnFocus: false });
