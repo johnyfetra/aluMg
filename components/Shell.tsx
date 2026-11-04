@@ -1,6 +1,7 @@
 "use client";
 import Brand from "./Brand";
 import TariffsPanel, { openTariffs } from "./TariffsPanel";
+import AppUpdate from "./AppUpdate";
 import ChatWidget from "./ChatWidget";
 import FeedbackButton from "./FeedbackDialog";
 import GuideTour from "./GuideTour";
@@ -294,6 +295,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         <Suspense fallback={null}>
           <ChatWidget />
         </Suspense>
+        <AppUpdate />
       </div>
     </div>
   );
