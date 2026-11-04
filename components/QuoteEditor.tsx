@@ -95,7 +95,9 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       lines: cur.lines.map((l, j) => {
         if (j !== i) return l;
         const sizeReset = patch.category && patch.category !== l.category ? { width: DEFAULT_SIZE[patch.category][0], height: DEFAULT_SIZE[patch.category][1], leaves: patch.category === "cloison" ? 3 : 2 } : {};
-        const next = normalize({ ...l, ...sizeReset, ...patch });
+        // une porte battante a un seul vantail (deux, c'est une porte à deux battants : choix du menuisier)
+        const oneLeaf = (patch.opening ?? l.opening) === "ouvrant" && (patch.category ?? l.category) === "porte" && ("opening" in patch || "category" in patch) && !("leaves" in patch) ? { leaves: 1 } : {};
+        const next = normalize({ ...l, ...sizeReset, ...oneLeaf, ...patch });
         // le prix suit la configuration, sauf si le menuisier vient de le fixer à la main
         return "unit" in patch ? next : { ...next, unit: price(next, settings) };
       }),

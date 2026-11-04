@@ -9,6 +9,7 @@ import Viewer3DLoader from "./Viewer3DLoader";
 import { fmt, lineTotal } from "@/lib/calc";
 import { useLineComments } from "@/lib/client";
 import { lineDetails, lineTitle } from "@/lib/describe";
+import WorksButton from "./WorksDialog";
 import { drawingSvg } from "@/lib/drawing";
 import { useI18n } from "@/lib/i18n";
 import { FINISHES, type Line, type LineReview, hasLeafConfig, leafMarks, leafModes } from "@/lib/model";
@@ -45,6 +46,7 @@ export default function ClientLineCard({ quoteId, line: l, index, mark, priced, 
               <li key={d}>{d}</li>
             ))}
           </ul>
+          <div className="mt-2"><WorksButton line={l} className="btn-secondary !min-h-9 !px-3 text-sm" /></div>
         </div>
         {priced && (
           <div className="text-left text-sm sm:text-right">

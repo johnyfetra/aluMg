@@ -6,12 +6,14 @@ import LineComments from "../LineComments";
 import Viewer3DLoader from "../Viewer3DLoader";
 import InfoTip, { type HelpTerm } from "../InfoTip";
 import { Choice, Field, FinishPicker } from "../ui";
-import { billedArea, cutList, cuttingPlan, fmt, lineTotal } from "@/lib/calc";
+import WorksButton from "../WorksDialog";
+import SectionView from "../SectionView";
+import { billedArea, cutList, cuttingPlan, fmt, lineTotal, nacoBlades } from "@/lib/calc";
 import { costLine, marginOf } from "@/lib/costing";
 import { lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { type T } from "@/lib/i18n";
-import { type LineReview, CATEGORIES, BOXES, CONTROLS, SLATS_RIDEAU, SLATS_ROULANT, type Slat, EXTRAS, FINISHES, GLASSES, GUARDS, INFILLS, type Line, OPENINGS_BY_CATEGORY, PATTERNS, PATTERN_GLASSES, DIRECTIONS, type LeafMode, hasLeafConfig, rangeOn, leafMarks, leafModes, presetModes, RANGES, SHUTTERS, THICKNESSES, type Settings, leavesSpec } from "@/lib/model";
+import { type LineReview, HIDDEN_OPENINGS, BOXES, CONTROLS, SLATS_RIDEAU, SLATS_ROULANT, type Slat, EXTRAS, FINISHES, GLASSES, GUARDS, INFILLS, type Line, OPENINGS_BY_CATEGORY, PATTERNS, PATTERN_GLASSES, DIRECTIONS, type LeafMode, hasLeafConfig, rangeOn, leafMarks, leafModes, presetModes, RANGES, THICKNESSES, type Settings, leavesSpec, WORK_TYPES, workType, workPatch, standardSizes, SERIES_HINTS, splitOf } from "@/lib/model";
 import Select from "../Select";
 import { cap, price } from "./line";
 
@@ -38,7 +40,7 @@ export function LineCard({
   focused?: boolean; // ouvrage visé par une notification
   review?: LineReview; // avis du client sur cet ouvrage
 }) {
-  const [view, setView] = useState<"2d" | "3d">("2d");
+  const [view, setView] = useState<"2d" | "3d" | "section">("2d");
   const cat = l.category;
   const openable = cat === "fenetre" || cat === "porte";
   const hasGlass = cat === "garde-corps" ? l.guard === "verre" : cat !== "volet" && !(cat === "porte" && l.infill === "pleine");
@@ -51,6 +53,7 @@ export function LineCard({
   const margin = cost ? marginOf(l.unit, cost.full) : 0;
   const tone = margin < 0 ? "text-danger" : margin < settings.minMarginPct ? "text-warn" : "text-ok";
   const spec = leavesSpec(l);
+  const std = valid ? standardSizes(l) : [];
   const p = (k: string) => `${l.id}-${k}`;
   // impact de l'option sur le prix (majoration des réglages), affiché à côté du choix
   const pct = (key: string) => {
@@ -67,12 +70,11 @@ export function LineCard({
        <div className="grid gap-3 @2xl:grid-cols-[1.15fr_1fr] @2xl:items-start">
         <div className="contents @2xl:flex @2xl:min-w-0 @2xl:flex-col @2xl:gap-3">
         <Panel title={t("editor.sectionConfig")} className="order-2 @2xl:order-none">
-          <Choice dense name={p("cat")} legend={t("editor.category")} help="category" value={cat} options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))} onChange={(category) => onChange({ category })} />
+          <Choice dense name={p("cat")} legend={t("editor.category")} help="category" value={workType(l)} options={WORK_TYPES.map((w) => ({ value: w, label: cap(w === "naco" ? t("opening.jalousie") : w === "roulant" || w === "rideau" ? t(`shutter.${w}`) : t(`cat.${w}`)) }))} onChange={(w) => onChange(workPatch(w, l))} />
 
           {cat === "volet" && (
             <div className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Choice dense name={p("sh")} legend={t("editor.shutter")} help="shutter" value={l.shutter} options={SHUTTERS.map((s) => ({ value: s, label: t(`shutter.${s}`) }))} onChange={(shutter) => onChange({ shutter })} />
+              <div className="grid gap-3">
                 <Choice dense name={p("ct")} legend={t("editor.control")} help="control" value={l.control} options={CONTROLS.map((c) => ({ value: c, label: cap(t(`control.${c}`)) + pct(c === "motorise" ? "control.motorise" : "") }))} onChange={(control) => onChange({ control })} />
               </div>
               <Choice
@@ -101,7 +103,14 @@ export function LineCard({
             </div>
           )}
           {cat === "garde-corps" && <Choice dense name={p("gd")} legend={t("editor.guard")} help="guard" value={l.guard} options={GUARDS.map((g) => ({ value: g, label: cap(t(`guard.${g}`)) }))} onChange={(guard) => onChange({ guard })} />}
-          {openable && <Choice dense name={p("op")} legend={t("editor.opening")} help="opening" value={l.opening} options={OPENINGS_BY_CATEGORY[cat].map((o) => ({ value: o, label: cap(t(`opening.${o}`)) }))} onChange={(opening) => onChange({ opening })} />}
+          {openable && l.opening !== "jalousie" && <Choice dense name={p("op")} legend={t("editor.opening")} help="opening" value={l.opening} options={OPENINGS_BY_CATEGORY[cat].filter((o) => o !== "jalousie" && (!HIDDEN_OPENINGS.includes(o) || o === l.opening)).map((o) => ({ value: o, label: cap(t(`opening.${o}`)) }))} onChange={(opening) => onChange({ opening })} />}
+
+          {openable && l.opening !== "jalousie" && (
+            <Field htmlFor={p("series")} label={t("editor.series")}>
+              <input id={p("series")} className="input" list={p("series-list")} maxLength={24} placeholder={t("editor.seriesPh")} value={l.series ?? ""} onChange={(e) => onChange({ series: e.target.value || undefined })} />
+              <datalist id={p("series-list")}>{SERIES_HINTS[l.opening === "coulissant" ? "coulissant" : "ouvrant"].map((x) => <option key={x} value={x} />)}</datalist>
+            </Field>
+          )}
 
           {(spec && spec.max > spec.min) || cat === "porte" ? (
             <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
@@ -118,6 +127,22 @@ export function LineCard({
                 />
               )}
               {cat === "porte" && <Choice dense name={p("in")} legend={t("editor.infill")} help="infill" value={l.infill} options={INFILLS.map((x) => ({ value: x, label: t(`infill.${x}`) }))} onChange={(infill) => onChange({ infill })} />}
+          {cat === "porte" && (l.infill === "traverse" || l.infill === "semi") && (
+            <div role="group" aria-label={t("editor.split")} className="space-y-1.5">
+              <p className="text-xs text-muted">{t("editor.split")}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                {[0.33, 0.4, 0.5, 0.6, 0.67].map((x) => (
+                  <button key={x} type="button" aria-pressed={Math.abs(splitOf(l) - x) < 0.005} onClick={() => onChange({ splitAt: x })} className={CHIP}>
+                    {x === 0.5 ? t("editor.splitMid") : `${Math.round(x * 100)} %`}
+                  </button>
+                ))}
+                <label className="flex items-center gap-1.5 text-xs text-muted">
+                  <input type="number" inputMode="numeric" min={25} max={75} aria-label={t("editor.split")} className="input !min-h-8 !w-16 !px-2 !py-0 text-sm" value={Math.round(splitOf(l) * 100)} onChange={(e) => onChange({ splitAt: Math.min(0.75, Math.max(0.25, num(e.target.value) / 100 || 0.5)) })} />
+                  %
+                </label>
+              </div>
+            </div>
+          )}
             </div>
           ) : null}
 
@@ -136,6 +161,26 @@ export function LineCard({
               <input id={p("q")} className="input" type="number" inputMode="numeric" min={1} value={l.qty || ""} onChange={(e) => onChange({ qty: num(e.target.value) })} />
             </Field>
           </div>
+          {l.opening === "jalousie" && valid && (
+            <p className="rounded-lg bg-surface-2 px-3 py-2 text-sm" role="status">
+              <strong>{nacoBlades(l.height)} {t("naco.blades")}</strong> <span className="text-muted">· {t("naco.bladesHint")}</span>
+            </p>
+          )}
+          {std.length > 0 && (
+            <div role="group" aria-label={t("editor.stdSizes")} className="space-y-1.5">
+              <p className="text-xs text-muted">{t("editor.stdSizes")}{cat === "porte" && ` · ${t("editor.doorStd")}`}</p>
+              <div className="flex flex-wrap gap-2">
+                {std.map((z) => (
+                  <button key={`${z.w}x${z.h}`} type="button" aria-pressed={l.width === z.w && l.height === z.h && (!z.leaves || l.leaves === z.leaves)} onClick={() => onChange({ width: z.w, height: z.h, ...(z.leaves ? { leaves: z.leaves } : {}) })} className={CHIP}>
+                    {z.w / 10} × {z.h / 10} cm{z.leaves && z.leaves > 1 ? ` · ${z.leaves} ${t("editor.leavesWord")}` : ""}
+                  </button>
+                ))}
+                <button type="button" aria-pressed={!std.some((z) => l.width === z.w && l.height === z.h)} onClick={() => document.getElementById(p("w"))?.focus()} className={CHIP}>
+                  {t("editor.customSize")}
+                </button>
+              </div>
+            </div>
+          )}
           {!valid && <p role="alert" className="text-sm font-medium text-danger">{t("editor.invalidSize")}</p>}
           {tooLong && <p role="alert" className="text-sm font-medium text-danger">{t("editor.tooLong")}</p>}
           <div className="grid gap-3 sm:grid-cols-2">
@@ -201,9 +246,17 @@ export function LineCard({
               <Box size={13} aria-hidden />
               {t("viewer.show3d")}
             </button>
+            {(cat === "fenetre" || cat === "porte") && (
+              <button type="button" aria-pressed={view === "section"} disabled={!valid} onClick={() => setView("section")} className={`flex min-h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium disabled:opacity-50 ${view === "section" ? "bg-primary text-on-primary" : "text-muted hover:text-ink"}`}>
+                <Ruler size={13} aria-hidden />
+                {t("viewer.showSection")}
+              </button>
+            )}
           </div>
         </div>
-        {view === "3d" && valid ? (
+        {view === "section" && valid && (cat === "fenetre" || cat === "porte") ? (
+          <SectionView line={l} />
+        ) : view === "3d" && valid ? (
           <Viewer3DLoader line={l} />
         ) : sk ? (
           <div role="img" aria-label={`${lineTitle(l, t)} ${l.width} × ${l.height} mm`} className="flex justify-center rounded-xl bg-white p-2" dangerouslySetInnerHTML={{ __html: sk.svg }} />
@@ -218,6 +271,7 @@ export function LineCard({
             {t("needsPage.open")}
           </button>
         )}
+        {valid && <WorksButton line={l} />}
         <div className="flex gap-2">
           <button type="button" className="btn-secondary flex-1" onClick={onDuplicate} disabled={locked}>
             <Copy size={16} aria-hidden />
@@ -347,6 +401,8 @@ export function LineCard({
 
 // Bloc de formulaire d'un ouvrage : cadre discret, titre en capitales.
 const LockedCtx = createContext(false);
+const CHIP = "min-h-8 rounded-full border border-line px-3 text-xs font-medium hover:bg-surface-2 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-on-primary";
+
 function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   const locked = useContext(LockedCtx);
   return (
@@ -407,7 +463,7 @@ function LeafConfig({ l, t, onChange, id }: { l: Line; t: T; onChange: (p: Parti
         {modes.map((m, i) => (
           <li key={i} className={`flex min-w-[7.5rem] flex-col gap-1 rounded-lg border p-1.5 ${m === "F" ? "border-line bg-surface-2/60" : "border-primary/50 bg-primary/5"}`}>
             <label htmlFor={`${id}-lf${i}`} className="text-xs font-bold tabular-nums">{marks[i]}</label>
-            <Select id={`${id}-lf${i}`} className="!min-h-8 !px-2 !py-0.5 text-xs" value={m} onChange={(v) => set(i, v as LeafMode)} options={allowed(i).map((x) => ({ value: x, label: label(x) }))} />
+            <Select id={`${id}-lf${i}`} className="!min-h-9 !min-w-[11rem] !px-2.5 !py-1" value={m} onChange={(v) => set(i, v as LeafMode)} options={allowed(i).map((x) => ({ value: x, label: label(x) }))} />
           </li>
         ))}
       </ul>

@@ -15,7 +15,7 @@ export default function Lightbox({ images, index, onIndex, onClose, label, capti
     <dialog
       ref={ref}
       aria-label={label}
-      onClose={onClose}
+      onClose={() => !ref.current?.open && onClose()} // en développement, React monte l'effet deux fois : la fermeture du premier montage ne doit pas fermer la visionneuse
       onClick={(e) => e.target === ref.current && onClose()}
       onKeyDown={(e) => {
         if (e.key === "ArrowRight") go(1);
