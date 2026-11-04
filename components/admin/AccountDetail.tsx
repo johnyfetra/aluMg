@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { mutate } from "swr";
+import AccountConfig from "@/components/admin/AccountConfig";
 import { AccountStatus, adminError, ListSkeleton, TempPassword } from "@/components/admin/AdminUi";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { ErrorState } from "@/components/Feedback";
@@ -121,6 +122,8 @@ export default function AccountDetail({ id }: { id: string }) {
             : <button type="button" className="btn-danger" disabled={locked || busy} onClick={() => suspend(true)}><UserX size={16} aria-hidden />{t("admin.suspend")}</button>}
         </div>
       </section>
+
+      <AccountConfig id={id} />
 
       {!locked && (
         <form onSubmit={remove} className="card space-y-3 border-danger/30" aria-labelledby="h-danger">
