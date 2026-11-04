@@ -1,7 +1,7 @@
 "use client";
 import { CircleAlert, HardHat, Loader2, UserRound } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { mutate } from "swr";
 import AtelierShowcase, { type Variant } from "./access/AtelierShowcase";
@@ -22,7 +22,6 @@ type Errors = Partial<Record<"name" | "phone" | "email" | "identifier" | "passwo
 // Connexion et inscription : moitié présentation (AtelierShowcase), moitié formulaire.
 export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const { t } = useI18n();
-  const router = useRouter();
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
   const [role, setRole] = useState<Role>(params.get("role") === "client" ? "client" : "menuisier");
@@ -36,7 +35,8 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const enter = async (me: { role: "client" | "menuisier" | "admin"; verified?: boolean }) => {
     await mutate(() => true, undefined, { revalidate: false }); // la session a changé : on vide les caches
     // compte pas encore vérifié : SMS, appel ou e-mail d'abord
-    router.replace(me.verified === false ? `/verification${suffix}` : (next ?? homeFor(me.role)));
+    // navigation complète (pas router.replace) : le cache du routeur peut garder la redirection vers /connexion préchargée quand on était déconnecté
+    window.location.replace(me.verified === false ? `/verification${suffix}` : (next ?? homeFor(me.role)));
   };
   // Un message court sous le champ concerné ; le bandeau du bas ne sert qu'aux pannes (réseau, serveur, trop d'essais, compte suspendu).
   const show = (e: Errors) => {
