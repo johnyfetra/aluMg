@@ -255,8 +255,8 @@ export default function Shell({ children }: { children: ReactNode }) {
       </aside>
 
       <div id="scroller" className="min-w-0 lg:h-dvh lg:overflow-y-auto lg:overscroll-contain">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-line bg-surface px-3 sm:gap-3 sm:px-8">
-          <button ref={toggle} aria-controls="app-navigation" type="button" className="-ml-1 grid size-11 shrink-0 place-items-center rounded-xl text-ink transition-colors hover:bg-surface-2 active:bg-surface-2 lg:hidden" onClick={() => setOpen(true)} aria-label={t("menu.open")} aria-expanded={open}>
+        <header id="topbar" className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-line bg-surface px-3 sm:gap-3 sm:px-8">
+          <button ref={toggle} data-tour="menu" aria-controls="app-navigation" type="button" className="-ml-1 grid size-11 shrink-0 place-items-center rounded-xl text-ink transition-colors hover:bg-surface-2 active:bg-surface-2 lg:hidden" onClick={() => setOpen(true)} aria-label={t("menu.open")} aria-expanded={open}>
             <AlignLeft size={24} strokeWidth={2} aria-hidden />
           </button>
           <Suspense fallback={null}>

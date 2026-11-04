@@ -9,10 +9,11 @@ import type { Messages } from "@/lib/messages/fr";
 
 // Visite guidée du compte menuisier, dans les vraies pages : chaque étape ouvre l'écran, isole le reste et met en avant le bouton visé.
 // Textes : lib/messages (guide.sN.title / guide.sN.text). `target` : sélecteur CSS du premier élément visible ; absent ou introuvable, la bulle est centrée.
+// `mobile` : cible de remplacement sous 1024 px (là où la cible habituelle est dans le tiroir de navigation, fermé).
 const STEPS = [
   { Icon: Sparkles, route: "/tableau-de-bord" },
   { Icon: Building2, route: "/reglages", target: "#co" },
-  { Icon: BadgePercent, route: "/reglages", target: '[data-tour="tariffs"]' },
+  { Icon: BadgePercent, route: "/reglages", target: '[data-tour="tariffs"]', mobile: '[data-tour="menu"]' },
   { Icon: Boxes, route: "/fournisseurs", target: "main h1" },
   { Icon: UserRound, route: "/devis/nouveau", target: 'section[aria-labelledby="h-client"]' },
   { Icon: FilePlus2, route: "/devis/nouveau", target: '[data-tour="add-line"]' },
@@ -21,7 +22,7 @@ const STEPS = [
   { Icon: Store, route: "/profil-public", target: "main h1" },
   { Icon: ImagePlus, route: "/realisations", target: "main button.btn-primary" },
   { Icon: LayoutTemplate, route: "/modele-devis", target: "main h1" },
-  { Icon: MessageCircle, route: "/messages", target: 'nav a[href="/messages"]' },
+  { Icon: MessageCircle, route: "/messages", target: 'nav a[href="/messages"]', mobile: '[data-tour="menu"]' },
   { Icon: Bell, route: "/tableau-de-bord", target: '[data-tour="bell"]' },
   { Icon: LifeBuoy, target: '[data-tour="guide"]' },
 ] as const;
@@ -90,14 +91,19 @@ export default function GuideTour({ userId }: { userId: string }) {
     if ("route" in s && location.pathname !== s.route) router.push(s.route);
     let ticks = 0;
     const id = setInterval(() => {
-      const el = "target" in s ? [...document.querySelectorAll<HTMLElement>(s.target)].find((e) => e.getBoundingClientRect().width > 0) : undefined;
+      const sel = "target" in s ? ("mobile" in s && !matchMedia("(min-width: 1024px)").matches ? s.mobile : s.target) : undefined;
+      const el = sel ? [...document.querySelectorAll<HTMLElement>(sel)].find((e) => e.getBoundingClientRect().width > 0) : undefined;
+      const top = document.getElementById("topbar")?.getBoundingClientRect().bottom ?? 0; // barre du haut collante : le projecteur reste en dessous
       if (el) {
-        // la page bouge encore pendant son chargement : on recentre l'élément pendant ~2 s tant qu'il n'est pas au milieu de l'écran
+        // la page bouge encore pendant son chargement : on recentre l'élément pendant ~2 s tant qu'il n'est pas au milieu de l'écran ; un élément plus haut que l'écran est aligné en haut
         const r0 = el.getBoundingClientRect();
-        if (ticks++ < 14 && Math.abs(r0.top + r0.height / 2 - innerHeight / 2) > 24) el.scrollIntoView({ block: "center", behavior: "instant" });
+        const tall = r0.height > innerHeight - top - 200;
+        el.style.scrollMarginTop = `${top + 12}px`;
+        if (ticks++ < 14 && (tall ? Math.abs(r0.top - top - 12) > 24 : Math.abs(r0.top + r0.height / 2 - innerHeight / 2) > 24)) el.scrollIntoView({ block: tall ? "start" : "center", behavior: "instant" });
       }
       const r = el && visible(el) ? el.getBoundingClientRect() : null;
-      const b = r && { top: r.top - PAD, left: r.left - PAD, width: r.width + 2 * PAD, height: r.height + 2 * PAD };
+      const t = r ? (el?.closest("#topbar") ? r.top - PAD : Math.max(r.top - PAD, top)) : 0; // le cadre est borné à l'écran visible (un grand bloc ne le recouvre pas en entier)
+      const b = r && { top: t, left: r.left - PAD, width: r.width + 2 * PAD, height: Math.min(r.bottom + PAD, innerHeight - 8) - t };
       setBox((o) => (o?.top === b?.top && o?.left === b?.left && o?.width === b?.width && o?.height === b?.height ? o : b));
     }, 150);
     return () => clearInterval(id);
