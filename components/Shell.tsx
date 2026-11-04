@@ -4,6 +4,7 @@ import TariffsPanel, { openTariffs } from "./TariffsPanel";
 import ChatWidget from "./ChatWidget";
 import FeedbackButton from "./FeedbackDialog";
 import GuideTour from "./GuideTour";
+import CountBadge from "./CountBadge";
 import NotificationBell from "./NotificationBell";
 import { AlignLeft, BadgePercent, BookOpen, FilePlus2, MessageCircle, FileText, LayoutDashboard, LogOut, Settings, UserCircle, X } from "lucide-react";
 import Link from "next/link";
@@ -133,11 +134,7 @@ function NavLinks({ nav, onNavigate }: { nav: Nav; onNavigate: () => void }) {
                     {active && <span aria-hidden className="absolute -left-4 top-2 bottom-2 w-1 rounded-r-full bg-(--side-accent)" />}
                     <Icon size={18} aria-hidden className={active ? "shrink-0 text-(--side-accent)" : "shrink-0"} />
                     <span className="min-w-0 break-words">{t(key)}</span>
-                    {href === "/messages" && unread > 0 && (
-                      <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-(--side-accent) px-1.5 text-[11px] font-bold text-(--side-bg)" aria-label={`${unread} ${t("msg.unread")}`}>
-                        {unread}
-                      </span>
-                    )}
+                    {href === "/messages" && <CountBadge n={unread} label={`${unread} ${t("msg.unread")}`} className="ml-auto !ring-0" />}
                   </Link>
                 </li>
               );
@@ -188,6 +185,7 @@ function DrawerUser({ name, email, avatar }: { name: string; email?: string | nu
 export default function Shell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const { data: me } = useSession();
+  const unread = useUnread(); // messages non lus : pastille sur le bouton du menu (mobile), la messagerie est dans le tiroir
   const nav = me?.role === "client" ? CLIENT : me?.role === "admin" ? ADMIN : MENUISIER;
   const [open, setOpen] = useState(false);
 
@@ -258,8 +256,9 @@ export default function Shell({ children }: { children: ReactNode }) {
 
       <div id="scroller" className="min-w-0 lg:h-dvh lg:overflow-y-auto lg:overscroll-contain">
         <header id="topbar" className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-line bg-surface px-3 sm:gap-3 sm:px-8">
-          <button ref={toggle} data-tour="menu" aria-controls="app-navigation" type="button" className="-ml-1 grid size-11 shrink-0 place-items-center rounded-xl text-ink transition-colors hover:bg-surface-2 active:bg-surface-2 lg:hidden" onClick={() => setOpen(true)} aria-label={t("menu.open")} aria-expanded={open}>
+          <button ref={toggle} data-tour="menu" aria-controls="app-navigation" type="button" className="relative -ml-1 grid size-11 shrink-0 place-items-center rounded-xl text-ink transition-colors hover:bg-surface-2 active:bg-surface-2 lg:hidden" onClick={() => setOpen(true)} aria-label={`${t("menu.open")}${unread ? ` (${unread} ${t("msg.unread")})` : ""}`} aria-expanded={open}>
             <AlignLeft size={24} strokeWidth={2} aria-hidden />
+            <CountBadge n={unread} className="absolute right-0.5 top-0.5" />
           </button>
           <Suspense fallback={null}>
             <ScrollTop />

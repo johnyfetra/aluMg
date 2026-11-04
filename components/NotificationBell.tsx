@@ -3,6 +3,7 @@ import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { mutate } from "swr";
+import CountBadge from "./CountBadge";
 import { useToast } from "./Toast";
 import { notificationHref, request, useNotifications, useSession } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
@@ -88,11 +89,7 @@ export default function NotificationBell() {
     <div ref={box} className="relative">
       <button ref={trigger} type="button" data-tour="bell" className="relative grid size-10 place-items-center rounded-full border border-line bg-surface transition-colors hover:bg-surface-2" aria-label={`${t("notif.open")}${unread ? ` (${unread})` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <Bell size={18} aria-hidden />
-        {unread > 0 && (
-          <span aria-hidden className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] font-bold leading-5 text-on-primary">
-            {unread > 9 ? "9+" : unread}
-          </span>
-        )}
+        <CountBadge n={unread} className="absolute -right-1 -top-1" />
       </button>
       {open && (
         <div ref={panel} tabIndex={-1} role="dialog" aria-label={t("notif.title")} className="outline-none fixed inset-x-3 top-[4.5rem] z-50 overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[24rem]">
