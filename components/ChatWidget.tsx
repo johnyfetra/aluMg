@@ -1,4 +1,5 @@
 "use client";
+import RoleBadge from "./RoleBadge";
 import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink, Maximize2, MessageCircle, Minimize2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -80,8 +81,7 @@ export default function ChatWidget() {
             <button type="button" onClick={() => update({ open: false })} aria-label={t("msg.widget.close")} className="flex min-w-0 flex-1 items-center gap-2.5 py-1 pl-1 text-left">
               <Avatar name={current.other.name} src={current.other.role !== "client" ? current.other.logo || current.other.avatar : current.other.avatar} size={30} round={current.other.role === "client"} />
               <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold leading-tight">{current.other.name}</span>
-                <span className="block truncate text-[11px] leading-tight text-muted">{current.other.role === "admin" ? t("msg.team") : current.other.role === "menuisier" ? t("msg.joiner") : t("msg.client")}</span>
+                <span className="flex min-w-0 items-center gap-1.5 text-sm font-semibold leading-tight"><span className="truncate">{current.other.name}</span><RoleBadge role={current.other.role} /></span>
               </span>
             </button>
           </>

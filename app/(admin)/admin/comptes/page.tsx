@@ -1,4 +1,5 @@
 "use client";
+import RoleBadge from "@/components/RoleBadge";
 import { BadgeCheck, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -32,12 +33,12 @@ function Row({ u }: { u: AdminUserRow }) {
             </span>
             <span className="block truncate text-sm text-muted">{u.email || u.phone}</span>
             <span className="mt-1 flex flex-wrap gap-1.5 sm:hidden">
-              <span className="text-xs text-muted">{t(`admin.role.${u.role}`)}</span>
+              <RoleBadge role={u.role} />
               <AccountStatus suspended={u.suspended} verified={u.verified} />
             </span>
           </span>
         </span>
-        <span className="hidden text-sm sm:block">{t(`admin.role.${u.role}`)}</span>
+        <span className="hidden sm:block"><RoleBadge role={u.role} /></span>
         <span className="hidden sm:block"><AccountStatus suspended={u.suspended} verified={u.verified} /></span>
         <span className="hidden text-sm text-muted sm:block">{date(u.lastSeenAt)}</span>
         <span className="hidden text-sm text-muted sm:block">{date(u.createdAt)}</span>

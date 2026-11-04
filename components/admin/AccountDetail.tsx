@@ -1,4 +1,5 @@
 "use client";
+import RoleBadge from "../RoleBadge";
 import { ArrowLeft, BadgeCheck, KeyRound, ShieldAlert, Trash2, UserCheck, UserX } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -74,7 +75,7 @@ export default function AccountDetail({ id }: { id: string }) {
       <div className="flex flex-wrap items-center gap-4">
         <Avatar name={u.name} size={56} round />
         <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-2xl font-bold"><span className="truncate">{u.name}</span>{u.badge && <BadgeCheck size={20} className="shrink-0 text-primary" aria-label={t("admin.badge")} />}</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-bold"><span className="truncate">{u.name}</span><RoleBadge role={u.role} />{u.badge && <BadgeCheck size={20} className="shrink-0 text-primary" aria-label={t("admin.badge")} />}</h1>
           <p className="flex flex-wrap items-center gap-2 text-sm text-muted">{t(`admin.role.${u.role}`)} · <AccountStatus suspended={!!u.suspendedAt} verified={u.verified} /></p>
         </div>
       </div>

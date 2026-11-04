@@ -1,4 +1,5 @@
 "use client";
+import RoleBadge from "./RoleBadge";
 import { Ticks } from "./ChatThread";
 import { Avatar } from "./ui";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
@@ -20,7 +21,7 @@ export default function ConversationList({ convs, selected, onSelect, loading, c
             <Avatar name={c.other.name} src={c.other.role !== "client" ? c.other.logo || c.other.avatar : c.other.avatar} size={compact ? 40 : 44} round={c.other.role === "client"} />
             <span className="min-w-0 flex-1">
               <span className="flex items-baseline justify-between gap-2">
-                <span className={`truncate text-sm ${c.unread ? "font-bold" : "font-semibold"}`}>{c.other.name}</span>
+                <span className="flex min-w-0 items-center gap-1.5"><span className={`truncate text-sm ${c.unread ? "font-bold" : "font-semibold"}`}>{c.other.name}</span><RoleBadge role={c.other.role} /></span>
                 {c.last && <span className="shrink-0 text-[11px] text-muted">{time(c.last.at)}</span>}
               </span>
               <span className="flex items-center justify-between gap-2">

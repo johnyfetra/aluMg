@@ -1,4 +1,5 @@
 "use client";
+import RoleBadge from "./RoleBadge";
 import { ArrowLeft, Camera, Check, CheckCheck, Download, FileText, Hash, Image as ImageIcon, Mic, Paperclip, Reply, Send, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -227,8 +228,8 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
           )}
           <Avatar name={o.name} src={o.role !== "client" ? o.logo || o.avatar : o.avatar} size={40} round={o.role === "client"} />
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold">{o.name}</p>
-            <p className="truncate text-xs text-muted">{typing ? <span className="text-primary">{t(typing === "voice" ? "msg.typingVoice" : "msg.typingText")}…</span> : o.role === "admin" ? t("msg.team") : o.role === "menuisier" ? t("msg.joiner") : t("msg.client")}</p>
+            <p className="flex min-w-0 items-center gap-2 font-semibold"><span className="truncate">{o.name}</span><RoleBadge role={o.role} /></p>
+            {typing && <p className="truncate text-xs text-primary">{t(typing === "voice" ? "msg.typingVoice" : "msg.typingText")}…</p>}
           </div>
           {o.role === "menuisier" && o.slug && (
             <Link href={`/menuisiers/${o.slug}`} className="text-sm font-medium text-primary hover:underline">
