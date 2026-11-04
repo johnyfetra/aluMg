@@ -34,6 +34,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
   const enter = async (me: { role: "client" | "menuisier" | "admin"; verified?: boolean }) => {
     await mutate(() => true, undefined, { revalidate: false }); // la session a changé : on vide les caches
+    if (signup) try { localStorage.setItem("alumg.guide.new", "1"); } catch {} // le guide ne s'ouvre seul qu'après la création du compte
     // compte pas encore vérifié : SMS, appel ou e-mail d'abord
     // navigation complète (pas router.replace) : le cache du routeur peut garder la redirection vers /connexion préchargée quand on était déconnecté
     window.location.replace(me.verified === false ? `/verification${suffix}` : (next ?? homeFor(me.role)));

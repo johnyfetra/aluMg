@@ -71,12 +71,13 @@ export default function GuideTour({ userId }: { userId: string }) {
   useEffect(() => {
     const key = `alumg.guide.${userId}`;
     try {
-      if (localStorage.getItem(key)) return;
+      if (localStorage.getItem(key) || !localStorage.getItem("alumg.guide.new")) return;
     } catch {
       return; // stockage indisponible : pas d'ouverture automatique (le bouton reste là)
     }
     const id = setTimeout(() => {
       try {
+        localStorage.removeItem("alumg.guide.new");
         localStorage.setItem(key, "1"); // passer ou terminer : la visite ne se relance plus seule
       } catch {}
       go(0);
