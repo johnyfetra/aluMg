@@ -137,6 +137,10 @@ Tout part de `lib/model.ts` : les catalogues (`FINISHES`, `GLASSES`, `THICKNESSE
 
 `components/Viewer3D.tsx` modélise l'ouvrage (cadres à coupes d'onglet, joints, rails, charnières, poignées assorties à la teinte, panneaux à lames, faux bois veiné par texture canvas) ; `components/Stage3D.tsx` le décor (façade en crépi de la couleur choisie par l'utilisateur, jardin, pièce intérieure au choix : salon, cuisine, douche). Commandes : glisser déplace la vue, molette zoome, clic droit ou Maj tourne à 360°, double-clic recentre ; un doigt déplace et deux doigts zooment et tournent sur mobile. Un glisser sur un vantail, un naco ou un volet le manœuvre progressivement, un clic le bascule. La couleur du mur est mémorisée dans le navigateur (éditeur et vue du client). `components/SectionView.tsx` trace la coupe horizontale au montant, aux épaisseurs réelles.
 
+### Images de repli
+
+Une photo manquante ou cassée est remplacée par l'illustration AluMg (aluminium devant un mur et un jardin), étiquetée « photo à venir » : jamais par une fausse réalisation. `components/FallbackArt.tsx` dessine trois variantes (fenêtre, porte, volet) aux couleurs du thème clair ou sombre ; `components/marketing/Photo.tsx` l'utilise quand la source manque ou échoue, et choisit le dessin d'après la spécialité de la réalisation (`category`). Les `<img>` bruts (bandeau d'accueil, avant/après, visionneuse, fenêtre des réalisations) passent par `onImgError` (`lib/fallback.ts`) vers le fichier statique `public/brand/fallback.svg`, qui suit aussi le thème du système.
+
 ## Sécurité
 
 - Mots de passe hachés avec scrypt (sel aléatoire, comparaison à temps constant). Connexion sans fuite sur l'existence d'un e-mail.
