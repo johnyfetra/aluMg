@@ -1730,6 +1730,8 @@ export const en: Messages = {
   "admin.act.role": "changed the role of",
   "admin.act.delete": "deleted the account",
   "admin.allQuotes": "Quotes",
+  "admin.quotePaper": "Full quote and PDF",
+  "admin.quoteNotes": "Notes per item",
   "admin.byOwner": "Filter by joiner",
   "admin.byClient": "Filter by client (name or email)",
   "admin.quotesSub": "Every quote created on the platform, with who issued it. View only.",

@@ -5,16 +5,19 @@ import { mutate } from "swr";
 import { useToast } from "./Toast";
 import { request, useEvents } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
+import type { EventView } from "@/lib/workflow";
 
 const ICON = { created: FilePlus2, sent: Send, declined: XCircle, accepted: ThumbsUp, rejected: ThumbsDown, change_requested: MessageSquareWarning, progress: Hammer, completed: CheckCheck, reviewed: Star, revised: Pencil, line_review: ListChecks, approve_all: CheckCheck } as const;
 
 // Fil unique d'un devis : les messages du client et du menuisier (bulles) et, dans l'ordre, les étapes du devis (envoi, acceptation, révision, avancement…)
 // en lignes centrées. La discussion EST l'historique : tout ce qui concerne ce devis est au même endroit.
 // (La messagerie générale reste pour le reste ; les remarques précises sur un ouvrage vivent sur l'ouvrage.)
-export default function QuoteDiscussion({ quoteId, me, canWrite = true }: { quoteId: string; me: "client" | "menuisier"; canWrite?: boolean }) {
+// `thread` : fil déjà chargé par l'appelant (consultation par l'administration) ; aucune interrogation, et le champ de saisie n'est jamais affiché.
+export default function QuoteDiscussion({ quoteId, me, canWrite = true, thread }: { quoteId: string; me: "client" | "menuisier"; canWrite?: boolean; thread?: EventView[] }) {
   const { t, locale } = useI18n();
   const toast = useToast();
-  const { data: events = [] } = useEvents(quoteId, true);
+  const { data: loaded = [] } = useEvents(thread ? null : quoteId, true);
+  const events = thread ?? loaded;
   const list = events;
   const messageCount = events.filter((e) => e.kind === "message").length;
   const [text, setText] = useState("");
@@ -101,7 +104,7 @@ export default function QuoteDiscussion({ quoteId, me, canWrite = true }: { quot
           );
         })}
       </div>
-      {canWrite && (
+      {canWrite && !thread && (
         <form onSubmit={send} className="flex items-end gap-2 border-t border-line p-3 sm:px-6">
           <label className="sr-only" htmlFor={`disc-${quoteId}`}>{t("disc.write")}</label>
           <textarea

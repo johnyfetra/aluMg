@@ -1732,6 +1732,8 @@ export const mg: Messages = {
   "admin.act.role": "nanova ny andraikitr'i",
   "admin.act.delete": "namafa ny kaonty",
   "admin.allQuotes": "Devis",
+  "admin.quotePaper": "Devis feno sy PDF",
+  "admin.quoteNotes": "Fanamarihana isaky ny asa",
   "admin.byOwner": "Sivana araka ny mpanamboatra",
   "admin.byClient": "Sivana araka ny mpanjifa (anarana na mailaka)",
   "admin.quotesSub": "Ny devis rehetra noforonina eto amin'ny pelatra, miaraka amin'ny nanao azy. Jerena fotsiny.",

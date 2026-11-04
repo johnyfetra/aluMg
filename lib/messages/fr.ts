@@ -1730,6 +1730,8 @@ export const fr = {
   "admin.act.role": "a changé le rôle de",
   "admin.act.delete": "a supprimé le compte",
   "admin.allQuotes": "Devis",
+  "admin.quotePaper": "Devis complet et PDF",
+  "admin.quoteNotes": "Remarques par ouvrage",
   "admin.byOwner": "Filtrer par menuisier",
   "admin.byClient": "Filtrer par client (nom ou e-mail)",
   "admin.quotesSub": "Tous les devis créés sur la plateforme, avec leur émetteur. Consultation seule.",

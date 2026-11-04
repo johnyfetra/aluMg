@@ -1,21 +1,36 @@
 "use client";
-import { ArrowLeft, Eye } from "lucide-react";
+import { ArrowLeft, Eye, FileDown, Printer } from "lucide-react";
+import { useState } from "react";
 import Link from "next/link";
 import { ListSkeleton } from "@/components/admin/AdminUi";
 import { QuoteStatus } from "@/components/admin/QuoteRows";
 import { ErrorState } from "@/components/Feedback";
-import { fmt, lineTotal } from "@/lib/calc";
+import QuoteDiscussion from "@/components/QuoteDiscussion";
+import QuotePaper from "@/components/QuotePaper";
 import { useAdminQuote } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
-import { serviceTotal } from "@/lib/totals";
 
-// Un devis, tel que son menuisier l'a établi (prix de vente seulement ; coûts et marges restent dans l'éditeur du menuisier). Aucune action.
+// Un devis tel que son menuisier l'a établi : feuille et PDF, remarques par ouvrage, discussion et historique. Consultation seule, aucune action.
 export default function QuoteDetail({ id }: { id: string }) {
   const { t, locale } = useI18n();
   const { data: d, error, isLoading, mutate } = useAdminQuote(id);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
   if (error) return <ErrorState retry={() => mutate()} />;
   if (isLoading || !d) return <ListSkeleton rows={4} />;
-  const { quote: q, totals: tt } = d;
+  const { quote: q } = d;
+  const pdf = async () => {
+    setBusy(true);
+    setFailed(false);
+    try {
+      const { quotePdf } = await import("@/lib/pdf");
+      await quotePdf(q, d.settings, t, locale, true); // avec la fiche de débit : l'administration voit tout ce que le menuisier voit
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  };
   const row = (label: string, value: string) => <div className="flex justify-between gap-3 py-2 text-sm"><dt className="text-muted">{label}</dt><dd className="min-w-0 break-words text-right font-medium">{value || "—"}</dd></div>;
   return (
     <div className="space-y-6">
@@ -52,33 +67,36 @@ export default function QuoteDetail({ id }: { id: string }) {
         </section>
       </div>
 
-      <section className="card" aria-labelledby="h-q-lines">
-        <h2 id="h-q-lines" className="mb-2 font-semibold">{t("admin.quoteLines")}</h2>
-        <ul className="divide-y divide-line">
-          {q.lines.map((l) => (
-            <li key={l.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm">
-              <span className="min-w-0"><span className="font-medium">{t(`cat.${l.category}`)}</span> · {l.width} × {l.height} mm{l.room ? ` · ${l.room}` : ""}</span>
-              <span className="shrink-0 text-muted">{l.qty} × {fmt(l.unit)} = <strong className="text-ink">{fmt(lineTotal(l))} Ar</strong></span>
-            </li>
-          ))}
-        </ul>
-        {!!q.services?.length && (
-          <>
-            <h3 className="mb-1 mt-4 text-sm font-semibold">{t("admin.quoteServices")}</h3>
-            <ul className="divide-y divide-line">
-              {q.services.map((s) => (
-                <li key={s.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm"><span>{s.label}</span><span className="text-muted">{s.qty} × {fmt(s.price)} = <strong className="text-ink">{fmt(serviceTotal(s))} Ar</strong></span></li>
-              ))}
-            </ul>
-          </>
-        )}
-        <dl className="mt-4 space-y-1 border-t border-line pt-3 text-sm">
-          {tt.discount > 0 && <div className="flex justify-between"><dt className="text-muted">{q.discount} %</dt><dd>− {fmt(tt.discount)} Ar</dd></div>}
-          <div className="flex justify-between"><dt className="text-muted">{t("pdf.totalHt")}</dt><dd>{fmt(tt.ht)} Ar</dd></div>
-          <div className="flex justify-between"><dt className="text-muted">{t("pdf.totalTva")}</dt><dd>{fmt(tt.tva)} Ar</dd></div>
-          <div className="flex justify-between text-base font-bold"><dt>{t("pdf.totalTtc")}</dt><dd>{fmt(tt.ttc)} Ar</dd></div>
-        </dl>
+      <section className="space-y-3" aria-labelledby="h-q-paper">
+        <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
+          <h2 id="h-q-paper" className="font-semibold">{t("admin.quotePaper")}</h2>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-secondary !min-h-10" onClick={() => window.print()}><Printer size={16} aria-hidden />{t("preview.print")}</button>
+            <button type="button" className="btn-primary !min-h-10" onClick={pdf} disabled={busy}><FileDown size={16} aria-hidden />{t("preview.pdf")}</button>
+          </div>
+        </div>
+        {failed && <p role="alert" className="text-sm font-medium text-danger print:hidden">{t("common.error")}</p>}
+        <QuotePaper q={q} s={d.settings} t={t} locale={locale} />
       </section>
+
+      {d.comments.length > 0 && (
+        <section className="card print:hidden" aria-labelledby="h-q-notes">
+          <h2 id="h-q-notes" className="mb-2 font-semibold">{t("admin.quoteNotes")}</h2>
+          <ul className="divide-y divide-line">
+            {d.comments.map((c) => {
+              const l = q.lines.find((x) => x.id === c.lineId);
+              return (
+                <li key={c.id} className="py-2 text-sm">
+                  <p className="text-xs text-muted">{l ? `${t(`cat.${l.category}`)} ${l.width} × ${l.height} mm` : "—"} · {t(c.side === "client" ? "pdf.client" : "admin.role.menuisier")} · {new Date(c.at).toLocaleString(DATE_LOCALE[locale], { dateStyle: "medium", timeStyle: "short" })}</p>
+                  <p className="whitespace-pre-wrap break-words">{c.body}</p>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      <div className="print:hidden"><QuoteDiscussion quoteId={q.id} me="menuisier" canWrite={false} thread={d.thread} /></div>
     </div>
   );
 }
