@@ -19,7 +19,11 @@ export type Box = (typeof BOXES)[number];
 export type Slat = (typeof SLATS_ROULANT)[number] | (typeof SLATS_RIDEAU)[number];
 // Pas des lames (mm) : nombre de lames d'un roulant = hauteur / pas.
 export const SLAT_PITCH: Record<(typeof SLATS_ROULANT)[number], number> = { "39": 37, "42": 40, "55": 53 };
-export const INFILLS = ["vitree", "semi", "pleine"] as const;
+// Séparateur (traverse) d'une porte vitrée : son axe est au milieu de la hauteur du vantail.
+export const TRAVERSE_TOP = 0.5;
+// Position du séparateur d'un vantail : choisie par le menuisier, sinon à mi-hauteur pour une traverse et à 60 % pour une demi-vitrée (vitrage en haut).
+export const splitOf = (l: { infill: (typeof INFILLS)[number]; splitAt?: number }) => l.splitAt ?? (l.infill === "semi" ? 0.6 : TRAVERSE_TOP);
+export const INFILLS = ["vitree", "traverse", "semi", "pleine"] as const; // traverse : deux vitrages séparés par une traverse intermédiaire (porte vitrée courante)
 export const EXTRAS = ["moustiquaire", "grille"] as const;
 export const THICKNESSES = ["4", "5", "6", "8", "10", "4/12/4", "6/12/6"] as const;
 export const PATTERNS = ["none", "granite", "martele", "cathedrale", "cannele"] as const;
@@ -83,6 +87,38 @@ export const editMode = (status: Status, linked: boolean): EditMode => {
   }
 };
 
+// Types d'ouvrage tels que les ateliers les vendent : le naco et le rideau métallique sont des produits à part entière, pas une option cachée d'une fenêtre ou d'un volet.
+// Chacun s'appuie sur une catégorie du calcul (fenêtre, porte, volet…) ; le type affiché se déduit de l'ouvrage, il n'est pas stocké.
+export const WORK_TYPES = ["fenetre", "naco", "porte", "roulant", "rideau", "garde-corps", "cloison"] as const;
+export type WorkType = (typeof WORK_TYPES)[number];
+export const workType = (l: Pick<Line, "category" | "opening" | "shutter">): WorkType =>
+  l.category === "volet" ? (l.shutter === "rideau" ? "rideau" : "roulant") : l.category === "fenetre" && l.opening === "jalousie" ? "naco" : l.category;
+export const workPatch = (type: WorkType, l: Pick<Line, "category" | "opening">): Partial<Line> => {
+  switch (type) {
+    case "naco": return { category: "fenetre", opening: "jalousie" };
+    case "fenetre": return { category: "fenetre", opening: l.category === "fenetre" && l.opening !== "jalousie" ? l.opening : "coulissant" };
+    case "roulant": return { category: "volet", shutter: "roulant" };
+    case "rideau": return { category: "volet", shutter: "rideau" };
+    default: return { category: type };
+  }
+};
+// Tailles standard (mm). Portes battantes : 2,10 m de haut, 70 et 80 cm pour une chambre, une salle de bain ou un WC, 90 et 100 cm pour l'entrée (norme courante, relevée chez les ateliers d'Antananarivo).
+// Fenêtres : tailles courantes, à faire valider par des menuisiers. La saisie sur mesure reste toujours possible.
+export type StdSize = { w: number; h: number; leaves?: number };
+const WINDOW_SIZES: readonly StdSize[] = [[600, 600], [800, 1000], [1000, 1000], [1200, 1000], [1200, 1200], [1500, 1200]].map(([w, h]) => ({ w, h }));
+// Porte battante : un vantail (70 à 100 cm) ou deux battants (140 à 200 cm). Porte coulissante / baie : de 2 à 4 vantaux selon la largeur (tailles courantes, à faire valider par des menuisiers).
+const DOOR_SIZES: readonly StdSize[] = [
+  ...[700, 800, 900, 1000].map((w) => ({ w, h: 2100, leaves: 1 })),
+  ...[1400, 1600, 1800, 2000].map((w) => ({ w, h: 2100, leaves: 2 })),
+];
+const SLIDING_DOOR_SIZES: readonly StdSize[] = [[1500, 2], [1800, 2], [2000, 2], [2400, 3], [3000, 3], [3600, 4]].map(([w, leaves]) => ({ w, h: 2100, leaves }));
+export const standardSizes = (l: Pick<Line, "category" | "opening">): readonly StdSize[] =>
+  l.category === "fenetre" ? WINDOW_SIZES : l.category === "porte" ? (l.opening === "ouvrant" ? DOOR_SIZES : l.opening === "coulissant" ? SLIDING_DOOR_SIZES : []) : [];
+// Séries de profilé courantes à Madagascar (fournisseur FDC et ateliers) : suggestions, la saisie reste libre.
+export const SERIES_HINTS: Record<"coulissant" | "ouvrant", readonly string[]> = { coulissant: ["K56", "K56 Max"], ouvrant: ["T55", "T55 Max"] };
+
+// Ouvertures valides mais plus proposées dans l'éditeur : inconnues du marché malgache (aucun atelier, ni le fournisseur FDC, n'en parle). Elles restent valides pour relire les anciens devis.
+export const HIDDEN_OPENINGS: readonly Opening[] = ["oscillo"];
 // Ouvertures proposées par catégorie (« jalousie » = naco, fenêtre à lames de verre).
 export const OPENINGS_BY_CATEGORY: Record<Category, readonly Opening[]> = {
   fenetre: ["coulissant", "ouvrant", "oscillo", "soufflet", "jalousie", "fixe"],
@@ -177,6 +213,11 @@ export const FINISHES = [
   { id: "chene-clair", group: "fauxbois", hex: "#d2a56b", label: "finish.chene-clair" },
   { id: "noyer", group: "fauxbois", hex: "#6e4528", label: "finish.noyer" },
   { id: "acajou", group: "fauxbois", hex: "#7a3321", label: "finish.acajou" },
+  { id: "teck", group: "fauxbois", hex: "#a46a38", label: "finish.teck" },
+  { id: "cerisier", group: "fauxbois", hex: "#8b4527", label: "finish.cerisier" },
+  { id: "chene-fonce", group: "fauxbois", hex: "#6a4a2e", label: "finish.chene-fonce" },
+  { id: "chene-gris", group: "fauxbois", hex: "#9b917f", label: "finish.chene-gris" },
+  { id: "wenge", group: "fauxbois", hex: "#3d2b24", label: "finish.wenge" },
 ] as const satisfies readonly { id: string; group: string; hex: string; label: Label }[];
 export type FinishId = (typeof FINISHES)[number]["id"];
 export const FINISH_IDS = FINISHES.map((f) => f.id) as [FinishId, ...FinishId[]];
@@ -229,6 +270,8 @@ export const lineSchema = z.object({
   qty: z.number().int().min(1).max(999),
   room: text(60).optional(), // où l'ouvrage se pose (« Chambre 1, façade sud »)
   note: text(300).optional(), // remarque libre sur l'ouvrage (visible du client)
+  splitAt: z.number().min(0.25).max(0.75).optional(), // position du séparateur (traverse) en fraction de la hauteur du vantail depuis le haut ; absent : milieu (traverse) ou 60 % (demi-vitrée)
+  series: z.string().trim().max(24).optional(), // série du profilé chez le fournisseur (K56, T55 Max…) : les clients demandent « prix m² K56 », elle figure sur le devis
   ref: z.string().max(64).optional(), // même ouvrage demandé à plusieurs menuisiers : posé par le serveur à la demande, il relie les devis d'une même demande
   unit: z.number().min(0).max(1e10), // prix unitaire en Ar : calculé puis modifiable à la main
 });
@@ -487,6 +530,13 @@ export type Settings = z.infer<typeof settingsSchema> & { tariffs: Tariffs };
 export const ISSUER_KEYS = ["company", "address", "phone", "email", "website", "nif", "stat", "logo", "accent", "paymentInfo", "signature", "signer", "minArea", "docStyle"] as const;
 export type Issuer = Pick<Settings, (typeof ISSUER_KEYS)[number]>;
 
+// Anciens tarifs d'exemple : un compte qui les a gardés n'a pas réglé ses prix (voir calibration dans costing.ts).
+export const LEGACY_TARIFFS: Tariffs = {
+  "fenetre.coulissant": 450000, "fenetre.ouvrant": 480000, "fenetre.oscillo": 520000, "fenetre.soufflet": 400000, "fenetre.jalousie": 350000, "fenetre.fixe": 300000,
+  "porte.coulissant": 520000, "porte.ouvrant": 560000, "volet.roulant": 380000, "volet.rideau": 300000,
+  "garde-corps.barreaudage": 350000, "garde-corps.verre": 700000, "cloison.fixe": 420000,
+};
+
 export const DEFAULT_SETTINGS: Settings = {
   company: "",
   address: "",
@@ -513,17 +563,18 @@ export const DEFAULT_SETTINGS: Settings = {
   marginPct: 30,
   servicePrices: { pose: { price: 120000, cost: 80000 }, depose: { price: 45000, cost: 28000 }, deplacement: { price: 60000, cost: 40000 }, autre: { price: 0, cost: 0 } }, // valeurs d'exemple à calibrer
   minMarginPct: 15,
-  // valeurs d'exemple : chaque menuisier règle ses propres prix au m²
+  // valeurs d'exemple, alignées sur les prix affichés par les ateliers d'Antananarivo en 2026 (coulissante 220 000, ouvrante 320 000, naco / à soufflet 400 000,
+  // volet roulant 280 000 Ar/m²) ; fixe, rideau métallique, garde-corps et cloison : estimations sans prix publié, à régler. Chaque menuisier règle ses propres prix au m².
   tariffs: {
-    "fenetre.coulissant": 450000,
-    "fenetre.ouvrant": 480000,
-    "fenetre.oscillo": 520000,
+    "fenetre.coulissant": 220000,
+    "fenetre.ouvrant": 320000,
+    "fenetre.oscillo": 520000, // plus proposé (voir HIDDEN_OPENINGS), gardé pour relire les anciens devis
     "fenetre.soufflet": 400000,
-    "fenetre.jalousie": 350000,
-    "fenetre.fixe": 300000,
-    "porte.coulissant": 520000,
-    "porte.ouvrant": 560000,
-    "volet.roulant": 380000,
+    "fenetre.jalousie": 400000,
+    "fenetre.fixe": 200000,
+    "porte.coulissant": 220000,
+    "porte.ouvrant": 320000,
+    "volet.roulant": 280000,
     "volet.rideau": 300000,
     "garde-corps.barreaudage": 350000,
     "garde-corps.verre": 700000,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { unitPrice } from "./calc";
+import { LEGACY_TARIFFS } from "./model";
 import { calibration, costLine, laborMinutes, laborTotal, marginOf, quoteMargin, salePrice, servicesCost } from "./costing";
 import { type Line, type Settings, lineSchema, withDefaults } from "./model";
 
@@ -38,6 +39,8 @@ describe("étalonnage des réglages", () => {
   it("signale les valeurs d'exemple, puis les prix non datés ou anciens", () => {
     expect(calibration(S)).toEqual(["market", "tariffs"]);
     expect(calibration(withS({ pricing: "cost" }))).toEqual(["market", "labor"]);
+    expect(calibration(withS({ tariffs: LEGACY_TARIFFS }))).toEqual(["market", "tariffs"]); // un compte qui garde les anciens tarifs d'exemple n'a toujours pas réglé les siens
+    expect(calibration(withS({ tariffs: { ...S.tariffs, "fenetre.coulissant": 230000 } }))).toEqual(["market"]);
     const own = withS({ market: { ...S.market, offers: { ...S.market.offers, "pf.dormant": [{ length: 6000, price: 99000 }] } } });
     expect(calibration(own)).toContain("stale"); // personnalisé mais jamais daté
     const now = Date.parse("2026-10-29");

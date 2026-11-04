@@ -1,4 +1,5 @@
-import { FINISHES, type Line, leafMarks, leafMotion } from "./model";
+import { nacoBlades } from "./calc";
+import { FINISHES, type Line, leafMarks, leafMotion, splitOf } from "./model";
 
 export type Drawable = Pick<
   Line,
@@ -86,7 +87,10 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
     const solid = (sx: number, sy: number, sw: number, sh: number) =>
       rect(sx, sy, sw, sh, `fill="${hex}" stroke="${INK}" stroke-width="1"`) + rect(sx + 4, sy + 4, sw - 8, sh - 8, `fill="none" stroke="${INK}" stroke-opacity=".6" stroke-width=".7"`);
     if (l.category === "porte" && l.infill === "pleine") out += solid(ix, iy, iw, ih);
-    else if (l.category === "porte" && l.infill === "semi") out += glass(ix, iy, iw, ih * 0.6) + solid(ix, iy + ih * 0.6, iw, ih * 0.4);
+    else if (l.category === "porte" && l.infill === "traverse") {
+      const top = ih * splitOf(l);
+      out += glass(ix, iy, iw, top - 3) + rect(ix, iy + top - 3, iw, 6, `fill="${hex}" stroke="${INK}" stroke-width="1"`) + glass(ix, iy + top + 3, iw, ih - top - 3);
+    } else if (l.category === "porte" && l.infill === "semi") out += glass(ix, iy, iw, ih * splitOf(l)) + solid(ix, iy + ih * splitOf(l), iw, ih * (1 - splitOf(l)));
     else out += glass(ix, iy, iw, ih);
     return out;
   };
@@ -151,7 +155,7 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
     if (l.opening === "fixe") body += glass(ix, iy, iw, ih) + (iw > 26 && ih > 50 ? tag(ix + iw / 2, iy + ih * 0.22, "F1") : "");
     else if (l.opening === "jalousie") {
       // naco : lames de verre horizontales dans deux montants
-      const k = Math.max(4, Math.min(16, Math.round(ih / 14)));
+      const k = Math.min(24, nacoBlades(l.height)); // le vrai nombre de lames (plafonné pour rester lisible sur un très grand naco)
       body += rect(ix, iy, iw, ih, `fill="${hex}" stroke="${INK}" stroke-width="1"`);
       for (let i = 0; i < k; i++) body += glass(ix + t * 0.6, iy + 2 + ((ih - 4) * i) / k, iw - t * 1.2, (ih - 4) / k - 2);
     } else if (l.opening === "coulissant") {

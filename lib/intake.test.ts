@@ -48,7 +48,7 @@ describe("assistant de demande de devis : comprendre un texte libre", () => {
     expect(one("rideau métallique 3m x 2,5m pour le garage").spec).toMatchObject({ category: "volet", shutter: "rideau", room: "Garage" });
   });
   it("options : double vitrage, moustiquaire, oscillo-battant, couleur bois", () => {
-    expect(one("fenêtre oscillo-battante 100x130 double vitrage avec moustiquaire chêne doré").spec).toMatchObject({ opening: "oscillo", thickness: "4/12/4", extras: ["moustiquaire"], finish: "chene-dore" });
+    expect(one("fenêtre oscillo-battante 100x130 double vitrage avec moustiquaire chêne doré").spec).toMatchObject({ opening: "ouvrant", thickness: "4/12/4", extras: ["moustiquaire"], finish: "chene-dore" });
   });
   it("porte-fenêtre et porte pleine", () => {
     expect(one("une porte-fenêtre coulissante 2 m x 2,1 m sur la terrasse").spec).toMatchObject({ category: "porte", opening: "coulissant" });
@@ -93,7 +93,9 @@ describe("assistant de demande de devis : comprendre un texte libre", () => {
     expect(one("une fenetre coullisante 120x100 noire").spec).toMatchObject({ opening: "coulissant", finish: "noir" });
     expect(one("un naco pour la salle de bain 70x100").spec.category).toBe("fenetre"); // « bain » n'est pas « baie »
     expect(analyze("cloison vitrée 3,4 m x 2,4 m").items[0].spec.qty).toBe(1);
-    expect(one("1 fenetre oscilo battante 100x130").spec.opening).toBe("oscillo");
+    expect(one("1 fenetre oscilo battante 100x130").spec.opening).toBe("ouvrant");
+    expect(one("fenetre projetante 80x60").spec.opening).toBe("soufflet");
+    expect(one("fenetre assoufflet 80x60").spec.opening).toBe("soufflet");
   });
   it("deux couleurs pour deux fenêtres : une de chaque, même taille", () => {
     const r = analyze("je veux deux fenetre coulissante, marron et blanc de meme taille 1mx1m, une marron et une blanc");

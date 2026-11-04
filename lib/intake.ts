@@ -27,7 +27,7 @@ const strip = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerC
 // Mots que l'on sait reconnaître : un mot voisin (faute de frappe : « blan », « coullisante », « europpern ») est ramené à eux.
 const VOCAB = [
   "fenetre", "fenetres", "porte", "portes", "volet", "volets", "roulant", "roulants", "baie", "baies", "vitree", "vitrine", "vitrines", "cloison", "cloisons", "rambarde", "balustrade", "jalousie", "garde-corps", "rideau", "metallique", "chassis",
-  "coulissant", "coulissante", "coulissants", "coulissantes", "ouvrant", "ouvrante", "battant", "battante", "oscillo", "soufflet", "fixe", "vantaux", "vantail", "panneaux",
+  "coulissant", "coulissante", "coulissants", "coulissantes", "ouvrant", "ouvrante", "battant", "battante", "oscillo", "soufflet", "assoufflet", "projetant", "projetante", "fixe", "vantaux", "vantail", "panneaux",
   "blanc", "blanche", "noir", "noire", "anthracite", "bronze", "marron", "champagne", "naturel", "noyer", "acajou", "chene", "dore", "clair", "gris", "argent", "inox",
   "europeen", "europeenne", "europeens", "asiatique", "double", "vitrage", "feuillete", "securit", "trempe", "teinte", "depoli", "opaque", "miroir", "reflechissant",
   "moustiquaire", "motorise", "motorisee", "manuel", "manuelle", "encastre", "apparent", "tunnel", "telecommande", "barreaudage", "barreaux", "verre",
@@ -182,8 +182,8 @@ function fill(head: Spec, raw: string, c: string): IntakeItem {
   // ouverture
   if (cat === "fenetre" || cat === "porte") {
     if (/coulissan|coulisse|\bsliding\b|miseki/.test(c)) spec.opening = "coulissant";
-    else if (/oscillo/.test(c)) spec.opening = "oscillo";
-    else if (/soufflet/.test(c)) spec.opening = "soufflet";
+    else if (/oscillo/.test(c)) spec.opening = "ouvrant"; // l'oscillo-battant n'est plus proposé (inconnu à Madagascar) : la fenêtre ouvrante s'en rapproche
+    else if (/soufflet|projetan/.test(c)) spec.opening = "soufflet"; // « projetant » et « assoufflet » sont les mots courants à Madagascar
     else if (/\bfixes?\b/.test(c)) spec.opening = "fixe";
     else if (/ouvrant|battant|a la francaise|ouvre|\bhinged\b/.test(c)) spec.opening = "ouvrant";
     if (!spec.opening) {

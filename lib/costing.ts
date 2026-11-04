@@ -1,5 +1,5 @@
 import { allPieces, cutList, unitPrice } from "./calc";
-import { DEFAULT_SETTINGS, type Line, type Quote, type Service, type Settings } from "./model";
+import { DEFAULT_SETTINGS, LEGACY_TARIFFS, type Line, type Quote, type Service, type Settings } from "./model";
 import { extrasCost, procure } from "./procure";
 import { activeLines, totals } from "./totals";
 
@@ -69,7 +69,7 @@ export function calibration(s: Settings, now = Date.now()): Calibration[] {
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const out: Calibration[] = [];
   if (same(s.market.offers, DEFAULT_SETTINGS.market.offers)) out.push("market");
-  if (s.pricing === "m2" && same(s.tariffs, DEFAULT_SETTINGS.tariffs)) out.push("tariffs");
+  if (s.pricing === "m2" && (same(s.tariffs, DEFAULT_SETTINGS.tariffs) || same(s.tariffs, LEGACY_TARIFFS))) out.push("tariffs");
   if (s.pricing === "cost" && same(s.labor, DEFAULT_SETTINGS.labor)) out.push("labor");
   const date = s.market.priceDate ? Date.parse(s.market.priceDate) : NaN;
   if (!out.includes("market") && !(date > now - STALE_DAYS * 864e5)) out.push("stale"); // prix personnalisés mais jamais datés, ou datés de plus de 90 jours

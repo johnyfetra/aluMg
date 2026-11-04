@@ -7,7 +7,7 @@ const sum = (t: string) => analyze(t).items.map((i) => { const s = i.spec; retur
 const CASES: [string, string[]][] = [
   ["Bonjour, je veux 2 fenêtres coulissantes 1,5m x 1,2m blanches svp", ["fenetre/coulissant/1500x1200/2/blanc"]],
   ["BONJOUR 3 FENETRES 120X100 NOIR", ["fenetre/coulissant/1200x1000/3/noir"]],
-  ["fenetre oscillo battante 100x130 gris anthracite", ["fenetre/oscillo/1000x1300/1/anthracite"]],
+  ["fenetre oscillo battante 100x130 gris anthracite", ["fenetre/ouvrant/1000x1300/1/anthracite"]],
   ["une porte d entrée 90 x 210 marron", ["porte/ouvrant/900x2100/1/marron"]],
   ["porte fenetre 2,2 m par 2,1 m coulissante bronze", ["porte/coulissant/2200x2100/1/bronze"]],
   ["je voudrais une baie vitrée de 3 mètres de large et 2,2 m de haut noire", ["fenetre/coulissant/3000x2200/1/noir"]],

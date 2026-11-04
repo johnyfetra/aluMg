@@ -1,5 +1,5 @@
 import type { Messages } from "./messages/fr";
-import { type AccessoryKey, type Line, FINISHES, PATTERN_GLASSES, type TariffKey, type Tariffs, OPENINGS_BY_CATEGORY, SLATS_ROULANT, SLATS_RIDEAU, SLAT_PITCH, hasLeafConfig, leafMotion, leavesSpec } from "./model";
+import { type AccessoryKey, type Line, FINISHES, PATTERN_GLASSES, type TariffKey, type Tariffs, OPENINGS_BY_CATEGORY, SLATS_ROULANT, SLATS_RIDEAU, SLAT_PITCH, hasLeafConfig, leafMotion, leavesSpec, splitOf } from "./model";
 
 type Label = keyof Messages;
 
@@ -9,6 +9,9 @@ export type Pane = { w: number; h: number; qty: number };
 export type Dims = Pick<Line, "category" | "opening" | "leaves" | "shutter" | "guard" | "infill" | "width" | "height"> & Partial<Pick<Line, "box" | "slat">>;
 
 export const BAR_LEN = 6000;
+// Naco : des lames de verre de 100 mm empilées entre deux montants ; leur nombre découle de la hauteur (40 mm de jeu en haut et en bas), jamais saisi.
+export const NACO_BLADE = 100;
+export const nacoBlades = (heightMm: number) => Math.max(1, Math.ceil((heightMm - 40) / NACO_BLADE));
 export const KERF = 5;
 export const REUSE_MIN = 500; // un reste de barre d'au moins 500 mm sert encore (traverse, barreau, petit ouvrant) : ce n'est pas une perte sèche
 
@@ -83,7 +86,7 @@ export function cutList(l: Dims) {
   }
   if (opening === "jalousie") {
     pieces.push(P("pf.louvre", "el.louvre", H - 40, 2));
-    glass.push({ w: L - 40, h: 100, qty: Math.ceil((H - 40) / 100) });
+    glass.push({ w: L - 40, h: NACO_BLADE, qty: nacoBlades(H) });
     return { pieces, glass, panels };
   }
 
@@ -99,10 +102,15 @@ export function cutList(l: Dims) {
   const h = hv - drop;
   if (category === "porte" && l.infill === "pleine") panels.push({ w, h, qty: n });
   else if (category === "porte" && l.infill === "semi") {
-    const top = Math.round(h * 0.6);
+    const top = Math.round(h * splitOf(l));
     pieces.push(P("pf.mid", "el.mid", lv, n));
     glass.push({ w, h: top, qty: n });
     panels.push({ w, h: h - top, qty: n });
+  } else if (category === "porte" && l.infill === "traverse") {
+    // traverse intermédiaire : deux vitrages (62 % en haut), comme sur une porte vitrée à deux parties
+    const top = Math.round((h - 40) * splitOf(l));
+    pieces.push(P("pf.mid", "el.mid", lv, n));
+    glass.push({ w, h: top, qty: n }, { w, h: h - 40 - top, qty: n });
   } else glass.push({ w, h, qty: n });
   return { pieces, glass, panels };
 }
