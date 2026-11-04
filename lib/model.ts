@@ -46,7 +46,10 @@ export const REPORT_REASONS = ["quality", "no_response", "price", "behavior", "f
 export const ROLES = ["client", "menuisier", "admin"] as const;
 export type Role = (typeof ROLES)[number];
 // Actions inscrites au journal de l'administration (admin_audit.action) ; libellés « admin.act.* ».
-export const AUDIT_ACTIONS = ["create", "reset", "suspend", "reactivate", "role", "delete", "badge_on", "badge_off"] as const;
+export const AUDIT_ACTIONS = ["create", "reset", "suspend", "reactivate", "role", "delete", "badge_on", "badge_off", "social_add", "social_edit", "social_delete"] as const;
+// Réseaux sociaux de la plateforme, gérés par l'administration et affichés dans le pied de page du site.
+export const SOCIAL_NETWORKS = ["facebook", "instagram", "tiktok", "youtube", "whatsapp", "linkedin", "x"] as const;
+export type SocialNetwork = (typeof SOCIAL_NETWORKS)[number];
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 // Retours des utilisateurs sur l'application : un problème, une idée de fonction, une remarque. Le statut suit le traitement par l'équipe.

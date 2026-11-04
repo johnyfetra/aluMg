@@ -7,7 +7,8 @@ import { Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNo
 import { ArrowUp, ArrowUpRight, ChevronRight, Images, LayoutGrid, MessageCircle, Moon, Smartphone, Sun, Users } from "lucide-react";
 import { UserMenu } from "./Controls";
 import { setTheme, useTheme } from "@/lib/theme";
-import { homeFor, useSession } from "@/lib/client";
+import { homeFor, usePublicSocial, useSession } from "@/lib/client";
+import SocialIcon from "./SocialIcon";
 import { LOCALES, type Locale, useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
 import { SUPPORT_PHONE_DISPLAY, supportUrl } from "@/lib/support";
@@ -109,7 +110,7 @@ function MobileMenu({ myHref }: { myHref: string | null }) {
 }
 
 export default function PublicShell({ children }: { children: ReactNode }) {
-  const { t, locale } = useI18n(); const c = marketing[locale]; const { data: me } = useSession();
+  const { t, locale } = useI18n(); const c = marketing[locale]; const { data: me } = useSession(); const { data: social } = usePublicSocial();
   return <div className="flex min-h-screen flex-col">
     <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:p-3">{t("nav.skip")}</a>
     <header className="sticky top-3 z-30 px-3 pt-3 sm:px-6">
@@ -128,6 +129,17 @@ export default function PublicShell({ children }: { children: ReactNode }) {
         <div className="flex flex-col items-center text-center md:items-start md:text-left">
           <HomeLink><Brand /></HomeLink>
           <p className="mt-4 max-w-xs text-sm leading-7 text-muted">{c.footer}</p>
+          {!!social?.length && (
+            <ul aria-label={t("pub.follow")} className="mt-5 flex flex-wrap justify-center gap-2 md:justify-start">
+              {social.map((s) => (
+                <li key={s.id}>
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" aria-label={`${s.label} (${t(`social.${s.network}`)})`} data-tooltip={s.label} className="social-btn grid size-11 place-items-center rounded-full border border-[color-mix(in_srgb,var(--text)_30%,var(--border))] text-ink">
+                    <SocialIcon network={s.network} size={20} />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         {/* mobile : deux colonnes centrées séparées par un filet vertical ; bureau : colonnes à plat dans la grille */}
         <div className="grid grid-cols-2 divide-x divide-line border-y border-line py-8 text-center md:contents md:divide-x-0 md:border-0 md:py-0 md:text-left">

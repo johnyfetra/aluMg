@@ -8,6 +8,7 @@ import type { NotificationView } from "./notifications";
 import type { ContactView } from "./contacts";
 import type { ConversationView, MessageView } from "./chat";
 import type { FeedbackRow } from "./feedback";
+import type { PublicSocial, SocialLink } from "./social";
 import type { AccountConfig, AdminQuote, AdminQuoteRow, AdminStats, AdminUser, AdminUserRow, AuditRow, PageOf } from "./admin";
 
 class ApiError extends Error {
@@ -171,6 +172,8 @@ export const useAdminQuotes = (params: Record<string, string>) => {
 };
 export const useAdminQuote = (id: string) => useSWR<AdminQuote>(`/api/admin/quotes/${id}`, fetcher, { revalidateOnFocus: false });
 export const useAccountConfig = (id: string) => useSWR<AccountConfig>(`/api/admin/users/${id}/config`, fetcher, { revalidateOnFocus: false });
+export const usePublicSocial = () => useSWR<PublicSocial[]>("/api/public/social", fetcher, { revalidateOnFocus: false });
+export const useAdminSocial = () => useSWR<SocialLink[]>("/api/admin/social", fetcher, { revalidateOnFocus: false });
 export const useAdminAudit = (page: number) => useSWR<PageOf<AuditRow>>(`/api/admin/audit?page=${page}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
 
 export const usePublicWorks = (params: Record<string, string>) => {

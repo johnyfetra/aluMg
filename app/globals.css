@@ -531,3 +531,16 @@ aside :focus-visible {
 /* Champ en erreur : liseré rouge (le message est dessous, voir FieldError). */
 .input[aria-invalid="true"] { border-color: color-mix(in srgb, var(--danger) 75%, var(--border)); }
 .input[aria-invalid="true"]:focus, .input[aria-invalid="true"]:focus-visible { border-color: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent); }
+
+/* Réseaux sociaux du pied de page : le fond de la couleur du site monte depuis le bas, le bouton se soulève, l'icône s'incline ; mêmes jetons que le thème (clair et sombre). */
+.social-btn { position: relative; isolation: isolate; overflow: hidden; transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out), color 0.25s, border-color 0.25s; }
+.social-btn::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--primary); transform: translateY(101%); transition: transform 0.35s var(--ease-out); }
+.social-btn svg { transition: transform 0.35s var(--ease-out); }
+.social-btn:hover, .social-btn:focus-visible { transform: translateY(-3px); color: var(--on-primary); border-color: var(--primary); box-shadow: 0 8px 18px color-mix(in srgb, var(--primary) 38%, transparent); }
+.social-btn:hover::before, .social-btn:focus-visible::before { transform: translateY(0); }
+.social-btn:hover svg, .social-btn:focus-visible svg { transform: scale(1.14) rotate(-6deg); }
+.social-btn:active { transform: translateY(-1px) scale(0.96); }
+@media (prefers-reduced-motion: reduce) {
+  .social-btn, .social-btn::before, .social-btn svg { transition: none; }
+  .social-btn:hover, .social-btn:focus-visible, .social-btn:hover svg, .social-btn:focus-visible svg { transform: none; }
+}

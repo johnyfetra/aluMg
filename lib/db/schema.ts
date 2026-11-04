@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { type AnyPgColumn, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import { AUDIT_ACTIONS, type FeedbackKind, type FeedbackStatus, type Market, type Quote, type Settings } from "../model";
+import { AUDIT_ACTIONS, SOCIAL_NETWORKS, type FeedbackKind, type FeedbackStatus, type Market, type Quote, type Settings } from "../model";
 
 // Texte cherché par l'administration ; la requête (lib/admin.ts) reprend exactement cette expression pour que l'index serve.
 export const USER_SEARCH = sql.raw(`lower(name || ' ' || coalesce(email, '') || ' ' || regexp_replace(phone, '[^0-9]', '', 'g'))`);
@@ -74,6 +74,17 @@ export const adminAudit = pgTable(
   },
   (t) => [index("admin_audit_created_idx").on(t.createdAt)],
 );
+
+// Réseaux sociaux de la plateforme (page Facebook, Instagram…) : gérés dans l'espace d'administration, lus par le pied de page public.
+export const socialLinks = pgTable("social_links", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  network: text("network", { enum: SOCIAL_NETWORKS }).notNull(),
+  label: text("label").notNull(),
+  url: text("url").notNull(),
+  position: integer("position").notNull().default(0),
+  visible: boolean("visible").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const settings = pgTable("settings", {
   userId: uuid("user_id")

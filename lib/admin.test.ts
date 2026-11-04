@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { lineSchema, quoteSchema } from "./model";
+import { socialUrlOk } from "./social";
 
 // Cookie de session simulé : requireAdmin lit la session en base à partir de ce jeton.
 const jar = { token: "" };
@@ -10,6 +11,7 @@ process.env.PGLITE_DIR = "memory://";
 const { getDb, schema } = await import("./db");
 const repo = await import("./repo");
 const admin = await import("./admin");
+const socials = await import("./socials");
 const { requireAdmin, isResponse } = await import("./api");
 const { hashPassword, verifyPassword } = await import("./password");
 const { eq, sql } = await import("drizzle-orm");
@@ -120,6 +122,36 @@ describe("devis et configuration (lecture seule)", () => {
     expect(c.settings).toMatchObject({ company: "Atelier Fara SARL", hasLogo: true, hasSignature: false });
     expect(c.settings).not.toHaveProperty("logo");
     expect((await admin.getAccountConfig(clientId)).settings).toBeNull();
+  });
+});
+
+describe("réseaux sociaux de la plateforme", () => {
+  const FB = "https://www.facebook.com/profile.php?id=61595904374968";
+  it("la page Facebook de la plateforme est déjà enregistrée par la migration", async () => {
+    const all = await socials.listSocial();
+    expect(all[0]).toMatchObject({ network: "facebook", url: FB, visible: true });
+    expect((await socials.listPublicSocial())[0]).toMatchObject({ network: "facebook", url: FB });
+  });
+  it("n'accepte que du https appartenant au réseau choisi", () => {
+    expect(socialUrlOk("facebook", FB)).toBe(true);
+    expect(socialUrlOk("facebook", "https://m.facebook.com/aluMg")).toBe(true);
+    expect(socialUrlOk("instagram", FB)).toBe(false); // l'adresse d'un autre réseau
+    expect(socialUrlOk("facebook", "http://facebook.com/aluMg")).toBe(false); // pas de http
+    expect(socialUrlOk("facebook", "javascript:alert(1)")).toBe(false);
+    expect(socialUrlOk("facebook", "https://facebook.com.pirate.mg/x")).toBe(false); // faux sous-domaine
+    expect(socialUrlOk("facebook", "https://user:pw@facebook.com/x")).toBe(false);
+  });
+  it("ajoute, masque, ordonne et retire un réseau, chaque changement étant journalisé", async () => {
+    const { id } = (await socials.createSocial(boss, { network: "instagram", label: "AluMg Insta", url: "https://www.instagram.com/alumg", visible: true })) as { id: string };
+    expect((await socials.listSocial()).map((s) => s.network)).toEqual(["facebook", "instagram"]);
+    expect(await socials.updateSocial(boss, id, { url: "https://example.com/x" })).toEqual({ error: "invalid" }); // l'adresse doit rester celle du réseau
+    expect(await socials.updateSocial(boss, id, { visible: false })).toEqual({ ok: true });
+    expect((await socials.listPublicSocial()).map((s) => s.network)).toEqual(["facebook"]); // masqué : plus public
+    await socials.moveSocial(id, "up");
+    expect((await socials.listSocial()).map((s) => s.network)).toEqual(["instagram", "facebook"]);
+    expect(await socials.deleteSocial(boss, id)).toEqual({ ok: true });
+    expect(await socials.deleteSocial(boss, id)).toEqual({ error: "not_found" });
+    expect((await admin.listAudit()).items.slice(0, 3).map((e) => e.action)).toEqual(["social_delete", "social_edit", "social_add"]);
   });
 });
 
