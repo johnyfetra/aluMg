@@ -101,3 +101,23 @@ describe("un client ou un menuisier écrit au support AluMg", () => {
     expect(await chat.startConversation(asAdmin(boss), { support: true })).toEqual({ ok: false, error: "forbidden" });
   });
 });
+
+describe("un seul compte de support pour toute l'administration", () => {
+  it("deux administrateurs partagent le même fil, sous le compte de support", async () => {
+    const boss2 = (await repo.createUser("boss2@alumg.mg", "Second admin", "h", "admin", "", { verified: true }))!;
+    const c3 = (await repo.createUser("c3@ex.mg", "Tina", "h", "client", "033 55 555 55", { verified: true }))!;
+    const a = await chat.startConversation(asAdmin(boss2), { user: c3 });
+    const b = await chat.startConversation(asAdmin(boss), { user: c3 });
+    if (!a.ok || !b.ok) throw new Error("fil");
+    expect(a.id).toBe(b.id);
+    await chat.sendMessage(boss2, a.id, { body: "Message du second admin", files: [] });
+    await chat.sendMessage(boss, a.id, { body: "Réponse du premier", files: [] });
+    expect((await chat.listConversations(c3)).filter((c) => c.other.role === "admin")).toHaveLength(1);
+    expect((await chat.listConversations(c3)).find((c) => c.id === a.id)).toMatchObject({ unread: 2, other: { name: "AluMg" } });
+    // l'un répond là où l'autre a écrit, et voit les messages de l'autre comme les siens
+    const seen = await chat.readMessages(boss2, a.id);
+    expect(seen?.map((m) => m.mine)).toEqual([true, true]);
+    expect(await chat.unreadCount(boss2)).toBe(await chat.unreadCount(boss));
+  });
+});
+

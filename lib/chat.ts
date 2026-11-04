@@ -51,6 +51,19 @@ export type MessageView = {
   quote: QuoteRef | null;
 };
 
+// Un seul compte de support : tous les administrateurs lisent, écrivent et répondent sous le plus ancien compte administrateur (boîte partagée,
+// un seul fil par client ou menuisier). Les autres rôles gardent leur identifiant.
+async function supportId() {
+  const db = await getDb();
+  const [a] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.role, "admin")).orderBy(asc(schema.users.createdAt), schema.users.id).limit(1);
+  return a?.id ?? null;
+}
+async function chatId(userId: string) {
+  const db = await getDb();
+  const [u] = await db.select({ role: schema.users.role }).from(schema.users).where(eq(schema.users.id, userId));
+  return u?.role === "admin" ? ((await supportId()) ?? userId) : userId;
+}
+
 export type StartResult = { ok: true; id: string } | { ok: false; error: "not_found" | "forbidden" };
 
 export async function startConversation(user: { id: string; role: Role }, target: z.infer<typeof startSchema>): Promise<StartResult> {
@@ -58,18 +71,18 @@ export async function startConversation(user: { id: string; role: Role }, target
   let clientId: string;
   let menuisierId: string;
   if ("support" in target) {
-    // un client ou un menuisier écrit à la plateforme : le plus ancien compte administrateur la représente (même fil que s'il avait écrit le premier)
+    // un client ou un menuisier écrit à la plateforme : le compte de support la représente (même fil que si l'administration avait écrit la première)
     if (user.role === "admin") return { ok: false, error: "forbidden" };
-    const [a] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.role, "admin")).orderBy(asc(schema.users.createdAt), schema.users.id).limit(1);
+    const a = await supportId();
     if (!a) return { ok: false, error: "not_found" };
-    [clientId, menuisierId] = [user.id, a.id];
+    [clientId, menuisierId] = [user.id, a];
   } else if ("user" in target) {
     // l'administration ouvre un échange avec n'importe quel client ou menuisier : la conversation range le destinataire côté « client » et l'administrateur côté « menuisier »
     if (user.role !== "admin") return { ok: false, error: "forbidden" };
     const [u] = await db.select({ role: schema.users.role }).from(schema.users).where(eq(schema.users.id, target.user));
     if (!u) return { ok: false, error: "not_found" };
     if (u.role === "admin") return { ok: false, error: "forbidden" };
-    [clientId, menuisierId] = [target.user, user.id];
+    [clientId, menuisierId] = [target.user, (await supportId()) ?? user.id];
   } else if ("menuisierId" in target) {
     if (user.role !== "client") return { ok: false, error: "forbidden" };
     const [q] = await db.select({ id: schema.quotes.id }).from(schema.quotes).where(and(eq(schema.quotes.userId, target.menuisierId), eq(schema.quotes.clientId, user.id))).limit(1);
@@ -95,7 +108,8 @@ export async function startConversation(user: { id: string; role: Role }, target
 }
 
 // La conversation, seulement si l'utilisateur en est un participant ; renvoie aussi son côté.
-async function access(userId: string, id: string) {
+async function access(who: string, id: string) {
+  const userId = await chatId(who);
   const db = await getDb();
   const [c] = await db.select().from(schema.conversations).where(and(eq(schema.conversations.id, id), or(eq(schema.conversations.clientId, userId), eq(schema.conversations.menuisierId, userId))));
   return c ? { c, side: (c.clientId === userId ? "client" : "menuisier") as "client" | "menuisier" } : null;
@@ -116,7 +130,8 @@ const receiptOf = (c: { clientReadAt: Date; menuisierReadAt: Date; clientDeliver
   return at <= read ? "read" : at <= delivered ? "delivered" : "sent";
 };
 
-export async function listConversations(userId: string): Promise<ConversationView[]> {
+export async function listConversations(who: string): Promise<ConversationView[]> {
+  const userId = await chatId(who);
   const db = await getDb();
   await markDelivered(userId);
   const rows = await db.select().from(schema.conversations).where(or(eq(schema.conversations.clientId, userId), eq(schema.conversations.menuisierId, userId))).orderBy(desc(schema.conversations.lastMessageAt));
@@ -144,9 +159,10 @@ export async function listConversations(userId: string): Promise<ConversationVie
 }
 
 // Messages d'une conversation. Les ouvrir les marque comme lus pour l'utilisateur. `after` ne renvoie que les nouveaux (interrogation régulière).
-export async function readMessages(userId: string, id: string, after?: string): Promise<MessageView[] | null> {
-  const a = await access(userId, id);
+export async function readMessages(who: string, id: string, after?: string): Promise<MessageView[] | null> {
+  const a = await access(who, id);
   if (!a) return null;
+  const userId = await chatId(who);
   const db = await getDb();
   const since = after && !Number.isNaN(Date.parse(after)) ? new Date(after) : null;
   const rows = await db.select().from(schema.messages).where(since ? and(eq(schema.messages.conversationId, id), gt(schema.messages.createdAt, since)) : eq(schema.messages.conversationId, id)).orderBy(asc(schema.messages.createdAt)).limit(500);
@@ -195,9 +211,10 @@ export async function citableQuotes(userId: string, id: string) {
   return rows.map((q) => ({ id: q.id, number: q.data.number, project: q.data.project, status: q.status }));
 }
 
-export async function sendMessage(userId: string, id: string, input: MessageInput): Promise<SendResult> {
-  const a = await access(userId, id);
+export async function sendMessage(who: string, id: string, input: MessageInput): Promise<SendResult> {
+  const a = await access(who, id);
   if (!a) return { ok: false, error: "not_found" };
+  const userId = await chatId(who);
   const db = await getDb();
   if (input.replyToId) {
     const [r] = await db.select({ id: schema.messages.id }).from(schema.messages).where(and(eq(schema.messages.id, input.replyToId), eq(schema.messages.conversationId, id)));
@@ -238,15 +255,17 @@ export async function getAttachment(userId: string, attachmentId: string) {
 export const TYPING_TTL_MS = 5000;
 export type Typing = "text" | "voice" | null;
 
-export async function setTyping(userId: string, id: string, kind: "text" | "voice"): Promise<boolean> {
-  if (!(await access(userId, id))) return false;
+export async function setTyping(who: string, id: string, kind: "text" | "voice"): Promise<boolean> {
+  if (!(await access(who, id))) return false;
+  const userId = await chatId(who);
   const db = await getDb();
   await db.insert(schema.conversationTyping).values({ conversationId: id, userId, kind }).onConflictDoUpdate({ target: [schema.conversationTyping.conversationId, schema.conversationTyping.userId], set: { kind, at: new Date() } });
   return true;
 }
 
-export async function getTyping(userId: string, id: string): Promise<Typing | undefined> {
-  if (!(await access(userId, id))) return undefined;
+export async function getTyping(who: string, id: string): Promise<Typing | undefined> {
+  if (!(await access(who, id))) return undefined;
+  const userId = await chatId(who);
   const db = await getDb();
   const [row] = await db.select({ kind: schema.conversationTyping.kind, at: schema.conversationTyping.at }).from(schema.conversationTyping).where(and(eq(schema.conversationTyping.conversationId, id), ne(schema.conversationTyping.userId, userId)));
   return row && Date.now() - row.at.getTime() < TYPING_TTL_MS ? row.kind : null;
