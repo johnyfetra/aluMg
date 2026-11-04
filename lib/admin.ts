@@ -1,11 +1,13 @@
 import { randomBytes } from "node:crypto";
-import { and, count, desc, eq, gt, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { getDb, schema } from "./db";
 import { USER_SEARCH } from "./db/schema";
 import { type AuditAction, type Role, STATUSES, withDefaults } from "./model";
 import { hashPassword } from "./password";
 import { normalizePhone } from "./phone";
 import { phoneOwner } from "./phones";
+import { getSettings } from "./repo";
+import { listEvents, type LineComment } from "./workflow";
 import { totals } from "./totals";
 
 // Espace d'administration : statistiques, comptes, journal. Appelé seulement par les routes /api/admin/* (requireAdmin, session vérifiée en base).
@@ -306,7 +308,12 @@ export async function getAdminQuote(id: string) {
     .from(q)
     .innerJoin(o, eq(o.id, q.userId))
     .where(eq(q.id, id));
-  return row ? { ...row, totals: totals(row.quote) } : null;
+  if (!row) return null;
+  // les remarques par ouvrage sont des événements « line_comment » ; le fil (messages et étapes du devis) les exclut
+  const notes = await db.select().from(schema.quoteEvents).where(and(eq(schema.quoteEvents.quoteId, id), eq(schema.quoteEvents.kind, "line_comment"))).orderBy(asc(schema.quoteEvents.createdAt));
+  const comments: LineComment[] = notes.map((e) => ({ id: e.id, lineId: String(e.data.lineId ?? ""), body: e.message, at: e.createdAt.toISOString(), side: e.actorId === row.ownerId ? "menuisier" : "client" }));
+  // réglages complets du menuisier (logo et signature compris) : ils servent à la feuille et au PDF, comme chez le client
+  return { ...row, totals: totals(row.quote), settings: await getSettings(row.ownerId), thread: await listEvents(id), comments };
 }
 export type AdminQuote = NonNullable<Awaited<ReturnType<typeof getAdminQuote>>>;
 

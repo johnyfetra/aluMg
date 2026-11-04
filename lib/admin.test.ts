@@ -104,7 +104,15 @@ describe("devis et configuration (lecture seule)", () => {
     expect((await admin.listAllQuotes({ user: clientId })).items.map((q) => q.id)).toEqual([Q1]); // le client voit ses devis reçus
   });
   it("rend un devis complet avec ses totaux, et null s'il n'existe pas", async () => {
-    expect(await admin.getAdminQuote(Q1)).toMatchObject({ ownerId: joinerId, clientId, totals: { ht: 200000, ttc: 240000 } });
+    const db = await getDb();
+    await db.insert(schema.quoteEvents).values([
+      { quoteId: Q1, actorId: clientId, kind: "message", message: "Bonjour, quel délai ?" },
+      { quoteId: Q1, actorId: clientId, kind: "line_comment", message: "Plutôt en gris", data: { lineId: "l" } },
+    ]);
+    const d = await admin.getAdminQuote(Q1);
+    expect(d).toMatchObject({ ownerId: joinerId, clientId, totals: { ht: 200000, ttc: 240000 }, settings: { company: "Atelier Fara SARL", logo: "data:image/png;base64,AAAA" } });
+    expect(d!.thread.map((e) => [e.kind, e.side])).toEqual([["message", "client"]]); // le fil : messages et étapes, sans les remarques d'ouvrage
+    expect(d!.comments).toMatchObject([{ lineId: "l", body: "Plutôt en gris", side: "client" }]);
     expect(await admin.getAdminQuote("00000000-0000-4000-8000-0000000000ff")).toBeNull();
   });
   it("rend la configuration du compte sans les images (logo, signature) ; un client n'a pas de réglages", async () => {
