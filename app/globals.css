@@ -9,7 +9,7 @@
   --surface: #fdfcf9;
   --surface-2: #ece6db;
   --text: #252725;
-  --muted: #5c615b;
+  --muted: #4b514b;
   --border: #d8d0c2;
   --primary: #243b32;
   --primary-hover: #1a2c25;
@@ -62,7 +62,7 @@
   --surface: #1c231f;
   --surface-2: #27302b;
   --text: #ece9e2;
-  --muted: #a5ada6;
+  --muted: #bcc4bd;
   --border: #36403a;
   --primary: #c58a58;
   --primary-hover: #d39c6e;
@@ -224,7 +224,7 @@ body {
     @apply rounded-(--radius-card) border border-line bg-surface p-5 shadow-(--shadow-card);
   }
   .input {
-    @apply min-h-10 w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-sm md:min-h-10 text-ink transition-colors placeholder:text-muted hover:border-[color-mix(in_srgb,var(--muted)_55%,var(--border))] disabled:cursor-not-allowed disabled:opacity-60;
+    @apply min-h-10 w-full rounded-lg border border-line bg-surface px-3 py-1.5 text-[15px] font-medium md:min-h-10 text-ink transition-colors placeholder:font-normal placeholder:text-[color-mix(in_srgb,var(--text)_68%,var(--surface))] hover:border-[color-mix(in_srgb,var(--muted)_55%,var(--border))] disabled:cursor-not-allowed disabled:opacity-60;
   }
   /* Boutons : une base commune, trois tons (primaire plein, secondaire filet, danger discret) et un bouton d'accent. */
   .btn-primary,

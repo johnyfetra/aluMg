@@ -67,9 +67,10 @@ export default function Select({
     const below = window.innerHeight - r.bottom - 12;
     const above = r.top - 12;
     const up = below < 220 && above > below;
-    const width = Math.max(r.width, rich ? 288 : 0);
+    const longest = options.reduce((m, o) => Math.max(m, o.label.length, (o.description ?? "").length * 0.85), 0);
+    const width = Math.min(window.innerWidth - 16, Math.max(r.width, rich ? 288 : 0, 64 + longest * 9)); // assez large pour lire chaque libellé en entier
     setPos({ left: Math.max(8, Math.min(r.left, window.innerWidth - width - 8)), width, max: Math.min(360, up ? above : below), ...(up ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }) });
-  }, [open, rich]);
+  }, [open, rich, options]);
 
   useEffect(() => {
     if (!open) return;
@@ -145,7 +146,7 @@ export default function Select({
         >
           {current?.leading && <span className="shrink-0">{current.leading}</span>}
           <span className="min-w-0 flex-1">
-            <span className="block truncate">{current?.label ?? ""}</span>
+            <span className="block truncate text-[15px] font-medium">{current?.label ?? ""}</span>
             {current?.description && <span className="block truncate text-xs text-muted">{current.description}</span>}
           </span>
           {current?.meta && <span className="shrink-0 text-xs text-muted">{current.meta}</span>}
@@ -193,8 +194,8 @@ export default function Select({
                     >
                       {o.leading && <span className="shrink-0">{o.leading}</span>}
                       <span className="min-w-0 flex-1">
-                        <span className={`block truncate ${selected ? "font-semibold" : "font-medium"}`}>{o.label}</span>
-                        {o.description && <span className="block truncate text-xs text-muted">{o.description}</span>}
+                        <span className={`block break-words text-[15px] leading-snug ${selected ? "font-semibold" : "font-medium"}`}>{o.label}</span>
+                        {o.description && <span className="block break-words text-[13px] leading-snug text-muted">{o.description}</span>}
                       </span>
                       {o.meta && <span className="shrink-0 text-xs text-muted">{o.meta}</span>}
                       {selected && <Check size={16} strokeWidth={2.5} aria-hidden className="shrink-0 text-accent" />}
