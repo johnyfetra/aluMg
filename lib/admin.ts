@@ -2,10 +2,11 @@ import { randomBytes } from "node:crypto";
 import { and, count, desc, eq, gt, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { getDb, schema } from "./db";
 import { USER_SEARCH } from "./db/schema";
-import type { AuditAction, Role } from "./model";
+import { type AuditAction, type Role, STATUSES, withDefaults } from "./model";
 import { hashPassword } from "./password";
 import { normalizePhone } from "./phone";
 import { phoneOwner } from "./phones";
+import { totals } from "./totals";
 
 // Espace d'administration : statistiques, comptes, journal. Appelé seulement par les routes /api/admin/* (requireAdmin, session vérifiée en base).
 // Chaque action sensible s'exécute en une transaction avec sa ligne de journal : l'action et sa trace réussissent ou échouent ensemble.
@@ -260,3 +261,68 @@ export async function listAudit(page?: number) {
   return { items, total, page: p, pageSize: PAGE_SIZE };
 }
 export type AuditRow = Awaited<ReturnType<typeof listAudit>>["items"][number];
+
+// ---------- Devis et configuration des comptes (lecture seule) ----------
+
+export type QuoteFilter = { q?: string; owner?: string; client?: string; status?: (typeof STATUSES)[number]; user?: string; page?: number };
+
+// Tous les devis de la plateforme, du plus récent au plus ancien. `user` : les devis émis par ce compte ou demandés par lui ; `owner` / `client` : nom du menuisier / du client.
+// shortcut: la recherche sur les devis est un LIKE sans index (parcours de la table), à indexer (pg_trgm) au-delà de quelques dizaines de milliers de devis.
+export async function listAllQuotes(f: QuoteFilter) {
+  const db = await getDb();
+  const q = schema.quotes;
+  const o = schema.users;
+  const like = searchTerm(f.q ?? "");
+  const byOwner = searchTerm(f.owner ?? "");
+  const byClient = searchTerm(f.client ?? "");
+  const where = and(
+    byOwner ? sql`lower(${o.name}) like ${byOwner}` : undefined,
+    byClient ? sql`lower(coalesce(${q.data}->'client'->>'name', '') || ' ' || coalesce(${q.data}->'client'->>'email', '')) like ${byClient}` : undefined,
+    like ? sql`lower(${q.number} || ' ' || coalesce(${q.data}->'client'->>'name', '') || ' ' || coalesce(${q.data}->>'project', '') || ' ' || ${o.name}) like ${like}` : undefined,
+    f.status ? eq(q.status, f.status) : undefined,
+    f.user ? or(eq(q.userId, f.user), eq(q.clientId, f.user)) : undefined,
+  );
+  const page = clampPage(f.page);
+  const [{ total }] = await db.select({ total: count() }).from(q).innerJoin(o, eq(o.id, q.userId)).where(where);
+  const rows = await db
+    .select({ id: q.id, number: q.number, status: q.status, createdAt: q.createdAt, ownerId: o.id, ownerName: o.name, data: q.data })
+    .from(q)
+    .innerJoin(o, eq(o.id, q.userId))
+    .where(where)
+    .orderBy(desc(q.createdAt), q.id)
+    .limit(PAGE_SIZE)
+    .offset((page - 1) * PAGE_SIZE);
+  const items = rows.map(({ data, ...r }) => ({ ...r, clientName: data.client.name, project: data.project, ttc: totals(data).ttc }));
+  return { items, total, page, pageSize: PAGE_SIZE };
+}
+export type AdminQuoteRow = Awaited<ReturnType<typeof listAllQuotes>>["items"][number];
+
+export async function getAdminQuote(id: string) {
+  const db = await getDb();
+  const q = schema.quotes;
+  const o = schema.users;
+  const [row] = await db
+    .select({ quote: q.data, createdAt: q.createdAt, ownerId: o.id, ownerName: o.name, clientId: q.clientId })
+    .from(q)
+    .innerJoin(o, eq(o.id, q.userId))
+    .where(eq(q.id, id));
+  return row ? { ...row, totals: totals(row.quote) } : null;
+}
+export type AdminQuote = NonNullable<Awaited<ReturnType<typeof getAdminQuote>>>;
+
+// Tout ce que le compte a réglé : entreprise, chiffrage, tarifs, profil public. Le logo et la signature (images volumineuses) sont réduits à « présent ou non ».
+export async function getAccountConfig(id: string) {
+  const db = await getDb();
+  const [s] = await db.select({ data: schema.settings.data }).from(schema.settings).where(eq(schema.settings.userId, id));
+  const { logo, signature, ...settings } = withDefaults(s?.data);
+  const [p] = await db.select().from(schema.menuisierProfiles).where(eq(schema.menuisierProfiles.userId, id));
+  const [{ portfolio }] = await db.select({ portfolio: count() }).from(schema.portfolioItems).where(eq(schema.portfolioItems.userId, id));
+  const [{ contacts }] = await db.select({ contacts: count() }).from(schema.contacts).where(eq(schema.contacts.userId, id));
+  return {
+    settings: s ? { ...settings, hasLogo: !!logo, hasSignature: !!signature } : null,
+    profile: p ? { slug: p.slug, displayName: p.displayName, city: p.city, bio: p.bio, specialties: p.specialties, zones: p.zones, sinceYear: p.sinceYear, published: p.published, verified: p.verified, hasLogo: !!p.logo } : null,
+    portfolio,
+    contacts,
+  };
+}
+export type AccountConfig = Awaited<ReturnType<typeof getAccountConfig>>;

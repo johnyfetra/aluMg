@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { lineSchema, quoteSchema } from "./model";
 
 // Cookie de session simulé : requireAdmin lit la session en base à partir de ce jeton.
 const jar = { token: "" };
@@ -76,6 +77,41 @@ describe("recherche et pagination", () => {
     expect((await admin.listUsers({ q: "bulk", page: 3 })).items).toEqual([]);
     expect((await admin.listUsers({ q: "bulk", page: -4 })).page).toBe(1);
     expect((await admin.listUsers({ page: 1e9 })).page).toBe(admin.MAX_PAGE);
+  });
+});
+
+describe("devis et configuration (lecture seule)", () => {
+  const line = lineSchema.parse({ id: "l", category: "fenetre", opening: "coulissant", leaves: 2, shutter: "roulant", control: "manuel", range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1200, height: 1000, qty: 2, unit: 100000 });
+  const quote = (id: string, name: string) =>
+    quoteSchema.parse({ id, number: "x", date: "2026-01-01T00:00:00.000Z", status: "draft", client: { name, phone: "", address: "" }, project: "Villa", delay: "", notes: "", lines: [line], terms: { tva: 20, deposit: 50, validityDays: 30 } });
+  const Q1 = "00000000-0000-4000-8000-0000000000a1";
+  const Q2 = "00000000-0000-4000-8000-0000000000a2";
+  beforeAll(async () => {
+    await repo.createQuote(joinerId, quote(Q1, "Rakoto Jean"), { clientId });
+    await repo.createQuote(boss.id, quote(Q2, "Autre client"));
+    await repo.saveSettings(joinerId, { ...(await repo.getSettings(joinerId)), company: "Atelier Fara SARL", logo: "data:image/png;base64,AAAA" });
+  });
+  it("liste tous les devis, avec émetteur et total TTC, et filtre par recherche, statut et compte", async () => {
+    const all = await admin.listAllQuotes({});
+    expect(all.total).toBe(2);
+    expect(all.items.find((q) => q.id === Q1)).toMatchObject({ ownerName: "Atelier Fara", clientName: "Rakoto Jean", project: "Villa", ttc: 240000 });
+    expect((await admin.listAllQuotes({ q: "autre client" })).items.map((q) => q.id)).toEqual([Q2]);
+    expect((await admin.listAllQuotes({ q: "atelier fara" })).items.map((q) => q.id)).toEqual([Q1]);
+    expect((await admin.listAllQuotes({ owner: "fara" })).items.map((q) => q.id)).toEqual([Q1]); // par menuisier
+    expect((await admin.listAllQuotes({ client: "autre" })).items.map((q) => q.id)).toEqual([Q2]); // par client
+    expect((await admin.listAllQuotes({ owner: "fara", client: "autre" })).total).toBe(0); // les deux filtres se cumulent
+    expect((await admin.listAllQuotes({ status: "sent" })).total).toBe(0);
+    expect((await admin.listAllQuotes({ user: clientId })).items.map((q) => q.id)).toEqual([Q1]); // le client voit ses devis reçus
+  });
+  it("rend un devis complet avec ses totaux, et null s'il n'existe pas", async () => {
+    expect(await admin.getAdminQuote(Q1)).toMatchObject({ ownerId: joinerId, clientId, totals: { ht: 200000, ttc: 240000 } });
+    expect(await admin.getAdminQuote("00000000-0000-4000-8000-0000000000ff")).toBeNull();
+  });
+  it("rend la configuration du compte sans les images (logo, signature) ; un client n'a pas de réglages", async () => {
+    const c = await admin.getAccountConfig(joinerId);
+    expect(c.settings).toMatchObject({ company: "Atelier Fara SARL", hasLogo: true, hasSignature: false });
+    expect(c.settings).not.toHaveProperty("logo");
+    expect((await admin.getAccountConfig(clientId)).settings).toBeNull();
   });
 });
 
