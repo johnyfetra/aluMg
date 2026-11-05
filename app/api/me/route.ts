@@ -23,7 +23,7 @@ const patch = z.object({
 });
 
 export async function PATCH(req: Request) {
-  const user = await requireUser();
+  const user = await requireUser({ tempPassword: true }); // c'est ici qu'on remplace un mot de passe temporaire
   if (isResponse(user)) return user;
   const blocked = await limited({ key: `me:${user.id}`, limit: 15, windowSec: 600 }, { key: `me:ip:${clientIp(req)}`, limit: 60, windowSec: 600 });
   if (blocked) return blocked;
@@ -50,6 +50,7 @@ export async function PATCH(req: Request) {
     const [row] = await db.select({ h: schema.users.passwordHash }).from(schema.users).where(eq(schema.users.id, user.id));
     if (!p.data.currentPassword || !row || !(await verifyPassword(p.data.currentPassword, row.h))) return fail(403, "wrong_password");
     set.passwordHash = await hashPassword(p.data.newPassword);
+    set.mustChangePassword = false;
     passwordChanged = true;
   }
   try {

@@ -10,9 +10,10 @@ export const fail = (status: number, error: string) => json({ error }, status);
 
 // Renvoie l'utilisateur connecté, ou la réponse 401 à retourner telle quelle.
 // Un compte dont le téléphone/e-mail n'est pas vérifié reçoit 403 « unverified » (sauf `unverified: true`, réservé aux routes de vérification).
-export async function requireUser(opts: { unverified?: boolean } = {}): Promise<SessionUser | NextResponse> {
+export async function requireUser(opts: { unverified?: boolean; tempPassword?: boolean } = {}): Promise<SessionUser | NextResponse> {
   const user = await currentUser();
   if (!user) return fail(401, "unauthorized");
+  if (user.mustChangePassword && !opts.unverified && !opts.tempPassword) return fail(403, "must_change_password"); // mot de passe temporaire : seule la page « Mon compte » reste utilisable
   return user.verified || opts.unverified ? user : fail(403, "unverified");
 }
 // Utilisateur connecté ayant l'un des rôles demandés (403 sinon).

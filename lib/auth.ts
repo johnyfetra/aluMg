@@ -48,7 +48,7 @@ export async function destroyOtherSessions(userId: string) {
   await db.delete(schema.sessions).where(token ? and(eq(schema.sessions.userId, userId), ne(schema.sessions.id, sha(token))) : eq(schema.sessions.userId, userId));
 }
 
-export type SessionUser = { id: string; email: string; name: string; phone: string; avatar: string; role: "client" | "menuisier" | "admin"; verified: boolean };
+export type SessionUser = { id: string; email: string; name: string; phone: string; avatar: string; role: "client" | "menuisier" | "admin"; verified: boolean; mustChangePassword: boolean };
 
 // Un compte suspendu n'a plus de session valide. La présence (lastSeenAt) n'est réécrite qu'au-delà de SEEN_EVERY_MS : pas d'écriture à chaque requête.
 export async function currentUser(): Promise<SessionUser | null> {
@@ -56,10 +56,10 @@ export async function currentUser(): Promise<SessionUser | null> {
   if (!token) return null;
   const db = await getDb();
   const [row] = await db
-    .select({ id: schema.users.id, email: schema.users.email, name: schema.users.name, phone: schema.users.phone, avatar: schema.users.avatar, role: schema.users.role, pv: schema.users.phoneVerifiedAt, ev: schema.users.emailVerifiedAt, seen: schema.sessions.lastSeenAt })
+    .select({ id: schema.users.id, email: schema.users.email, name: schema.users.name, phone: schema.users.phone, avatar: schema.users.avatar, role: schema.users.role, must: schema.users.mustChangePassword, pv: schema.users.phoneVerifiedAt, ev: schema.users.emailVerifiedAt, seen: schema.sessions.lastSeenAt })
     .from(schema.sessions)
     .innerJoin(schema.users, eq(schema.users.id, schema.sessions.userId))
     .where(and(eq(schema.sessions.id, sha(token)), gt(schema.sessions.expiresAt, new Date()), isNull(schema.users.suspendedAt)));
   if (row && Date.now() - row.seen.getTime() > SEEN_EVERY_MS) await db.update(schema.sessions).set({ lastSeenAt: new Date() }).where(eq(schema.sessions.id, sha(token)));
-  return row ? { id: row.id, email: row.email ?? "", name: row.name, phone: row.phone, avatar: row.avatar, role: row.role, verified: isVerified({ phoneVerifiedAt: row.pv, emailVerifiedAt: row.ev }) } : null;
+  return row ? { id: row.id, email: row.email ?? "", name: row.name, phone: row.phone, avatar: row.avatar, role: row.role, verified: isVerified({ phoneVerifiedAt: row.pv, emailVerifiedAt: row.ev }), mustChangePassword: row.must } : null;
 }

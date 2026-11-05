@@ -24,7 +24,7 @@ export default function AccountPage() {
         phone: f.get("phone"),
         ...(newPassword ? { newPassword, currentPassword: f.get("currentPassword") } : {}),
       });
-      await mutate("/api/me");
+      await Promise.all([mutate("/api/me"), mutate("session")]);
       (e.target as HTMLFormElement).reset();
       setMsg({ ok: true, text: t("account.saved") });
     } catch (err) {
@@ -35,6 +35,7 @@ export default function AccountPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{t("account.title")}</h1>
+      {me.mustChangePassword && <p role="alert" className="card max-w-xl border-primary/40 text-sm font-medium">{t("account.mustChange")}</p>}
       <form onSubmit={submit} className="card max-w-xl space-y-4" key={`${me.name}|${me.phone}`}>
         <h2 className="text-lg font-semibold">{t("account.profile")}</h2>
         <div className="flex items-center gap-4">

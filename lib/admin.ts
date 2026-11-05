@@ -183,7 +183,7 @@ export async function createAccount(actor: Actor, input: { role: Role; name: str
     const now = new Date();
     const [u] = await tx
       .insert(schema.users)
-      .values({ email, name: input.name, passwordHash, role: input.role, phone: input.phone.trim(), phoneNorm, emailVerifiedAt: email ? now : null, phoneVerifiedAt: phoneNorm ? now : null })
+      .values({ email, name: input.name, passwordHash, mustChangePassword: true, role: input.role, phone: input.phone.trim(), phoneNorm, emailVerifiedAt: email ? now : null, phoneVerifiedAt: phoneNorm ? now : null })
       .onConflictDoNothing()
       .returning({ id: schema.users.id });
     if (!u) return { error: phoneNorm ? "phone_taken" : "email_taken" } as const;
@@ -198,7 +198,7 @@ export async function resetAccount(actor: Actor, id: string): Promise<{ password
   const password = tempPassword();
   const passwordHash = await hashPassword(password);
   return onAccount(actor, id, async (tx, user) => {
-    await tx.update(schema.users).set({ passwordHash }).where(eq(schema.users.id, id));
+    await tx.update(schema.users).set({ passwordHash, mustChangePassword: true }).where(eq(schema.users.id, id));
     await tx.delete(schema.sessions).where(eq(schema.sessions.userId, id));
     await audit(tx, actor, "reset", { id, label: label(user) });
     return { password };

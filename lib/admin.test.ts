@@ -192,6 +192,7 @@ describe("actions sur les comptes", () => {
     expect(await db.select().from(schema.sessions).where(eq(schema.sessions.userId, clientId))).toHaveLength(0);
     expect(await verifyPassword(r.password, (await repo.findUserById(clientId))!.passwordHash)).toBe(true);
     expect(JSON.stringify((await admin.listAudit()).items)).not.toContain(r.password);
+    expect((await repo.findUserById(clientId))!.mustChangePassword).toBe(true); // mot de passe donné par l'administration : à remplacer à la première connexion
   });
   it("suspend (sessions coupées) puis réactive ; répéter l'action n'écrit rien de plus", async () => {
     const db = await getDb();
