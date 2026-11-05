@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomInt } from "node:crypto";
 import { and, asc, count, desc, eq, gt, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { getDb, schema } from "./db";
 import { USER_SEARCH } from "./db/schema";
@@ -151,8 +151,10 @@ export type AdminUser = NonNullable<Awaited<ReturnType<typeof getUser>>>;
 
 export const isProtected = (email: string | null) => !!email && PROTECTED.includes(email.toLowerCase());
 const label = (u: { name: string; email: string | null; phone: string }) => `${u.name} (${u.email || u.phone})`;
-// Mot de passe temporaire : 16 caractères aléatoires, renvoyé une seule fois à l'administrateur, jamais journalisé.
-const tempPassword = () => randomBytes(12).toString("base64url");
+// Mot de passe temporaire : 12 caractères aléatoires, renvoyé une seule fois à l'administrateur, jamais journalisé.
+// Alphabet sans caractères qui se confondent (0/O, 1/I/l) : il est lu à voix haute ou recopié à la main par le menuisier.
+const TEMP_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export const tempPassword = () => Array.from({ length: 12 }, () => TEMP_ALPHABET[randomInt(TEMP_ALPHABET.length)]).join("");
 
 export const FAIL_STATUS = { not_found: 404, protected: 403, self: 403, email_taken: 409, phone_taken: 409, confirm_mismatch: 400 } as const;
 type Fail = { error: keyof typeof FAIL_STATUS };

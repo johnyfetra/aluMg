@@ -185,6 +185,9 @@ describe("actions sur les comptes", () => {
     expect(items[0]).toMatchObject({ action: "create", targetId: r.id, actorName: "Boss" });
     expect(JSON.stringify(items)).not.toContain(r.password);
   });
+  it("le mot de passe temporaire est facile à recopier : 12 caractères sans 0/O ni 1/I/l", () => {
+    for (let i = 0; i < 50; i++) expect(admin.tempPassword()).toMatch(/^[A-HJ-NP-Z2-9]{12}$/);
+  });
   it("réinitialise : nouveau mot de passe et toutes les sessions coupées", async () => {
     const r = await admin.resetAccount(boss, clientId);
     if ("error" in r) throw new Error(r.error);
