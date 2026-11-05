@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
 
-const AUTO_OPEN_MS = 5500; // personne n'y touche : le volet s'ouvre seul, la photo ne reste jamais cachée
+const AUTO_OPEN_MS = 2000; // personne n'y touche : après la descente (0,9 s), le volet s'ouvre seul au bout de 2 s, puis la fenêtre s'ouvre derrière ; il reste levé
 
 // Volet roulant sur le hero : fermé à l'arrivée (tout le hero est derrière), il se manie à la poignée (glisser, cliquer, flèches du clavier).
 // Le déplacement passe par une variable CSS (--p : 0 fermé, 1 ouvert) posée directement sur l'élément : aucun rendu React pendant le glissé.

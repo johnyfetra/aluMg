@@ -521,7 +521,7 @@ aside :focus-visible {
 .faq details[open]::details-content { block-size: auto; }
 
 /* Volet roulant du hero : lames d'aluminium, lame finale avec poignée. --p vaut 0 (fermé) à 1 (ouvert) ; la lame finale reste visible en haut quand il est levé, pour pouvoir le refermer. */
-.shutter { --rail: 34px; position: absolute; inset: 0; z-index: 5; cursor: pointer; transform: translateY(calc(var(--p, 0) * (var(--rail) - 100%))); transition: transform 0.9s var(--ease-slide); animation: shutter-drop 1.2s var(--ease-slide) 0.15s backwards; will-change: transform;
+.shutter { --rail: 34px; position: absolute; inset: 0; z-index: 5; cursor: pointer; transform: translateY(calc(var(--p, 0) * (var(--rail) - 100%))); transition: transform 0.9s var(--ease-slide); animation: shutter-drop 0.9s var(--ease-slide) 0.05s backwards; will-change: transform;
   background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.16) 0 2px, transparent 2px 26px, rgb(0 0 0 / 0.38) 26px 28px, rgb(255 255 255 / 0.1) 28px 30px), linear-gradient(to bottom, color-mix(in srgb, var(--hero-from), white 16%), color-mix(in srgb, var(--hero-from), white 8%));
   box-shadow: inset 12px 0 0 var(--alu-dark), inset -12px 0 0 var(--alu-dark), 0 10px 40px rgb(0 0 0 / 0.5); }
 .shutter[data-drag] { transition: none; }
