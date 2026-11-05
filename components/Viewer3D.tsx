@@ -491,7 +491,11 @@ function Casement({ v, W, H, t, amounts, mode, bind }: { v: Viewable; W: number;
             <group key={i} position={[cx, 0, 0]}>
               <LeafBody w={lv - 0.004} h={h - 0.004} v={v} infill={v.infill} mark={marks[i]} />
             </group>
+// Comme celui qu'on fabrique à Madagascar : cadre en profilé, lames de verre tenues à chaque bout par un porte-lame blanc en nylon, tringle blanche
+// à droite (une rotule par lame) et manivelle plate à œillet qui sort du cadre.
+const NYLON = "#f2f2ee";
           );
+  const { hex } = useScene();
         return <CasementLeaf key={i} hingeLeft={hingeLeft} mark={marks[i]} px={cx} lv={lv - 0.004} h={h - 0.004} v={v} mode={mode} amount={amounts[i] ?? 0} onToggle={bind(i, v.opening === "soufflet" ? "y" : "x", v.opening === "soufflet" ? 1 : hingeLeft ? -1 : 1)} />;
       })}
       {n >= 2 && Array.from({ length: Math.floor(n / 2) }, (_, k) => <Bar key={k} element="el.battement" size={[0.03, h, 0.026]} position={[-w / 2 + (2 * k + 1) * lv, 0, -0.018]} />)}
@@ -505,40 +509,42 @@ function Louvre({ W, H, t, amount, onToggle }: { W: number; H: number; t: number
   const crank = useRef<THREE.Group>(null);
   const k = nacoBlades(H * 1000);
   const h = H - 2 * t;
-  const w = W - 2 * t - 0.08;
-  // les lames basculent ; la manivelle fait un tour complet entre fermé et ouvert
+  const w = W - 2 * t - 0.07;
+  const pitch = h / k;
+  // les lames basculent ; la manivelle se lève de fermé à ouvert
   useSpring(
     amount,
     (x) => {
-      slats.current?.children.forEach((c) => (c.rotation.x = x * 1.15));
-      if (crank.current) crank.current.rotation.z = -x * Math.PI * 2;
+      slats.current?.children.forEach((c) => (c.rotation.x = x * 1.0));
+      if (crank.current) crank.current.rotation.z = x * 0.7;
     },
     6,
   );
-  const steel = <meshStandardMaterial color="#b9bec6" metalness={0.9} roughness={0.28} />;
-  const rx = W / 2 - t - 0.02; // axe du montant de droite : la commande y est fixée
+  const nylon = <meshStandardMaterial color={NYLON} roughness={0.55} metalness={0.05} />;
+  const rx = W / 2 - t - 0.02; // axe du montant de droite : la tringle et la manivelle y sont fixées
   return (
     <group position={[0, H / 2, 0]} onPointerDown={onToggle} onPointerOver={pointer(true)} onPointerOut={pointer(false)}>
-      <Bar element="el.louvre" size={[0.04, h, 0.04]} position={[-W / 2 + t + 0.02, 0, 0]} />
-      <Bar element="el.louvre" size={[0.04, h, 0.04]} position={[rx, 0, 0]} />
       <group ref={slats}>
         {Array.from({ length: k }, (_, i) => (
-          <group key={i} position={[0, -h / 2 + (h * (i + 0.5)) / k, 0]}>
-            <Pane w={w} h={Math.min(0.1, h / k) * 0.98} />
+          <group key={i} position={[0, -h / 2 + pitch * (i + 0.5), 0]}>
+            <Pane w={w} h={Math.min(0.11, pitch * 1.08)} thick={0.005} />
+            {/* porte-lames : une pince blanche à chaque bout de la lame */}
+            {[-1, 1].map((side) => (
+              <RoundedBox key={side} args={[0.026, Math.min(0.07, pitch * 0.7), 0.022]} radius={0.006} smoothness={2} position={[side * (w / 2 + 0.006), 0, 0.004]} castShadow>{nylon}</RoundedBox>
+            ))}
           </group>
         ))}
       </group>
-      {/* tringle de commande : relie toutes les lames, une rotule par lame */}
-      <mesh position={[rx, 0, 0.03]}><boxGeometry args={[0.006, h - 0.02, 0.006]} />{steel}</mesh>
+      {/* tringle blanche et ses rotules, le long du montant de droite */}
+      <mesh position={[rx, 0, 0.034]}><boxGeometry args={[0.012, h - 0.02, 0.006]} />{nylon}</mesh>
       {Array.from({ length: k }, (_, i) => (
-        <mesh key={i} position={[rx, -h / 2 + (h * (i + 0.5)) / k, 0.03]}><sphereGeometry args={[0.0075, 10, 8]} />{steel}</mesh>
+        <mesh key={i} position={[rx, -h / 2 + pitch * (i + 0.5), 0.04]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.007, 0.007, 0.008, 12]} />{nylon}</mesh>
       ))}
-      {/* manivelle : embase, bras et pommeau, en bas du montant */}
-      <group position={[rx, -h / 2 + 0.11, 0.03]}>
-        <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.026, 0.026, 0.01, 28]} /><meshStandardMaterial color="#15171b" roughness={0.6} metalness={0.4} /></mesh>
-        <group ref={crank} position={[0, 0, 0.008]}>
-          <RoundedBox args={[0.085, 0.012, 0.008]} radius={0.003} smoothness={2} position={[-0.036, 0, 0]} castShadow>{steel}</RoundedBox>
-          <mesh position={[-0.076, 0, 0.012]} castShadow><sphereGeometry args={[0.016, 18, 14]} /><meshStandardMaterial color="#14161a" roughness={0.45} metalness={0.3} /></mesh>
+      {/* manivelle : bras plat dans le ton du profilé, terminé par un œillet, vers l'extérieur du cadre */}
+      <group position={[rx, -h / 2 + pitch * 1.6, 0.085]}>
+        <group ref={crank}>
+          <mesh position={[0.065, 0, 0]} castShadow><boxGeometry args={[0.13, 0.014, 0.005]} /><meshStandardMaterial color={hex} roughness={0.45} metalness={0.2} /></mesh>
+          <mesh position={[0.15, 0, 0]} castShadow scale={[1.25, 1, 1]}><torusGeometry args={[0.017, 0.005, 10, 24]} /><meshStandardMaterial color={hex} roughness={0.45} metalness={0.2} /></mesh>
         </group>
       </group>
     </group>

@@ -34,10 +34,11 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
   const { width, height } = l;
   const ox = 40;
   const oy = 12;
-  const s = Math.min((maxW - ox - 12) / Math.max(width, 1), (maxH - oy - 34) / Math.max(height, 1));
+  const lever = l.opening === "jalousie" ? 26 : 0; // la manivelle du naco dépasse du cadre sur la droite
+  const s = Math.min((maxW - ox - 12 - lever) / Math.max(width, 1), (maxH - oy - 34) / Math.max(height, 1));
   const fw = width * s;
   const fh = height * s;
-  const W = Math.round(ox + fw + 12);
+  const W = Math.round(ox + fw + 12 + lever);
   let H = Math.round(oy + fh + 34);
   let leafMm = 0; // largeur d'un vantail, cotée sous la largeur totale
   const euro = l.range === "europeen";
@@ -154,10 +155,25 @@ export function drawingSvg(l: Drawable, uid = "a", maxW = 260, maxH = 200) {
     const marks = leafMarks(l);
     if (l.opening === "fixe") body += glass(ix, iy, iw, ih) + (iw > 26 && ih > 50 ? tag(ix + iw / 2, iy + ih * 0.22, "F1") : "");
     else if (l.opening === "jalousie") {
-      // naco : lames de verre horizontales dans deux montants
+      // naco, tel qu'on le fabrique : lames de verre horizontales tenues à chaque bout par un porte-lame blanc en nylon, tringle blanche à droite
+      // (une rotule par lame) et manivelle plate à œillet qui sort du cadre.
       const k = Math.min(24, nacoBlades(l.height)); // le vrai nombre de lames (plafonné pour rester lisible sur un très grand naco)
-      body += rect(ix, iy, iw, ih, `fill="${hex}" stroke="${INK}" stroke-width="1"`);
-      for (let i = 0; i < k; i++) body += glass(ix + t * 0.6, iy + 2 + ((ih - 4) * i) / k, iw - t * 1.2, (ih - 4) / k - 2);
+      const NYLON = `fill="#f4f4f0" stroke="${INK}" stroke-width=".7"`;
+      body += rect(ix, iy, iw, ih, `fill="#e9edf0" stroke="${INK}" stroke-width="1"`);
+      const bh = (ih - 4) / k;
+      const clipW = Math.max(4, t * 1.0);
+      for (let i = 0; i < k; i++) {
+        const by = iy + 2 + bh * i;
+        body += glass(ix + clipW, by, iw - clipW * 2, bh - 1.5);
+        const ch = Math.min(bh * 0.8, 18);
+        body += `<rect x="${f(ix)}" y="${f(by + (bh - ch) / 2)}" width="${f(clipW)}" height="${f(ch)}" rx="1.2" ${NYLON}/>`;
+        body += `<rect x="${f(ix + iw - clipW)}" y="${f(by + (bh - ch) / 2)}" width="${f(clipW)}" height="${f(ch)}" rx="1.2" ${NYLON}/>`;
+        body += `<circle cx="${f(ix + iw - clipW / 2)}" cy="${f(by + bh / 2)}" r="${f(Math.max(0.8, clipW * 0.18))}" fill="${INK}" fill-opacity=".6"/>`;
+      }
+      body += rect(ix + iw - clipW * 0.55, iy + 2, clipW * 0.5, ih - 4, `fill="#f4f4f0" stroke="${INK}" stroke-width=".5" fill-opacity=".9"`); // tringle
+      const ly = iy + ih * 0.68; // manivelle : bras plat blanc et œillet, à droite du cadre
+      body += `<path d="M${f(ix + iw)} ${f(ly)} H${f(ox + fw + lever - 8)}" stroke="${INK}" stroke-width="4.6" stroke-linecap="round"/><path d="M${f(ix + iw)} ${f(ly)} H${f(ox + fw + lever - 8)}" stroke="#f4f4f0" stroke-width="3" stroke-linecap="round"/>`;
+      body += `<ellipse cx="${f(ox + fw + lever - 6)}" cy="${f(ly)}" rx="6.5" ry="5" fill="#f4f4f0" stroke="${INK}" stroke-width="1"/><ellipse cx="${f(ox + fw + lever - 6)}" cy="${f(ly)}" rx="3" ry="2.2" fill="${INK}" fill-opacity=".75"/>`;
     } else if (l.opening === "coulissant") {
       const ov = t * 2;
       const vw = (iw + (n - 1) * ov) / n;
