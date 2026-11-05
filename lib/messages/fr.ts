@@ -458,7 +458,7 @@ export const fr = {
   "viewer.mode": "Mode d'ouverture",
   "viewer.turn": "Battant",
   "viewer.tilt": "Oscillant",
-  "viewer.hint": "Maintenez et glissez pour déplacer l'ouvrage dans toutes les directions, molette pour zoomer, clic droit (ou Maj + glisser) pour tourner à 360°, double-clic pour recentrer. Sur mobile : un doigt déplace, deux doigts zooment et tournent. Touchez un vantail pour l'ouvrir ou le fermer.",
+  "viewer.hint": "Maintenez le clic gauche et glissez pour tourner l'ouvrage à 360°, molette pour zoomer, clic droit (ou Maj + glisser) pour le déplacer, double-clic pour recentrer. Sur mobile : un doigt tourne, deux doigts zooment et déplacent. Touchez un vantail pour l'ouvrir ou le fermer.",
   "viewer.reset": "Réinitialiser la vue",
   "viewer.wall": "Couleur du mur",
   "viewer.wallCustom": "Autre couleur",

@@ -458,7 +458,7 @@ export const en: Messages = {
   "viewer.mode": "Opening mode",
   "viewer.turn": "Side-hung",
   "viewer.tilt": "Tilt",
-  "viewer.hint": "Hold and drag to move the piece in any direction, wheel to zoom, right-click (or Shift + drag) to rotate 360°, double-click to recentre. On mobile: one finger moves, two fingers zoom and rotate. Tap a leaf to open or close it.",
+  "viewer.hint": "Hold the left button and drag to rotate the piece 360°, wheel to zoom, right-click (or Shift + drag) to move it, double-click to recentre. On mobile: one finger rotates, two fingers zoom and move. Tap a leaf to open or close it.",
   "viewer.reset": "Reset view",
   "viewer.wall": "Wall colour",
   "viewer.wallCustom": "Other colour",

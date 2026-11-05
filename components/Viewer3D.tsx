@@ -973,7 +973,7 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
 
   return (
     <div className={bare ? "h-full w-full" : "space-y-3"}>
-      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line"}`} style={bare ? undefined : { height: 440, background: backdropFor(ctx.hex), cursor: grab ? (grab === "x" ? "ew-resize" : "ns-resize") : hover ? "pointer" : drag ? (rotating ? "grabbing" : "move") : "grab", touchAction: "none" }} onPointerDown={(e) => { setDrag(true); setRotating(e.button === 2 || e.shiftKey || e.ctrlKey || e.metaKey); }} onContextMenu={(e) => e.preventDefault()} onDoubleClick={() => controls.current?.reset()}>
+      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line"}`} style={bare ? undefined : { height: 440, background: backdropFor(ctx.hex), cursor: grab ? (grab === "x" ? "ew-resize" : "ns-resize") : hover ? "pointer" : drag ? (rotating ? "grabbing" : "move") : "grab", touchAction: "none" }} onPointerDown={(e) => { setDrag(true); setRotating(e.button === 0 && !(e.shiftKey || e.ctrlKey || e.metaKey)); }} onContextMenu={(e) => e.preventDefault()} onDoubleClick={() => controls.current?.reset()}>
         <Canvas shadows="percentage" scene={stage ? { environmentIntensity: 0.85 } : undefined} dpr={bare ? 1 : [1, 2]} frameloop="demand" camera={{ position: cam, fov: 32, near: 0.05, far: 80 }} aria-label={t("viewer.aria")} role="img" gl={{ antialias: true, preserveDrawingBuffer: bare }}>
           <SceneCtx.Provider value={ctx}>
             {stage ? <OutdoorEnv /> : <Env />}
@@ -996,8 +996,8 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
               target={target}
               minDistance={0.3}
               maxDistance={dist * 4}
-              mouseButtons={{ LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE }}
-              touches={{ ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE }}
+              mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }} // clic gauche maintenu : rotation 360° ; Maj/Ctrl + glisser (ou clic droit) : déplacement
+              touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
               minPolarAngle={0.02}
               maxPolarAngle={Math.PI * (stage ? 0.6 : 0.98)}
             />
