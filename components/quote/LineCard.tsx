@@ -93,7 +93,7 @@ export function LineCard({
 
           {openable && (
             <fieldset>
-              <legend className="mb-1 text-sm font-medium">{t("editor.extras")}</legend>
+              <legend className="mb-1 text-sm font-semibold text-ink">{t("editor.extras")}</legend>
               <div className="flex flex-wrap gap-2">
                 {EXTRAS.map((x) => (
                   <label key={x} className="cursor-pointer">
@@ -438,13 +438,13 @@ function Panel({ name, title, children, className = "" }: { name: Sec; title: st
   const folded = current === null && shut.has(name);
   const head = (
     <>
-      <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
+      <span aria-hidden className="h-6 w-1.5 rounded-full bg-primary" />
       {title}
     </>
   );
   return (
     <fieldset disabled={locked} className={`m-0 min-w-0 space-y-3 rounded-xl border border-line bg-surface-2/30 p-3.5 sm:p-4 ${className}`}>
-      <h4 className="text-sm font-semibold text-ink">
+      <h4 className={`-mx-3.5 -mt-3.5 bg-primary/15 px-3.5 py-3 text-base font-bold tracking-tight text-primary sm:-mx-4 sm:-mt-4 sm:px-4 ${folded ? "-mb-3.5 rounded-xl sm:-mb-4" : "rounded-t-xl"}`}>
         {current === null ? (
           <button type="button" aria-expanded={!folded} onClick={() => toggle(name)} className="flex w-full items-center gap-2 text-left">
             {head}
@@ -465,7 +465,7 @@ function Stepper({ id, label, help, value, min, max, hint, onChange }: { id: str
   const btn = "grid size-10 place-items-center text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent";
   return (
     <div className="space-y-1">
-      <div className="flex items-center"><label htmlFor={id} className="text-sm font-medium">{label}</label>{help && <InfoTip term={help} />}</div>
+      <div className="flex items-center"><label htmlFor={id} className="text-sm font-semibold text-ink">{label}</label>{help && <InfoTip term={help} />}</div>
       <div className="inline-flex items-center overflow-hidden rounded-lg border border-line bg-surface">
         <button type="button" className={btn} onClick={() => set(value - 1)} disabled={value <= min} aria-label={`${label} −`}>
           <Minus size={16} aria-hidden />
@@ -492,7 +492,7 @@ function LeafConfig({ l, t, onChange, id }: { l: Line; t: T; onChange: (p: Parti
   const set = (i: number, m: LeafMode) => onChange({ leafCfg: modes.map((x, j) => (j === i ? m : x)) });
   return (
     <fieldset className="min-w-0 space-y-2">
-      <legend className="text-sm font-medium">{t("editor.leafConfig")}</legend>
+      <legend className="text-sm font-semibold text-ink">{t("editor.leafConfig")}</legend>
       {sliding && (
         <div role="group" aria-label={t("editor.shortcuts")} className="flex flex-wrap items-center gap-1.5">
           {DIRECTIONS.map((d) => (

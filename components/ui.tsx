@@ -19,7 +19,7 @@ export function Field({ label, hint, children, htmlFor, help, error }: { label: 
   return (
     <div className="space-y-1">
       <div className="flex items-center">
-        <label htmlFor={htmlFor} className="text-[13px] font-medium text-ink/90">
+        <label htmlFor={htmlFor} className="text-sm font-semibold text-ink">
           {label}
         </label>
         {help && <InfoTip term={help} />}
