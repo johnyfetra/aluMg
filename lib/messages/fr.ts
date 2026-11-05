@@ -458,7 +458,7 @@ export const fr = {
   "viewer.mode": "Mode d'ouverture",
   "viewer.turn": "Battant",
   "viewer.tilt": "Oscillant",
-  "viewer.hint": "Maintenez le clic gauche et glissez : en partant de l'ouvrage il tourne à 360°, en partant du fond il se déplace dans tous les sens. Molette pour zoomer, double-clic pour recentrer. Sur mobile : un doigt fait de même, deux doigts zooment et déplacent. Touchez un vantail pour l'ouvrir ou le fermer.",
+  "viewer.hint": "Maintenez le clic gauche et glissez : la vue tourne selon le mouvement du curseur (gauche/droite : tour à 360°, haut/bas : inclinaison). Maj + glisser ou clic droit pour déplacer, molette pour zoomer, double-clic pour recentrer. Sur mobile : un doigt tourne, deux doigts zooment et déplacent. Touchez un vantail pour l'ouvrir ou le fermer.",
   "viewer.reset": "Réinitialiser la vue",
   "viewer.wall": "Couleur du mur",
   "viewer.wallCustom": "Autre couleur",
