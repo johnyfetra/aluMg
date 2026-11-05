@@ -146,7 +146,7 @@ export default function GuideTour({ userId }: { userId: string }) {
 
   return (
     <>
-      <button type="button" data-tour="guide" onClick={() => (setBox(null), go(0))} aria-label={t("guide.open")} data-tooltip={t("guide.open")} className="grid size-10 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:bg-surface-2 hover:text-ink">
+      <button type="button" data-tour="guide" onClick={() => (setBox(null), go(0))} aria-label={t("guide.open")} data-tooltip={t("guide.open")} className="grid size-10 max-lg:hidden place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:bg-surface-2 hover:text-ink">
         <BookOpen size={18} aria-hidden />
       </button>
       {open &&

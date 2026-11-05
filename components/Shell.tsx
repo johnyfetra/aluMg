@@ -186,7 +186,7 @@ function DrawerUser({ name, email, avatar }: { name: string; email?: string | nu
 export default function Shell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const { data: me } = useSession();
-  const unread = useUnread(); // messages non lus : pastille sur le bouton du menu (mobile), la messagerie est dans le tiroir
+  const unread = useUnread(); // messages non lus : pastille sur l'icône messages de la barre du haut (mobile)
   const { data: notif } = useNotifications();
   const badge = unread + (notif?.unread ?? 0);
   // application Android : même total sur l'icône (voir mobile/…/MainActivity.java)
@@ -265,13 +265,18 @@ export default function Shell({ children }: { children: ReactNode }) {
         <header id="topbar" className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-line bg-surface px-3 sm:gap-3 sm:px-8">
           <button ref={toggle} data-tour="menu" aria-controls="app-navigation" type="button" className="relative -ml-1 grid size-11 shrink-0 place-items-center rounded-xl text-ink transition-colors hover:bg-surface-2 active:bg-surface-2 lg:hidden" onClick={() => setOpen(true)} aria-label={`${t("menu.open")}${unread ? ` (${unread} ${t("msg.unread")})` : ""}`} aria-expanded={open}>
             <AlignLeft size={24} strokeWidth={2} aria-hidden />
-            <CountBadge n={unread} className="absolute right-0.5 top-0.5" />
           </button>
           <Suspense fallback={null}>
             <ScrollTop />
             <PageTitle nav={nav} />
           </Suspense>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            {me && (
+              <Link href="/messages" className="relative grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:bg-surface-2 hover:text-ink lg:hidden" aria-label={unread > 0 ? `${t("nav.messages")}, ${unread} ${t("msg.unread")}` : t("nav.messages")}>
+                <MessageCircle size={18} aria-hidden />
+                <CountBadge n={unread} className="absolute -right-1 -top-1" />
+              </Link>
+            )}
             {me?.role === "menuisier" && <GuideTour userId={me.id} />}
             {me && <FeedbackButton role={me.role} />}
             {me?.role === "client" && (
