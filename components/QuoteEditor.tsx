@@ -129,6 +129,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   }, [existing]);
   // Carnet de clients : choisir un client remplit nom, téléphone et e-mail ; ?contact=<id> préremplit un nouveau devis.
   const { data: contacts = [] } = useContacts();
+  const PLATFORM = "__platform"; // entrée de la liste qui ouvre la recherche parmi tous les clients d'AluMg
   const pickContact = (id: string) => {
     const c = contacts.find((x) => x.id === id);
     if (!c) return;
@@ -348,25 +349,23 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               <div>
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><span aria-hidden className="h-4 w-1 rounded-full bg-primary" />{t("editor.groupClient")}</h3>
                 {!q.clientId && (
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <button type="button" className="btn-secondary !min-h-9" onClick={() => setDirectory(true)}><Users size={15} aria-hidden />{t("ct.platform")}</button>
+                  <div className="mb-3 space-y-2">
+                    {/* un seul choix : mes clients enregistrés, puis « chercher sur AluMg » en dernier */}
+                    <div className="max-w-sm">
+                      <Field htmlFor="ct-pick" label={t("ct.pick")}>
+                        <Select id="ct-pick" searchable value="" onChange={(id) => (id === PLATFORM ? setDirectory(true) : pickContact(id))} options={[{ value: "", label: t("ct.pickNone") }, ...contacts.map((c) => ({
+                          value: c.id, label: c.name, description: [c.phone, c.email].filter(Boolean).join(" · ") || undefined,
+                          leading: <Avatar name={c.account?.name || c.name} src={c.account?.avatar ?? ""} size={32} round />,
+                          meta: c.discount > 0 ? `−${c.discount} %` : undefined,
+                        })), { value: PLATFORM, label: t("ct.searchMore"), leading: <Users size={18} aria-hidden className="text-primary" /> }]} />
+                      </Field>
+                    </div>
                     {q.client.accountId && (
                       <span className="inline-flex items-center gap-2 rounded-full bg-ok/15 px-3 py-1 text-xs font-semibold text-ok">
                         <UserCheck size={13} aria-hidden />{t("ct.accountLinked")}
                         <button type="button" className="underline" onClick={() => setClient({ accountId: undefined })}>{t("ct.unlink")}</button>
                       </span>
                     )}
-                  </div>
-                )}
-                {!q.clientId && contacts.length > 0 && (
-                  <div className="mb-3 max-w-sm">
-                    <Field htmlFor="ct-pick" label={t("ct.pick")}>
-                      <Select id="ct-pick" value="" onChange={pickContact} options={[{ value: "", label: t("ct.pickNone") }, ...contacts.map((c) => ({
-                        value: c.id, label: c.name, description: [c.phone, c.email].filter(Boolean).join(" · ") || undefined,
-                        leading: <Avatar name={c.account?.name || c.name} src={c.account?.avatar ?? ""} size={32} round />,
-                        meta: c.discount > 0 ? `−${c.discount} %` : undefined,
-                      }))]} />
-                    </Field>
                   </div>
                 )}
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

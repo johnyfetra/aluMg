@@ -1293,8 +1293,8 @@ export const fr = {
   "ct.copied": "Copié !",
   "ct.linkHint": "Envoyez ce lien à un client : il crée son compte puis vous demande un devis. Il entre alors dans votre carnet.",
   "ct.invite": "Bonjour, voici le lien pour créer votre compte et recevoir mon devis :",
-  "ct.pick": "Client du carnet",
-  "ct.pickNone": "Choisir un client…",
+  "ct.pick": "Choisir un client",
+  "ct.pickNone": "Sélectionner dans la liste…",
   "ct.error": "Enregistrement impossible, vérifiez les champs.",
   "editor.pdfDesign": "Modèle du devis (PDF et feuille)",
   "editor.pdfDesignDefault": "Mon modèle (réglages)",
@@ -2019,6 +2019,7 @@ export const fr = {
   "account.mustChangeGo": "Changer",
   "needs.showDetail": "Voir le détail (coupes, plan de coupe, vitrages)",
   "needs.hideDetail": "Masquer le détail",
+  "ct.searchMore": "Chercher un autre client sur AluMg…",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

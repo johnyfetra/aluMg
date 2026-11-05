@@ -1293,8 +1293,8 @@ export const en: Messages = {
   "ct.copied": "Copied!",
   "ct.linkHint": "Send this link to a client: they create an account then ask you for a quote, and join your address book.",
   "ct.invite": "Hello, here is the link to create your account and receive my quote:",
-  "ct.pick": "Client from address book",
-  "ct.pickNone": "Choose a client…",
+  "ct.pick": "Choose a client",
+  "ct.pickNone": "Select from the list…",
   "ct.error": "Could not save, check the fields.",
   "editor.pdfDesign": "Quote template (PDF and sheet)",
   "editor.pdfDesignDefault": "My template (settings)",
@@ -2019,4 +2019,5 @@ export const en: Messages = {
   "account.mustChangeGo": "Change",
   "needs.showDetail": "Show details (cuts, cutting plan, glass)",
   "needs.hideDetail": "Hide details",
+  "ct.searchMore": "Find another client on AluMg…",
 };

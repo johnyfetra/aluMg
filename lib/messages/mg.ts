@@ -1295,8 +1295,8 @@ export const mg: Messages = {
   "ct.copied": "Voadika!",
   "ct.linkHint": "Alefaso amin'ny mpanjifa ity rohy ity: mamorona kaonty izy ary mangataka tombana aminao.",
   "ct.invite": "Salama, ity ny rohy hamoronana ny kaontinao sy handraisana ny tombako:",
-  "ct.pick": "Mpanjifa avy amin'ny lisitra",
-  "ct.pickNone": "Mifidia mpanjifa…",
+  "ct.pick": "Mifidia mpanjifa",
+  "ct.pickNone": "Fidio ao amin'ny lisitra…",
   "ct.error": "Tsy voatahiry, hamarino ny saha.",
   "editor.pdfDesign": "Modely ny tombana (PDF sy taratasy)",
   "editor.pdfDesignDefault": "Ny modeliko (fanamboarana)",
@@ -2021,4 +2021,5 @@ export const mg: Messages = {
   "account.mustChangeGo": "Hanova",
   "needs.showDetail": "Hijery ny antsipiriany (fanapahana, drafitra, fitaratra)",
   "needs.hideDetail": "Afeno ny antsipiriany",
+  "ct.searchMore": "Hitady mpanjifa hafa ao amin'ny AluMg…",
 };
