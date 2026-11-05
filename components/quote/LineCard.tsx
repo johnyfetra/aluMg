@@ -19,7 +19,7 @@ import { cap, price } from "./line";
 
 // Une carte d'ouvrage : configuration (type, dimensions, finitions, prix), aperçu 2D/3D et commentaires.
 export function LineCard({
-  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark, quoteId, focused = false, review, fresh = false,
+  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark, quoteId, focused = false, review,
 }: {
   l: Line;
   i: number;
@@ -39,14 +39,11 @@ export function LineCard({
   quoteId?: string; // devis lié à un client : affiche le fil de commentaires de l'ouvrage
   focused?: boolean; // ouvrage visé par une notification
   review?: LineReview; // avis du client sur cet ouvrage
-  fresh?: boolean; // ouvrage tout juste créé : saisie guidée étape par étape, puis récapitulatif
 }) {
   const [view, setView] = useState<"2d" | "3d" | "section">("2d");
-  // étape courante (null = récapitulatif : toutes les sections, repliables)
-  const steps: Sec[] = clientMode ? ["config", "size", "finish"] : ["config", "size", "finish", "price"];
-  const [step, setStep] = useState<number | null>(fresh ? 0 : null);
-  const [shut, setShut] = useState<Set<Sec>>(new Set());
-  const sec = useMemo<SecState>(() => ({ current: step === null ? null : steps[step], shut, toggle: (n) => setShut((o) => { const c = new Set(o); if (!c.delete(n)) c.add(n); return c; }) }), [step, shut, clientMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  // toutes les sections sont visibles et repliables ; seule « Configuration » est ouverte au départ (le reste se déplie à la demande)
+  const [shut, setShut] = useState<Set<Sec>>(() => new Set<Sec>(["size", "finish", "price"]));
+  const sec = useMemo<SecState>(() => ({ current: null, shut, toggle: (n) => setShut((o) => { const c = new Set(o); if (!c.delete(n)) c.add(n); return c; }) }), [shut]);
   const cat = l.category;
   const openable = cat === "fenetre" || cat === "porte";
   const hasGlass = cat === "garde-corps" ? l.guard === "verre" : cat !== "volet" && !(cat === "porte" && l.infill === "pleine");
@@ -106,14 +103,8 @@ export function LineCard({
           )}
         </Panel>
   );
-  const last = step === steps.length - 1;
   const body = (
     <SecCtx.Provider value={sec}>
-      {step === null && (
-        <div className="mb-3 flex justify-end">
-          <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={() => setStep(0)}>{t("editor.stepReview")}</button>
-        </div>
-      )}
       <div className="@container min-w-0">
        <div className="grid gap-3 @2xl:grid-cols-[1.15fr_1fr] @2xl:items-start">
         <div className="contents @2xl:flex @2xl:min-w-0 @2xl:flex-col @2xl:gap-3">
@@ -279,16 +270,6 @@ export function LineCard({
             <p className="text-xs text-muted">{t("editor.unitHint")}</p>
           </Panel>
         )}
-        {step !== null && finishPanel}
-        {step !== null && (
-          <div className="order-6 flex items-center justify-between gap-3 @2xl:order-none">
-            <p className="text-xs font-medium text-muted" aria-live="polite">{t("editor.stepOf").replace("{n}", String(step + 1)).replace("{m}", String(steps.length))}</p>
-            <div className="flex gap-2">
-              {step > 0 && <button type="button" className="btn-secondary" onClick={() => setStep(step - 1)}>{t("editor.stepPrev")}</button>}
-              <button type="button" className="btn-primary" disabled={steps[step] === "size" && !valid} onClick={() => setStep(last ? null : step + 1)}>{last ? t("editor.stepDone") : t("editor.stepNext")}</button>
-            </div>
-          </div>
-        )}
         </div>
         <div className="contents @2xl:flex @2xl:min-w-0 @2xl:flex-col @2xl:gap-3">
         <div className="order-1 min-w-0 space-y-3 @2xl:order-none">
@@ -343,7 +324,7 @@ export function LineCard({
         </div>
         </div>
       </div>
-        {step === null && finishPanel}
+        {finishPanel}
 
         </div>
        </div>
