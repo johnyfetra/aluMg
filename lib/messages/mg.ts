@@ -460,7 +460,7 @@ export const mg: Messages = {
   "viewer.mode": "Fomba fanokafana",
   "viewer.turn": "Mivoha",
   "viewer.tilt": "Miondrika",
-  "viewer.hint": "Tazony ny bokotra ankavia ary tariho hamadika ny asa 360°, kodia hanakaiky, tsindrio havanana (na Maj + tarika) hanisaka azy, tsindrio indroa hamerina. Amin'ny finday: rantsan-tanana iray mamadika, roa manakaiky sy manisaka. Tsindrio ny vavahady hanokatra na hanidy.",
+  "viewer.hint": "Tazony ny bokotra ankavia ary tariho: raha avy amin'ny asa dia mihodina 360°, raha avy amin'ny sary aoriana dia mihetsika amin'ny lalana rehetra. Kodia hanakaiky, tsindrio indroa hamerina. Amin'ny finday: rantsan-tanana iray no mitovy, roa manakaiky sy manisaka. Tsindrio ny vavahady hanokatra na hanidy.",
   "viewer.reset": "Averina ny fijerena",
   "viewer.wall": "Loko ny rindrina",
   "viewer.wallCustom": "Loko hafa",

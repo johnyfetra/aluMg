@@ -829,7 +829,28 @@ export const backdropFor = (hex: string) => {
   return l < 0.12 ? "linear-gradient(180deg,#f4f4f5,#d4d4d8)" : l > 0.55 ? "linear-gradient(180deg,#52525b,#27272a)" : "linear-gradient(180deg,#e4e4e7,#a1a1aa)";
 };
 
-type Ctl = { reset: () => void; saveState: () => void; object: THREE.Camera; target: THREE.Vector3; update: () => void };
+// Un seul geste au doigt ou au clic gauche pour tout faire : glisser en partant de l'ouvrage le fait tourner (360°), en partant du fond le déplace (haut, bas, gauche, droite).
+function GrabMode({ work, controls }: { work: React.RefObject<THREE.Group | null>; controls: React.RefObject<Ctl | null> }) {
+  const { gl, camera } = useThree();
+  useEffect(() => {
+    const el = gl.domElement;
+    const ray = new THREE.Raycaster();
+    const pick = (e: PointerEvent) => {
+      const c = controls.current;
+      if (!c || !work.current || e.button !== 0 || e.shiftKey || e.ctrlKey || e.metaKey) return; // Maj/Ctrl : OrbitControls déplace déjà
+      const r = el.getBoundingClientRect();
+      ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+      const mode = ray.intersectObject(work.current, true).length ? "ROTATE" : "PAN";
+      c.mouseButtons.LEFT = THREE.MOUSE[mode];
+      c.touches.ONE = THREE.TOUCH[mode];
+    };
+    el.addEventListener("pointerdown", pick, { capture: true });
+    return () => el.removeEventListener("pointerdown", pick, { capture: true });
+  }, [gl, camera, work, controls]);
+  return null;
+}
+
+type Ctl = { mouseButtons: { LEFT: THREE.MOUSE }; touches: { ONE: THREE.TOUCH }; reset: () => void; saveState: () => void; object: THREE.Camera; target: THREE.Vector3; update: () => void };
 export type View = { az: number; el: number; dist?: number }; // azimut et élévation en degrés, distance relative
 
 // dims : cotes et repères (F1, V1…) ; par défaut seulement hors décor, pour ne pas charger les rendus d'ambiance.
@@ -853,6 +874,7 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
   const [mode, setMode] = useState<"turn" | "tilt">("turn");
   const reduced = useReducedMotion();
   const controls = useRef<Ctl | null>(null);
+  const work = useRef<THREE.Group>(null);
   const [rotating, setRotating] = useState(false); // clic droit ou Maj : la vue tourne au lieu de se déplacer
   const [hover, setHover] = useState(false);
   const [drag, setDrag] = useState(false);
@@ -980,7 +1002,8 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
             <ambientLight intensity={0.35} />
             <directionalLight position={[3, 5, 4]} intensity={stage ? 1.6 : 1.4} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} shadow-bias={-0.0004} />
             {stage && <Surroundings W={W} H={H} stage={stage} room={picker ? room : undefined} />}
-            <group position={[0, sillY, 0]}>{body}</group>
+            <group ref={work} position={[0, sillY, 0]}>{body}</group>
+            <GrabMode work={work} controls={controls} />
             {!bare && (dims ?? !stage) && <Dimensions W={W} H={H} leaves={v.category === "fenetre" || v.category === "porte" || v.category === "cloison" ? v.leaves : 1} />}
             {!stage && <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={Math.max(W, H) * 2.4} blur={2.4} far={Math.max(H, 1.5)} />}
             <OrbitControls
@@ -996,7 +1019,7 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
               target={target}
               minDistance={0.3}
               maxDistance={dist * 4}
-              mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }} // clic gauche maintenu : rotation 360° ; Maj/Ctrl + glisser (ou clic droit) : déplacement
+              mouseButtons={{ LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }} // le mode du clic gauche est choisi par GrabMode (ouvrage : rotation, fond : déplacement)
               touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
               minPolarAngle={0.02}
               maxPolarAngle={Math.PI * (stage ? 0.6 : 0.98)}
