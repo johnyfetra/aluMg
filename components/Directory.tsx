@@ -123,7 +123,7 @@ export default function Directory() {
           <input type="checkbox" role="switch" className="mt-0.5 size-5 accent-[var(--primary)]" checked={f.verified === "1"} onChange={(e) => set({ verified: e.target.checked ? "1" : "" })} />
           <span className="text-sm">
             <span className="flex items-center gap-1.5 font-semibold">
-              <BadgeCheck size={15} aria-hidden className="text-ok" />
+              <BadgeCheck size={15} aria-hidden className="text-verified" />
               {t("dir.verifiedOnly")}
             </span>
             <span className="text-xs text-muted">{t("dir.verifiedHelp")}</span>

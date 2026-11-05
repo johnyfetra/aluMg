@@ -84,7 +84,7 @@ function WorksDialog({ line, onClose }: { line: Line; onClose: () => void }) {
                 <p className="flex items-center gap-1 border-t border-line px-3 py-2 text-xs">
                   {t("gal.by")}{" "}
                   <Link href={`/menuisiers/${w.menuisier.slug}#h-port`} className="font-semibold text-primary hover:underline">{w.menuisier.name}</Link>
-                  {w.menuisier.verified && <BadgeCheck size={14} aria-label={t("dir.verified")} className="text-primary" />}
+                  {w.menuisier.verified && <BadgeCheck size={14} aria-label={t("dir.verified")} className="text-verified" />}
                 </p>
               </li>
             ))}

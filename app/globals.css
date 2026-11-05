@@ -11,6 +11,7 @@
   --text: #252725;
   --muted: #4b514b;
   --border: #d8d0c2;
+  --verified: #1877f2; /* badge « Vérifié » : bleu, comme les comptes certifiés */
   --primary: #243b32;
   --primary-hover: #1a2c25;
   --on-primary: #f6f3ed;
@@ -64,6 +65,7 @@
   --text: #ece9e2;
   --muted: #bcc4bd;
   --border: #36403a;
+  --verified: #4aa3ff;
   --primary: #c58a58;
   --primary-hover: #d39c6e;
   --on-primary: #1f140a;
@@ -91,6 +93,7 @@
   --color-ink: var(--text);
   --color-muted: var(--muted);
   --color-line: var(--border);
+  --color-verified: var(--verified);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-on-primary: var(--on-primary);
@@ -563,8 +566,6 @@ aside :focus-visible {
 .fb-ink { fill: var(--text); opacity: 0.8; }
 .fb-pill { fill: color-mix(in srgb, var(--surface) 88%, transparent); }
 .fb-label { fill: var(--muted); font-weight: 600; font-size: 19px; font-family: inherit; }
-.fb-glass-a { stop-color: color-mix(in srgb, var(--primary) 22%, var(--surface)); }
-.fb-glass-b { stop-color: color-mix(in srgb, var(--primary) 6%, var(--surface)); }
 .fb-wall2 { fill: color-mix(in srgb, var(--text) 12%, var(--surface-2)); }
 .fb-done { fill: color-mix(in srgb, var(--text) 9%, var(--surface-2)); }
 .fb-slab { fill: color-mix(in srgb, var(--text) 30%, var(--surface-2)); }
@@ -610,3 +611,5 @@ aside :focus-visible {
 [data-theme="dark"] .fb-pill { fill: rgb(236 233 226 / 0.16); }
 [data-theme="dark"] .fb-hill-a { fill: color-mix(in srgb, var(--primary) 20%, #121a15); }
 [data-theme="dark"] .fb-hill-b { fill: color-mix(in srgb, var(--primary) 34%, #0e1511); }
+.fb-glass-a { stop-color: color-mix(in srgb, var(--primary) 22%, var(--surface)); }
+.fb-glass-b { stop-color: color-mix(in srgb, var(--primary) 6%, var(--surface)); }

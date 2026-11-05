@@ -49,7 +49,7 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
             <h1 className="flex flex-wrap items-center gap-2 text-3xl font-extrabold tracking-tight">
               {m.name}
               {m.verified && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-good/15 px-2.5 py-1 text-xs font-semibold text-ok" title={t("mp.verifiedHint")}>
+                <span className="inline-flex items-center gap-1 rounded-full bg-verified/15 px-2.5 py-1 text-xs font-semibold text-verified" title={t("mp.verifiedHint")}>
                   <BadgeCheck size={14} aria-hidden />
                   {t("dir.verified")}
                 </span>

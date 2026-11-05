@@ -15,7 +15,7 @@ export default function MenuisierCard({ m }: { m: DirectoryEntry }) {
         <Photo src={m.cover} category={m.specialties[0]} alt={m.name} grade className="!absolute inset-0" />
         <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
         {m.verified && (
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-surface/95 px-2.5 py-1 text-xs font-bold text-ok shadow">
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-surface/95 px-2.5 py-1 text-xs font-bold text-verified shadow">
             <BadgeCheck size={14} aria-hidden />
             {t("dir.verified")}
           </span>
@@ -43,6 +43,7 @@ export default function MenuisierCard({ m }: { m: DirectoryEntry }) {
               <Link href={`/menuisiers/${m.slug}`} className="before:absolute before:inset-0 before:z-10 focus-visible:outline-offset-4">
                 {m.name}
               </Link>
+              {m.verified && <BadgeCheck size={18} aria-label={t("dir.verified")} className="ml-1 inline-block align-[-3px] text-verified" />}
             </h3>
             {m.city && (
               <p className="mt-0.5 flex items-center gap-1 text-sm text-muted">

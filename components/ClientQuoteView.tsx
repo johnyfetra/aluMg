@@ -136,7 +136,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
               {m.slug ? (
                 <Link href={`/menuisiers/${m.slug}`} className="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
                   {m.name}
-                  {m.verified && <BadgeCheck size={14} aria-label={t("dir.verified")} />}
+                  {m.verified && <BadgeCheck size={14} aria-label={t("dir.verified")} className="text-verified" />}
                 </Link>
               ) : (
                 <span className="font-semibold">{m.name}</span>
