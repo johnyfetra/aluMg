@@ -19,6 +19,7 @@ export const users = pgTable(
   phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   avatar: text("avatar").notNull().default(""), // photo de profil (data URL réduite), facultative
+  mustChangePassword: boolean("must_change_password").notNull().default(false), // mot de passe temporaire donné par l'administration : à remplacer à la première connexion
   suspendedAt: timestamp("suspended_at", { withTimezone: true }), // suspendu par un administrateur : ni connexion, ni session valide
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 },
@@ -268,6 +269,8 @@ export const conversations = pgTable(
     // dernière fois que l'appareil de chaque participant a reçu les messages (accusé de réception : ✓✓)
     clientDeliveredAt: timestamp("client_delivered_at", { withTimezone: true }).notNull().defaultNow(),
     menuisierDeliveredAt: timestamp("menuisier_delivered_at", { withTimezone: true }).notNull().defaultNow(),
+    // messages éphémères : durée de vie (secondes) des NOUVEAUX messages, 0 = désactivé ; réglage commun aux deux participants
+    ephemeralSec: integer("ephemeral_sec").notNull().default(0),
   },
   (t) => [uniqueIndex("conversations_pair_idx").on(t.clientId, t.menuisierId), index("conversations_menuisier_idx").on(t.menuisierId)],
 );
@@ -287,8 +290,59 @@ export const messages = pgTable(
     replyToId: uuid("reply_to_id").references((): AnyPgColumn => messages.id, { onDelete: "set null" }),
     quoteId: uuid("quote_id").references(() => quotes.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }), // messages éphémères : masqué puis supprimé après cette date
   },
   (t) => [index("messages_conv_idx").on(t.conversationId, t.createdAt)],
+);
+
+// Réglages propres à chaque participant d'une conversation : favori, silencieux, blocage, « effacer » (messages antérieurs masqués) et « supprimer » (fil masqué jusqu'au prochain message).
+export const conversationPrefs = pgTable(
+  "conversation_prefs",
+  {
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    favorite: boolean("favorite").notNull().default(false),
+    muted: boolean("muted").notNull().default(false),
+    blocked: boolean("blocked").notNull().default(false),
+    hidden: boolean("hidden").notNull().default(false),
+    clearedAt: timestamp("cleared_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("conversation_prefs_pk").on(t.conversationId, t.userId)],
+);
+
+// Messages importants (étoile) : visibles seulement de celui qui les a marqués.
+export const messageStars = pgTable(
+  "message_stars",
+  {
+    messageId: uuid("message_id")
+      .notNull()
+      .references(() => messages.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+  },
+  (t) => [uniqueIndex("message_stars_pk").on(t.messageId, t.userId)],
+);
+
+// Signalements d'un interlocuteur, lus par l'administration.
+export const conversationReports = pgTable(
+  "conversation_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    reporterId: uuid("reporter_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    reason: text("reason", { enum: ["spam", "abuse", "scam", "other"] }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("conversation_reports_conv_idx").on(t.conversationId)],
 );
 
 // « Écrit… » / « enregistre un vocal… » : une ligne par participant et conversation, valable quelques secondes (voir lib/chat.ts).

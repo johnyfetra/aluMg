@@ -1,5 +1,5 @@
 import { imageSrc } from "./logo";
-import { and, asc, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, ne, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { ATTACH, ATTACH_MIME, isAudioMime, isImageMime } from "./attach";
 import { getDb, schema } from "./db";
@@ -34,6 +34,10 @@ export type ConversationView = {
   last: { body: string; at: string; mine: boolean; files: number; quote: boolean; receipt: Receipt | null } | null;
   unread: number;
   updatedAt: string;
+  favorite: boolean;
+  muted: boolean;
+  blocked: "me" | "them" | null; // qui a bloqué : personne ne peut écrire tant que le blocage dure
+  ephemeralSec: number;
 };
 export type AttachmentView = { id: string; name: string; mime: string; size: number; durationMs: number | null };
 // Devis cité dans un message : de quoi l'identifier et l'ouvrir (le lien dépend du rôle de celui qui lit). Le montant n'est donné qu'une fois le devis envoyé.
@@ -49,6 +53,7 @@ export type MessageView = {
   replyTo: { id: string; body: string; mine: boolean; files: number } | null;
   attachments: AttachmentView[];
   quote: QuoteRef | null;
+  starred: boolean;
 };
 
 // Un seul compte de support : tous les administrateurs lisent, écrivent et répondent sous le plus ancien compte administrateur (boîte partagée,
@@ -58,11 +63,20 @@ async function supportId() {
   const [a] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.role, "admin")).orderBy(asc(schema.users.createdAt), schema.users.id).limit(1);
   return a?.id ?? null;
 }
-async function chatId(userId: string) {
+export async function chatId(userId: string) {
   const db = await getDb();
   const [u] = await db.select({ role: schema.users.role }).from(schema.users).where(eq(schema.users.id, userId));
   return u?.role === "admin" ? ((await supportId()) ?? userId) : userId;
 }
+
+const noPrefs = { favorite: false, muted: false, blocked: false, hidden: false, clearedAt: null as Date | null };
+export async function prefsOf(conversationId: string, userId: string) {
+  const db = await getDb();
+  const [p] = await db.select().from(schema.conversationPrefs).where(and(eq(schema.conversationPrefs.conversationId, conversationId), eq(schema.conversationPrefs.userId, userId)));
+  return p ?? noPrefs;
+}
+// Messages visibles pour `userId` : après son « effacer », et pas encore expirés.
+const visible = (clearedAt: Date | null): SQL | undefined => and(or(isNull(schema.messages.expiresAt), gt(schema.messages.expiresAt, new Date())), clearedAt ? gt(schema.messages.createdAt, clearedAt) : undefined);
 
 export type StartResult = { ok: true; id: string } | { ok: false; error: "not_found" | "forbidden" };
 
@@ -108,7 +122,7 @@ export async function startConversation(user: { id: string; role: Role }, target
 }
 
 // La conversation, seulement si l'utilisateur en est un participant ; renvoie aussi son côté.
-async function access(who: string, id: string) {
+export async function access(who: string, id: string) {
   const userId = await chatId(who);
   const db = await getDb();
   const [c] = await db.select().from(schema.conversations).where(and(eq(schema.conversations.id, id), or(eq(schema.conversations.clientId, userId), eq(schema.conversations.menuisierId, userId))));
@@ -134,17 +148,22 @@ export async function listConversations(who: string): Promise<ConversationView[]
   const userId = await chatId(who);
   const db = await getDb();
   await markDelivered(userId);
-  const rows = await db.select().from(schema.conversations).where(or(eq(schema.conversations.clientId, userId), eq(schema.conversations.menuisierId, userId))).orderBy(desc(schema.conversations.lastMessageAt));
+  const all = await db.select().from(schema.conversations).where(or(eq(schema.conversations.clientId, userId), eq(schema.conversations.menuisierId, userId))).orderBy(desc(schema.conversations.lastMessageAt));
+  const prefs = all.length ? await db.select().from(schema.conversationPrefs).where(inArray(schema.conversationPrefs.conversationId, all.map((c) => c.id))) : [];
+  // « supprimer » masque le fil jusqu'au prochain message
+  const rows = all.filter((c) => { const mine = prefs.find((p) => p.conversationId === c.id && p.userId === userId); return !mine?.hidden || (mine.clearedAt !== null && c.lastMessageAt > mine.clearedAt); });
   return Promise.all(
     rows.map(async (c) => {
       const side = c.clientId === userId ? "client" : "menuisier";
       const otherId = side === "client" ? c.menuisierId : c.clientId;
+      const mine = prefs.find((p) => p.conversationId === c.id && p.userId === userId) ?? noPrefs;
+      const theirs = prefs.find((p) => p.conversationId === c.id && p.userId === otherId);
       const readAt = side === "client" ? c.clientReadAt : c.menuisierReadAt;
       const [u] = await db.select({ name: schema.users.name, avatar: schema.users.avatar, role: schema.users.role }).from(schema.users).where(eq(schema.users.id, otherId));
       const [p] = await db.select({ slug: schema.menuisierProfiles.slug, name: schema.menuisierProfiles.displayName, logo: schema.menuisierProfiles.logo }).from(schema.menuisierProfiles).where(eq(schema.menuisierProfiles.userId, otherId));
-      const [last] = await db.select().from(schema.messages).where(eq(schema.messages.conversationId, c.id)).orderBy(desc(schema.messages.createdAt)).limit(1);
+      const [last] = await db.select().from(schema.messages).where(and(eq(schema.messages.conversationId, c.id), visible(mine.clearedAt))).orderBy(desc(schema.messages.createdAt)).limit(1);
       const [{ files }] = last ? await db.select({ files: sql<number>`count(*)::int` }).from(schema.messageAttachments).where(eq(schema.messageAttachments.messageId, last.id)) : [{ files: 0 }];
-      const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.messages).where(and(eq(schema.messages.conversationId, c.id), ne(schema.messages.senderId, userId), gt(schema.messages.createdAt, readAt)));
+      const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.messages).where(and(eq(schema.messages.conversationId, c.id), ne(schema.messages.senderId, userId), gt(schema.messages.createdAt, readAt), visible(mine.clearedAt)));
       return {
         id: c.id,
         other: u?.role === "admin"
@@ -153,6 +172,10 @@ export async function listConversations(who: string): Promise<ConversationView[]
         last: last ? { body: last.body, at: last.createdAt.toISOString(), mine: last.senderId === userId, files, quote: !!last.quoteId, receipt: last.senderId === userId ? receiptOf(c, side, last.createdAt) : null } : null,
         unread: n,
         updatedAt: c.lastMessageAt.toISOString(),
+        favorite: mine.favorite,
+        muted: mine.muted,
+        blocked: mine.blocked ? ("me" as const) : theirs?.blocked ? ("them" as const) : null,
+        ephemeralSec: c.ephemeralSec,
       };
     }),
   );
@@ -165,7 +188,9 @@ export async function readMessages(who: string, id: string, after?: string): Pro
   const userId = await chatId(who);
   const db = await getDb();
   const since = after && !Number.isNaN(Date.parse(after)) ? new Date(after) : null;
-  const rows = await db.select().from(schema.messages).where(since ? and(eq(schema.messages.conversationId, id), gt(schema.messages.createdAt, since)) : eq(schema.messages.conversationId, id)).orderBy(asc(schema.messages.createdAt)).limit(500);
+  await db.delete(schema.messages).where(and(eq(schema.messages.conversationId, id), lt(schema.messages.expiresAt, new Date()))); // messages éphémères arrivés à échéance
+  const { clearedAt } = await prefsOf(id, userId);
+  const rows = await db.select().from(schema.messages).where(and(eq(schema.messages.conversationId, id), since ? gt(schema.messages.createdAt, since) : undefined, visible(clearedAt))).orderBy(asc(schema.messages.createdAt)).limit(500);
   const now = new Date();
   await db.update(schema.conversations).set(a.side === "client" ? { clientReadAt: now, clientDeliveredAt: now } : { menuisierReadAt: now, menuisierDeliveredAt: now }).where(eq(schema.conversations.id, id));
   return present(userId, a.side, rows, a.c);
@@ -184,11 +209,13 @@ async function present(userId: string, side: "client" | "menuisier", rows: Row[]
   const replyFiles = replyIds.length ? await db.select({ messageId: schema.messageAttachments.messageId }).from(schema.messageAttachments).where(inArray(schema.messageAttachments.messageId, replyIds)) : [];
   const quoteIds = [...new Set(rows.flatMap((m) => (m.quoteId ? [m.quoteId] : [])))];
   const quotes = quoteIds.length ? await db.select({ id: schema.quotes.id, data: schema.quotes.data, status: schema.quotes.status }).from(schema.quotes).where(inArray(schema.quotes.id, quoteIds)) : [];
+  const stars = new Set((await db.select({ id: schema.messageStars.messageId }).from(schema.messageStars).where(and(eq(schema.messageStars.userId, userId), inArray(schema.messageStars.messageId, ids)))).map((x) => x.id));
   return rows.map((m) => {
     const r = replies.find((x) => x.id === m.replyToId);
     const q = quotes.find((x) => x.id === m.quoteId);
     return {
       id: m.id,
+      starred: stars.has(m.id),
       body: m.body,
       at: m.createdAt.toISOString(),
       mine: m.senderId === userId,
@@ -200,7 +227,7 @@ async function present(userId: string, side: "client" | "menuisier", rows: Row[]
   });
 }
 
-export type SendResult = { ok: true; message: MessageView } | { ok: false; error: "not_found" | "bad_reply" | "bad_quote" | "bad_file" | "too_big" };
+export type SendResult = { ok: true; message: MessageView } | { ok: false; error: "not_found" | "bad_reply" | "bad_quote" | "bad_file" | "too_big" | "blocked" };
 
 // Devis qu'on peut citer dans cette conversation : ceux du menuisier pour ce client, une fois sortis du brouillon.
 export async function citableQuotes(userId: string, id: string) {
@@ -216,6 +243,8 @@ export async function sendMessage(who: string, id: string, input: MessageInput):
   if (!a) return { ok: false, error: "not_found" };
   const userId = await chatId(who);
   const db = await getDb();
+  const [mine, other] = await Promise.all([prefsOf(id, userId), prefsOf(id, a.side === "client" ? a.c.menuisierId : a.c.clientId)]);
+  if (mine.blocked || other.blocked) return { ok: false, error: "blocked" };
   if (input.replyToId) {
     const [r] = await db.select({ id: schema.messages.id }).from(schema.messages).where(and(eq(schema.messages.id, input.replyToId), eq(schema.messages.conversationId, id)));
     if (!r) return { ok: false, error: "bad_reply" };
@@ -230,7 +259,7 @@ export async function sendMessage(who: string, id: string, input: MessageInput):
   });
   if (files.some((f) => !f.ok)) return { ok: false, error: files.some((f) => f.size > ATTACH.maxFile) ? "too_big" : "bad_file" };
   if (total > ATTACH.maxTotal) return { ok: false, error: "too_big" };
-  const [m] = await db.insert(schema.messages).values({ conversationId: id, senderId: userId, body: input.body, replyToId: input.replyToId ?? null, quoteId: input.quoteId ?? null }).returning();
+  const [m] = await db.insert(schema.messages).values({ conversationId: id, senderId: userId, body: input.body, replyToId: input.replyToId ?? null, quoteId: input.quoteId ?? null, expiresAt: a.c.ephemeralSec ? new Date(Date.now() + a.c.ephemeralSec * 1000) : null }).returning();
   if (files.length) await db.insert(schema.messageAttachments).values(files.map((f) => ({ messageId: m.id, name: f.name, mime: f.mime, size: f.size, durationMs: f.durationMs, data: f.data })));
   await db.delete(schema.conversationTyping).where(and(eq(schema.conversationTyping.conversationId, id), eq(schema.conversationTyping.userId, userId))); // il a fini d'écrire
   // l'expéditeur a, par définition, tout lu
@@ -272,5 +301,5 @@ export async function getTyping(who: string, id: string): Promise<Typing | undef
 }
 
 export async function unreadCount(userId: string): Promise<number> {
-  return (await listConversations(userId)).reduce((s, c) => s + c.unread, 0);
+  return (await listConversations(userId)).reduce((s, c) => s + (c.muted ? 0 : c.unread), 0); // un fil en sourdine ne compte pas dans la pastille
 }

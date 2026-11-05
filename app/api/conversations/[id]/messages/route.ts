@@ -22,5 +22,5 @@ export async function POST(req: Request, { params }: Ctx) {
   if ("res" in p) return p.res;
   const r = await sendMessage(user.id, id, p.data);
   if (r.ok) return json(r.message, 201);
-  return r.error === "not_found" ? fail(404, "not_found") : r.error === "too_big" ? fail(413, "too_big") : fail(400, r.error);
+  return r.error === "not_found" ? fail(404, "not_found") : r.error === "too_big" ? fail(413, "too_big") : r.error === "blocked" ? fail(403, "blocked") : fail(400, r.error);
 }

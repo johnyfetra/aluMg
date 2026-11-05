@@ -155,6 +155,20 @@
       "when": 1793814130424,
       "tag": "0021_fil_support_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793854946012,
+      "tag": "0022_infos_conversation",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793855537983,
+      "tag": "0023_mot_de_passe_temporaire",
+      "breakpoints": true
     }
   ]
 }

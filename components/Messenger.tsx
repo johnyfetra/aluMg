@@ -1,9 +1,12 @@
 "use client";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, SquarePen } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import ChatButton from "./ChatButton";
 import Thread from "./ChatThread";
+import ContactInfo from "./ContactInfo";
 import ConversationList from "./ConversationList";
+import NewChatDialog from "./NewChatDialog";
 import { useConversations, useSession } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 
@@ -15,14 +18,25 @@ export default function Messenger() {
   const { data: me } = useSession();
   const { data: convs = [], isLoading } = useConversations();
   const current = convs.find((c) => c.id === selected) ?? null;
+  // fiche du contact : colonne à droite sur ordinateur, plein écran sur mobile ; se referme quand on change de conversation
+  const [infoFor, setInfoFor] = useState<string | null>(null);
+  const info = !!current && infoFor === current.id;
+  const [creating, setCreating] = useState(false);
 
   return (
     <div className="lg:space-y-4">
       <h1 className="hidden text-2xl font-bold lg:block">{t("msg.title")}</h1>
       {/* mobile : la liste prend tout l'écran sous la barre, et un fil ouvert passe en plein écran (comme WhatsApp) ; ordinateur : deux volets dans une carte */}
-      <div className="-mx-4 -mb-20 -mt-6 grid h-[calc(100dvh-4rem)] grid-cols-[minmax(0,1fr)] overflow-hidden bg-surface sm:-mx-8 lg:mx-0 lg:mb-0 lg:mt-0 lg:h-[calc(100vh-11rem)] lg:min-h-[34rem] lg:grid-cols-[22rem_minmax(0,1fr)] lg:rounded-2xl lg:border lg:border-line lg:shadow-sm">
+      <div className={`-mx-4 -mb-20 -mt-6 grid h-[calc(100dvh-4rem)] grid-cols-[minmax(0,1fr)] overflow-hidden bg-surface sm:-mx-8 lg:mx-0 lg:mb-0 lg:mt-0 lg:h-[calc(100vh-11rem)] lg:min-h-[34rem] ${info ? "lg:grid-cols-[22rem_minmax(0,1fr)_24rem]" : "lg:grid-cols-[22rem_minmax(0,1fr)]"} lg:rounded-2xl lg:border lg:border-line lg:shadow-sm`}>
         <aside className={`min-h-0 flex-col border-line lg:border-r ${current ? "hidden lg:flex" : "flex"}`} aria-label={t("msg.conversations")}>
-          <div className="hidden border-b border-line px-4 py-3 text-sm font-semibold lg:block">{t("msg.conversations")}</div>
+          <div className="flex items-center justify-between border-b border-line px-4 py-2.5 max-lg:pt-[max(0.625rem,env(safe-area-inset-top))]">
+            <span className="text-sm font-semibold">{t("msg.conversations")}</span>
+            {me && (
+              <button type="button" onClick={() => setCreating(true)} className="grid size-9 place-items-center rounded-full hover:bg-surface-2" aria-label={t("msg.new")} data-tooltip={t("msg.new")}>
+                <SquarePen size={18} aria-hidden />
+              </button>
+            )}
+          </div>
           {me && me.role !== "admin" && (
             <div className="border-b border-line p-3">
               <ChatButton target={{ support: true }} label={t("msg.support")} />
@@ -33,7 +47,7 @@ export default function Messenger() {
 
         <section className={`min-h-0 min-w-0 flex-col ${current ? "flex max-lg:fixed max-lg:inset-0 max-lg:z-50 max-lg:h-dvh max-lg:bg-surface" : "hidden lg:flex"}`} aria-label={t("msg.thread")}>
           {current ? (
-            <Thread key={current.id} conv={current} onBack={() => router.replace("/messages")} />
+            <Thread key={current.id} conv={current} onBack={() => router.replace("/messages")} onInfo={() => setInfoFor(current.id)} />
           ) : (
             <div className="grid flex-1 place-items-center p-8 text-center text-muted">
               <div>
@@ -43,7 +57,14 @@ export default function Messenger() {
             </div>
           )}
         </section>
+
+        {info && (
+          <aside className="flex min-h-0 min-w-0 flex-col border-line max-lg:fixed max-lg:inset-0 max-lg:z-[60] max-lg:h-dvh lg:border-l" aria-label={t("ci.title")}>
+            <ContactInfo conv={current} onClose={() => setInfoFor(null)} onGone={() => { setInfoFor(null); router.replace("/messages"); }} />
+          </aside>
+        )}
       </div>
+      {creating && me && <NewChatDialog role={me.role as "client" | "menuisier" | "admin"} onClose={() => setCreating(false)} onOpen={(id) => { setCreating(false); router.replace(`/messages?c=${id}`); }} />}
     </div>
   );
 }

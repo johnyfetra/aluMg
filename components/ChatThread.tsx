@@ -1,6 +1,6 @@
 "use client";
 import RoleBadge from "./RoleBadge";
-import { ArrowLeft, Camera, Check, CheckCheck, Download, FileText, Hash, Image as ImageIcon, Mic, Paperclip, Reply, Send, X } from "lucide-react";
+import { ArrowLeft, Camera, Check, CheckCheck, Download, FileText, Hash, Image as ImageIcon, Mic, Paperclip, Reply, Send, Star, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { mutate } from "swr";
@@ -43,7 +43,7 @@ export function Ticks({ receipt, t, onPrimary = true }: { receipt: Receipt; t: T
 }
 
 // Fil d'une conversation : messages, pièces jointes, vocaux, réponses, devis cités, accusés, « écrit… » et le champ de saisie.
-export default function Thread({ conv, onBack, header = true, compact = false }: { conv: ConversationView; onBack?: () => void; header?: boolean; compact?: boolean }) {
+export default function Thread({ conv, onBack, onInfo, header = true, compact = false }: { conv: ConversationView; onBack?: () => void; onInfo?: () => void; header?: boolean; compact?: boolean }) {
   const { t, locale } = useI18n();
   const { data: me } = useSession();
   const support = me?.role === "admin" || conv.other.role === "admin"; // échange avec la plateforme : ni devis à citer, ni réponses rapides de menuisier
@@ -145,6 +145,15 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
     }
   };
 
+  const toggleStar = async (m: MessageView) => {
+    try {
+      await request("POST", `/api/conversations/${conv.id}/info`, { action: "star", messageId: m.id, on: !m.starred });
+      await Promise.all([mutate(`/api/conversations/${conv.id}/messages`), mutate(`/api/conversations/${conv.id}/info`)]);
+    } catch (e) {
+      setError(errorText(e, t));
+    }
+  };
+
   const send = (e?: React.FormEvent) => {
     e?.preventDefault();
     const body = text.trim();
@@ -226,12 +235,15 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
               <ArrowLeft size={18} aria-hidden />
             </button>
           )}
-          <Avatar name={o.name} src={o.role !== "client" ? o.logo || o.avatar : o.avatar} size={40} round={o.role === "client"} />
-          <div className="min-w-0 flex-1">
-            <p className="flex min-w-0 items-center gap-2 font-semibold"><span className="truncate">{o.name}</span><RoleBadge role={o.role} /></p>
-            {typing && <p className="truncate text-xs text-primary">{t(typing === "voice" ? "msg.typingVoice" : "msg.typingText")}…</p>}
-          </div>
-          {o.role === "menuisier" && o.slug && (
+          {/* un clic sur l'interlocuteur ouvre sa fiche (comme WhatsApp) */}
+          <button type="button" onClick={onInfo} disabled={!onInfo} aria-label={t("ci.openInfo")} className="flex min-w-0 flex-1 items-center gap-2 rounded-lg text-left enabled:hover:bg-surface-2 sm:gap-3">
+            <Avatar name={o.name} src={o.role !== "client" ? o.logo || o.avatar : o.avatar} size={40} round={o.role === "client"} />
+            <span className="min-w-0 flex-1">
+              <span className="flex min-w-0 items-center gap-2 font-semibold"><span className="truncate">{o.name}</span><RoleBadge role={o.role} /></span>
+              {typing && <span className="block truncate text-xs text-primary">{t(typing === "voice" ? "msg.typingVoice" : "msg.typingText")}…</span>}
+            </span>
+          </button>
+          {!onInfo && o.role === "menuisier" && o.slug && (
             <Link href={`/menuisiers/${o.slug}`} className="text-sm font-medium text-primary hover:underline">
               {t("dir.viewProfile")}
             </Link>
@@ -304,6 +316,9 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
                 <button type="button" onClick={() => { setReplyTo(m); input.current?.focus(); }} aria-label={`${t("msg.reply")}, ${preview({ body: m.body, files: m.attachments.length })}`} data-tooltip={t("msg.reply")} data-tooltip-pos="top" className="mb-1 grid size-8 shrink-0 place-items-center rounded-full text-muted opacity-0 transition-opacity hover:bg-surface hover:text-primary focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-60">
                   <Reply size={15} aria-hidden />
                 </button>
+                <button type="button" onClick={() => void toggleStar(m)} aria-label={t(m.starred ? "ci.unstar" : "ci.star")} aria-pressed={m.starred} data-tooltip={t(m.starred ? "ci.unstar" : "ci.star")} data-tooltip-pos="top" className={`mb-1 grid size-8 shrink-0 place-items-center rounded-full hover:bg-surface-2 ${m.starred ? "text-primary" : "text-muted opacity-0 focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-60"}`}>
+                  <Star size={15} aria-hidden fill={m.starred ? "currentColor" : "none"} />
+                </button>
               </div>
             </div>
           );
@@ -319,6 +334,9 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
         <div ref={end} />
       </div>
 
+      {conv.blocked ? (
+        <p role="status" className="border-t border-line bg-surface px-4 py-4 text-center text-sm text-muted">{t(conv.blocked === "me" ? "ci.blockedByMe" : "ci.blockedByThem")}</p>
+      ) : (
       <form onSubmit={send} className={`relative border-t border-line bg-surface ${compact ? "px-3 pb-3.5 pt-3" : "px-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-5 sm:pt-4"}`}>
         {!text.trim() && !pending.length && !support && (
           <div role="group" aria-label={t("msg.qr.title")} className="no-scrollbar -mx-1 mb-2 flex gap-1.5 overflow-x-auto px-1">
@@ -469,6 +487,7 @@ export default function Thread({ conv, onBack, header = true, compact = false }:
         )}
         {!recording && !compact && <p className="mt-2.5 hidden px-1 text-[11px] text-muted sm:block">{t("msg.hint")}</p>}
       </form>
+      )}
 
       {drag && <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center rounded-2xl border-2 border-dashed border-primary bg-primary/10 text-lg font-semibold text-primary backdrop-blur-[1px]">{t("msg.drop")}</div>}
       {camera && <CameraDialog t={t} onClose={() => setCamera(false)} onCapture={(f) => { setCamera(false); void addFiles([f]); }} />}

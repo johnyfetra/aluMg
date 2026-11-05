@@ -7,6 +7,7 @@ import type { ClientQuote, EventView, LineComment } from "./workflow";
 import type { NotificationView } from "./notifications";
 import type { ContactView } from "./contacts";
 import type { ConversationView, MessageView } from "./chat";
+import type { ConversationInfo, Person } from "./chat-info";
 import type { FeedbackRow } from "./feedback";
 import type { PublicSocial, SocialLink } from "./social";
 import type { AccountConfig, AdminQuote, AdminQuoteRow, AdminStats, AdminUser, AdminUserRow, AuditRow, PageOf } from "./admin";
@@ -34,7 +35,7 @@ export const fetcher = <T,>(url: string) => request<T>("GET", url);
 
 export { ApiError, request };
 
-export const useMe = () => useSWR<Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role" | "verified">>("/api/me", fetcher, { revalidateOnFocus: false });
+export const useMe = () => useSWR<Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role" | "verified" | "mustChangePassword">>("/api/me", fetcher, { revalidateOnFocus: false });
 
 export function useSettings() {
   const { data, mutate, isLoading, error } = useSWR<Settings>("/api/settings", fetcher, { revalidateOnFocus: false });
@@ -75,7 +76,7 @@ export function useQuotes() {
 }
 
 // Session pour les pages publiques : jamais de redirection, renvoie null si personne n'est connecté.
-export type SessionInfo = Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role" | "verified">;
+export type SessionInfo = Pick<SessionUser, "id" | "email" | "name" | "phone" | "avatar" | "role" | "verified" | "mustChangePassword">;
 export const useSession = () =>
   useSWR<SessionInfo | null>(
     "session",
@@ -130,6 +131,10 @@ export const useMessages = (id: string | null) => useSWR<MessageView[]>(id ? `/a
 // L'autre participant écrit-il ? Interrogé plus souvent que les messages pour que l'indicateur reste vivant.
 export const useTyping = (id: string | null) => useSWR<{ typing: "text" | "voice" | null }>(id ? `/api/conversations/${id}/typing` : null, fetcher, { refreshInterval: 1500 });
 export const useCitableQuotes = (id: string, enabled: boolean) => useSWR<{ id: string; number: string; project: string; status: string }[]>(enabled ? `/api/conversations/${id}/quotes` : null, fetcher);
+
+// Fiche de la conversation (panneau « Infos du contact ») : médias, liens, messages importants.
+export const useConversationInfo = (id: string | null) => useSWR<ConversationInfo>(id ? `/api/conversations/${id}/info` : null, fetcher, { refreshInterval: 15000 });
+export const usePeople = (q: string, enabled: boolean) => useSWR<Person[]>(enabled ? `/api/conversations/people?q=${encodeURIComponent(q)}` : null, fetcher, { keepPreviousData: true });
 
 // Nombre de messages non lus (pastille de la navigation) ; rien n'est demandé si personne n'est connecté.
 export function useUnread() {

@@ -19,3 +19,6 @@ export const mimeOfName = (name: string) => {
   return Object.entries(ATTACH_MIME).find(([, exts]) => exts.includes(ext))?.[0] ?? "";
 };
 export const sizeLabel = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(".", ",")} Mo` : `${Math.max(1, Math.round(n / 1000))} Ko`);
+
+// Messages éphémères : durées proposées, en secondes (désactivé, 24 h, 7 jours, 90 jours).
+export const EPHEMERAL = [0, 86_400, 604_800, 7_776_000] as const;
