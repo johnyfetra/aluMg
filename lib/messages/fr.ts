@@ -2015,6 +2015,8 @@ export const fr = {
   "editor.vat": "Afficher la TVA sur le devis",
   "editor.vatHint": "Sans TVA, les prix saisis sont les prix finaux du devis. Avec TVA, elle s'ajoute au total.",
   "account.mustChange": "Votre mot de passe a été défini par l'administration. Pour votre sécurité, choisissez-en un nouveau : saisissez le mot de passe temporaire comme mot de passe actuel.",
+  "account.confirm": "Confirmer le nouveau mot de passe",
+  "account.mismatch": "Les deux mots de passe ne correspondent pas.",
   "account.mustChangeBanner": "Mot de passe temporaire : choisissez le vôtre pour sécuriser votre compte.",
   "account.mustChangeGo": "Changer",
   "needs.showDetail": "Voir le détail (coupes, plan de coupe, vitrages)",

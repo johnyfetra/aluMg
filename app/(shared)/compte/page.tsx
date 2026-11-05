@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import PasswordField from "@/components/access/PasswordField";
 import PhonesCard from "@/components/PhonesCard";
 import { Avatar, Field } from "@/components/ui";
 import { compressImage } from "@/lib/image";
@@ -11,6 +12,7 @@ import { errorText } from "@/lib/errors";
 export default function AccountPage() {
   const { t } = useI18n();
   const { data: me } = useMe();
+  const [pwKey, setPwKey] = useState(0); // remonte les champs de mot de passe pour les vider après l'enregistrement
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   if (!me) return null;
 
@@ -18,6 +20,7 @@ export default function AccountPage() {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     const newPassword = String(f.get("newPassword") ?? "");
+    if (newPassword && newPassword !== String(f.get("confirmPassword") ?? "")) return setMsg({ ok: false, text: t("account.mismatch") });
     try {
       await request("PATCH", "/api/me", {
         name: f.get("name"),
@@ -26,6 +29,7 @@ export default function AccountPage() {
       });
       await Promise.all([mutate("/api/me"), mutate("session")]);
       (e.target as HTMLFormElement).reset();
+      setPwKey((k) => k + 1);
       setMsg({ ok: true, text: t("account.saved") });
     } catch (err) {
       setMsg({ ok: false, text: err instanceof ApiError && err.code === "wrong_password" ? t("account.wrongPassword") : errorText(err, t) });
@@ -77,12 +81,9 @@ export default function AccountPage() {
           <input id="e" value={me.email || "-"} readOnly className="input opacity-70" />
         </Field>
         <h2 className="pt-2 text-lg font-semibold">{t("account.password")}</h2>
-        <Field htmlFor="cp" label={t("account.current")}>
-          <input id="cp" name="currentPassword" type="password" autoComplete="current-password" className="input" />
-        </Field>
-        <Field htmlFor="np" label={t("account.new")} hint={t("auth.passwordHint")}>
-          <input id="np" name="newPassword" type="password" minLength={8} autoComplete="new-password" className="input" />
-        </Field>
+        <PasswordField key={`cp${pwKey}`} id="cp" name="currentPassword" label={t("account.current")} signup={false} required={false} />
+        <PasswordField key={`np${pwKey}`} id="np" name="newPassword" label={t("account.new")} signup required={false} />
+        <PasswordField key={`cf${pwKey}`} id="cf" name="confirmPassword" label={t("account.confirm")} signup={false} required={false} autoComplete="new-password" />
         <button type="submit" className="btn-primary">
           {t("common.save")}
         </button>

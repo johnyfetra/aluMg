@@ -13,7 +13,7 @@ export const passwordScore = (p: string) => {
 const LABELS = ["", "auth.pw.weak", "auth.pw.fair", "auth.pw.good", "auth.pw.strong"] as const;
 const COLORS = ["", "bg-danger", "bg-warn", "bg-ok", "bg-ok"] as const;
 
-export default function PasswordField({ id, name, label, signup, error, onInput }: { id: string; name: string; label: string; signup: boolean; error?: string; onInput?: () => void }) {
+export default function PasswordField({ id, name, label, signup, error, onInput, required = true, autoComplete }: { id: string; name: string; label: string; signup: boolean; error?: string; onInput?: () => void; required?: boolean; autoComplete?: string }) {
   const { t } = useI18n();
   const [shown, setShown] = useState(false);
   const [value, setValue] = useState("");
@@ -27,9 +27,9 @@ export default function PasswordField({ id, name, label, signup, error, onInput 
           id={id}
           name={name}
           type={shown ? "text" : "password"}
-          required
+          required={required}
           maxLength={200}
-          autoComplete={signup ? "new-password" : "current-password"}
+          autoComplete={autoComplete ?? (signup ? "new-password" : "current-password")}
           className="input !pr-10"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}

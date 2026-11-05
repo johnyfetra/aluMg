@@ -2015,6 +2015,8 @@ export const en: Messages = {
   "editor.vat": "Show VAT on the quote",
   "editor.vatHint": "Without VAT, entered prices are the final quote prices. With VAT, it is added to the total.",
   "account.mustChange": "Your password was set by the administrators. For your security, choose a new one: enter the temporary password as the current password.",
+  "account.confirm": "Confirm new password",
+  "account.mismatch": "The two passwords do not match.",
   "account.mustChangeBanner": "Temporary password: choose your own to secure your account.",
   "account.mustChangeGo": "Change",
   "needs.showDetail": "Show details (cuts, cutting plan, glass)",
