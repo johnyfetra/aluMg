@@ -23,7 +23,7 @@ const patch = z.object({
 });
 
 export async function PATCH(req: Request) {
-  const user = await requireUser({ tempPassword: true }); // c'est ici qu'on remplace un mot de passe temporaire
+  const user = await requireUser();
   if (isResponse(user)) return user;
   const blocked = await limited({ key: `me:${user.id}`, limit: 15, windowSec: 600 }, { key: `me:ip:${clientIp(req)}`, limit: 60, windowSec: 600 });
   if (blocked) return blocked;

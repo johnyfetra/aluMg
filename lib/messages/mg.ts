@@ -2012,9 +2012,11 @@ export const mg: Messages = {
   "msg.filterUnread": "Tsy voavaky",
   "msg.filterFav": "Tiana",
   "msg.filterNone": "Tsy misy resaka amin'ity sivana ity.",
-  "account.mustChange": "Napetraky ny fitantanana ny tenimiafinao: mifidiana ny anao eto ambany vao manohy.",
   "pdf.totalPlain": "Totaliny",
   "editor.totalPlain": "Totaliny",
   "editor.vat": "Asehoy ny TVA amin'ny devis",
   "editor.vatHint": "Raha tsy misy TVA, ny vidiny nampidirina no vidiny farany. Raha misy, miampy amin'ny totaliny.",
+  "account.mustChange": "Napetraky ny fitantanana ny tenimiafinao. Mba hiarovana anao, mifidiana vaovao: ampidiro ho tenimiafina ankehitriny ilay vonjimaika.",
+  "account.mustChangeBanner": "Tenimiafina vonjimaika: mifidiana ny anao hiarovana ny kaontinao.",
+  "account.mustChangeGo": "Hanova",
 };

@@ -300,6 +300,12 @@ export default function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main id="main" className="mx-auto w-full max-w-[110rem] px-4 pb-20 pt-6 sm:px-8 xl:px-10">
+          {me?.mustChangePassword && (
+            <p role="status" className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-medium">
+              {t("account.mustChangeBanner")}
+              <Link href="/compte" className="text-primary underline">{t("account.mustChangeGo")}</Link>
+            </p>
+          )}
           {children}
         </main>
         {me?.role === "menuisier" && <TariffsPanel />}

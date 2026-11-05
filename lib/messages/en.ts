@@ -2010,9 +2010,11 @@ export const en: Messages = {
   "msg.filterUnread": "Unread",
   "msg.filterFav": "Favourites",
   "msg.filterNone": "No conversation in this filter.",
-  "account.mustChange": "Your password was set by the administrators: choose your own below to continue.",
   "pdf.totalPlain": "Total",
   "editor.totalPlain": "Total",
   "editor.vat": "Show VAT on the quote",
   "editor.vatHint": "Without VAT, entered prices are the final quote prices. With VAT, it is added to the total.",
+  "account.mustChange": "Your password was set by the administrators. For your security, choose a new one: enter the temporary password as the current password.",
+  "account.mustChangeBanner": "Temporary password: choose your own to secure your account.",
+  "account.mustChangeGo": "Change",
 };
