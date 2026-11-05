@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { allPieces, billedArea, cutList, cuttingPlan, fmt, lineTotal, meters, planTotals } from "./calc";
+import { billedArea, fmt, lineTotal } from "./calc";
 import { lineDetails, lineTitle } from "./describe";
 import { drawingSvg, svgToPng } from "./drawing";
 import { DATE_LOCALE, type Locale, type T } from "./i18n";
@@ -24,7 +24,7 @@ function fit(doc: jsPDF, img: string, x: number, y: number, maxW: number, maxH: 
 }
 
 // Construit le PDF (sans le télécharger) : testable sous Node.
-export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale, withCutSheet: boolean) {
+export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale) {
   const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const accent = rgb(s.accent);
   // personnalisation cadrée (lib/docStyle.ts) : mise en page variable, mentions toujours imprimées
@@ -201,14 +201,15 @@ export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale,
     row(`${t("pdf.discount")} ${q.discount} %`, `− ${fmt(discount)} Ar`, ry + 5.5);
     ry += 11;
   }
-  row(t("pdf.totalHt"), `${fmt(ht)} Ar`, ry);
+  // sans TVA (cas courant à Madagascar : prix déjà tout compris) : un seul total, pas de ligne HT/TVA
   if (q.terms.tva > 0) {
+    row(t("pdf.totalHt"), `${fmt(ht)} Ar`, ry);
     row(`${t("pdf.totalTva")} ${q.terms.tva} %`, `${fmt(tva)} Ar`, ry + 5.5);
     ry += 5.5;
   }
   doc.setFillColor(...accent).roundedRect(125, ry + 9, R - 125, 10, 1.5, 1.5, "F");
   doc.setTextColor(255, 255, 255).setFont(F, "bold").setFontSize(11);
-  doc.text(t("pdf.totalTtc"), 128, ry + 15.6);
+  doc.text(t(q.terms.tva > 0 ? "pdf.totalTtc" : "pdf.totalPlain"), 128, ry + 15.6);
   doc.text(`${fmt(ttc)} Ar`, R - 3, ry + 15.6, { align: "right" });
 
   label(t("pdf.conditions"), M, y);
@@ -245,90 +246,6 @@ export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale,
     doc.setFont(F, "normal").setFontSize(8.5).text(doc.splitTextToSize(st.footer, R - M), 105, fy, { align: "center" });
   }
 
-  // ----- annexe : fiche de débit (usage atelier) : coupes par élément, plan de coupe, totaux, vitrages
-  if (withCutSheet) {
-    doc.addPage();
-    doc.setFillColor(...accent).rect(0, 0, 210, 5, "F");
-    dark();
-    doc.setFont(F, "bold").setFontSize(15).text(`${t("pdf.cutSheet")} · ${q.number}`, M, 20);
-    let cy = 28;
-    const need = (h: number) => {
-      if (cy + h > 280) {
-        doc.addPage();
-        cy = 20;
-      }
-    };
-    const plans = cuttingPlan(allPieces(q.lines), s.barLength, s.kerf);
-    const tot = planTotals(plans);
-
-    // totaux en tête
-    doc.setFillColor(243, 245, 250).roundedRect(M, cy, R - M, 16, 1.5, 1.5, "F");
-    const stats: [string, string][] = [
-      [t("needs.totalBars"), String(tot.bars)],
-      [t("needs.totalLength"), meters(tot.totalLen)],
-      [t("needs.totalUsed"), meters(tot.usedLen)],
-      [t("needs.totalWaste"), `${meters(tot.wasteLen)} (${tot.wastePct} %)`],
-    ];
-    stats.forEach(([k, v], i) => {
-      const x = M + 4 + i * 45;
-      gray();
-      doc.setFont(F, "normal").setFontSize(7.5).text(k, x, cy + 6);
-      dark();
-      doc.setFont(F, "bold").setFontSize(10).text(v, x, cy + 12);
-    });
-    cy += 24;
-
-    for (const p of plans) {
-      need(16 + p.elements.length * 5 + 10);
-      doc.setFont(F, "bold").setFontSize(11).setTextColor(...accent).text(`${t(p.profile)}  ·  ${t("needs.barLength")} ${meters(p.barLen)}`, M, cy);
-      cy += 5;
-      dark();
-      doc.setFont(F, "normal").setFontSize(9);
-      for (const e of p.elements) {
-        need(5);
-        doc.text(t(e.element), M + 3, cy);
-        gray();
-        doc.text(e.lines.map((n) => `#${n}`).join(" "), M + 80, cy);
-        dark();
-        doc.text(`${e.qty} × ${e.len} ${t("common.mm")}`, R - 3, cy, { align: "right" });
-        cy += 4.6;
-      }
-      need(10);
-      doc.setFont(F, "bold").setFontSize(9);
-      doc.text(`${p.bars.length} ${t("editor.bars")}  ·  ${t("needs.used")} ${meters(p.usedLen)}  ·  ${t("needs.waste")} ${meters(p.wasteLen)} (${p.wastePct} %)`, M + 3, cy + 1);
-      cy += 5;
-      gray();
-      doc.setFont(F, "normal").setFontSize(8);
-      p.bars.forEach((b, i) => {
-        need(4.2);
-        doc.text(`${t("needs.bar")} ${i + 1} : ${b.cuts.join(" + ")}   (${t("needs.left")} ${b.left} ${t("common.mm")})`, M + 3, cy);
-        cy += 4;
-      });
-      cy += 5;
-    }
-
-    // vitrages et panneaux
-    const panes = q.lines.flatMap((l, i) => [
-      ...cutList(l).glass.map((g) => ({ ...g, label: `${t(`glass.${l.glassType}`)}, ${t(`thickness.${l.thickness}`)}${l.pattern !== "none" ? `, ${t(`pattern.${l.pattern}`)}` : ""}`, line: i + 1, qty: g.qty * l.qty })),
-      ...cutList(l).panels.map((g) => ({ ...g, label: t("needs.panels"), line: i + 1, qty: g.qty * l.qty })),
-    ]);
-    if (panes.length) {
-      need(12);
-      doc.setFont(F, "bold").setFontSize(11).setTextColor(...accent).text(t("needs.glass"), M, cy);
-      cy += 5;
-      dark();
-      doc.setFont(F, "normal").setFontSize(9);
-      panes.forEach((g) => {
-        need(5);
-        doc.text(`#${g.line}  ${g.qty} × ${g.w} × ${g.h} ${t("common.mm")}`, M + 3, cy);
-        gray();
-        doc.text(g.label, R - 3, cy, { align: "right" });
-        dark();
-        cy += 4.6;
-      });
-    }
-  }
-
   // ----- pied de page
   const pages = doc.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {
@@ -343,6 +260,6 @@ export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale,
   return doc;
 }
 
-export async function quotePdf(q: Quote, s: Settings, t: T, locale: Locale, withCutSheet: boolean) {
-  (await buildQuotePdf(q, s, t, locale, withCutSheet)).save(`${q.number}.pdf`);
+export async function quotePdf(q: Quote, s: Settings, t: T, locale: Locale) {
+  (await buildQuotePdf(q, s, t, locale)).save(`${q.number}.pdf`);
 }

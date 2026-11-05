@@ -57,7 +57,6 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   // gammes et couleurs proposées : celles du catalogue de ce devis s'il en a un, sinon du catalogue général
   const catalog = useQuoteCatalog(existing?.id);
   const eff = catalog.market ? { ...settings, market: catalog.market } : settings;
-  const [attachCut, setAttachCut] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [persisted, setPersisted] = useState(!!existing);
   // Ouvrages : cartes dépliables ou tableau. Un devis à un seul ouvrage s'ouvre déplié, un devis plus long s'ouvre replié.
@@ -85,7 +84,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
         discount: 0,
         progress: 0,
         rev: 0,
-        terms: { tva: settings.tva, deposit: settings.deposit, validityDays: settings.validityDays },
+        terms: { tva: 0, deposit: settings.deposit, validityDays: settings.validityDays },
       },
   );
   const mode: EditMode = existing ? editMode(q.status, !!q.clientId) : "free";
@@ -203,7 +202,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     try {
       if (withPdf) {
         const { quotePdf } = await import("@/lib/pdf");
-        await quotePdf(saved, settings, t, locale, attachCut);
+        await quotePdf(saved, settings, t, locale);
         trackDownload(saved.id);
         toast.success(t("toast.pdf"), t("toast.pdfText"));
       }
@@ -548,8 +547,6 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
           mode={mode}
           note={note}
           setNote={setNote}
-          attachCut={attachCut}
-          setAttachCut={setAttachCut}
           msg={msg}
           settings={settings}
           onNeeds={() => openNeeds()}

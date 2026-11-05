@@ -551,7 +551,7 @@ export const DEFAULT_SETTINGS: Settings = {
   paymentInfo: "",
   barLength: 6000,
   kerf: 5,
-  accent: "#1d4ed8",
+  accent: "#243b32",
   logo: "",
   signature: "",
   signer: "",

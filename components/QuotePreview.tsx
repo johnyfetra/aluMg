@@ -38,7 +38,7 @@ function Document({ q, s, t, locale }: { q: Quote; s: Settings; t: T; locale: ke
     setError("");
     try {
       const { quotePdf } = await import("@/lib/pdf");
-      await quotePdf(q, s, t, locale, false);
+      await quotePdf(q, s, t, locale);
       trackDownload(q.id);
     } catch {
       setError(t("common.error"));

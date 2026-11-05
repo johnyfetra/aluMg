@@ -44,7 +44,7 @@ function QuotesView() {
   const pdf = async (q: Quote) => {
     if (!settings) return;
     const { quotePdf } = await import("@/lib/pdf");
-    await quotePdf(q, settings, t, locale, false);
+    await quotePdf(q, settings, t, locale);
     trackDownload(q.id);
     toast.success(t("toast.pdf"), q.number);
   };

@@ -26,8 +26,6 @@ type Props = {
   mode: EditMode;
   note: string;
   setNote: (v: string) => void;
-  attachCut: boolean;
-  setAttachCut: (v: boolean) => void;
   msg: { ok: boolean; text: string } | null;
   settings: Settings;
   onNeeds: () => void;
@@ -38,14 +36,14 @@ type Props = {
 
 // Colonne de synthèse de l'éditeur : totaux, besoin en profilés, envoi au client, modèle du devis, PDF et enregistrement.
 // Elle reste visible pendant la saisie sur grand écran.
-export default function SummaryAside({ t, q, setQ, totals, margin, plan, persisted, canAct, locked, revisable, mode, note, setNote, attachCut, setAttachCut, msg, settings, onNeeds, onAct, onSubmit, onNewVersion }: Props) {
+export default function SummaryAside({ t, q, setQ, totals, margin, plan, persisted, canAct, locked, revisable, mode, note, setNote, msg, settings, onNeeds, onAct, onSubmit, onNewVersion }: Props) {
   const num = (v: string) => Number(v) || 0;
   return (
     <aside className="space-y-3 xl:sticky xl:top-32" aria-label="Total">
           <section className="card space-y-2 !p-3.5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs text-muted">{t("editor.totalTtc")}</p>
+                <p className="text-xs text-muted">{t(q.terms.tva > 0 ? "editor.totalTtc" : "editor.totalPlain")}</p>
                 <p className="text-2xl font-bold leading-tight tabular-nums text-primary">{fmt(totals.ttc)} <span className="text-sm font-semibold">{t("common.currency")}</span></p>
               </div>
               {persisted && (
@@ -65,7 +63,10 @@ export default function SummaryAside({ t, q, setQ, totals, margin, plan, persist
                   <input id="q-disc" type="number" inputMode="decimal" min={0} max={100} className="input !min-h-7 !w-16 !px-2 !py-0.5 text-right text-[13px]" value={q.discount || ""} placeholder="0" onChange={(e) => setQ({ ...q, discount: Math.min(100, Math.max(0, num(e.target.value))) })} />
                 </dd>
               </div>
-              <div className="flex justify-between"><dt className="text-muted">{t("editor.totalHt")}</dt><dd className="tabular-nums">{fmt(totals.ht)} {t("common.currency")}</dd></div>
+              <div className="flex items-center justify-between gap-3">
+                <dt><label className="flex items-center gap-2 text-muted"><input type="checkbox" className="size-4" disabled={locked} checked={q.terms.tva > 0} onChange={(e) => setQ({ ...q, terms: { ...q.terms, tva: e.target.checked ? settings.tva || 20 : 0 } })} />{t("editor.vat")}</label></dt>
+              </div>
+              {q.terms.tva > 0 && <div className="flex justify-between"><dt className="text-muted">{t("editor.totalHt")}</dt><dd className="tabular-nums">{fmt(totals.ht)} {t("common.currency")}</dd></div>}
               {q.terms.tva > 0 && <div className="flex justify-between"><dt className="text-muted">{t("editor.totalTva")} {q.terms.tva} %</dt><dd className="tabular-nums">{fmt(totals.tva)} {t("common.currency")}</dd></div>}
             </dl>
           </section>
@@ -123,10 +124,6 @@ export default function SummaryAside({ t, q, setQ, totals, margin, plan, persist
                 options={[{ value: "", label: t("editor.pdfDesignDefault") }, ...(Object.keys(DOC_PRESETS) as DocPreset[]).map((k) => ({ value: k, label: t(`doc.tpl.${k}` as keyof Messages) }))]}
               />
             </Field>
-            <label className="flex min-h-8 items-center gap-2 text-[13px]">
-              <input type="checkbox" className="size-4" checked={attachCut} onChange={(e) => setAttachCut(e.target.checked)} />
-              {t("editor.attachCut")}
-            </label>
             <div className="grid gap-2">
               <button type="button" className="btn-primary" onClick={() => onSubmit(true)}>
                 <FileDown size={16} aria-hidden />

@@ -25,7 +25,7 @@ export default function QuoteDetail({ id }: { id: string }) {
     setFailed(false);
     try {
       const { quotePdf } = await import("@/lib/pdf");
-      await quotePdf(q, d.settings, t, locale, true); // avec la fiche de débit : l'administration voit tout ce que le menuisier voit
+      await quotePdf(q, d.settings, t, locale);
     } catch {
       setFailed(true);
     } finally {

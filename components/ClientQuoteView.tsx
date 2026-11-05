@@ -277,10 +277,12 @@ export default function ClientQuoteView({ id }: { id: string }) {
                   </p>
                 </>
               )}
-              <p className="flex justify-between text-sm">
-                <span className="text-muted">{t("editor.totalHt")}</span>
-                <span>{fmt(tot.ht)} {cur}</span>
-              </p>
+              {q.terms.tva > 0 && (
+                <p className="flex justify-between text-sm">
+                  <span className="text-muted">{t("editor.totalHt")}</span>
+                  <span>{fmt(tot.ht)} {cur}</span>
+                </p>
+              )}
               {q.terms.tva > 0 && (
                 <p className="flex justify-between text-sm">
                   <span className="text-muted">{t("editor.totalTva")} {q.terms.tva} %</span>
@@ -288,7 +290,7 @@ export default function ClientQuoteView({ id }: { id: string }) {
                 </p>
               )}
               <p className="flex items-baseline justify-between border-t border-line pt-2">
-                <span className="font-semibold">{t("editor.totalTtc")}</span>
+                <span className="font-semibold">{t(q.terms.tva > 0 ? "editor.totalTtc" : "editor.totalPlain")}</span>
                 <span className="text-2xl font-bold text-primary">{fmt(tot.ttc)} <span className="text-sm">{cur}</span></span>
               </p>
               <p className="text-xs text-muted">

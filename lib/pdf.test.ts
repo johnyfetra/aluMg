@@ -34,7 +34,7 @@ const issuer = { company: "Alu Mada", address: "Antananarivo", phone: "034 12 34
 async function printed(style: Partial<DocStyle>) {
   spy.texts.length = 0;
   const s = withDefaults({ ...issuer, email: "", docStyle: { ...DOC_PRESETS.classique, ...style, drawings: false } });
-  const doc = await buildQuotePdf(q, s, t, "fr", false);
+  const doc = await buildQuotePdf(q, s, t, "fr");
   return { text: spy.texts.join("\n"), pages: doc.getNumberOfPages() };
 }
 
@@ -48,6 +48,17 @@ describe("modèles de devis : personnalisation cadrée", () => {
       expect(pages).toBeGreaterThanOrEqual(1);
     });
   }
+  it("TVA décochée : un seul total ; cochée : HT, TVA et TTC", async () => {
+    const run = async (tva: number) => {
+      spy.texts.length = 0;
+      await buildQuotePdf({ ...q, terms: { ...q.terms, tva } }, withDefaults({ ...issuer, email: "", docStyle: { ...DOC_PRESETS.classique, drawings: false } }), t, "fr");
+      return spy.texts.join("\n");
+    };
+    expect(await run(20)).toMatch(/Total HT[\s\S]*TVA[\s\S]*Total TTC/);
+    const none = await run(0);
+    expect(none).not.toMatch(/Total HT|TVA|Total TTC/);
+    expect(none).toMatch(/^Total$/m);
+  });
   it("le pied de page libre s'ajoute sans retirer de mention", async () => {
     const { text } = await printed({ footer: "Merci de votre confiance." });
     expect(text).toContain("Merci de votre confiance.");

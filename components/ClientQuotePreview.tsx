@@ -32,7 +32,7 @@ export default function ClientQuotePreview({ id }: { id: string }) {
     setError("");
     try {
       const { quotePdf } = await import("@/lib/pdf");
-      await quotePdf(q, issuer as Settings, t, locale, false);
+      await quotePdf(q, issuer as Settings, t, locale);
       trackDownload(q.id); // sans la fiche de débit (usage d'atelier) : elle n'utilise que les mentions de l'entreprise
     } catch {
       setError(t("common.error"));

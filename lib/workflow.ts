@@ -110,7 +110,7 @@ export async function createRequest(clientId: string, input: z.infer<typeof requ
     {
       id: crypto.randomUUID(), number: "", date: "", status: "requested", client: { name: client.name, phone: client.phone, address: request.siteAddress, email: client.email ?? "" },
       project: input.project, delay: "", notes: "", lines, discount, progress: 0, rev: 0,
-      terms: { tva: settings.tva, deposit: settings.deposit, validityDays: settings.validityDays },
+      terms: { tva: 0, deposit: settings.deposit, validityDays: settings.validityDays },
     },
     { clientId, request },
   );

@@ -34,9 +34,9 @@ export default function Budget({ quote, plan, settings, t }: { quote: Quote; pla
           <dl className="divide-y divide-line">
             {row(t("budget.gross"), `${fmt(gross)} ${cur}`)}
             {discount > 0 && row(`${t("editor.discount")} ${quote.discount} %`, `− ${fmt(discount)} ${cur}`)}
-            {row(t("editor.totalHt"), `${fmt(ht)} ${cur}`, true)}
+            {quote.terms.tva > 0 && row(t("editor.totalHt"), `${fmt(ht)} ${cur}`, true)}
             {quote.terms.tva > 0 && row(`${t("editor.totalTva")} ${quote.terms.tva} %`, `${fmt(tva)} ${cur}`)}
-            {row(t("editor.totalTtc"), `${fmt(ttc)} ${cur}`, true)}
+            {row(t(quote.terms.tva > 0 ? "editor.totalTtc" : "editor.totalPlain"), `${fmt(ttc)} ${cur}`, true)}
             {row(`${t("budget.deposit")} ${quote.terms.deposit} %`, `${fmt(deposit)} ${cur}`)}
           </dl>
         </article>

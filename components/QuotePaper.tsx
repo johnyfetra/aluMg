@@ -188,10 +188,10 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
                 <div className="flex justify-between"><dt className="text-slate-500">{t("pdf.discount")} {q.discount} %</dt><dd className="tabular-nums">− {fmt(discount)} {cur}</dd></div>
               </>
             )}
-            <div className="flex justify-between"><dt className="text-slate-500">{t("pdf.totalHt")}</dt><dd className="font-semibold tabular-nums">{fmt(ht)} {cur}</dd></div>
+            {q.terms.tva > 0 && <div className="flex justify-between"><dt className="text-slate-500">{t("pdf.totalHt")}</dt><dd className="font-semibold tabular-nums">{fmt(ht)} {cur}</dd></div>}
             {q.terms.tva > 0 && <div className="flex justify-between"><dt className="text-slate-500">{t("pdf.totalTva")} {q.terms.tva} %</dt><dd className="tabular-nums">{fmt(tva)} {cur}</dd></div>}
             <div className="mt-2 flex items-baseline justify-between rounded-lg px-4 py-3 text-white" style={{ background: accent }}>
-              <dt className="font-semibold">{t("pdf.totalTtc")}</dt>
+              <dt className="font-semibold">{t(q.terms.tva > 0 ? "pdf.totalTtc" : "pdf.totalPlain")}</dt>
               <dd className="text-xl font-bold tabular-nums">{fmt(ttc)} {cur}</dd>
             </div>
           </dl>
