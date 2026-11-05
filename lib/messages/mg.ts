@@ -2019,4 +2019,8 @@ export const mg: Messages = {
   "ct.searchMore": "Hitady mpanjifa hafa ao amin'ny AluMg…",
   "account.confirm": "Hamarino ny tenimiafina vaovao",
   "account.mismatch": "Tsy mitovy ny tenimiafina roa.",
+  "viewer.quality": "Kalitiky ny sary",
+  "viewer.q.eco": "Eko",
+  "viewer.q.balanced": "Antonony",
+  "viewer.q.high": "Avo",
 };

@@ -2017,6 +2017,10 @@ export const fr = {
   "ct.searchMore": "Chercher un autre client sur AluMg…",
   "account.confirm": "Confirmer le nouveau mot de passe",
   "account.mismatch": "Les deux mots de passe ne correspondent pas.",
+  "viewer.quality": "Qualité du rendu",
+  "viewer.q.eco": "Éco",
+  "viewer.q.balanced": "Équilibré",
+  "viewer.q.high": "Élevé",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

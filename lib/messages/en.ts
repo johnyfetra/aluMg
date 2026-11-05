@@ -2017,4 +2017,8 @@ export const en: Messages = {
   "ct.searchMore": "Find another client on AluMg…",
   "account.confirm": "Confirm new password",
   "account.mismatch": "The two passwords do not match.",
+  "viewer.quality": "Render quality",
+  "viewer.q.eco": "Eco",
+  "viewer.q.balanced": "Balanced",
+  "viewer.q.high": "High",
 };

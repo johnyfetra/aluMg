@@ -5,6 +5,10 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useL
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { nacoBlades } from "@/lib/calc";
+import { type MeshData, mitredFrameSides } from "@/lib/joinery/geometry";
+import { DORMANT_SLIDING, SASH, scaledSection } from "@/lib/joinery/profiles";
+import { fromEngine } from "@/lib/joinery/units";
+import { QUALITIES, QUALITY, type Quality, type QualitySettings, readQuality, saveQuality } from "@/lib/joinery/quality";
 import { useI18n } from "@/lib/i18n";
 import { FINISHES, type Line, leafMarks, leafMotion, splitOf } from "@/lib/model";
 import { rnd, type Room, type Stage, Surroundings } from "./Stage3D";
@@ -25,8 +29,8 @@ const GLASS: Record<string, { color: string; opacity: number; rough: number; met
   depoli: { color: "#ffffff", opacity: 0.8, rough: 0.9, metal: 0 },
 };
 
-type Ctx = { pattern: string; thickness: string; patTex: THREE.Texture | null; hex: string; metal: number; rough: number; hw: string; hwMetal: number; mapH: THREE.Texture | null; mapV: THREE.Texture | null; highlight: string | null; glass: (typeof GLASS)[string]; reduced: boolean; marks: boolean; size: number };
-const SceneCtx = createContext<Ctx>({ pattern: "none", thickness: "5", patTex: null, hex: "#ffffff", metal: 0.25, rough: 0.46, hw: "#cdd2d8", hwMetal: 0.9, mapH: null, mapV: null, highlight: null, glass: GLASS.clair, reduced: false, marks: false, size: 1 });
+type Ctx = { quality: QualitySettings; tint: string; pattern: string; thickness: string; patTex: THREE.Texture | null; hex: string; metal: number; rough: number; hw: string; hwMetal: number; mapH: THREE.Texture | null; mapV: THREE.Texture | null; highlight: string | null; glass: (typeof GLASS)[string]; reduced: boolean; marks: boolean; size: number };
+const SceneCtx = createContext<Ctx>({ quality: QUALITY.balanced, tint: "#f2faff", pattern: "none", thickness: "5", patTex: null, hex: "#ffffff", metal: 0.25, rough: 0.46, hw: "#cdd2d8", hwMetal: 0.9, mapH: null, mapV: null, highlight: null, glass: GLASS.clair, reduced: false, marks: false, size: 1 });
 const useScene = () => useContext(SceneCtx);
 
 // ---------- Mouvement : ressort critiquement amorti (accélère puis freine, sans rebond ni saccade) ----------
@@ -120,47 +124,27 @@ function Bar({ size, position, element, rotation }: { size: [number, number, num
   );
 }
 
-// Cadre à coupes d'onglet à 45° : quatre pièces biseautées qui se rejoignent en diagonale, comme un cadre assemblé ; un second anneau en relief donne la marche du profilé.
-function miterPieces(w: number, h: number, t: number, depth: number) {
-  const hw = w / 2;
-  const hh = h / 2;
-  const opts = { depth, bevelEnabled: true, bevelSize: 0.0012, bevelThickness: 0.0012, bevelSegments: 1, curveSegments: 1 };
-  const shapes: [number[][], boolean][] = [
-    [[[-hw, hh], [hw, hh], [hw - t, hh - t], [-hw + t, hh - t]], false],
-    [[[-hw, -hh], [-hw + t, -hh + t], [hw - t, -hh + t], [hw, -hh]], false],
-    [[[-hw, hh], [-hw + t, hh - t], [-hw + t, -hh + t], [-hw, -hh]], true],
-    [[[hw, hh], [hw, -hh], [hw - t, -hh + t], [hw - t, hh - t]], true],
-  ];
-  return shapes.map(([pts, vertical]) => {
-    const sh = new THREE.Shape();
-    pts.forEach(([x, y], i) => (i ? sh.lineTo(x, y) : sh.moveTo(x, y)));
-    sh.closePath();
-    const g = new THREE.ExtrudeGeometry(sh, opts);
-    g.translate(0, 0, -depth / 2);
-    return { g, vertical };
-  });
-}
-function MiterRing({ w, h, t, depth, hEl, vEl, z = 0 }: { w: number; h: number; t: number; depth: number; hEl: string; vEl: string; z?: number }) {
+// Cadre à coupes d'onglet à 45° construit sur une vraie section de profilé (caisson à chambres, feuillure de vitrage, goutte d'eau : voir lib/joinery/profiles.ts),
+// à la largeur et à la profondeur de la gamme choisie. Quatre côtés séparés : la mise en valeur d'une traverse ou d'un montant reste possible.
+const toGeometry = (d: MeshData) => {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(d.positions, 3));
+  g.setAttribute("normal", new THREE.BufferAttribute(d.normals, 3));
+  g.setAttribute("uv", new THREE.BufferAttribute(d.uvs, 2));
+  if (d.indices) g.setIndex(new THREE.BufferAttribute(d.indices, 1));
+  return g;
+};
+function ProfiledFrame({ w, h, t, depth, kind, hEl, vEl }: { w: number; h: number; t: number; depth: number; kind: "dormant" | "sash"; hEl: string; vEl: string }) {
   const { highlight } = useScene();
-  const pieces = useMemo(() => miterPieces(w, h, t, depth), [w, h, t, depth]);
-  return (
-    <group position={[0, 0, z]}>
-      {pieces.map(({ g, vertical }, i) => {
-        const hl = highlight === (vertical ? vEl : hEl);
-        return (
-          <mesh key={i} geometry={g} castShadow receiveShadow>
-            <ProfileMat vertical={vertical} hl={hl} />
-          </mesh>
-        );
-      })}
-    </group>
-  );
-}
-function MiterFrame({ w, h, t, depth, hEl, vEl }: { w: number; h: number; t: number; depth: number; hEl: string; vEl: string }) {
+  const geos = useMemo(() => mitredFrameSides(scaledSection(kind === "dormant" ? DORMANT_SLIDING : SASH, fromEngine(t), fromEngine(depth)), fromEngine(w), fromEngine(h)).map(toGeometry), [w, h, t, depth, kind]);
+  useEffect(() => () => geos.forEach((g) => g.dispose()), [geos]); // libère la mémoire GPU quand les dimensions changent ou au démontage
   return (
     <group>
-      <MiterRing w={w} h={h} t={t} depth={depth} hEl={hEl} vEl={vEl} />
-      <MiterRing w={w - 0.56 * t} h={h - 0.56 * t} t={0.44 * t} depth={0.006} hEl={hEl} vEl={vEl} z={depth / 2 + 0.003} />
+      {geos.map((g, i) => (
+        <mesh key={i} geometry={g} castShadow receiveShadow>
+          <ProfileMat vertical={i >= 2} hl={highlight === (i >= 2 ? vEl : hEl)} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -202,7 +186,7 @@ function patternTexture(pattern: string) {
 // Verre : l'épaisseur choisie (4 à 10 mm) donne celle de la vitre ; un double vitrage (4/12/4) montre deux vitres séparées par la lame d'air.
 // Le motif est porté par la vitre extérieure.
 function Pane({ w, h, position, thick }: { w: number; h: number; position?: [number, number, number]; thick?: number }) {
-  const { glass, thickness, patTex } = useScene();
+  const { glass, thickness, patTex, quality, tint } = useScene();
   const tex = useMemo(() => {
     if (!patTex) return null;
     const t = patTex.clone();
@@ -213,12 +197,19 @@ function Pane({ w, h, position, thick }: { w: number; h: number; position?: [num
   if (w <= 0.001 || h <= 0.001) return null;
   const [a, gap, b] = thickness.split("/").map((n) => Number(n) / 1000);
   const layers = thick ? [{ z: 0, t: thick, motif: true }] : gap ? [{ z: -(gap + a) / 2, t: a, motif: true }, { z: (gap + b) / 2, t: b, motif: false }] : [{ z: 0, t: a, motif: true }];
+  // vitrage physique (élevé) : le verre transmet la scène derrière lui, réfracte (indice 1,5) et reflète l'environnement selon l'angle de vue ; un miroir (antélio) reste un métal.
+  // Autres profils : verre transparent simple avec reflets de l'environnement, bien moins coûteux pour le GPU.
+  const physical = quality.transmission && glass.metal < 0.5;
   return (
     <group position={position}>
       {layers.map((l, i) => (
         <mesh key={i} position={[0, 0, l.z]}>
           <boxGeometry args={[w, h, l.t]} />
-          <meshPhysicalMaterial color={glass.color} map={l.motif ? tex : null} bumpMap={l.motif ? tex : null} bumpScale={1.5} transparent opacity={glass.opacity} roughness={glass.rough} metalness={glass.metal} clearcoat={1} clearcoatRoughness={0.03} depthWrite={false} envMapIntensity={glass.metal > 0.5 ? 3.2 : 1.8} />
+          {physical ? (
+            <meshPhysicalMaterial color={tint} map={l.motif ? tex : null} bumpMap={l.motif ? tex : null} bumpScale={1.5} transmission={1} thickness={l.t * 8} ior={1.5} roughness={glass.rough} metalness={0} specularIntensity={1} envMapIntensity={1.6} attenuationColor={glass.color} attenuationDistance={0.6} clearcoat={0} />
+          ) : (
+            <meshPhysicalMaterial color={glass.color} map={l.motif ? tex : null} bumpMap={l.motif ? tex : null} bumpScale={1.5} transparent opacity={glass.opacity} roughness={glass.rough} metalness={glass.metal} clearcoat={1} clearcoatRoughness={0.03} depthWrite={false} envMapIntensity={glass.metal > 0.5 ? 3.2 : 1.8} />
+          )}
         </mesh>
       ))}
     </group>
@@ -300,7 +291,7 @@ function LeafBody({ w, h, v, infill, depth = 0.034, mark }: { w: number; h: numb
   const split = splitOf({ infill, splitAt: v.splitAt });
   return (
     <group>
-      <MiterFrame w={w} h={h} t={t} depth={depth} hEl="el.sashH" vEl="el.sashV" />
+      <ProfiledFrame kind="sash" w={w} h={h} t={t} depth={depth} hEl="el.sashH" vEl="el.sashV" />
       {isDoor && infill === "pleine" && <Panel w={iw} h={ih} />}
       {isDoor && infill === "semi" && (
         <>
@@ -390,7 +381,7 @@ function Dormant({ W, H, t, depth, sliding = false }: { W: number; H: number; t:
   const dark = <meshStandardMaterial color="#101215" roughness={0.9} />;
   return (
     <group position={[0, H / 2, 0]}>
-      <MiterFrame w={W} h={H} t={t} depth={depth} hEl="el.dormantH" vEl="el.dormantV" />
+      <ProfiledFrame kind="dormant" w={W} h={H} t={t} depth={depth} hEl="el.dormantH" vEl="el.dormantV" />
       {/* lumières d'évacuation de l'eau, en bas du dormant */}
       {[-0.28, 0.28].map((k) => <mesh key={k} position={[k * W, -H / 2 + t * 0.78, depth / 2 + 0.0062]}><boxGeometry args={[0.04, 0.004, 0.002]} />{dark}</mesh>)}
       {sliding && (
@@ -491,11 +482,7 @@ function Casement({ v, W, H, t, amounts, mode, bind }: { v: Viewable; W: number;
             <group key={i} position={[cx, 0, 0]}>
               <LeafBody w={lv - 0.004} h={h - 0.004} v={v} infill={v.infill} mark={marks[i]} />
             </group>
-// Comme celui qu'on fabrique à Madagascar : cadre en profilé, lames de verre tenues à chaque bout par un porte-lame blanc en nylon, tringle blanche
-// à droite (une rotule par lame) et manivelle plate à œillet qui sort du cadre.
-const NYLON = "#f2f2ee";
           );
-  const { hex } = useScene();
         return <CasementLeaf key={i} hingeLeft={hingeLeft} mark={marks[i]} px={cx} lv={lv - 0.004} h={h - 0.004} v={v} mode={mode} amount={amounts[i] ?? 0} onToggle={bind(i, v.opening === "soufflet" ? "y" : "x", v.opening === "soufflet" ? 1 : hingeLeft ? -1 : 1)} />;
       })}
       {n >= 2 && Array.from({ length: Math.floor(n / 2) }, (_, k) => <Bar key={k} element="el.battement" size={[0.03, h, 0.026]} position={[-w / 2 + (2 * k + 1) * lv, 0, -0.018]} />)}
@@ -504,7 +491,11 @@ const NYLON = "#f2f2ee";
 }
 
 // ---------- Naco : lames de verre qui basculent ----------
+// Comme celui qu'on fabrique à Madagascar : cadre en profilé, lames de verre tenues à chaque bout par un porte-lame blanc en nylon, tringle blanche
+// à droite (une rotule par lame) et manivelle plate à œillet qui sort du cadre.
+const NYLON = "#f2f2ee";
 function Louvre({ W, H, t, amount, onToggle }: { W: number; H: number; t: number; amount: number; onToggle: Grab }) {
+  const { hex } = useScene();
   const slats = useRef<THREE.Group>(null);
   const crank = useRef<THREE.Group>(null);
   const k = nacoBlades(H * 1000);
@@ -859,6 +850,8 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
   const [mode, setMode] = useState<"turn" | "tilt">("turn");
   const reduced = useReducedMotion();
   const controls = useRef<Ctl | null>(null);
+  const [quality, setQuality] = useState<Quality>(() => (typeof window === "undefined" ? "balanced" : readQuality())); // profil de rendu : choisi d'après l'appareil, puis par l'utilisateur
+  const qs = QUALITY[quality];
   const [rotating, setRotating] = useState(false); // clic droit ou Maj : la vue tourne au lieu de se déplacer
   const [hover, setHover] = useState(false);
   const [drag, setDrag] = useState(false);
@@ -932,7 +925,10 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
   const wood = useMemo(() => (finishDef?.group === "fauxbois" && typeof document !== "undefined" ? [woodTexture(finishDef.hex, false), woodTexture(finishDef.hex, true)] : null), [finishDef]);
   const ctx = useMemo<Ctx>(() => {
     const base = GLASS[v.glassType] ?? GLASS.clair;
+    const tint = v.glassType === "clair" || v.glassType === "trempe" || v.glassType === "feuillete" ? "#f4fbff" : "#" + new THREE.Color(base.color).lerp(new THREE.Color("#ffffff"), 0.35).getHexString();
     return {
+      quality: QUALITY[quality],
+      tint,
       pattern: v.pattern,
       thickness: v.thickness,
       patTex: v.pattern !== "none" && typeof document !== "undefined" ? patternTexture(v.pattern) : null,
@@ -949,7 +945,7 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
       marks: !bare && (dims ?? !stage),
       size: Math.max(v.width, v.height) / 1000,
     };
-  }, [v.finish, v.glassType, v.pattern, v.thickness, highlight, reduced, bare, stage, dims, v.width, v.height, wood]);
+  }, [quality, v.finish, v.glassType, v.pattern, v.thickness, highlight, reduced, bare, stage, dims, v.width, v.height, wood]);
 
   const dist = (Math.max(W, H) * 1.55 + 0.9) * (view?.dist ?? 1) * (bare || (stage && !dims) ? 1 : 1.12); // un peu de recul pour les cotes (plus dans un décor, pour voir aussi le mur)
   const sillY = stage?.sill ?? 0;
@@ -980,15 +976,15 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
   return (
     <div className={bare ? "h-full w-full" : "space-y-3"}>
       <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line"}`} style={bare ? undefined : { height: 440, background: backdropFor(ctx.hex), cursor: grab ? (grab === "x" ? "ew-resize" : "ns-resize") : hover ? "pointer" : drag ? (rotating ? "grabbing" : "move") : "grab", touchAction: "none" }} onPointerDown={(e) => { setDrag(true); setRotating(e.button === 0 && !(e.shiftKey || e.ctrlKey || e.metaKey)); }} onContextMenu={(e) => e.preventDefault()} onDoubleClick={() => controls.current?.reset()}>
-        <Canvas shadows="percentage" scene={stage ? { environmentIntensity: 0.85 } : undefined} dpr={bare ? 1 : [1, 2]} frameloop="demand" camera={{ position: cam, fov: 32, near: 0.05, far: 80 }} aria-label={t("viewer.aria")} role="img" gl={{ antialias: true, preserveDrawingBuffer: bare }}>
+        <Canvas shadows={qs.shadows ? "percentage" : false} scene={stage ? { environmentIntensity: 0.85 } : undefined} dpr={bare ? 1 : qs.dpr} frameloop="demand" camera={{ position: cam, fov: 32, near: 0.05, far: 80 }} aria-label={t("viewer.aria")} role="img" gl={{ antialias: true, preserveDrawingBuffer: bare }}>
           <SceneCtx.Provider value={ctx}>
             {stage ? <OutdoorEnv /> : <Env />}
             <ambientLight intensity={0.35} />
-            <directionalLight position={[3, 5, 4]} intensity={stage ? 1.6 : 1.4} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} shadow-bias={-0.0004} />
+            <directionalLight position={[3, 5, 4]} intensity={stage ? 1.6 : 1.4} castShadow={qs.shadows} shadow-mapSize={[qs.shadowMap, qs.shadowMap]} shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} shadow-bias={-0.0004} />
             {stage && <Surroundings W={W} H={H} stage={stage} room={picker ? room : undefined} />}
             <group position={[0, sillY, 0]}>{body}</group>
             {!bare && (dims ?? !stage) && <Dimensions W={W} H={H} leaves={v.category === "fenetre" || v.category === "porte" || v.category === "cloison" ? v.leaves : 1} />}
-            {!stage && <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={Math.max(W, H) * 2.4} blur={2.4} far={Math.max(H, 1.5)} />}
+            {!stage && qs.contactShadows && <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={Math.max(W, H) * 2.4} blur={2.4} far={Math.max(H, 1.5)} />}
             <OrbitControls
               ref={(c) => {
                 controls.current = c as unknown as Ctl | null;
@@ -1040,6 +1036,16 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
         </div>
       ) : (
         <p className="text-sm text-muted">{t("viewer.static")}</p>
+      )}
+      {!bare && (
+        <div role="radiogroup" aria-label={t("viewer.quality")} className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-muted">{t("viewer.quality")}</span>
+          {QUALITIES.map((k) => (
+            <button key={k} type="button" role="radio" aria-checked={quality === k} onClick={() => { setQuality(k); saveQuality(k); }} className={`rounded-full px-3 py-1 font-medium ${quality === k ? "bg-primary text-on-primary" : "bg-surface-2 text-muted hover:text-ink"}`}>
+              {t(`viewer.q.${k}` as "viewer.q.eco")}
+            </button>
+          ))}
+        </div>
       )}
       {!bare && <p className="text-xs text-muted">{t("viewer.hint")}</p>}
     </div>
