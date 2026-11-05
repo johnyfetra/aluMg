@@ -40,7 +40,7 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
       </Link>
 
       <header className="card relative overflow-hidden !p-0">
-        <Photo src={m.cover} alt={m.name} priority className="h-56 sm:h-80" />
+        <Photo src={m.cover} alt={m.name} priority fallback="banner" className="h-56 sm:h-80" />
         <div className="flex flex-wrap items-end gap-5 px-6 pb-6">
           <div className="relative -mt-12 rounded-2xl bg-surface p-1.5 shadow-md">
             <Avatar name={m.name} src={m.logo} size={88} />
@@ -149,7 +149,7 @@ export default function MenuisierProfile({ slug }: { slug: string }) {
                     {!it.before && (
                     <button type="button" onClick={() => setOpen({ item: it, i: 0 })} className="group block w-full overflow-hidden rounded-t-xl border border-b-0 border-line bg-surface text-left transition-shadow hover:shadow-md" aria-label={`${t("mp.openPhoto")} : ${it.title}`}>
                       <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
-                        <Photo src={it.thumb || it.images[0]} category={it.category} alt={it.title} className="h-full w-full" />
+                        <Photo src={it.thumb || it.images[0]} category={it.category} alt={it.title} className="!absolute inset-0" />
                         {it.images.length > 1 && (
                           <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white">
                             <Images size={12} aria-hidden />

@@ -565,3 +565,48 @@ aside :focus-visible {
 .fb-label { fill: var(--muted); font-weight: 600; font-size: 19px; font-family: inherit; }
 .fb-glass-a { stop-color: color-mix(in srgb, var(--primary) 22%, var(--surface)); }
 .fb-glass-b { stop-color: color-mix(in srgb, var(--primary) 6%, var(--surface)); }
+.fb-wall2 { fill: color-mix(in srgb, var(--text) 12%, var(--surface-2)); }
+.fb-done { fill: color-mix(in srgb, var(--text) 9%, var(--surface-2)); }
+.fb-slab { fill: color-mix(in srgb, var(--text) 30%, var(--surface-2)); }
+.fb-col { fill: color-mix(in srgb, var(--text) 20%, var(--surface-2)); }
+.fb-hole { fill: color-mix(in srgb, #000 55%, var(--surface-2)); }
+.fb-pole { fill: color-mix(in srgb, var(--primary) 70%, var(--surface-2)); }
+.fb-plank { fill: color-mix(in srgb, var(--primary) 45%, var(--surface-2)); }
+.fb-brace { stroke: color-mix(in srgb, var(--primary) 70%, var(--surface-2)); stroke-width: 4; fill: none; }
+.fb-rebar { stroke: var(--text); stroke-opacity: 0.5; stroke-width: 3; fill: none; }
+.fb-sky-a { stop-color: color-mix(in srgb, var(--primary) 5%, var(--surface)); }
+.fb-sky-b { stop-color: color-mix(in srgb, var(--primary) 16%, var(--surface-2)); }
+.fb-sun { fill: color-mix(in srgb, var(--primary) 30%, var(--surface)); }
+.fb-cloud { fill: #fff; fill-opacity: 0.3; }
+.fb-cloud2 { fill: #fff; fill-opacity: 0.16; }
+.fb-far { fill: color-mix(in srgb, var(--primary) 24%, var(--surface-2)); }
+.fb-mid { fill: color-mix(in srgb, var(--primary) 42%, var(--surface-2)); }
+.fb-cell { fill: color-mix(in srgb, var(--surface) 60%, transparent); }
+.fb-crane { fill: color-mix(in srgb, var(--primary) 75%, var(--surface-2)); }
+.fb-crane-line { stroke: color-mix(in srgb, var(--primary) 75%, var(--surface-2)); stroke-width: 3; fill: none; }
+.fb-win-glass { fill: color-mix(in srgb, var(--primary) 30%, var(--surface)); }
+.fb-person { fill: color-mix(in srgb, var(--text) 78%, var(--surface)); }
+.fb-helmet { fill: color-mix(in srgb, var(--primary) 85%, var(--surface-2)); }
+.fb-arm { stroke: color-mix(in srgb, var(--text) 78%, var(--surface)); stroke-width: 8; stroke-linecap: round; fill: none; }
+.fb-hill-a { fill: color-mix(in srgb, var(--primary) 38%, var(--surface-2)); }
+.fb-hill-b { fill: color-mix(in srgb, var(--primary) 62%, var(--surface-2)); }
+.fb-bird { stroke: color-mix(in srgb, var(--text) 45%, var(--surface)); stroke-width: 3; stroke-linecap: round; fill: none; }
+.fb-moon { fill: #f4ecd2; }
+.fb-star { fill: #f4ecd2; opacity: 0.85; }
+.fb-beacon { fill: #ff5a4a; }
+.fb-lamp { fill: #ffe9a8; }
+.fb-beam { fill: #ffe9a8; opacity: 0.16; }
+.fb-night { display: none; }
+[data-theme="dark"] .fb-night { display: inline; }
+[data-theme="dark"] .fb-day { display: none; }
+[data-theme="dark"] .fb-sky-a { stop-color: #0b110e; }
+[data-theme="dark"] .fb-sky-b { stop-color: #25332c; }
+[data-theme="dark"] .fb-cloud { fill-opacity: 0.07; }
+[data-theme="dark"] .fb-cloud2 { fill-opacity: 0.04; }
+[data-theme="dark"] .fb-cell { fill: color-mix(in srgb, var(--text) 8%, transparent); }
+[data-theme="dark"] .fb-cell.fb-lit { fill: #f3c76a; }
+[data-theme="dark"] .fb-far { fill: color-mix(in srgb, var(--surface) 78%, #2c3a33); }
+[data-theme="dark"] .fb-mid { fill: color-mix(in srgb, var(--surface) 90%, #34443b); }
+[data-theme="dark"] .fb-pill { fill: rgb(236 233 226 / 0.16); }
+[data-theme="dark"] .fb-hill-a { fill: color-mix(in srgb, var(--primary) 20%, #121a15); }
+[data-theme="dark"] .fb-hill-b { fill: color-mix(in srgb, var(--primary) 34%, #0e1511); }
