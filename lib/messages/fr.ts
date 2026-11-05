@@ -2017,6 +2017,8 @@ export const fr = {
   "account.mustChange": "Votre mot de passe a été défini par l'administration. Pour votre sécurité, choisissez-en un nouveau : saisissez le mot de passe temporaire comme mot de passe actuel.",
   "account.mustChangeBanner": "Mot de passe temporaire : choisissez le vôtre pour sécuriser votre compte.",
   "account.mustChangeGo": "Changer",
+  "needs.showDetail": "Voir le détail (coupes, plan de coupe, vitrages)",
+  "needs.hideDetail": "Masquer le détail",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

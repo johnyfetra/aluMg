@@ -1,4 +1,6 @@
 "use client";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
 import { type ProfilePlan, allPieces, cutList, cuttingPlan, meters, planTotals } from "@/lib/calc";
 import { type T } from "@/lib/i18n";
 import type { Line } from "@/lib/model";
@@ -6,6 +8,7 @@ import type { Line } from "@/lib/model";
 // Détail du besoin en profilés : par profilé (longueur de barre, éléments qui l'utilisent, coupes), plan de coupe barre par barre,
 // et totaux (barres à acheter, longueur utilisée, perte). Les vitrages à commander sont listés dessous.
 export default function ProfileNeeds({ lines, barLen, kerf, t }: { lines: Line[]; barLen: number; kerf: number; t: T }) {
+  const [open, setOpen] = useState(false); // replié au départ : l'essentiel d'abord, le détail à la demande
   const plans = cuttingPlan(allPieces(lines), barLen, kerf);
   const tot = planTotals(plans);
   const glass = lines.flatMap((l, i) => cutList(l).glass.map((g) => ({ ...g, qty: g.qty * l.qty, line: i + 1, l })));
@@ -34,22 +37,29 @@ export default function ProfileNeeds({ lines, barLen, kerf, t }: { lines: Line[]
         </p>
       </div>
 
+      {/* l'essentiel : barres à acheter et perte ; le reste s'ouvre à la demande */}
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-        {stats.map(([k, v, cls]) => (
+        {(open ? stats : stats.filter((_, i) => i === 0 || i === 3)).map(([k, v, cls]) => (
           <div key={k} className="card !p-3">
             <dt className="text-xs text-muted">{k}</dt>
             <dd className={`text-lg font-bold ${cls ?? ""}`}>{v}</dd>
           </div>
         ))}
       </dl>
+      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="btn-secondary !min-h-10 w-full sm:w-auto">
+        {t(open ? "needs.hideDetail" : "needs.showDetail")}
+        <ChevronDown size={16} aria-hidden className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
 
+      {open && (
       <div className="grid gap-4 xl:grid-cols-2">
         {plans.map((p) => (
           <ProfileCard key={p.profile} p={p} t={t} />
         ))}
       </div>
+      )}
 
-      {(glass.length > 0 || panels.length > 0) && (
+      {open && (glass.length > 0 || panels.length > 0) && (
         <div className="card">
           <h3 className="mb-2 font-semibold">{t("needs.glass")}</h3>
           <ul className="space-y-1 text-sm">

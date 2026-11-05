@@ -2019,4 +2019,6 @@ export const mg: Messages = {
   "account.mustChange": "Napetraky ny fitantanana ny tenimiafinao. Mba hiarovana anao, mifidiana vaovao: ampidiro ho tenimiafina ankehitriny ilay vonjimaika.",
   "account.mustChangeBanner": "Tenimiafina vonjimaika: mifidiana ny anao hiarovana ny kaontinao.",
   "account.mustChangeGo": "Hanova",
+  "needs.showDetail": "Hijery ny antsipiriany (fanapahana, drafitra, fitaratra)",
+  "needs.hideDetail": "Afeno ny antsipiriany",
 };

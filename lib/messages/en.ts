@@ -2017,4 +2017,6 @@ export const en: Messages = {
   "account.mustChange": "Your password was set by the administrators. For your security, choose a new one: enter the temporary password as the current password.",
   "account.mustChangeBanner": "Temporary password: choose your own to secure your account.",
   "account.mustChangeGo": "Change",
+  "needs.showDetail": "Show details (cuts, cutting plan, glass)",
+  "needs.hideDetail": "Hide details",
 };
