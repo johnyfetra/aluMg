@@ -76,7 +76,7 @@ export default function PortfolioPage() {
             </button>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <Field htmlFor="pt-title" label={t("port.name")}>
+            <Field required htmlFor="pt-title" label={t("port.name")}>
               <input id="pt-title" className="input" required maxLength={120} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
             </Field>
             <div className="grid grid-cols-2 gap-4">

@@ -82,7 +82,7 @@ function Form({ initial }: { initial: Profile }) {
               )}
             </div>
           </div>
-          <Field htmlFor="pp-name" label={t("pp.displayName")}>
+          <Field required htmlFor="pp-name" label={t("pp.displayName")}>
             <input id="pp-name" className="input" required maxLength={120} value={p.displayName} onChange={(e) => set({ displayName: e.target.value })} />
           </Field>
           <Field htmlFor="pp-city" label={t("dir.city")} hint={t("pp.cityHint")}>

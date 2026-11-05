@@ -71,10 +71,10 @@ export default function AccountPage() {
             )}
           </div>
         </div>
-        <Field htmlFor="n" label={t("account.name")}>
+        <Field required htmlFor="n" label={t("account.name")}>
           <input id="n" name="name" required maxLength={80} defaultValue={me.name} className="input" />
         </Field>
-        <Field htmlFor="ph" label={t("auth.phone")} hint={t("auth.phoneHint")}>
+        <Field required htmlFor="ph" label={t("auth.phone")} hint={t("auth.phoneHint")}>
           <input id="ph" name="phone" type="tel" required pattern="\+?[0-9][0-9 ().\-]{5,22}" defaultValue={me.phone} className="input" />
         </Field>
         <Field htmlFor="e" label={t("account.email")}>

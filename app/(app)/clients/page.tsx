@@ -69,7 +69,7 @@ export default function ClientsPage() {
   const form = (
     <form onSubmit={save} className="card space-y-3 border-primary/40">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Field htmlFor="ct-n" label={t("ct.name")}>
+        <Field required htmlFor="ct-n" label={t("ct.name")}>
           <input id="ct-n" className="input" required maxLength={120} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
         </Field>
         <Field htmlFor="ct-p" label={t("ct.phone")}>

@@ -85,7 +85,7 @@ export default function FeedbackButton({ role }: { role: "client" | "menuisier" 
             </div>
           </fieldset>
 
-          <Field htmlFor="fb-message" label={t("fb.msg")} error={error}>
+          <Field required htmlFor="fb-message" label={t("fb.msg")} error={error}>
             <textarea id="fb-message" className="input min-h-32" maxLength={FEEDBACK_MESSAGE_MAX} placeholder={t(`fb.ph.${kind}`)} value={message} aria-invalid={error ? true : undefined} aria-describedby={error ? "fb-message-error" : undefined} onChange={(e) => { setMessage(e.target.value); setError(""); }} />
             <p className="text-right text-xs text-muted">{message.length}/{FEEDBACK_MESSAGE_MAX}</p>
           </Field>

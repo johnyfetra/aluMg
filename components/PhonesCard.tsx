@@ -115,7 +115,7 @@ export default function PhonesCard() {
         </button>
       ) : !sent ? (
         <form onSubmit={send} noValidate className="space-y-3 rounded-xl border border-line bg-surface-2/40 p-4">
-          <Field htmlFor="ph-new" label={t("ph.number")} error={error?.field === "phone" ? error.text : undefined}>
+          <Field required htmlFor="ph-new" label={t("ph.number")} error={error?.field === "phone" ? error.text : undefined}>
             <input id="ph-new" type="tel" inputMode="tel" autoComplete="off" placeholder="034 00 000 00" className="input" value={phone} aria-invalid={error?.field === "phone" ? true : undefined} aria-describedby={error?.field === "phone" ? "ph-new-error" : undefined} onChange={(e) => { setPhone(e.target.value); setError(null); }} />
           </Field>
           <Field htmlFor="ph-label" label={t("ph.label")} hint={t("ph.labelHint")}>

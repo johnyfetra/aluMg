@@ -1,4 +1,5 @@
 "use client";
+import { RequiredMark } from "./ui";
 import { BadgeDollarSign, CheckCircle2, CircleHelp, ListChecks, MessageSquareWarning, PauseCircle, ThumbsUp } from "lucide-react";
 import { useState } from "react";
 import type { T } from "@/lib/i18n";
@@ -62,6 +63,7 @@ export default function LineDecision({ review, canReview, onReview, busy, t }: {
           )}
           <label className="block space-y-1 text-xs font-medium text-muted">
             {form === "request" ? t("line.requestLabel") : form === "hold" ? t("line.holdLabel") : t("line.opinionLabel")}
+            {form === "request" && <RequiredMark />}
             <textarea className="input min-h-20 text-base text-ink sm:text-sm" maxLength={1000} required={form === "request"} placeholder={t(form === "request" ? `act.ph.${topic}` : form === "hold" ? "line.holdPh" : "line.opinionPh")} value={text} onChange={(e) => setText(e.target.value)} />
           </label>
           <div className="flex gap-2">

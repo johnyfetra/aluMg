@@ -190,13 +190,13 @@ export function LineCard({
 
         <Panel name="size" title={t("editor.sectionSizePlace")} className="order-3 @2xl:order-none">
           <div className="grid grid-cols-3 gap-3">
-            <Field htmlFor={p("w")} label={cat === "garde-corps" ? t("editor.length") : t("editor.width")} help="dims">
+            <Field required htmlFor={p("w")} label={cat === "garde-corps" ? t("editor.length") : t("editor.width")} help="dims">
               <input id={p("w")} className="input" type="number" inputMode="numeric" value={l.width || ""} aria-invalid={!valid} onChange={(e) => onChange({ width: num(e.target.value) })} />
             </Field>
-            <Field htmlFor={p("h")} label={t("editor.height")} help="dims">
+            <Field required htmlFor={p("h")} label={t("editor.height")} help="dims">
               <input id={p("h")} className="input" type="number" inputMode="numeric" value={l.height || ""} aria-invalid={!valid} onChange={(e) => onChange({ height: num(e.target.value) })} />
             </Field>
-            <Field htmlFor={p("q")} label={t("editor.qty")}>
+            <Field required htmlFor={p("q")} label={t("editor.qty")}>
               <input id={p("q")} className="input" type="number" inputMode="numeric" min={1} value={l.qty || ""} onChange={(e) => onChange({ qty: num(e.target.value) })} />
             </Field>
           </div>

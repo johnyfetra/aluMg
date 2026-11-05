@@ -151,13 +151,13 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
               </fieldset>
             )}
             {signup && (
-              <Field htmlFor="name" label={role === "menuisier" ? t("auth.nameCompany") : t("auth.name")} error={errors.name}>
+              <Field required htmlFor="name" label={role === "menuisier" ? t("auth.nameCompany") : t("auth.name")} error={errors.name}>
                 <input id="name" name="name" required maxLength={80} autoComplete={role === "menuisier" ? "organization" : "name"} className="input" aria-invalid={errors.name ? true : undefined} aria-describedby={errors.name ? "name-error" : undefined} onInput={() => clear("name")} />
               </Field>
             )}
             {signup ? (
               <>
-                <Field htmlFor="phone" label={t("auth.phoneRequired")} hint={t("auth.phoneHint2")} error={errors.phone}>
+                <Field required htmlFor="phone" label={t("auth.phoneRequired")} hint={t("auth.phoneHint2")} error={errors.phone}>
                   <input id="phone" name="phone" type="tel" required inputMode="tel" autoComplete="tel" placeholder="034 00 000 00" className="input" aria-invalid={errors.phone ? true : undefined} aria-describedby={errors.phone ? "phone-error" : undefined} onInput={() => clear("phone")} />
                 </Field>
                 <Field htmlFor="email" label={t("auth.emailOptional")} error={errors.email}>
@@ -165,7 +165,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
                 </Field>
               </>
             ) : (
-              <Field htmlFor="identifier" label={t("auth.identifier")} error={errors.identifier}>
+              <Field required htmlFor="identifier" label={t("auth.identifier")} error={errors.identifier}>
                 <input id="identifier" name="identifier" required maxLength={160} autoComplete="username" aria-invalid={errors.identifier || errors.password === t("auth.invalid") ? true : undefined} aria-describedby={errors.identifier ? "identifier-error" : undefined} className="input" onInput={() => clear("identifier")} />
               </Field>
             )}

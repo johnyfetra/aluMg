@@ -66,13 +66,13 @@ export default function SocialManager() {
       </div>
 
       <form onSubmit={submit} noValidate className="card grid gap-3 md:grid-cols-[12rem_1fr_1.6fr_auto] md:items-start">
-        <Field htmlFor="so-net" label={t("admin.socialNetwork")}>
+        <Field required htmlFor="so-net" label={t("admin.socialNetwork")}>
           <Select id="so-net" value={draft.network} onChange={(v) => setDraft({ ...draft, network: v as SocialNetwork })} options={SOCIAL_NETWORKS.map((n) => ({ value: n, label: t(`social.${n}`), leading: <SocialIcon network={n} size={16} /> }))} />
         </Field>
         <Field htmlFor="so-label" label={t("admin.socialLabel")}>
           <input id="so-label" className="input" maxLength={60} value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} aria-invalid={touched && !draft.label.trim()} />
         </Field>
-        <Field htmlFor="so-url" label={t("admin.socialUrl")} error={touched && !socialUrlOk(draft.network, draft.url.trim()) ? t("admin.socialInvalid") : undefined}>
+        <Field required htmlFor="so-url" label={t("admin.socialUrl")} error={touched && !socialUrlOk(draft.network, draft.url.trim()) ? t("admin.socialInvalid") : undefined}>
           <input id="so-url" className="input" type="url" inputMode="url" maxLength={300} placeholder="https://" value={draft.url} onChange={(e) => setDraft({ ...draft, url: e.target.value })} aria-invalid={touched && !socialUrlOk(draft.network, draft.url.trim())} />
         </Field>
         <div className="flex gap-2 md:mt-7">

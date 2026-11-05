@@ -70,7 +70,7 @@ function CreateForm({ onCreated, onCancel }: { onCreated: (password: string) => 
   return (
     <form onSubmit={submit} className="card space-y-3 border-primary/40">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Field htmlFor="ad-n" label={t("admin.name")}><input id="ad-n" className="input" required maxLength={80} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></Field>
+        <Field required htmlFor="ad-n" label={t("admin.name")}><input id="ad-n" className="input" required maxLength={80} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></Field>
         <Field htmlFor="ad-e" label={t("admin.email")}><input id="ad-e" className="input" type="email" maxLength={160} value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} /></Field>
         <Field htmlFor="ad-p" label={t("admin.phone")}><input id="ad-p" className="input" type="tel" maxLength={30} value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} /></Field>
         <Field htmlFor="ad-r" label={t("admin.role")}><Select id="ad-r" value={draft.role} onChange={(v) => setDraft({ ...draft, role: v as Role })} options={ROLES.map((r) => ({ value: r, label: t(`admin.role.${r}`) }))} /></Field>

@@ -1,7 +1,7 @@
 "use client";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { FieldError } from "../ui";
+import { FieldError, RequiredMark } from "../ui";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
@@ -21,7 +21,7 @@ export default function PasswordField({ id, name, label, signup, error, onInput,
 
   return (
     <div className="space-y-1">
-      <label htmlFor={id} className="block text-[13px] font-medium text-ink/90">{label}</label>
+      <label htmlFor={id} className="block text-[13px] font-medium text-ink/90">{label}{required && <RequiredMark />}</label>
       <div className="relative">
         <input
           id={id}

@@ -15,12 +15,16 @@ export function FieldError({ id, children }: { id: string; children: ReactNode }
   );
 }
 
-export function Field({ label, hint, children, htmlFor, help, error }: { label: string; hint?: string; children: ReactNode; htmlFor: string; help?: HelpTerm; error?: string }) {
+// Astérisque rouge des champs obligatoires (décoratif : le champ lui-même porte `required`, que les lecteurs d'écran annoncent).
+export const RequiredMark = () => <span aria-hidden className="ml-0.5 font-bold text-danger">*</span>;
+
+export function Field({ label, hint, children, htmlFor, help, error, required }: { label: string; hint?: string; children: ReactNode; htmlFor: string; help?: HelpTerm; error?: string; required?: boolean }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center">
         <label htmlFor={htmlFor} className="text-sm font-semibold text-ink">
           {label}
+          {required && <RequiredMark />}
         </label>
         {help && <InfoTip term={help} />}
       </div>

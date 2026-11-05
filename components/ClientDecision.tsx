@@ -89,7 +89,7 @@ export default function ClientDecision({ q, busy, pending = 0, warn = "", act, t
                 <input id="ch-disc" type="number" inputMode="decimal" min={0} max={90} className="input" value={discount} onChange={(e) => setDiscount(e.target.value)} />
               </Field>
             )}
-            <Field htmlFor="ch-msg" label={t(topic === "info" ? "act.yourQuestion" : "act.changeMessage")}>
+            <Field required={!(topic === "price" && Number(discount) > 0)} htmlFor="ch-msg" label={t(topic === "info" ? "act.yourQuestion" : "act.changeMessage")}>
               <textarea id="ch-msg" className="input min-h-24" maxLength={1000} placeholder={t(`act.ph.${topic}`)} value={message} onChange={(e) => setMessage(e.target.value)} required={!(topic === "price" && Number(discount) > 0)} />
             </Field>
             <button type="submit" className="btn-primary w-full" disabled={busy || (!message.trim() && !(topic === "price" && Number(discount) > 0))}>{t("act.send")}</button>

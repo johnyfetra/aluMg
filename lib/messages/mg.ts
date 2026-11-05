@@ -2012,11 +2012,11 @@ export const mg: Messages = {
   "editor.vat": "Asehoy ny TVA amin'ny devis",
   "editor.vatHint": "Raha tsy misy TVA, ny vidiny nampidirina no vidiny farany. Raha misy, miampy amin'ny totaliny.",
   "account.mustChange": "Napetraky ny fitantanana ny tenimiafinao. Mba hiarovana anao, mifidiana vaovao: ampidiro ho tenimiafina ankehitriny ilay vonjimaika.",
-  "account.confirm": "Hamarino ny tenimiafina vaovao",
-  "account.mismatch": "Tsy mitovy ny tenimiafina roa.",
   "account.mustChangeBanner": "Tenimiafina vonjimaika: mifidiana ny anao hiarovana ny kaontinao.",
   "account.mustChangeGo": "Hanova",
   "needs.showDetail": "Hijery ny antsipiriany (fanapahana, drafitra, fitaratra)",
   "needs.hideDetail": "Afeno ny antsipiriany",
   "ct.searchMore": "Hitady mpanjifa hafa ao amin'ny AluMg…",
+  "account.confirm": "Hamarino ny tenimiafina vaovao",
+  "account.mismatch": "Tsy mitovy ny tenimiafina roa.",
 };
