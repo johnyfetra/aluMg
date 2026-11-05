@@ -9,7 +9,7 @@ export default function DemoRender() {
   const g = (k: string, d: string) => q.get(k) ?? d;
   const line = {
     category: g("cat", "fenetre"), opening: g("op", "coulissant"), leaves: Number(g("leaves", "2")), shutter: g("shutter", "roulant"), control: g("control", "manuel"),
-    guard: g("guard", "verre"), infill: g("infill", "vitree"), finish: g("finish", "blanc"), glassType: g("glass", "clair"), pattern: g("pattern", "none"),
+    guard: g("guard", "verre"), infill: g("infill", "vitree"), finish: g("finish", "blanc"), glassType: g("glass", "clair"), pattern: g("pattern", "none"), thickness: g("thickness", "5"),
     range: g("range", "europeen"), extras: [] as never[], width: Number(g("w", "1800")), height: Number(g("h", "1200")),
   } as Viewable;
   return (

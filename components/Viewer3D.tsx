@@ -11,7 +11,7 @@ import { rnd, type Room, type Stage, Surroundings } from "./Stage3D";
 
 export type { Stage };
 
-export type Viewable = Pick<Line, "category" | "opening" | "leaves" | "direction" | "leafCfg" | "shutter" | "control" | "guard" | "infill" | "finish" | "glassType" | "pattern" | "range" | "extras" | "width" | "height" | "splitAt">;
+export type Viewable = Pick<Line, "category" | "opening" | "leaves" | "direction" | "leafCfg" | "shutter" | "control" | "guard" | "infill" | "finish" | "glassType" | "thickness" | "pattern" | "range" | "extras" | "width" | "height" | "splitAt">;
 
 // ---------- Matériaux ----------
 const GLASS: Record<string, { color: string; opacity: number; rough: number; metal: number }> = {
@@ -25,8 +25,8 @@ const GLASS: Record<string, { color: string; opacity: number; rough: number; met
   depoli: { color: "#ffffff", opacity: 0.8, rough: 0.9, metal: 0 },
 };
 
-type Ctx = { hex: string; metal: number; rough: number; hw: string; hwMetal: number; mapH: THREE.Texture | null; mapV: THREE.Texture | null; highlight: string | null; glass: (typeof GLASS)[string]; reduced: boolean; marks: boolean; size: number };
-const SceneCtx = createContext<Ctx>({ hex: "#ffffff", metal: 0.25, rough: 0.46, hw: "#cdd2d8", hwMetal: 0.9, mapH: null, mapV: null, highlight: null, glass: GLASS.clair, reduced: false, marks: false, size: 1 });
+type Ctx = { pattern: string; thickness: string; patTex: THREE.Texture | null; hex: string; metal: number; rough: number; hw: string; hwMetal: number; mapH: THREE.Texture | null; mapV: THREE.Texture | null; highlight: string | null; glass: (typeof GLASS)[string]; reduced: boolean; marks: boolean; size: number };
+const SceneCtx = createContext<Ctx>({ pattern: "none", thickness: "5", patTex: null, hex: "#ffffff", metal: 0.25, rough: 0.46, hw: "#cdd2d8", hwMetal: 0.9, mapH: null, mapV: null, highlight: null, glass: GLASS.clair, reduced: false, marks: false, size: 1 });
 const useScene = () => useContext(SceneCtx);
 
 // ---------- Mouvement : ressort critiquement amorti (accélère puis freine, sans rebond ni saccade) ----------
@@ -180,14 +180,48 @@ function Gasket({ w, h, depth }: { w: number; h: number; depth: number }) {
   );
 }
 
-function Pane({ w, h, position, thick = 0.006 }: { w: number; h: number; position?: [number, number, number]; thick?: number }) {
-  const { glass } = useScene();
+// Texture du motif de verre (carreau répété) : sert de couleur et de relief, pour que granité, martelé, cathédrale et cannelé se voient en 3D.
+function patternTexture(pattern: string) {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const x = c.getContext("2d")!;
+  x.fillStyle = "#fff";
+  x.fillRect(0, 0, 128, 128);
+  x.strokeStyle = x.fillStyle = "rgba(15,23,42,.55)";
+  x.lineWidth = 3;
+  const r = rnd(7);
+  if (pattern === "granite") for (let i = 0; i < 420; i++) { x.beginPath(); x.arc(r() * 128, r() * 128, 0.8 + r() * 1.6, 0, 7); x.fill(); }
+  if (pattern === "martele") for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { x.beginPath(); x.arc(16 + i * 32, 16 + j * 32, 12, 0, 7); x.stroke(); }
+  if (pattern === "cathedrale") for (let j = 0; j < 8; j++) { x.beginPath(); for (let i = 0; i <= 128; i += 4) x.lineTo(i, 8 + j * 16 + Math.sin((i / 128) * Math.PI * 4) * 5); x.stroke(); }
+  if (pattern === "cannele") for (let i = 0; i < 16; i++) { x.beginPath(); x.moveTo(4 + i * 8, 0); x.lineTo(4 + i * 8, 128); x.stroke(); }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+// Verre : l'épaisseur choisie (4 à 10 mm) donne celle de la vitre ; un double vitrage (4/12/4) montre deux vitres séparées par la lame d'air.
+// Le motif est porté par la vitre extérieure.
+function Pane({ w, h, position, thick }: { w: number; h: number; position?: [number, number, number]; thick?: number }) {
+  const { glass, thickness, patTex } = useScene();
+  const tex = useMemo(() => {
+    if (!patTex) return null;
+    const t = patTex.clone();
+    t.repeat.set(Math.max(1, w / 0.12), Math.max(1, h / 0.12));
+    t.needsUpdate = true;
+    return t;
+  }, [patTex, w, h]);
   if (w <= 0.001 || h <= 0.001) return null;
+  const [a, gap, b] = thickness.split("/").map((n) => Number(n) / 1000);
+  const layers = thick ? [{ z: 0, t: thick, motif: true }] : gap ? [{ z: -(gap + a) / 2, t: a, motif: true }, { z: (gap + b) / 2, t: b, motif: false }] : [{ z: 0, t: a, motif: true }];
   return (
-    <mesh position={position}>
-      <boxGeometry args={[w, h, thick]} />
-      <meshPhysicalMaterial color={glass.color} transparent opacity={glass.opacity} roughness={glass.rough} metalness={glass.metal} clearcoat={1} clearcoatRoughness={0.03} depthWrite={false} envMapIntensity={glass.metal > 0.5 ? 3.2 : 1.8} />
-    </mesh>
+    <group position={position}>
+      {layers.map((l, i) => (
+        <mesh key={i} position={[0, 0, l.z]}>
+          <boxGeometry args={[w, h, l.t]} />
+          <meshPhysicalMaterial color={glass.color} map={l.motif ? tex : null} bumpMap={l.motif ? tex : null} bumpScale={1.5} transparent opacity={glass.opacity} roughness={glass.rough} metalness={glass.metal} clearcoat={1} clearcoatRoughness={0.03} depthWrite={false} envMapIntensity={glass.metal > 0.5 ? 3.2 : 1.8} />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
@@ -893,6 +927,9 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
   const ctx = useMemo<Ctx>(() => {
     const base = GLASS[v.glassType] ?? GLASS.clair;
     return {
+      pattern: v.pattern,
+      thickness: v.thickness,
+      patTex: v.pattern !== "none" && typeof document !== "undefined" ? patternTexture(v.pattern) : null,
       hex: FINISHES.find((f) => f.id === v.finish)?.hex ?? "#f5f5f2",
       hw: hardwareColor(v.finish),
       hwMetal: hardwareColor(v.finish) === "#cdd2d8" ? 0.9 : 0.15, // acier brossé, ou laqué dans le ton du profilé
@@ -906,7 +943,7 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
       marks: !bare && (dims ?? !stage),
       size: Math.max(v.width, v.height) / 1000,
     };
-  }, [v.finish, v.glassType, v.pattern, highlight, reduced, bare, stage, dims, v.width, v.height, wood]);
+  }, [v.finish, v.glassType, v.pattern, v.thickness, highlight, reduced, bare, stage, dims, v.width, v.height, wood]);
 
   const dist = (Math.max(W, H) * 1.55 + 0.9) * (view?.dist ?? 1) * (bare || (stage && !dims) ? 1 : 1.12); // un peu de recul pour les cotes (plus dans un décor, pour voir aussi le mur)
   const sillY = stage?.sill ?? 0;
