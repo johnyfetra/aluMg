@@ -613,3 +613,13 @@ aside :focus-visible {
 [data-theme="dark"] .fb-hill-b { fill: color-mix(in srgb, var(--primary) 34%, #0e1511); }
 .fb-glass-a { stop-color: color-mix(in srgb, var(--primary) 22%, var(--surface)); }
 .fb-glass-b { stop-color: color-mix(in srgb, var(--primary) 6%, var(--surface)); }
+
+/* Section produit façon « page produit » : titre en dégradé, texte qui s'allume mot à mot au défilement (sans support : texte plein). */
+.apple-title { background: linear-gradient(180deg, var(--side-fg) 30%, color-mix(in srgb, var(--side-accent) 75%, var(--side-fg))); -webkit-background-clip: text; background-clip: text; color: transparent; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .apple-read span { animation: read linear both; animation-timeline: view(); animation-range: entry 60% cover 45%; }
+  }
+}
+@keyframes read { from { opacity: 0.18; } to { opacity: 1; } }
+

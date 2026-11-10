@@ -15,6 +15,7 @@ import WorkPicker from "./WorkPicker";
 import AssemblySteps from "./AssemblySteps";
 import Reveal from "./Reveal";
 import DemoBooking from "./DemoBooking";
+import AppleShowcase from "./AppleShowcase";
 
 // La pile de captures 3D est lourde et sous le pli : chargée à part, sa place est réservée (même rapport) pour ne rien décaler.
 const ProductShowcase = dynamic(() => import("./ProductShowcase"), { loading: () => <div className="aspect-[3/2] md:aspect-[2/1]" /> });
@@ -48,6 +49,7 @@ export default function MarketingHome() {
     <section className="public-container pb-12 pt-4 sm:pt-6 lg:pb-16" aria-labelledby="home-title"><HeroSlider /></section>
     <div id="suite" className="scroll-mt-28"><WorkPicker /></div>
     <div className="border-y border-line bg-surface"><Reveal as="ul" stagger className="public-container grid gap-5 py-6 sm:grid-cols-3">{[c.benefit1,c.benefit2,c.benefit3].map((label,i)=><li key={label} className="flex items-center gap-4 text-sm font-medium"><span className="font-mono text-xs text-muted">0{i+1}</span><span>{label}</span></li>)}</Reveal></div>
+    <AppleShowcase />
     <section id="savoir-faire" className="cv scroll-mt-28"><div className="public-container py-20 sm:py-24"><Reveal className="mb-10 flex flex-wrap items-end justify-between gap-6"><div><p className="eyebrow">{c.projectsEyebrow}</p><h2 className="mt-4 max-w-2xl text-3xl font-medium sm:text-4xl">{c.projectsTitle}</h2><p className="mt-4 max-w-xl leading-7 text-muted">{c.projectsIntro}</p></div><Link href="/realisations-menuiserie" className="btn-secondary">{c.projectsLink}<ArrowRight size={16} aria-hidden /></Link></Reveal><Reveal variant="clip"><Suspense><ProjectGallery limit={6} /></Suspense></Reveal>
       <Reveal stagger className="mt-10 grid grid-cols-2 gap-3 border-t border-line pt-8 md:grid-cols-4">{([["fenetres",AppWindow],["portes",DoorOpen],["cloisons",PanelsTopLeft],["garde-corps",Fence]] as const).map(([key,Icon])=><Link href={`/menuisiers?specialty=${key}`} key={key} className="flex min-h-14 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors hover:bg-surface-2"><Icon size={19} aria-hidden className="text-primary" />{t(`spec.${key}`)}<ArrowRight size={14} className="ml-auto shrink-0" aria-hidden /></Link>)}</Reveal>
     </div></section>
