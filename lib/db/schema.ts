@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { type AnyPgColumn, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import type { DemoMode, DemoStatus } from "../booking";
 import { AUDIT_ACTIONS, SOCIAL_NETWORKS, type FeedbackKind, type FeedbackStatus, type Market, type Quote, type Settings } from "../model";
 
 // Texte cherché par l'administration ; la requête (lib/admin.ts) reprend exactement cette expression pour que l'index serve.
@@ -457,4 +458,23 @@ export const verifications = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("verifications_user_idx").on(t.userId, t.createdAt)],
+);
+
+// Demandes de démonstration sur place, prises sans compte depuis la page d'accueil ; traitées dans l'administration.
+// Un créneau (jour, heure) n'est pris qu'une fois tant que le rendez-vous n'est pas annulé (index unique partiel).
+export const demoBookings = pgTable(
+  "demo_bookings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    phone: text("phone").notNull(), // forme normalisée +261…
+    mode: text("mode").$type<DemoMode>().notNull().default("onsite"),
+    place: text("place").notNull(), // lieu précis du rendez-vous (quartier, repère) ; vide en ligne
+    day: text("day").notNull(), // AAAA-MM-JJ, heure de Madagascar
+    slot: text("slot").notNull(), // HH:MM
+    note: text("note").notNull().default(""),
+    status: text("status").$type<DemoStatus>().notNull().default("new"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("demo_bookings_slot_idx").on(t.day, t.slot).where(sql`${t.status} <> 'cancelled'`), index("demo_bookings_day_idx").on(t.day), index("demo_bookings_phone_idx").on(t.phone)],
 );

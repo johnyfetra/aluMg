@@ -29,7 +29,7 @@ const eslintConfig = defineConfig([
         "error",
         {
           patterns: [
-            { group: ["@/lib/db", "@/lib/db/*", "@/lib/repo", "@/lib/profiles", "@/lib/workflow", "@/lib/auth", "@/lib/password", "@/lib/api", "@/lib/admin", "@/lib/feedback", "@/lib/phones", "@/lib/socials", "@/lib/contacts", "./db", "./db/*", "./repo", "./profiles", "./workflow", "./auth", "./password", "./api", "./admin", "./socials", "./contacts"], allowTypeImports: true, message: "Module serveur : à importer seulement avec `import type` côté navigateur." },
+            { group: ["@/lib/db", "@/lib/db/*", "@/lib/repo", "@/lib/profiles", "@/lib/workflow", "@/lib/auth", "@/lib/password", "@/lib/api", "@/lib/admin", "@/lib/feedback", "@/lib/phones", "@/lib/socials", "@/lib/contacts", "@/lib/demos", "./db", "./db/*", "./repo", "./profiles", "./workflow", "./auth", "./password", "./api", "./admin", "./socials", "./contacts", "./demos"], allowTypeImports: true, message: "Module serveur : à importer seulement avec `import type` côté navigateur." },
           ],
         },
       ],

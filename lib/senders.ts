@@ -53,6 +53,32 @@ async function resendSend(to: string, code: string, lang: Lang) {
   });
 }
 
+// E-mail simple (texte) par Resend, pour les avis à l'équipe ; sans configuration, écrit en console hors production et ne lève jamais.
+export async function sendMail(to: string[], subject: string, text: string) {
+  const c = resend();
+  if (!to.length) return;
+  if (!c) {
+    if (process.env.NODE_ENV !== "production") console.info(`[mail:dev] → ${to.join(", ")} : ${subject}\n${text}`);
+    return;
+  }
+  await post("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${c.key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from: c.from, to, subject, text }),
+  });
+}
+
+// SMS simple par Twilio (avis au client) ; sans configuration, écrit en console hors production.
+export async function sendSms(to: string, text: string) {
+  const c = twilio();
+  if (!c) {
+    if (process.env.NODE_ENV !== "production") console.info(`[sms:dev] → ${to} : ${text}`);
+    return;
+  }
+  const auth = `Basic ${Buffer.from(`${c.sid}:${c.token}`).toString("base64")}`;
+  await post(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(c.sid)}/Messages.json`, { method: "POST", headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ To: to, From: c.from, Body: text }) });
+}
+
 // Envoi « dev » (code écrit en console et renvoyé) : hors production uniquement. ALUMG_DEV_SENDER=1 l'autorise aussi pour les tests de bout en bout sur un build de production jetable (jamais en vrai déploiement).
 const dev = process.env.NODE_ENV !== "production" || process.env.ALUMG_DEV_SENDER === "1";
 

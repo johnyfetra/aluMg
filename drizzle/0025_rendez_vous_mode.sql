@@ -1,0 +1,1 @@
+ALTER TABLE "demo_bookings" ADD COLUMN "mode" text DEFAULT 'onsite' NOT NULL;

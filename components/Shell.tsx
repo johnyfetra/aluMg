@@ -16,7 +16,7 @@ import { Avatar } from "./ui";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
-import { Boxes, Briefcase, Building2, Share2, ClipboardList, Gauge, MessageSquareText, ScrollText, Search, Store, Users } from "lucide-react";
+import { Boxes, Briefcase, Building2, CalendarCheck, Share2, ClipboardList, Gauge, MessageSquareText, ScrollText, Search, Store, Users } from "lucide-react";
 import { request, useNotifications, useSession, useUnread } from "@/lib/client";
 import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
@@ -89,6 +89,7 @@ const ADMIN: Nav = {
         { href: "/admin/devis", key: "admin.allQuotes", Icon: FileText, match: starts("/admin/devis") },
         { href: "/admin/reseaux", key: "admin.social", Icon: Share2, match: starts("/admin/reseaux") },
         { href: "/admin/retours", key: "admin.feedback", Icon: MessageSquareText, match: starts("/admin/retours") },
+        { href: "/admin/rendez-vous", key: "admin.demos", Icon: CalendarCheck, match: starts("/admin/rendez-vous") },
         { href: "/admin/journal", key: "admin.audit", Icon: ScrollText, match: starts("/admin/journal") },
       ],
     },

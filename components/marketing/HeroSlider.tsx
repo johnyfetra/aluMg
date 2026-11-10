@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CalendarCheck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -76,6 +76,7 @@ export default function HeroSlider() {
         <div className="hero-in mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap" style={{ "--i": 3 } as React.CSSProperties}>
           <Link href="/menuisiers" className="btn-accent !min-h-12 !px-6 !text-[15px]">{c.find}<ArrowRight size={17} aria-hidden /></Link>
           <Link href="/inscription?role=menuisier" className="hero-glass btn-secondary !min-h-12 !px-6 !text-[15px]">{c.pro}</Link>
+          <a href="#demo" className="hero-glass btn-secondary !min-h-12 !px-6 !text-[15px]"><CalendarCheck size={17} aria-hidden />{c.demoHero}</a>
         </div>
         <div className="mt-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-5 border-t border-white/20 pt-5">
           <div className="hero-in w-full sm:w-auto" style={{ "--i": 4 } as React.CSSProperties}><Stats /></div>

@@ -169,6 +169,20 @@
       "when": 1793855537983,
       "tag": "0023_mot_de_passe_temporaire",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794329953625,
+      "tag": "0024_rendez_vous_demo",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794330968941,
+      "tag": "0025_rendez_vous_mode",
+      "breakpoints": true
     }
   ]
 }

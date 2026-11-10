@@ -14,13 +14,14 @@ import ProjectGallery from "./ProjectGallery";
 import WorkPicker from "./WorkPicker";
 import AssemblySteps from "./AssemblySteps";
 import Reveal from "./Reveal";
+import DemoBooking from "./DemoBooking";
 
 // La pile de captures 3D est lourde et sous le pli : chargée à part, sa place est réservée (même rapport) pour ne rien décaler.
 const ProductShowcase = dynamic(() => import("./ProductShowcase"), { loading: () => <div className="aspect-[3/2] md:aspect-[2/1]" /> });
 
 export function FinalCta() {
   const { locale } = useI18n(); const c = marketing[locale];
-  return <section className="border-t border-line bg-surface"><div className="public-container py-16 text-center sm:py-24"><p className="eyebrow">{c.question}</p><h2 className="mx-auto mt-4 max-w-3xl text-3xl font-medium tracking-tight sm:text-5xl">{c.finalTitle}</h2><p className="mt-5 text-muted">{c.finalSub}</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Link href="/menuisiers" className="btn-primary !min-h-12 !px-6">{c.find}<ArrowRight size={17} aria-hidden /></Link><Link href="/inscription?role=menuisier" className="btn-secondary !min-h-12 !px-6">{c.pro}</Link></div></div></section>;
+  return <section className="border-t border-line bg-surface"><div className="public-container py-16 text-center sm:py-24"><p className="eyebrow">{c.question}</p><h2 className="mx-auto mt-4 max-w-3xl text-3xl font-medium tracking-tight sm:text-5xl">{c.finalTitle}</h2><p className="mt-5 text-muted">{c.finalSub}</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Link href="/menuisiers" className="btn-primary !min-h-12 !px-6">{c.find}<ArrowRight size={17} aria-hidden /></Link><Link href="/inscription?role=menuisier" className="btn-secondary !min-h-12 !px-6">{c.pro}</Link><Link href="/#demo" className="btn-secondary !min-h-12 !px-6">{c.demoCta}</Link></div></div></section>;
 }
 
 // Questions / réponses : deux colonnes (client, menuisier), questions en serif italique, ouverture native sans JS.
@@ -57,6 +58,7 @@ export default function MarketingHome() {
     </section>
     <section className="cv border-t border-line public-container py-20 sm:py-24"><Reveal className="mb-10 flex flex-wrap items-end justify-between gap-6"><div><h2 className="max-w-2xl text-3xl font-medium sm:text-4xl">{c.peopleTitle}</h2><p className="mt-4 max-w-xl leading-7 text-muted">{c.peopleIntro}</p></div><Link href="/menuisiers" className="inline-flex items-center gap-2 font-semibold text-primary hover:underline">{c.all}<ArrowRight size={17} aria-hidden /></Link></Reveal>{error ? <ErrorState retry={()=>{void mutate();}} /> : isLoading ? <LoadingState /> : !data?.length ? <EmptyState message={c.peopleEmpty}><Link href="/inscription?role=menuisier" className="btn-primary">{c.pro}</Link></EmptyState> : <Reveal stagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{data.slice(0,3).map(m=><MenuisierCard key={m.slug} m={m} />)}</Reveal>}</section>
     <section className="cv bg-(--side-bg) text-(--side-fg)"><div className="public-container grid items-center gap-12 py-16 sm:py-24 lg:grid-cols-2 lg:gap-20"><Reveal as="figure" variant="clip"><div className="tint rounded-xl"><Photo src="/brand/precision-aluminium.webp" alt={c.craftAlt} className="aspect-[5/4] rounded-xl" /></div><figcaption className="mt-3 text-xs text-(--side-muted)">{c.editorial}</figcaption></Reveal><Reveal variant="right"><p className="text-xs font-semibold uppercase tracking-[.16em] text-(--side-accent)">{c.pro}</p><h2 className="mt-5 text-3xl font-medium leading-tight sm:text-4xl">{c.craftTitle}</h2><p className="mt-5 leading-7 text-(--side-fg)">{c.craftIntro}</p><ul className="mt-6 space-y-3">{[c.pro1,c.pro2,c.pro3,c.pro4].map(x=><li key={x} className="flex items-start gap-3 text-sm"><Check size={17} className="mt-0.5 shrink-0 text-(--side-accent)" aria-hidden />{x}</li>)}</ul><Link href="/inscription?role=menuisier" className="btn-accent mt-8 !min-h-12 !px-6">{c.start}<ArrowRight size={17} aria-hidden /></Link></Reveal></div></section>
+    <DemoBooking />
     <Faq />
     <FinalCta />
   </div>;

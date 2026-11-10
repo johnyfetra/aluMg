@@ -9,6 +9,7 @@ import type { ContactView } from "./contacts";
 import type { ConversationView, MessageView } from "./chat";
 import type { ConversationInfo, Person } from "./chat-info";
 import type { FeedbackRow } from "./feedback";
+import type { DemoRow } from "./demos";
 import type { PublicSocial, SocialLink } from "./social";
 import type { AccountConfig, AdminQuote, AdminQuoteRow, AdminStats, AdminUser, AdminUserRow, AuditRow, PageOf } from "./admin";
 
@@ -170,6 +171,10 @@ export const useAdminUser = (id: string) => useSWR<AdminUser & { self: boolean }
 export const useAdminFeedback = (params: Record<string, string>) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
   return useSWR<PageOf<FeedbackRow> & { news: number }>(`/api/admin/feedback${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
+};
+export const useAdminDemos = (params: Record<string, string>) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return useSWR<PageOf<DemoRow> & { news: number }>(`/api/admin/demo-bookings${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
 };
 export const useAdminQuotes = (params: Record<string, string>) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();

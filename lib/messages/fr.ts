@@ -2019,6 +2019,16 @@ export const fr = {
   "cfg.tab.pricing": "Chiffrage",
   "cfg.tab.terms": "Conditions",
   "market.colorsIntro": "Vos prix de barres (onglet Profilés) sont ceux d'un profilé blanc, gamme asiatique. Ici : coupez ce que vos fournisseurs ne vendent pas, et indiquez le supplément des autres gammes et couleurs. Exemple : faux bois +30 % → une barre à 60 000 Ar coûte 78 000 Ar dans le devis.",
+  "admin.demos": "Rendez-vous de démo",
+  "admin.demosSub": "Démonstrations sur place demandées depuis la page d'accueil : appelez pour confirmer.",
+  "admin.demosEmpty": "Aucun rendez-vous ici.",
+  "admin.demo.toConfirm": "à confirmer",
+  "admin.demo.entries": "rendez-vous",
+  "admin.demo.status.new": "À confirmer",
+  "admin.demo.status.confirmed": "Confirmé",
+  "admin.demo.status.done": "Fait",
+  "admin.demo.status.cancelled": "Annulé",
+  "admin.demo.online": "En ligne : envoyer le lien de la visio par téléphone",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;
