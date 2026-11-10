@@ -23,8 +23,9 @@ export default function ChatButton({ target, label, className = "btn-secondary w
   };
   return (
     <>
-      <button type="button" className={compact ? "btn-secondary !min-h-9 w-full !px-2.5" : className} onClick={go} disabled={busy} aria-label={compact ? label : undefined}>
-        <MessageCircle size={16} aria-hidden />
+      {/* compact : petit bouton de liste, même hauteur et même icône quelle que soit la largeur du libellé */}
+      <button type="button" className={compact ? "inline-flex h-8 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-line bg-surface px-2.5 text-xs font-semibold text-muted transition-colors hover:border-primary/60 hover:text-ink disabled:opacity-60" : className} onClick={go} disabled={busy} aria-label={compact ? label : undefined} data-tooltip={compact ? label : undefined}>
+        <MessageCircle size={compact ? 14 : 16} aria-hidden className="shrink-0" />
         {compact ? short : label}
       </button>
       {err && (
