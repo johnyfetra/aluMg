@@ -6,7 +6,8 @@ import { getDb, schema } from "./db";
 import { isPhone, normalizePhone } from "./phone";
 import { formatPhone } from "./phone";
 import { isUniqueViolation } from "./phones";
-import { sendMail, sendSms } from "./senders";
+import { sendSms } from "./senders";
+import { mailTeam } from "./team";
 
 // Rendez-vous de démonstration : pris par un visiteur sans compte, traités par l'administration.
 
@@ -53,12 +54,9 @@ export async function bookDemo(input: DemoInput, now = new Date()): Promise<Book
   }
 }
 
-// Avis à l'équipe : DEMO_NOTIFY_EMAIL (adresses séparées par des virgules), sinon les e-mails des comptes administrateurs.
 async function notifyTeam(b: DemoInput) {
-  const fixed = (process.env.DEMO_NOTIFY_EMAIL ?? "").split(",").map((x) => x.trim()).filter(Boolean);
-  const to = fixed.length ? fixed : (await (await getDb()).select({ email: schema.users.email }).from(schema.users).where(eq(schema.users.role, "admin"))).map((u) => u.email).filter((e): e is string => !!e);
   const where = b.mode === "online" ? "En ligne (envoyer le lien de visio)" : `Sur place : ${b.place}`;
-  await sendMail(to, `Démo AluMg : ${b.name}, ${b.day} à ${b.slot}`, [`Nouvelle demande de démonstration`, ``, `Nom : ${b.name}`, `Téléphone : ${formatPhone(b.phone)}`, `Date : ${b.day} à ${b.slot} (heure de Madagascar)`, where, b.note ? `Remarque : ${b.note}` : null, ``, `À confirmer par téléphone, puis dans l'administration : /admin/rendez-vous`].filter((l) => l !== null).join("\n"));
+  await mailTeam(`Démo AluMg : ${b.name}, ${b.day} à ${b.slot}`, [`Nouvelle demande de démonstration`, ``, `Nom : ${b.name}`, `Téléphone : ${formatPhone(b.phone)}`, `Date : ${b.day} à ${b.slot} (heure de Madagascar)`, where, b.note ? `Remarque : ${b.note}` : null, ``, `À confirmer par téléphone, puis dans l'administration : /admin/rendez-vous`]);
 }
 
 // Administration : rendez-vous par date (le plus proche d’abord), filtrables par statut.
