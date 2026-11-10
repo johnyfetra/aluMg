@@ -1173,10 +1173,10 @@ export const fr = {
   "editor.groupSite": "Chantier",
   "editor.groupTerms": "Conditions",
   "cost.title": "Mode de chiffrage",
-  "cost.hint": "Choisissez comment le prix de chaque ouvrage est calculé. Au prix de revient, le prix suit le coût réel : matière achetée, temps de travail, frais et marge.",
+  "cost.hint": "Par défaut, le prix d'un ouvrage est votre tarif au m². L'application calcule les barres, accessoires et verre de chaque ouvrage avec vos prix fournisseurs, et affiche votre bénéfice (prix − matériel).",
   "cost.mode": "Mode",
-  "cost.m2": "Au m² (tarifs ci-dessous)",
-  "cost.cost": "Au prix de revient (matière + main-d'œuvre + marge)",
+  "cost.m2": "Mon tarif au m² (recommandé)",
+  "cost.cost": "Avancé : prix de revient (matière + main-d'œuvre + frais + marge)",
   "cost.rate": "Taux horaire (Ar/h)",
   "cost.fixedMin": "Préparation par ouvrage (min)",
   "cost.cutMin": "Temps par coupe (min)",
@@ -2029,6 +2029,14 @@ export const fr = {
   "admin.demo.status.done": "Fait",
   "admin.demo.status.cancelled": "Annulé",
   "admin.demo.online": "En ligne : envoyer le lien de la visio par téléphone",
+  "cost.advanced": "Options avancées : main-d'œuvre, frais et marge",
+  "cost.price": "Prix de vente",
+  "cost.profit": "Bénéfice",
+  "editor.delayEstimate": "Estimation : {n} jour(s) de fabrication à l'atelier.",
+  "editor.delayUse": "Utiliser",
+  "editor.delayValue": "{n} jours ouvrés après acompte",
+  "cost.times": "Temps d'atelier et seuil d'alerte",
+  "cost.timesNote": "Ces temps donnent le délai de fabrication proposé dans chaque devis. Le seuil signale un bénéfice trop faible sur le matériel.",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

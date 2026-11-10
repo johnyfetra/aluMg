@@ -15,7 +15,7 @@ import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
 import { Avatar, Field } from "./ui";
 import { allPieces, cuttingPlan, normalize, planTotals } from "@/lib/calc";
-import { quoteMargin } from "@/lib/costing";
+import { marginBasis, productionDays, quoteMargin } from "@/lib/costing";
 import { initSim, simulate } from "@/lib/procure";
 import { useContacts } from "@/lib/client";
 import { ApiError, request, trackDownload, useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
@@ -168,7 +168,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const plan = planTotals(cuttingPlan(allPieces(live), settings.barLength, settings.kerf));
   // marge du devis entier : achats chiffrés avec le catalogue de ce devis, remise et coût des prestations compris
   const purchases = simulate(live, initSim(eff.market), settings.kerf).allCost; // React Compiler mémoïse
-  const margin = quoteMargin({ lines: validLines, terms: q.terms, discount: q.discount, services: q.services, status: q.status, lineReviews: q.lineReviews }, eff, purchases);
+  const days = productionDays(live, eff); // temps d'atelier : dépend du nombre et de la taille des ouvrages
+  const margin = quoteMargin({ lines: validLines, terms: q.terms, discount: q.discount, services: q.services, status: q.status, lineReviews: q.lineReviews }, marginBasis(eff), purchases);
 
   // Enregistre le devis (création ou mise à jour) ; renvoie le devis enregistré, ou null si une ligne est invalide / si l'envoi échoue.
   const persist = async (): Promise<Quote | null> => {
@@ -395,7 +396,15 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><span aria-hidden className="h-4 w-1 rounded-full bg-primary" />{t("editor.groupTerms")}</h3>
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem] lg:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1.4fr)]">
                   <Field htmlFor="dl" label={t("editor.delay")}>
-                    <input id="dl" className="input" maxLength={120} placeholder={t("editor.delayPlaceholder")} value={q.delay} onChange={(e) => setQ({ ...q, delay: e.target.value })} />
+                    <>
+                      <input id="dl" className="input" maxLength={120} placeholder={t("editor.delayPlaceholder")} value={q.delay} onChange={(e) => setQ({ ...q, delay: e.target.value })} />
+                      {days > 0 && (
+                        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+                          {t("editor.delayEstimate").replace("{n}", String(days))}
+                          <button type="button" className="font-semibold text-primary hover:underline" onClick={() => setQ({ ...q, delay: t("editor.delayValue").replace("{n}", String(days)) })}>{t("editor.delayUse")}</button>
+                        </p>
+                      )}
+                    </>
                   </Field>
                   <Field htmlFor="wr" label={t("svc.warranty")}>
                     <input id="wr" className="input" type="number" inputMode="numeric" min={0} max={240} title={t("svc.warrantyHint")} value={q.warranty ?? ""} onChange={(e) => setQ({ ...q, warranty: e.target.value === "" ? undefined : Math.min(240, Math.max(0, Math.round(Number(e.target.value) || 0))) })} />

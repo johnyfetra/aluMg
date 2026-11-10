@@ -150,25 +150,30 @@ function Form({ initial, tab }: { initial: Settings; tab: Exclude<CompanyTab, "m
         </h2>
         <p className="text-sm text-muted">{t("cost.hint")}</p>
         <Choice name="pricing" legend={t("cost.mode")} value={s.pricing} options={[{ value: "m2", label: t("cost.m2") }, { value: "cost", label: t("cost.cost") }]} onChange={(pricing) => set({ pricing })} />
-        {s.pricing === "cost" && (
-          <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {([["rate", "cost.rate"], ["fixedMin", "cost.fixedMin"], ["cutMin", "cost.cutMin"], ["leafMin", "cost.leafMin"], ["glazingMin", "cost.glazingMin"]] as const).map(([k, label]) => (
-                <Field key={k} htmlFor={`lb-${k}`} label={t(label)}>
-                  <input id={`lb-${k}`} type="number" inputMode="decimal" min={0} className="input" value={s.labor[k]} onChange={(e) => set({ labor: { ...s.labor, [k]: Number(e.target.value) || 0 } })} />
-                </Field>
-              ))}
-              {([["overheadPct", "cost.overheadPct"], ["marginPct", "cost.marginPct"], ["minMarginPct", "cost.minMarginPct"]] as const).map(([k, label]) => (
-                <Field key={k} htmlFor={`cs-${k}`} label={t(label)}>
-                  <input id={`cs-${k}`} type="number" inputMode="decimal" min={0} className="input" value={s[k]} onChange={(e) => set({ [k]: Number(e.target.value) || 0 })} />
-                </Field>
-              ))}
-            </div>
-            <p className="text-xs text-muted">{t("cost.note")}</p>
-          </>
-        )}
+        {/* temps d'atelier (délai de fabrication des devis, dans les deux modes) ; taux, frais et marges : prix de revient seulement. Replié par défaut. */}
+        <details className="rounded-xl border border-line p-4">
+          <summary className="cursor-pointer text-sm font-semibold">{t(s.pricing === "cost" ? "cost.advanced" : "cost.times")}</summary>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {([...(s.pricing === "cost" ? [["rate", "cost.rate"]] as const : []), ["fixedMin", "cost.fixedMin"], ["cutMin", "cost.cutMin"], ["leafMin", "cost.leafMin"], ["glazingMin", "cost.glazingMin"]] as const).map(([k, label]) => (
+              <Field key={k} htmlFor={`lb-${k}`} label={t(label)}>
+                <input id={`lb-${k}`} type="number" inputMode="decimal" min={0} className="input" value={s.labor[k]} onChange={(e) => set({ labor: { ...s.labor, [k]: Number(e.target.value) || 0 } })} />
+              </Field>
+            ))}
+            {s.pricing === "cost" && ([["overheadPct", "cost.overheadPct"], ["marginPct", "cost.marginPct"]] as const).map(([k, label]) => (
+              <Field key={k} htmlFor={`cs-${k}`} label={t(label)}>
+                <input id={`cs-${k}`} type="number" inputMode="decimal" min={0} className="input" value={s[k]} onChange={(e) => set({ [k]: Number(e.target.value) || 0 })} />
+              </Field>
+            ))}
+            <Field htmlFor="cs-minMarginPct" label={t("cost.minMarginPct")}>
+              <input id="cs-minMarginPct" type="number" inputMode="decimal" min={0} className="input" value={s.minMarginPct} onChange={(e) => set({ minMarginPct: Number(e.target.value) || 0 })} />
+            </Field>
+          </div>
+          <p className="mt-3 text-xs text-muted">{t(s.pricing === "cost" ? "cost.note" : "cost.timesNote")}</p>
+        </details>
       </section>
 
+      {/* tarifs au m² et majorations ne servent qu'au chiffrage au m² : masqués en prix de revient */}
+      {s.pricing === "m2" && (<>
       <section className="card space-y-4" aria-labelledby="h-pr">
         <h2 id="h-pr" className="text-lg font-semibold">
           {t("settings.pricing")}
@@ -201,6 +206,7 @@ function Form({ initial, tab }: { initial: Settings; tab: Exclude<CompanyTab, "m
           </fieldset>
         ))}
       </section>
+      </>)}
 
       <section className="card space-y-4" aria-labelledby="h-cu">
         <h2 id="h-cu" className="text-lg font-semibold">

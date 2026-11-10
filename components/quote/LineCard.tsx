@@ -9,7 +9,7 @@ import { Choice, Field, FinishPicker } from "../ui";
 import WorksButton from "../WorksDialog";
 import SectionView from "../SectionView";
 import { billedArea, cutList, cuttingPlan, fmt, lineTotal, nacoBlades } from "@/lib/calc";
-import { costLine, marginOf } from "@/lib/costing";
+import { costLine, marginBasis, marginOf } from "@/lib/costing";
 import { lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { type T } from "@/lib/i18n";
@@ -52,7 +52,7 @@ export function LineCard({
   const tooLong = valid && cuttingPlan(cutList(l).pieces).some((p) => p.tooLong.length > 0);
   const auto = valid ? price(l, settings) : l.unit;
   // coût de revient d'un ouvrage (jamais montré au client)
-  const cost = open && !clientMode && valid ? costLine(l, settings) : null;
+  const cost = open && !clientMode && valid ? costLine(l, marginBasis(settings)) : null;
   const margin = cost ? marginOf(l.unit, cost.full) : 0;
   const tone = margin < 0 ? "text-danger" : margin < settings.minMarginPct ? "text-warn" : "text-ok";
   const spec = leavesSpec(l);
@@ -256,8 +256,17 @@ export function LineCard({
               <div className="space-y-2 rounded-lg border border-line bg-surface p-3">
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
                   <div><dt className="text-xs text-muted">{t("cost.material")}</dt><dd className="font-semibold tabular-nums">{fmt(cost.material)}</dd></div>
-                  <div><dt className="text-xs text-muted">{t("cost.labor")}</dt><dd className="font-semibold tabular-nums">{fmt(cost.labor)}</dd></div>
-                  <div><dt className="text-xs text-muted">{t("cost.full")}</dt><dd className="font-semibold tabular-nums">{fmt(cost.full)}</dd></div>
+                  {settings.pricing === "cost" ? (
+                    <>
+                      <div><dt className="text-xs text-muted">{t("cost.labor")}</dt><dd className="font-semibold tabular-nums">{fmt(cost.labor)}</dd></div>
+                      <div><dt className="text-xs text-muted">{t("cost.full")}</dt><dd className="font-semibold tabular-nums">{fmt(cost.full)}</dd></div>
+                    </>
+                  ) : (
+                    <>
+                      <div><dt className="text-xs text-muted">{t("cost.price")}</dt><dd className="font-semibold tabular-nums">{fmt(l.unit)}</dd></div>
+                      <div><dt className="text-xs text-muted">{t("cost.profit")}</dt><dd className={`font-bold tabular-nums ${tone}`}>{fmt(l.unit - cost.full)}</dd></div>
+                    </>
+                  )}
                   <div><dt className="text-xs text-muted">{t("cost.margin")}</dt><dd className={`font-bold tabular-nums ${tone}`}>{margin > 0 ? "+" : ""}{margin} %</dd></div>
                 </dl>
                 <p role="status" className={`text-xs font-medium ${tone}`}>

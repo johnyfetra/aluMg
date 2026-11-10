@@ -1,7 +1,7 @@
 import { FinishSwatch } from "./Swatch";
 import { Banknote, Layers, PackageCheck, PiggyBank } from "lucide-react";
 import { fmt, meters } from "@/lib/calc";
-import { quoteMargin } from "@/lib/costing";
+import { marginBasis, quoteMargin } from "@/lib/costing";
 import type { T } from "@/lib/i18n";
 import { ACCESSORIES, type FinishId, GLASSES, type Quote, type Settings } from "@/lib/model";
 import type { Plan } from "@/lib/procure";
@@ -11,7 +11,8 @@ import { totals } from "@/lib/totals";
 export default function Budget({ quote, plan, settings, t }: { quote: Quote; plan: Plan; settings: Settings; t: T }) {
   const cur = t("common.currency");
   const { gross, discount, ht, tva, ttc } = totals(quote);
-  const { labor, overhead, servicesCost, servicesUnknown, cost: totalCost, margin, pct: marginPct, ofSale } = quoteMargin(quote, settings, plan.allCost);
+  const { labor, overhead, servicesCost, servicesUnknown, cost: totalCost, margin, pct: marginPct, ofSale } = quoteMargin(quote, marginBasis(settings), plan.allCost);
+  const advanced = settings.pricing === "cost"; // main-d'œuvre et frais : seulement au prix de revient
   const marginTone = margin < 0 ? "text-danger" : marginPct < settings.minMarginPct ? "text-warn" : "text-ok";
   const area = plan.glassArea;
   const pct = (n: number, of: number) => (of ? Math.round((n / of) * 100) : 0);
@@ -48,8 +49,8 @@ export default function Budget({ quote, plan, settings, t }: { quote: Quote; pla
             {row(t("budget.accessories"), `${fmt(plan.accCost)} ${cur}`)}
             {row(t("budget.glassCost"), `${fmt(plan.glassCost)} ${cur}`)}
             {plan.panelCost > 0 && row(t("budget.panel"), `${fmt(plan.panelCost)} ${cur}`)}
-            {row(t("budget.labor"), `${fmt(labor)} ${cur}`)}
-            {row(`${t("budget.overhead")} ${settings.overheadPct} %`, `${fmt(overhead)} ${cur}`)}
+            {advanced && row(t("budget.labor"), `${fmt(labor)} ${cur}`)}
+            {advanced && row(`${t("budget.overhead")} ${settings.overheadPct} %`, `${fmt(overhead)} ${cur}`)}
             {servicesCost > 0 && row(t("budget.servicesCost"), `${fmt(servicesCost)} ${cur}`)}
             {row(t("budget.totalCost"), `${fmt(totalCost)} ${cur}`, true)}
             {row(t("budget.marginAmount"), `${fmt(margin)} ${cur}`, true, marginTone)}

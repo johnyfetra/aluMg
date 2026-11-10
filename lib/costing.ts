@@ -33,6 +33,10 @@ export function costLine(l: Line, s: Settings): LineCost {
   return { material, labor, direct, full, price, incomplete: p.groups.some((g) => g.noOffer) };
 }
 
+// Base du bénéfice affiché. Au m² (mode par défaut), le tarif du menuisier rémunère son travail : bénéfice = prix − matériel
+// (barres, accessoires, verre, panneaux calculés pour chaque ouvrage). Main-d'œuvre et frais généraux ne comptent qu'au prix de revient (réglages avancés).
+export const marginBasis = (s: Settings): Settings => (s.pricing === "cost" ? s : { ...s, labor: { ...s.labor, rate: 0 }, overheadPct: 0 });
+
 // Prix de vente unitaire d'un ouvrage selon le mode choisi dans les réglages.
 export const salePrice = (l: Line, s: Settings) => (s.pricing === "cost" ? costLine(l, s).price : unitPrice(l, s.tariffs, s.surcharges, s.minArea));
 
@@ -42,6 +46,14 @@ export const marginOf = (unit: number, full: number) => (full > 0 ? Math.round((
 // Coût de main-d'œuvre total d'un devis (toutes quantités), pour le budget.
 export const laborTotal = (lines: Line[], s: Settings) =>
   Math.round(lines.reduce((sum, l) => sum + ((laborMinutes(l, s.labor, extrasCost([l], s.market).glassArea / Math.max(1, l.qty)) / 60) * s.labor.rate) * l.qty, 0));
+
+// Délai de fabrication estimé d'un devis, en jours ouvrés : temps d'atelier de chaque ouvrage (préparation, coupes, vantaux, vitrage) × quantité.
+// shortcut: une personne, 8 h par jour, sans la pose ni l'attente des fournisseurs ; ajouter l'effectif de l'atelier dans les réglages si besoin.
+export const WORK_HOURS_PER_DAY = 8;
+export const productionDays = (lines: Line[], s: Settings) => {
+  const minutes = lines.reduce((sum, l) => sum + laborMinutes(l, s.labor, extrasCost([l], s.market).glassArea / Math.max(1, l.qty)) * l.qty, 0);
+  return minutes > 0 ? Math.ceil(minutes / 60 / WORK_HOURS_PER_DAY) : 0;
+};
 
 // Coût interne des prestations (pose, transport…). `unknown` : une prestation facturée n'a pas de coût saisi, donc la marge est sans doute trop haute.
 export const servicesCost = (services: Pick<Service, "qty" | "price" | "cost">[] = []) => ({

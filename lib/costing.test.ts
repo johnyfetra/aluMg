@@ -1,13 +1,33 @@
 import { describe, expect, it } from "vitest";
 import { unitPrice } from "./calc";
 import { LEGACY_TARIFFS } from "./model";
-import { calibration, costLine, laborMinutes, laborTotal, marginOf, quoteMargin, salePrice, servicesCost } from "./costing";
+import { calibration, costLine, marginBasis, productionDays, laborMinutes, laborTotal, marginOf, quoteMargin, salePrice, servicesCost } from "./costing";
 import { type Line, type Settings, lineSchema, withDefaults } from "./model";
 
 const S = withDefaults({});
 const win = (p: Partial<Line> = {}): Line =>
   lineSchema.parse({ id: "x", category: "fenetre", opening: "coulissant", leaves: 2, shutter: "roulant", control: "manuel", guard: "barreaudage", range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1200, height: 1200, qty: 1, unit: 0, ...p });
 const withS = (p: Partial<Settings>): Settings => ({ ...S, ...p });
+
+describe("bénéfice au m² (mode par défaut)", () => {
+  it("prix − matériel : ni main-d'œuvre ni frais généraux ; inchangé au prix de revient", () => {
+    const c = costLine(win(), marginBasis(S));
+    expect(S.pricing).toBe("m2");
+    expect(c.labor).toBe(0);
+    expect(c.full).toBe(c.material);
+    const adv = withS({ pricing: "cost" });
+    expect(marginBasis(adv)).toBe(adv);
+  });
+});
+
+describe("délai de fabrication", () => {
+  it("augmente avec la quantité et vaut 0 sans ouvrage", () => {
+    expect(productionDays([], S)).toBe(0);
+    const one = productionDays([win()], S);
+    expect(one).toBeGreaterThanOrEqual(1);
+    expect(productionDays([win({ qty: 20 })], S)).toBeGreaterThan(one);
+  });
+});
 
 describe("marge du devis entier", () => {
   const terms = { tva: 20, deposit: 30, validityDays: 30 };
