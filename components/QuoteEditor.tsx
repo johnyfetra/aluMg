@@ -1,5 +1,5 @@
 "use client";
-import { BadgePercent, Check, Mail, Pencil, Phone, UserCheck, Eye, Inbox, LayoutGrid, Rows3, Table2, Users } from "lucide-react";
+import { BadgePercent, Check, ChevronUp, Mail, Plus, Pencil, Phone, UserCheck, Eye, Inbox, LayoutGrid, Rows3, Table2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -136,8 +136,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     setQ((cur) => ({ ...cur, client: { ...cur.client, name: c.name, phone: c.phone, email: c.email }, ...(withDiscount ? { discount: c.discount } : {}) }));
     if (withDiscount) toast.info(t("toast.discountApplied"), `${c.discount} % · ${c.name}`);
   };
-  // fiche client : formulaire ouvert seulement pour ajouter ou modifier
-  const [editClient, setEditClient] = useState(() => !(existing && existing.client.name.trim()));
+  // fiche client et chantier : repliée par défaut ; elle s'ouvre pour ajouter ou modifier, ou quand il manque le client à l'enregistrement
+  const [editClient, setEditClient] = useState(false);
   const prefilled = useRef(false);
   useEffect(() => {
     const id = new URLSearchParams(location.search).get("contact");
@@ -176,6 +176,14 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     if (locked) return q;
     if (validLines.length !== q.lines.length || q.lines.length === 0) {
       setMsg({ ok: false, text: t("editor.needLine") });
+      return null;
+    }
+    if (!q.client.name.trim()) {
+      // enregistrer ou envoyer sans client : on ouvre la fiche et on y place le curseur
+      setEditClient(true);
+      setMsg({ ok: false, text: t("editor.needClient") });
+      toast.warning(t("editor.needClientTitle"), t("editor.needClient"));
+      requestAnimationFrame(() => { const el = document.getElementById("cn"); el?.scrollIntoView({ behavior: "smooth", block: "center" }); el?.focus({ preventScroll: true }); });
       return null;
     }
     try {
@@ -331,16 +339,16 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
               <h2 id="h-client" className="text-base font-semibold">
                 {t("editor.client")}
               </h2>
-              {!editClient && !locked && (
+              {!editClient && !locked && clientReady && (
                 <button type="button" className="btn-secondary !min-h-8 !px-2.5 text-xs" onClick={() => setEditClient(true)}>
                   <Pencil size={14} aria-hidden />
                   {t("editor.clientEdit")}
                 </button>
               )}
-              {editClient && clientReady && (
-                <button type="button" className="btn-primary !min-h-8 !px-3 text-xs" onClick={() => setEditClient(false)}>
-                  <Check size={14} aria-hidden />
-                  {t("editor.clientDone")}
+              {editClient && (
+                <button type="button" className={`${clientReady ? "btn-primary" : "btn-secondary"} !min-h-8 !px-3 text-xs`} onClick={() => setEditClient(false)}>
+                  {clientReady ? <Check size={14} aria-hidden /> : <ChevronUp size={14} aria-hidden />}
+                  {t(clientReady ? "editor.clientDone" : "editor.clientClose")}
                 </button>
               )}
             </div>
@@ -369,7 +377,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                   </div>
                 )}
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  <Field htmlFor="cn" label={t("editor.clientName")}>
+                  <Field required htmlFor="cn" label={t("editor.clientName")}>
                     <input id="cn" className="input" autoComplete="name" maxLength={120} value={q.client.name} onChange={(e) => setClient({ name: e.target.value })} />
                   </Field>
                   <Field htmlFor="cp" label={t("editor.clientPhone")}>
@@ -417,6 +425,11 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 </div>
               </div>
             </fieldset>
+            ) : !clientReady ? (
+              <button type="button" disabled={locked} onClick={() => setEditClient(true)} className="flex w-full items-center gap-3 rounded-xl border border-dashed border-line px-4 py-3 text-left text-sm text-muted hover:border-primary hover:text-ink">
+                <Plus size={16} aria-hidden className="text-primary" />
+                {t("editor.clientAdd")}
+              </button>
             ) : (
               <div className="space-y-2.5">
                 <div className="flex items-start gap-3">

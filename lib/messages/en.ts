@@ -2037,4 +2037,8 @@ export const en: Messages = {
   "editor.delayValue": "{n} working days after deposit",
   "cost.times": "Workshop times and alert threshold",
   "cost.timesNote": "These times give the production lead time suggested in each quote. The threshold flags a profit too low over materials.",
+  "editor.needClient": "Enter at least the client's name before saving or sending the quote.",
+  "editor.needClientTitle": "Client details missing",
+  "editor.clientAdd": "Add the client and site",
+  "editor.clientClose": "Close",
 };

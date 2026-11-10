@@ -87,8 +87,8 @@ function Form({ initial }: { initial: Profile }) {
           <Field required htmlFor="pp-name" label={t("pp.displayName")}>
             <input id="pp-name" className="input" required maxLength={120} value={p.displayName} onChange={(e) => set({ displayName: e.target.value })} />
           </Field>
-          <Field htmlFor="pp-city" label={t("dir.city")} hint={t("pp.cityHint")}>
-            <input id="pp-city" className="input" maxLength={80} value={p.city} onChange={(e) => set({ city: e.target.value })} />
+          <Field required={p.published} htmlFor="pp-city" label={t("dir.city")} hint={t("pp.cityHint")}>
+            <input id="pp-city" className="input" required={p.published} maxLength={80} value={p.city} onChange={(e) => set({ city: e.target.value })} />
           </Field>
           <div className="grid grid-cols-[1fr_9rem] gap-4">
             <Field htmlFor="pp-zones" label={t("pp.zones")} hint={t("pp.zonesHint")}>

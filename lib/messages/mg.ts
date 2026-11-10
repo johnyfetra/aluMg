@@ -2039,4 +2039,8 @@ export const mg: Messages = {
   "editor.delayValue": "Andro fiasana {n} aorian'ny loka",
   "cost.times": "Fotoana amin'ny atelier sy fetra fampitandremana",
   "cost.timesNote": "Ireo fotoana ireo no manome ny faharetan'ny fanamboarana atolotra isaky ny tolotra. Ny fetra dia mampitandrina raha kely loatra ny tombony amin'ny fitaovana.",
+  "editor.needClient": "Soraty farafahakeliny ny anaran'ny mpanjifa alohan'ny hitahirizana na handefasana ny tolotra.",
+  "editor.needClientTitle": "Tsy feno ny mombamomba ny mpanjifa",
+  "editor.clientAdd": "Ampidiro ny mpanjifa sy ny toerana",
+  "editor.clientClose": "Hidio",
 };

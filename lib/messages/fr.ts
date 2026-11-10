@@ -2037,6 +2037,10 @@ export const fr = {
   "editor.delayValue": "{n} jours ouvrés après acompte",
   "cost.times": "Temps d'atelier et seuil d'alerte",
   "cost.timesNote": "Ces temps donnent le délai de fabrication proposé dans chaque devis. Le seuil signale un bénéfice trop faible sur le matériel.",
+  "editor.needClient": "Renseignez au moins le nom du client avant d'enregistrer ou d'envoyer le devis.",
+  "editor.needClientTitle": "Informations client manquantes",
+  "editor.clientAdd": "Ajouter le client et le chantier",
+  "editor.clientClose": "Fermer",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;
