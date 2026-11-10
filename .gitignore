@@ -54,3 +54,7 @@ next-env.d.ts
 
 # Visuels de la page Facebook de la plateforme (logo, bannière, publications) : matériel de communication, pas du code
 /public/brand/facebook/
+
+# index locaux des outils Claude
+.codegraph/
+.serena/
