@@ -35,7 +35,7 @@ function Entry({ row, onStatus }: { row: SiteMessageRow; onStatus: (id: string, 
             {t(`admin.site.status.${s}`)}
           </button>
         ))}
-        {row.userId && row.role !== "admin" && <span className="w-40"><ChatButton compact short={t("admin.write")} target={{ user: row.userId }} label={t("admin.contact")} /></span>}
+        {row.userId && row.role !== "admin" && <span className="w-28"><ChatButton compact short={t("admin.write")} target={{ user: row.userId }} label={t("admin.contact")} /></span>}
       </div>
     </li>
   );

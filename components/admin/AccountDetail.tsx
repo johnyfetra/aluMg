@@ -80,7 +80,7 @@ export default function AccountDetail({ id }: { id: string }) {
         </div>
       </div>
 
-      {u.role !== "admin" && !u.self && <div><ChatButton target={{ user: id }} label={t("admin.contact")} className="btn-primary" /></div>}
+      {u.role !== "admin" && !u.self && <div><ChatButton target={{ user: id }} label={t("admin.contact")} className="btn-chat" /></div>}
 
       {locked && <p role="note" className="card flex items-start gap-3 border-warn/40 text-sm"><ShieldAlert size={18} aria-hidden className="mt-0.5 shrink-0 text-warn" />{t(u.protected ? "admin.protected" : "admin.self")}</p>}
       {password && <TempPassword title={t("admin.resetDone")} password={password} onDone={() => setPassword("")} />}

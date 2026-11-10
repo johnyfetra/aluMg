@@ -6,7 +6,7 @@ import { openConversation } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 
 // Ouvre (ou crée) la conversation puis y va ; l'API refuse si l'échange n'est pas permis.
-export default function ChatButton({ target, label, className = "btn-secondary w-full", compact = false, short }: { target: { menuisier: string } | { menuisierId: string } | { client: string } | { user: string } | { support: true }; label: string; className?: string; compact?: boolean; short?: string }) {
+export default function ChatButton({ target, label, className = "btn-chat w-full", compact = false, short }: { target: { menuisier: string } | { menuisierId: string } | { client: string } | { user: string } | { support: true }; label: string; className?: string; compact?: boolean; short?: string }) {
   const { t } = useI18n();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -24,7 +24,7 @@ export default function ChatButton({ target, label, className = "btn-secondary w
   return (
     <>
       {/* compact : petit bouton de liste, même hauteur et même icône quelle que soit la largeur du libellé */}
-      <button type="button" className={compact ? "inline-flex h-8 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-line bg-surface px-2.5 text-xs font-semibold text-muted transition-colors hover:border-primary/60 hover:text-ink disabled:opacity-60" : className} onClick={go} disabled={busy} aria-label={compact ? label : undefined} data-tooltip={compact ? label : undefined}>
+      <button type="button" className={compact ? "btn-chat btn-chat-sm w-full" : className} onClick={go} disabled={busy} aria-label={compact ? label : undefined} data-tooltip={compact ? label : undefined}>
         <MessageCircle size={compact ? 14 : 16} aria-hidden className="shrink-0" />
         {compact ? short : label}
       </button>

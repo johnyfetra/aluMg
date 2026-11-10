@@ -68,8 +68,8 @@ export default function QuoteDetail({ id }: { id: string }) {
           </dl>
           {/* l'administration écrit sous le profil AluMg : le destinataire voit la plateforme, pas un compte personnel */}
           <div className="mt-3 flex flex-wrap gap-2">
-            <ChatButton target={{ user: d.ownerId }} label={t("admin.contactOwner")} className="btn-secondary !min-h-10" />
-            {d.clientId && <ChatButton target={{ user: d.clientId }} label={t("admin.contactClient")} className="btn-secondary !min-h-10" />}
+            <ChatButton target={{ user: d.ownerId }} label={t("admin.contactOwner")} className="btn-chat" />
+            {d.clientId && <ChatButton target={{ user: d.clientId }} label={t("admin.contactClient")} className="btn-chat" />}
           </div>
         </section>
       </div>

@@ -88,7 +88,7 @@ export default function FloatingActions() {
             {me && me.role !== "admin" ? (
               <div className="space-y-3 text-sm">
                 <p className="text-muted">{c.chatLogged}</p>
-                <ChatButton target={{ support: true }} label={c.chatGo} className="btn-primary w-full" />
+                <ChatButton target={{ support: true }} label={c.chatGo} className="btn-chat w-full" />
               </div>
             ) : state === "done" ? (
               <div role="status" className="space-y-3 text-sm">

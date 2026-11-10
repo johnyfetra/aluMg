@@ -156,7 +156,7 @@ export default function ClientsPage() {
                   <Plus size={14} aria-hidden />
                   {t("ct.newQuote")}
                 </Link>
-                {c.account && c.quotes > 0 && <ChatButton target={{ client: c.account.id }} label={t("ct.write")} className="btn-secondary !min-h-9 !px-3 text-xs" />}
+                {c.account && c.quotes > 0 && <ChatButton target={{ client: c.account.id }} label={t("ct.write")} className="btn-chat btn-chat-sm" />}
                 {!c.account && c.email && (
                   <button type="button" className="btn-secondary !min-h-9 !px-3 text-xs" onClick={() => copy(c.id, `${t("ct.invite")} ${origin}/inscription?role=client`)}>
                     {copied === c.id ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}

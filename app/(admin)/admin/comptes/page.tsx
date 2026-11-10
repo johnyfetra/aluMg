@@ -22,8 +22,8 @@ function Row({ u }: { u: AdminUserRow }) {
   const { t, locale } = useI18n();
   const date = (d: string | Date | null) => (d ? new Date(d).toLocaleDateString(DATE_LOCALE[locale], { day: "numeric", month: "short", year: "numeric" }) : t("admin.never"));
   return (
-    <li className="flex items-center gap-2 sm:gap-0 sm:border-b sm:border-line">
-      <Link href={`/admin/comptes/${u.id}`} className="card min-w-0 flex-1 flex items-center gap-3 !p-3 transition-shadow hover:shadow-md sm:grid sm:grid-cols-[minmax(0,2fr)_8rem_8rem_9rem_9rem] sm:gap-4 sm:rounded-none sm:!border-0 sm:!px-4 sm:shadow-none sm:hover:bg-surface-2">
+    <li className="flex items-center gap-2 transition-colors sm:gap-0 sm:border-b sm:border-line sm:bg-surface sm:last:border-b-0 sm:hover:bg-surface-2">
+      <Link href={`/admin/comptes/${u.id}`} className="card min-w-0 flex-1 flex items-center gap-3 !p-3 transition-shadow hover:shadow-md sm:grid sm:grid-cols-[minmax(0,2fr)_8rem_8rem_9rem_9rem] sm:gap-4 sm:rounded-none sm:!border-0 sm:!bg-transparent sm:!px-4 sm:shadow-none">
         <span className="flex min-w-0 flex-1 items-center gap-3">
           <Avatar name={u.name} size={40} round />
           <span className="min-w-0">
@@ -43,7 +43,7 @@ function Row({ u }: { u: AdminUserRow }) {
         <span className="hidden text-sm text-muted sm:block">{date(u.lastSeenAt)}</span>
         <span className="hidden text-sm text-muted sm:block">{date(u.createdAt)}</span>
       </Link>
-      <span className="shrink-0 sm:w-28 sm:pr-3">{u.role !== "admin" && <ChatButton compact short={t("admin.write")} target={{ user: u.id }} label={t("admin.contact")} />}</span>
+      <span className="shrink-0 sm:w-28 sm:pr-4">{u.role !== "admin" && <ChatButton compact short={t("admin.write")} target={{ user: u.id }} label={t("admin.contact")} />}</span>
     </li>
   );
 }
