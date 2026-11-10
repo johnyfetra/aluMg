@@ -74,6 +74,8 @@ export default function CatalogEditor({ market: m, onChange, t }: { market: Mark
           </>
         )}
         {tab === "colors" && (
+          <>
+          <p className="max-w-3xl rounded-xl border border-line bg-surface-2/40 px-4 py-3 text-sm">{t("market.colorsIntro")}</p>
           <div className="grid gap-4 xl:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
             <section className="space-y-3" aria-labelledby="h-rg">
               <h2 id="h-rg" className="text-lg font-semibold">{t("market.sec.ranges")}</h2>
@@ -127,6 +129,7 @@ export default function CatalogEditor({ market: m, onChange, t }: { market: Mark
               </div>
             </section>
           </div>
+          </>
         )}
       </div>
     </div>

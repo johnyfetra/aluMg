@@ -1,7 +1,6 @@
 "use client";
 import { LoadingState, ErrorState } from "@/components/Feedback";
 import { Check } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 import CatalogEditor from "@/components/CatalogEditor";
 import { useSettings } from "@/lib/client";
@@ -41,7 +40,6 @@ function Form({ initial }: { initial: Settings }) {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold">{t("market.title")}</h1>
           <p className="max-w-3xl text-sm text-muted">{t("market.hint")}</p>
-          <p className="max-w-3xl text-sm text-muted">{t("market.scopeGlobal")} <Link href="/devis" className="font-medium text-primary hover:underline">{t("market.scopeLink")}</Link></p>
         </div>
         <div className="flex items-center gap-3">
           <p role="status" className={`text-sm font-medium ${msg?.ok ? "text-ok" : "text-danger"}`}>
