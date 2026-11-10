@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Avatar, Field } from "@/components/ui";
 import { ShowcaseTabs } from "@/components/SectionTabs";
+import FileDrop from "@/components/FileDrop";
 import { ApiError, usePortfolio, useProfile } from "@/lib/client";
 import { fileToDataUrl } from "@/lib/image";
 import { useI18n } from "@/lib/i18n";
@@ -75,8 +76,8 @@ function Form({ initial }: { initial: Profile }) {
           </h2>
           <div className="flex items-center gap-4">
             <Avatar name={p.displayName} src={p.logo} size={72} />
-            <div className="space-y-2">
-              <input id="pp-logo" type="file" accept="image/*" className="input" aria-label={t("settings.logo")} onChange={async (e) => { const f = e.target.files?.[0]; if (f) set({ logo: await fileToDataUrl(f, 256) }); }} />
+            <div className="min-w-0 flex-1 space-y-2">
+              <FileDrop id="pp-logo" label={t("settings.logo")} onFile={async (f) => set({ logo: await fileToDataUrl(f, 256) })} />
               {p.logo && (
                 <button type="button" className="btn-danger !min-h-9" onClick={() => set({ logo: "" })}>
                   {t("settings.clear")}

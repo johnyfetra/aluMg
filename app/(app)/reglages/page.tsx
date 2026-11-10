@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { COMPANY_TABS, CompanyTabs, type CompanyTab } from "@/components/SectionTabs";
+import FileDrop from "@/components/FileDrop";
 import SignaturePad from "@/components/SignaturePad";
 import { Choice, Field } from "@/components/ui";
 import { useSettings } from "@/lib/client";
@@ -47,18 +48,7 @@ function Form({ initial, tab }: { initial: Settings; tab: Exclude<CompanyTab, "m
       <input id={id} type="number" inputMode="decimal" min={0} className="input" value={s[key]} onChange={(e) => set({ [key]: Number(e.target.value) || 0 })} />
     </Field>
   );
-  const upload = (id: string, key: "logo" | "signature") => (
-    <input
-      id={id}
-      type="file"
-      accept="image/*"
-      className="input"
-      onChange={async (e) => {
-        const f = e.target.files?.[0];
-        if (f) set({ [key]: await fileToDataUrl(f) });
-      }}
-    />
-  );
+  const upload = (id: string, key: "logo" | "signature") => <FileDrop id={id} onFile={async (f) => set({ [key]: await fileToDataUrl(f) })} />;
   const preview = (src: string, key: "logo" | "signature") => (
     <div className="mb-2 flex items-center gap-3">
       {/* eslint-disable-next-line @next/next/no-img-element */}

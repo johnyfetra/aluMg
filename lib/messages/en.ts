@@ -2041,4 +2041,6 @@ export const en: Messages = {
   "editor.needClientTitle": "Client details missing",
   "editor.clientAdd": "Add the client and site",
   "editor.clientClose": "Close",
+  "file.drop": "Drop an image here or click to choose",
+  "file.hint": "PNG, JPG or WebP",
 };

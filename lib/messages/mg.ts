@@ -2043,4 +2043,6 @@ export const mg: Messages = {
   "editor.needClientTitle": "Tsy feno ny mombamomba ny mpanjifa",
   "editor.clientAdd": "Ampidiro ny mpanjifa sy ny toerana",
   "editor.clientClose": "Hidio",
+  "file.drop": "Ataovy eto ny sary na tsindrio hisafidianana",
+  "file.hint": "PNG, JPG na WebP",
 };

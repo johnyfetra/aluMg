@@ -2041,6 +2041,8 @@ export const fr = {
   "editor.needClientTitle": "Informations client manquantes",
   "editor.clientAdd": "Ajouter le client et le chantier",
   "editor.clientClose": "Fermer",
+  "file.drop": "Glissez une image ici ou cliquez pour choisir",
+  "file.hint": "PNG, JPG ou WebP",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;
