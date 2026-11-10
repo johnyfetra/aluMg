@@ -8,24 +8,56 @@ import * as THREE from "three";
 
 export type Stage = { wall: string; ground: string; sky: string; interior?: string; sill?: number };
 
-// Crépi : texture de bruit léger générée localement (aucun fichier), avec un générateur déterministe : le même crépi à chaque rendu.
+// Crépi : couleur + relief générés localement (aucun fichier), avec un générateur déterministe : le même crépi à chaque rendu.
+// Trois échelles de bruit (taches de peinture, granulat, pores) ; le relief (bumpMap) fait accrocher la lumière rasante comme un vrai enduit.
 function makePlaster(color: string) {
-  const c = document.createElement("canvas");
-  c.width = c.height = 256;
-  const x = c.getContext("2d")!;
+  const N = 512;
+  const paint = document.createElement("canvas");
+  const relief = document.createElement("canvas");
+  paint.width = paint.height = relief.width = relief.height = N;
+  const x = paint.getContext("2d")!;
+  const b = relief.getContext("2d")!;
   x.fillStyle = color;
-  x.fillRect(0, 0, 256, 256);
+  x.fillRect(0, 0, N, N);
+  b.fillStyle = "#808080";
+  b.fillRect(0, 0, N, N);
   let seed = 20251;
   const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
-  for (let i = 0; i < 5200; i++) {
-    x.fillStyle = rnd() > 0.5 ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.07)";
-    x.fillRect(rnd() * 256, rnd() * 256, 1 + rnd() * 2, 1 + rnd() * 2);
+  // taches larges et douces : reprises d'enduit, peinture inégale (dessinées 9 fois pour que la texture se raccorde sans couture)
+  for (let i = 0; i < 70; i++) {
+    const cx = rnd() * N, cy = rnd() * N, r = 40 + rnd() * 120, a = 0.008 + rnd() * 0.018, light = rnd() > 0.5;
+    for (const dx of [-N, 0, N]) for (const dy of [-N, 0, N]) {
+      const g = x.createRadialGradient(cx + dx, cy + dy, 0, cx + dx, cy + dy, r);
+      g.addColorStop(0, light ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`);
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      x.fillStyle = g;
+      x.fillRect(cx + dx - r, cy + dy - r, r * 2, r * 2);
+    }
   }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(5, 3);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+  // granulat : petits grains en relief, plus clairs au sommet, ombrés en dessous
+  for (let i = 0; i < 52000; i++) {
+    const gx = rnd() * N, gy = rnd() * N, sz = 0.8 + rnd() * 2.2, up = rnd() > 0.45;
+    x.fillStyle = up ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)";
+    x.fillRect(gx, gy, sz, sz);
+    b.fillStyle = up ? `rgba(255,255,255,${0.25 + rnd() * 0.35})` : `rgba(0,0,0,${0.2 + rnd() * 0.3})`;
+    b.fillRect(gx, gy, sz, sz);
+  }
+  // pores : creux isolés
+  for (let i = 0; i < 1400; i++) {
+    const px = rnd() * N, py = rnd() * N;
+    b.fillStyle = "rgba(0,0,0,.7)";
+    b.fillRect(px, py, 1.5, 1.5);
+    x.fillStyle = "rgba(0,0,0,.12)";
+    x.fillRect(px, py, 1.5, 1.5);
+  }
+  const tex = (c: HTMLCanvasElement, srgb: boolean) => {
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.anisotropy = 4;
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  return { map: tex(paint, true), bump: tex(relief, false) };
 }
 
 // Textures procédurales (aucun fichier) : herbe, parquet, carrelage.
@@ -79,12 +111,14 @@ const usePlasterFor = (color: string, reach: number, high: number, W: number, si
   useMemo(() => {
     if (typeof document === "undefined") return null;
     const base = makePlaster(color);
-    // un grain de crépi d'environ 70 cm quelle que soit la taille du pan de mur
+    // un motif de crépi d'environ 2 m quelle que soit la taille du pan de mur (répétition peu visible, grain fin de près)
     return ([[reach, high], [W, Math.max(sill, 0.01)], [W, topH]] as const).map(([w, h]) => {
-      const t = base.clone();
-      t.repeat.set(w / 0.7, h / 0.7);
-      t.needsUpdate = true;
-      return t;
+      const [map, bump] = [base.map.clone(), base.bump.clone()];
+      for (const t of [map, bump]) {
+        t.repeat.set(w / 2, h / 2);
+        t.needsUpdate = true;
+      }
+      return { map, bump };
     });
   }, [color, reach, high, W, sill, topH]);
 
@@ -243,7 +277,11 @@ export function Surroundings({ W, H, stage, room }: { W: number; H: number; stag
   const high = 14;
   const topH = high - sill - H;
   const plasters = usePlasterFor(stage.wall, reach, high, W, sill, topH);
-  const mat = (i: number) => <meshStandardMaterial map={plasters?.[i] ?? undefined} color={plasters ? "#ffffff" : stage.wall} roughness={0.95} />;
+  const mat = (i: number) => <meshStandardMaterial map={plasters?.[i].map} bumpMap={plasters?.[i].bump} bumpScale={1.2} color={plasters ? "#ffffff" : stage.wall} roughness={0.95} />;
+  // soubassement : bande d'enduit plus sombre et légèrement en saillie au pied de la façade (protège des éclaboussures)
+  const PLINTH = 0.45;
+  const plinthColor = useMemo(() => `#${new THREE.Color(stage.wall).multiplyScalar(0.5).getHexString()}`, [stage.wall]);
+  const plinth = (w: number, x: number) => <Box s={[w, PLINTH, 0.02]} p={[x, PLINTH / 2, 0.01]} c={plinthColor} r={0.9} />;
   const wall = (w: number, h: number, x: number, y: number, i: number) => (
     <mesh position={[x, y, -T / 2]} castShadow receiveShadow>
       <boxGeometry args={[w, h, T]} />
@@ -269,6 +307,9 @@ export function Surroundings({ W, H, stage, room }: { W: number; H: number; stag
       {wall(reach, high, W / 2 + reach / 2, high / 2, 0)}
       {sill > 0 && wall(W, sill, 0, sill / 2, 1)}
       {wall(W, topH, 0, sill + H + topH / 2, 2)}
+      {plinth(reach, -(W / 2 + reach / 2))}
+      {plinth(reach, W / 2 + reach / 2)}
+      {sill > PLINTH && plinth(W, 0)}
       {/* ni appui ni auvent : l'ouvrage reste seul dans le mur, rien ne perturbe la vue */}
       {room ? <Interior kind={room} accent={stage.wall} /> : (
         <>
