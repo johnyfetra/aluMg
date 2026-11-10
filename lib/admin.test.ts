@@ -54,6 +54,14 @@ describe("statistiques", () => {
     expect(s.logins.day.at(-1)!.n).toBe(3);
     expect(s.completed.year.every((p) => p.n === 0)).toBe(true);
   });
+  it("donne le total avant la fenêtre (courbe cumulée) et les chiffres clés sur 30 jours", async () => {
+    const s = await admin.stats();
+    expect(s.signups.base.day + s.signups.day.reduce((a, p) => a + p.n, 0)).toBe(4); // cumul de fin = total des comptes
+    expect(s.signups.base.year).toBe(0);
+    expect(s.kpi.signups.now).toBe(3);
+    expect(s.kpi.visitors).toEqual({ now: 0, prev: 0 });
+    expect(s.kpi.conversion).toBeNull(); // aucun visiteur mesuré : pas de taux
+  });
 });
 
 describe("recherche et pagination", () => {

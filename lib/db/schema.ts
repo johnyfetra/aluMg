@@ -496,3 +496,16 @@ export const siteMessages = pgTable(
   },
   (t) => [index("site_messages_status_idx").on(t.status, t.createdAt), index("site_messages_created_idx").on(t.createdAt)],
 );
+
+// Visites du site public, sans cookie ni donnée personnelle : une empreinte (adresse + navigateur + jour, hachés avec un sel) par visiteur et par jour.
+// Le jour fait partie de l'empreinte : on ne peut pas suivre un visiteur d'un jour à l'autre.
+export const visits = pgTable(
+  "visits",
+  {
+    day: text("day").notNull(), // AAAA-MM-JJ, heure de Madagascar
+    visitor: text("visitor").notNull(), // empreinte du jour (sha256 tronqué)
+    views: integer("views").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), // première page vue ce jour-là
+  },
+  (t) => [uniqueIndex("visits_day_visitor_idx").on(t.day, t.visitor), index("visits_created_idx").on(t.createdAt)],
+);

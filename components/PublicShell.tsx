@@ -1,5 +1,6 @@
 "use client";
 import FloatingActions from "./marketing/FloatingActions";
+import VisitBeacon from "./marketing/VisitBeacon";
 import Brand from "./Brand";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -125,7 +126,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
       </div>
     </header>
     <main id="main" className="vitrine min-w-0 flex-1">{children}</main>
-    <Suspense fallback={null}><FloatingActions /></Suspense>
+    <Suspense fallback={null}><FloatingActions /><VisitBeacon /></Suspense>
     <footer className="border-t border-line bg-bg pb-20 sm:pb-0">
       <div className="public-container grid gap-8 py-10 md:grid-cols-[2fr_1fr_1fr] md:gap-10 md:py-14">
         <div className="flex flex-col items-center text-center md:items-start md:text-left">

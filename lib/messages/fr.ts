@@ -2050,6 +2050,19 @@ export const fr = {
   "admin.site.status.new": "À traiter",
   "admin.site.status.done": "Traité",
   "admin.site.entries": "messages",
+  "admin.visitors": "Visiteurs",
+  "admin.views": "Pages vues",
+  "admin.kpi": "Chiffres clés",
+  "admin.last30": "30 derniers jours",
+  "admin.vsPrev": "vs 30 j précédents",
+  "admin.conversion": "Visiteurs → inscrits",
+  "admin.acceptance": "Devis acceptés",
+  "admin.demosToConfirm": "Démos à confirmer",
+  "admin.siteToHandle": "Messages à traiter",
+  "admin.view": "Affichage",
+  "admin.perPeriod": "Par période",
+  "admin.cumul": "Cumulé",
+  "admin.cumulTotal": "au total",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

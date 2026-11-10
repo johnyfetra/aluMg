@@ -25,7 +25,7 @@ const TZ = "Indian/Antananarivo"; // les jours et les mois des statistiques suiv
 export type Actor = { id: string; name: string };
 export type Unit = "day" | "month" | "year";
 export type Point = { k: string; n: number };
-export type Series = Record<Unit, Point[]>;
+export type Series = Record<Unit, Point[]> & { base: Record<Unit, number> }; // base : total avant la fenêtre, pour tracer le cumul exact
 // Fenêtres des statistiques : 30 jours, 12 mois, 5 ans.
 const SPAN: Record<Unit, { n: number; fmt: string }> = { day: { n: 30, fmt: "YYYY-MM-DD" }, month: { n: 12, fmt: "YYYY-MM" }, year: { n: 5, fmt: "YYYY" } };
 
@@ -49,11 +49,52 @@ async function series(table: string, column: string, unit: Unit, extra = ""): Pr
     group by g.b order by g.b`));
   return (r as unknown as { rows: Point[] }).rows; // PGlite et node-postgres renvoient tous deux `rows`
 }
+// Nombre de lignes antérieures au début de la fenêtre (même filtre) : point de départ de la courbe cumulée.
+async function before(table: string, column: string, unit: Unit, extra = "") {
+  const db = await getDb();
+  const start = `(date_trunc('${unit}', now() at time zone '${TZ}') - interval '${SPAN[unit].n - 1} ${unit}') at time zone '${TZ}'`;
+  const r = await db.execute(sql.raw(`select count(*)::int as n from ${table} t where t.${column} < ${start} ${extra}`));
+  return (r as unknown as { rows: { n: number }[] }).rows[0].n;
+}
 const allUnits = async (table: string, column: string, extra = ""): Promise<Series> => ({
   day: await series(table, column, "day", extra),
   month: await series(table, column, "month", extra),
   year: await series(table, column, "year", extra),
+  base: { day: await before(table, column, "day", extra), month: await before(table, column, "month", extra), year: await before(table, column, "year", extra) },
 });
+
+// Chiffres clés : 30 derniers jours, comparés aux 30 jours d'avant (tendance).
+async function keyFigures() {
+  const db = await getDb();
+  const range = (col: string, from: number, to: number) => sql.raw(`${col} >= now() - interval '${from} days' and ${col} < now() - interval '${to} days'`);
+  const two = async (table: string, col = "created_at", agg = "count(*)") => {
+    const r = await db.execute(sql`select (select ${sql.raw(agg)} from ${sql.raw(table)} where ${range(col, 30, 0)})::int as now, (select ${sql.raw(agg)} from ${sql.raw(table)} where ${range(col, 60, 30)})::int as prev`);
+    return (r as unknown as { rows: { now: number | null; prev: number | null }[] }).rows[0];
+  };
+  const q = schema.quotes;
+  const [rate] = await db
+    .select({
+      won: sql<number>`count(*) filter (where ${q.status} in ('accepted', 'in_progress', 'completed'))::int`,
+      decided: sql<number>`count(*) filter (where ${q.status} in ('accepted', 'in_progress', 'completed', 'rejected'))::int`,
+    })
+    .from(q);
+  const [[{ demos }], [{ messages }]] = await Promise.all([
+    db.select({ demos: count() }).from(schema.demoBookings).where(eq(schema.demoBookings.status, "new")),
+    db.select({ messages: count() }).from(schema.siteMessages).where(eq(schema.siteMessages.status, "new")),
+  ]);
+  const visitors = await two("visits");
+  const signups = await two("users");
+  return {
+    visitors,
+    views: await two("visits", "created_at", "coalesce(sum(views), 0)"),
+    signups,
+    quotes: await two("quotes"),
+    conversion: visitors.now ? Math.round(((signups.now ?? 0) / visitors.now) * 1000) / 10 : null, // % de visiteurs qui créent un compte
+    acceptance: rate.decided ? Math.round((rate.won / rate.decided) * 100) : null, // % des devis tranchés qui sont acceptés
+    demos,
+    messages,
+  };
+}
 
 export async function stats() {
   const db = await getDb();
@@ -73,6 +114,8 @@ export async function stats() {
     .where(and(gt(schema.sessions.lastSeenAt, sql`now() - make_interval(mins => ${ONLINE_MINUTES})`), gt(schema.sessions.expiresAt, sql`now()`)));
   return {
     users: { ...users, online },
+    kpi: await keyFigures(),
+    visitors: await allUnits("visits", "created_at"),
     signups: await allUnits("users", "created_at"),
     logins: await allUnits("logins", "created_at"),
     quotes: await allUnits("quotes", "created_at"),
