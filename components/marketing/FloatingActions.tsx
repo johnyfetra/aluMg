@@ -69,7 +69,7 @@ export default function FloatingActions() {
         aria-hidden={!showDemo}
         tabIndex={showDemo ? 0 : -1}
         data-on={showDemo || undefined}
-        className="fab-demo fixed left-1/2 z-40 inline-flex min-h-12 items-center gap-2 overflow-hidden whitespace-nowrap rounded-full bg-ink px-5 text-sm font-semibold text-bg shadow-xl"
+        className="fab-demo fixed left-1/2 z-40 inline-flex min-h-12 items-center gap-2 overflow-hidden whitespace-nowrap rounded-full px-5 text-sm font-semibold text-bg shadow-xl"
       >
         <CalendarCheck size={17} aria-hidden className="fab-demo-icon" />
         {c.demoHero}

@@ -644,6 +644,14 @@ aside :focus-visible {
   background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--bg) 45%, transparent) 50%, transparent 65%);
 }
 .fab-demo[data-on]::after { animation: fab-shine 4.5s 1.2s ease-in-out infinite; }
+/* bordure lumineuse qui tourne : un dégradé conique dont l'angle s'anime (@property), visible seulement sur l’anneau de 2,5 px */
+@property --fab-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.fab-demo {
+  border: 2.5px solid transparent;
+  background: linear-gradient(var(--text), var(--text)) padding-box, conic-gradient(from var(--fab-angle), transparent 0 55%, color-mix(in srgb, var(--accent) 40%, transparent) 70%, var(--accent) 85%, #fff 92%, transparent 100%) border-box;
+}
+.fab-demo[data-on] { animation: fab-spin 3s linear infinite; }
+@keyframes fab-spin { to { --fab-angle: 360deg; } }
 .fab-demo[data-on] .fab-demo-icon { animation: fab-nudge 4.5s 1.2s ease-in-out infinite; }
 @keyframes fab-shine { 0%, 62% { translate: -120% 0; } 82%, 100% { translate: 120% 0; } }
 @keyframes fab-nudge { 0%, 60%, 100% { rotate: 0deg; } 66% { rotate: -14deg; } 72% { rotate: 10deg; } 78% { rotate: 0deg; } }
@@ -685,5 +693,6 @@ aside :focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .fab-demo, .fab-chat, .fab-icon, .apple-tile, .apple-tile-icon { transition: opacity 0.2s ease; }
   .fab-demo { scale: 1; }
-  .fab-demo::after, .fab-demo-icon, .fab-chat::before, .fab-panel { animation: none !important; }
+  .fab-demo, .fab-demo::after, .fab-demo-icon, .fab-chat::before, .fab-panel { animation: none !important; }
+  .fab-demo { background: var(--text) padding-box; border-color: var(--accent); }
 }
