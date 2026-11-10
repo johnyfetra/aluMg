@@ -7,7 +7,7 @@ import FeedbackButton from "./FeedbackDialog";
 import GuideTour from "./GuideTour";
 import CountBadge from "./CountBadge";
 import NotificationBell from "./NotificationBell";
-import { AlignLeft, BadgePercent, BookOpen, FilePlus2, MessageCircle, FileText, LayoutDashboard, LogOut, Settings, UserCircle, X } from "lucide-react";
+import { AlignLeft, BadgePercent, FilePlus2, MessageCircle, FileText, LayoutDashboard, LogOut, Settings, UserCircle, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
@@ -16,7 +16,7 @@ import { Avatar } from "./ui";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
-import { Boxes, Briefcase, Share2, ClipboardList, Gauge, Images, LayoutTemplate, MessageSquareText, ScrollText, Search, Store, Users } from "lucide-react";
+import { Boxes, Briefcase, Building2, Share2, ClipboardList, Gauge, MessageSquareText, ScrollText, Search, Store, Users } from "lucide-react";
 import { request, useNotifications, useSession, useUnread } from "@/lib/client";
 import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
@@ -43,13 +43,10 @@ const FULL_MENUISIER: Nav = {
     {
       label: "nav.group.config",
       items: [
-        { href: "/fournisseurs", key: "nav.suppliers", Icon: Boxes, match: starts("/fournisseurs") },
-        { href: "/realisations", key: "nav.portfolio", Icon: Images, match: starts("/realisations") },
-        { href: "/profil-public", key: "nav.publicProfile", Icon: Store, match: starts("/profil-public") },
-        { href: "/modele-devis", key: "nav.docDesign", Icon: LayoutTemplate, match: starts("/modele-devis") },
-        { href: "/reglages", key: "nav.settings", Icon: Settings, match: starts("/reglages") },
-        { href: "/guide", key: "nav.guide", Icon: BookOpen, match: starts("/guide") },
-        { href: "/compte", key: "nav.account", Icon: UserCircle, match: starts("/compte") },
+        // trois rubriques à onglets ; le guide et le compte sont dans le menu de l'utilisateur (barre du haut)
+        { href: "/fournisseurs", key: "nav.prices", Icon: Boxes, match: starts("/fournisseurs") },
+        { href: "/reglages", key: "cfg.company", Icon: Building2, match: starts("/reglages", "/modele-devis") },
+        { href: "/profil-public", key: "cfg.showcase", Icon: Store, match: starts("/profil-public", "/realisations") },
       ],
     },
   ],

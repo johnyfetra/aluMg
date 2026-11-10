@@ -263,7 +263,6 @@ export const mg: Messages = {
   "editor.needLine": "Ahitsio aloha ny asa voamarika.",
   "editor.notFound": "Tsy hita ny devis.",
 
-  "settings.title": "Fandrindrana",
   "settings.company": "Lohapejy'ny devis",
   "settings.companyName": "Anaran'ny orinasa",
   "settings.address": "Adiresy",
@@ -1046,7 +1045,6 @@ export const mg: Messages = {
   "msg.original": "Hafatra tany am-boalohany",
   "msg.zoom": "Ahalehibiazina ny sary",
   "msg.sending": "Mandefa…",
-  "nav.suppliers": "Mpamatsy",
   "market.scopeGlobal": "Ity katalaoga ity no ampiharina amin'ny tolotra rehetra ho an'ny ankapobeny. Ho an'ny tolotra iray dia azonao ahitsy katalaoga manokana avy amin'ny pejy « Profilé » ny tolotra.",
   "market.scopeLink": "Jereo ny tolotro",
   "catsrc.title": "Vidiny sy mpamatsy ho an'ity tolotra ity",
@@ -2023,4 +2021,10 @@ export const mg: Messages = {
   "viewer.q.eco": "Eko",
   "viewer.q.balanced": "Antonony",
   "viewer.q.high": "Avo",
+  "nav.prices": "Vidin'ny mpamatsy",
+  "cfg.company": "Ny orinasako",
+  "cfg.showcase": "Fampisehoana",
+  "cfg.tab.company": "Mombamomba",
+  "cfg.tab.pricing": "Kajy vidiny",
+  "cfg.tab.terms": "Fepetra",
 };

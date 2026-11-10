@@ -1,7 +1,9 @@
 "use client";
 import { LoadingState, ErrorState } from "@/components/Feedback";
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { COMPANY_TABS, CompanyTabs, type CompanyTab } from "@/components/SectionTabs";
 import SignaturePad from "@/components/SignaturePad";
 import { Choice, Field } from "@/components/ui";
 import { useSettings } from "@/lib/client";
@@ -12,11 +14,22 @@ import { fileToDataUrl } from "@/lib/image";
 import { SURCHARGES, type Settings, TARIFF_KEYS } from "@/lib/model";
 
 export default function SettingsPage() {
-  const { settings, error, retry } = useSettings();
-  return error ? <ErrorState error={error} retry={retry} /> : settings ? <Form initial={settings} /> : <LoadingState />;
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <SettingsView />
+    </Suspense>
+  );
 }
 
-function Form({ initial }: { initial: Settings }) {
+function SettingsView() {
+  const { settings, error, retry } = useSettings();
+  const asked = useSearchParams().get("onglet") as CompanyTab | null;
+  const tab = asked && COMPANY_TABS.includes(asked) && asked !== "modele" ? asked : "entreprise";
+  return error ? <ErrorState error={error} retry={retry} /> : settings ? <Form initial={settings} tab={tab} /> : <LoadingState />;
+}
+
+// Un seul formulaire pour les trois onglets : passer d'un onglet à l'autre garde ce qui n'est pas encore enregistré.
+function Form({ initial, tab }: { initial: Settings; tab: Exclude<CompanyTab, "modele"> }) {
   const { t } = useI18n();
   const { save } = useSettings();
   const [s, setS] = useState(initial);
@@ -72,8 +85,9 @@ function Form({ initial }: { initial: Settings }) {
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      <CompanyTabs current={tab} t={t} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
+        <h1 className="text-2xl font-bold">{t(tab === "chiffrage" ? "cfg.tab.pricing" : tab === "conditions" ? "cfg.tab.terms" : "cfg.tab.company")}</h1>
         <button type="submit" className="btn-primary">
           {t("settings.save")}
         </button>
@@ -83,6 +97,7 @@ function Form({ initial }: { initial: Settings }) {
       </p>
 
       <div className="grid items-start gap-6 xl:grid-cols-2">
+      {tab === "entreprise" && (<>
       <section className="card space-y-4" aria-labelledby="h-co">
         <h2 id="h-co" className="text-lg font-semibold">
           {t("settings.company")}
@@ -126,6 +141,9 @@ function Form({ initial }: { initial: Settings }) {
         </Field>
       </section>
 
+      </>)}
+
+      {tab === "chiffrage" && (<>
       <section className="card space-y-4 xl:col-span-2" aria-labelledby="h-mode">
         <h2 id="h-mode" className="text-lg font-semibold">
           {t("cost.title")}
@@ -196,7 +214,9 @@ function Form({ initial }: { initial: Settings }) {
           {t("market.link")} →
         </Link>
       </section>
+      </>)}
 
+      {tab === "conditions" && (
       <section className="card space-y-4" aria-labelledby="h-te">
         <h2 id="h-te" className="text-lg font-semibold">
           {t("settings.terms")}
@@ -208,7 +228,7 @@ function Form({ initial }: { initial: Settings }) {
           {numeric("min", "minArea", t("settings.minArea"))}
         </div>
       </section>
-
+      )}
       </div>
 
       <button type="submit" className="btn-primary">

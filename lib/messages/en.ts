@@ -261,7 +261,6 @@ export const en: Messages = {
   "editor.needLine": "Fix the flagged items before saving.",
   "editor.notFound": "Quote not found.",
 
-  "settings.title": "Settings",
   "settings.company": "Quote header",
   "settings.companyName": "Company name",
   "settings.address": "Address",
@@ -1044,7 +1043,6 @@ export const en: Messages = {
   "msg.original": "Original message",
   "msg.zoom": "Enlarge photo",
   "msg.sending": "Sending…",
-  "nav.suppliers": "Suppliers",
   "market.scopeGlobal": "This catalogue applies to all your quotes by default. For a specific quote you can set a separate catalogue from the quote's “Profiles” page.",
   "market.scopeLink": "See my quotes",
   "catsrc.title": "Prices and suppliers for this quote",
@@ -2021,4 +2019,10 @@ export const en: Messages = {
   "viewer.q.eco": "Eco",
   "viewer.q.balanced": "Balanced",
   "viewer.q.high": "High",
+  "nav.prices": "Supplier prices",
+  "cfg.company": "My company",
+  "cfg.showcase": "Showcase",
+  "cfg.tab.company": "Company details",
+  "cfg.tab.pricing": "Pricing",
+  "cfg.tab.terms": "Terms",
 };

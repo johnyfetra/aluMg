@@ -3,6 +3,7 @@ import { BadgeCheck, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Avatar, Field } from "@/components/ui";
+import { ShowcaseTabs } from "@/components/SectionTabs";
 import { ApiError, usePortfolio, useProfile } from "@/lib/client";
 import { fileToDataUrl } from "@/lib/image";
 import { useI18n } from "@/lib/i18n";
@@ -43,6 +44,7 @@ function Form({ initial }: { initial: Profile }) {
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      <ShowcaseTabs current="profil" t={t} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("pp.title")}</h1>
         <div className="flex flex-wrap gap-2">

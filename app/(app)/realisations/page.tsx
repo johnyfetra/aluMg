@@ -2,6 +2,7 @@
 import { ImagePlus, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Field } from "@/components/ui";
+import { ShowcaseTabs } from "@/components/SectionTabs";
 import { usePortfolio } from "@/lib/client";
 import { compressImage, thumbnail } from "@/lib/image";
 import { useI18n } from "@/lib/i18n";
@@ -54,6 +55,7 @@ export default function PortfolioPage() {
 
   return (
     <div className="space-y-6">
+      <ShowcaseTabs current="realisations" t={t} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("port.title")}</h1>
         {!draft && (

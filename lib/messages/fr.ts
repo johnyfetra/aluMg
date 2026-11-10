@@ -261,7 +261,6 @@ export const fr = {
   "editor.needLine": "Corrigez les ouvrages signalés avant d'enregistrer.",
   "editor.notFound": "Devis introuvable.",
 
-  "settings.title": "Réglages",
   "settings.company": "Entête du devis",
   "settings.companyName": "Nom de l'entreprise",
   "settings.address": "Adresse",
@@ -1044,7 +1043,6 @@ export const fr = {
   "msg.original": "Message d'origine",
   "msg.zoom": "Agrandir la photo",
   "msg.sending": "Envoi…",
-  "nav.suppliers": "Fournisseurs",
   "market.scopeGlobal": "Ce catalogue s'applique à tous vos devis par défaut. Pour un devis précis, vous pouvez régler un catalogue à part depuis la page « Profilés » du devis.",
   "market.scopeLink": "Voir mes devis",
   "catsrc.title": "Prix et fournisseurs de ce devis",
@@ -2021,6 +2019,12 @@ export const fr = {
   "viewer.q.eco": "Éco",
   "viewer.q.balanced": "Équilibré",
   "viewer.q.high": "Élevé",
+  "nav.prices": "Prix fournisseurs",
+  "cfg.company": "Mon entreprise",
+  "cfg.showcase": "Vitrine",
+  "cfg.tab.company": "Coordonnées",
+  "cfg.tab.pricing": "Chiffrage",
+  "cfg.tab.terms": "Conditions",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

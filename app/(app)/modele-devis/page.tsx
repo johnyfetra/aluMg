@@ -3,6 +3,7 @@ import { LoadingState, ErrorState } from "@/components/Feedback";
 import Link from "next/link";
 import { useState } from "react";
 import DocStyleEditor from "@/components/DocStyleEditor";
+import { CompanyTabs } from "@/components/SectionTabs";
 import { useSettings } from "@/lib/client";
 import { useToast } from "@/components/Toast";
 import { useI18n } from "@/lib/i18n";
@@ -40,6 +41,7 @@ function Form({ initial }: { initial: Settings }) {
 
   return (
     <form onSubmit={submit} className="space-y-6">
+      <CompanyTabs current="modele" t={t} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{t("doc.title")}</h1>
@@ -58,7 +60,7 @@ function Form({ initial }: { initial: Settings }) {
       <p className="text-sm text-muted">
         {t("doc.identityHint")}{" "}
         <Link href="/reglages" className="font-semibold text-primary underline">
-          {t("nav.settings")}
+          {t("cfg.tab.company")}
         </Link>
       </p>
     </form>
