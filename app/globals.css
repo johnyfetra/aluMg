@@ -623,3 +623,60 @@ aside :focus-visible {
 }
 @keyframes read { from { opacity: 0.18; } to { opacity: 1; } }
 
+/* ---- Boutons flottants de la vitrine : entrée à ressort, reflet qui passe, halo qui respire. Moins d'animations : simple fondu. ---- */
+.fab-demo, .fab-chat { bottom: calc(1rem + env(safe-area-inset-bottom)); }
+@media (min-width: 640px) { .fab-demo, .fab-chat { bottom: calc(1.5rem + env(safe-area-inset-bottom)); } }
+.fab-demo {
+  translate: -50% 1.25rem; scale: 0.92; opacity: 0; pointer-events: none;
+  transition: translate 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), scale 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, box-shadow 0.3s ease;
+}
+.fab-demo[data-on] { translate: -50% 0; scale: 1; opacity: 1; pointer-events: auto; }
+.fab-demo[data-on]:hover { translate: -50% -3px; box-shadow: 0 18px 40px -12px color-mix(in srgb, var(--text) 45%, transparent); }
+.fab-demo::after { /* reflet lumineux qui balaie le bouton toutes les quelques secondes */
+  content: ""; position: absolute; inset: 0; translate: -120% 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--bg) 45%, transparent) 50%, transparent 65%);
+}
+.fab-demo[data-on]::after { animation: fab-shine 4.5s 1.2s ease-in-out infinite; }
+.fab-demo[data-on] .fab-demo-icon { animation: fab-nudge 4.5s 1.2s ease-in-out infinite; }
+@keyframes fab-shine { 0%, 62% { translate: -120% 0; } 82%, 100% { translate: 120% 0; } }
+@keyframes fab-nudge { 0%, 60%, 100% { rotate: 0deg; } 66% { rotate: -14deg; } 72% { rotate: 10deg; } 78% { rotate: 0deg; } }
+
+.fab-chat { transition: scale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease; isolation: isolate; }
+.fab-chat:hover { scale: 1.07; }
+.fab-chat:active { scale: 0.95; }
+.fab-chat::before { /* halo qui respire : la bulle reste repérable sur tous les fonds */
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--primary);
+  animation: fab-halo 2.8s ease-out infinite;
+}
+.fab-chat[data-open]::before { animation: none; opacity: 0; }
+@keyframes fab-halo { 0% { scale: 1; opacity: 0.45; } 70%, 100% { scale: 1.55; opacity: 0; } }
+.fab-icon { grid-area: 1 / 1; transition: rotate 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), scale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease; }
+.fab-chat { grid-template-areas: "a"; }
+.fab-icon-close { rotate: -90deg; scale: 0.4; opacity: 0; }
+.fab-chat[data-open] .fab-icon-chat { rotate: 90deg; scale: 0.4; opacity: 0; }
+.fab-chat[data-open] .fab-icon-close { rotate: 0deg; scale: 1; opacity: 1; }
+.fab-panel { bottom: calc(5.5rem + env(safe-area-inset-bottom)); transform-origin: bottom right; animation: fab-pop 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (min-width: 640px) { .fab-panel { bottom: calc(6.25rem + env(safe-area-inset-bottom)); } }
+@keyframes fab-pop { from { opacity: 0; transform: translateY(12px) scale(0.94); } to { opacity: 1; transform: none; } }
+
+/* ---- Section produit : image qui s'ouvre au défilement, tuiles qui se soulèvent ---- */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .apple-media { animation: apple-open linear both; animation-timeline: view(); animation-range: entry 0% cover 40%; }
+    .apple-media img { animation: apple-zoom linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+  }
+}
+@keyframes apple-open { from { clip-path: inset(6% 8% round 2.5rem); } to { clip-path: inset(0 0 round 2rem); } }
+@keyframes apple-zoom { from { scale: 1.18; } to { scale: 1; } }
+.apple-tile { transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease, box-shadow 0.5s ease; }
+.apple-tile-icon { transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@media (hover: hover) {
+  .apple-tile:hover { transform: translateY(-6px); background-color: rgb(255 255 255 / 0.09); box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.6); }
+  .apple-tile:hover .apple-tile-icon { transform: translateY(-4px) rotate(-6deg) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab-demo, .fab-chat, .fab-icon, .apple-tile, .apple-tile-icon { transition: opacity 0.2s ease; }
+  .fab-demo { scale: 1; }
+  .fab-demo::after, .fab-demo-icon, .fab-chat::before, .fab-panel { animation: none !important; }
+}
