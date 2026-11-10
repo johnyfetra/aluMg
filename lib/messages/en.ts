@@ -2043,4 +2043,11 @@ export const en: Messages = {
   "editor.clientClose": "Close",
   "file.drop": "Drop an image here or click to choose",
   "file.hint": "PNG, JPG or WebP",
+  "admin.siteMsgs": "Site messages",
+  "admin.siteMsgsSub": "Messages left from the site chat bubble. The profile is recognised from the phone number.",
+  "admin.siteMsgsEmpty": "No messages here.",
+  "admin.site.visitor": "Visitor",
+  "admin.site.status.new": "To handle",
+  "admin.site.status.done": "Handled",
+  "admin.site.entries": "messages",
 };

@@ -2045,4 +2045,11 @@ export const mg: Messages = {
   "editor.clientClose": "Hidio",
   "file.drop": "Ataovy eto ny sary na tsindrio hisafidianana",
   "file.hint": "PNG, JPG na WebP",
+  "admin.siteMsgs": "Hafatra avy amin'ny tranonkala",
+  "admin.siteMsgsSub": "Hafatra navela tamin'ny boaty resaka. Fantatra amin'ny laharana ny mombamomba.",
+  "admin.siteMsgsEmpty": "Tsy misy hafatra eto.",
+  "admin.site.visitor": "Mpitsidika",
+  "admin.site.status.new": "Hokarakaraina",
+  "admin.site.status.done": "Vita",
+  "admin.site.entries": "hafatra",
 };

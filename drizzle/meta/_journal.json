@@ -183,6 +183,13 @@
       "when": 1794330968941,
       "tag": "0025_rendez_vous_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794337870173,
+      "tag": "0026_messages_du_site",
+      "breakpoints": true
     }
   ]
 }

@@ -2043,6 +2043,13 @@ export const fr = {
   "editor.clientClose": "Fermer",
   "file.drop": "Glissez une image ici ou cliquez pour choisir",
   "file.hint": "PNG, JPG ou WebP",
+  "admin.siteMsgs": "Messages du site",
+  "admin.siteMsgsSub": "Messages laissés depuis la bulle de discussion du site. Le profil est reconnu par le numéro.",
+  "admin.siteMsgsEmpty": "Aucun message ici.",
+  "admin.site.visitor": "Visiteur",
+  "admin.site.status.new": "À traiter",
+  "admin.site.status.done": "Traité",
+  "admin.site.entries": "messages",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

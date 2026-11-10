@@ -478,3 +478,21 @@ export const demoBookings = pgTable(
   },
   (t) => [uniqueIndex("demo_bookings_slot_idx").on(t.day, t.slot).where(sql`${t.status} <> 'cancelled'`), index("demo_bookings_day_idx").on(t.day), index("demo_bookings_phone_idx").on(t.phone)],
 );
+
+// Messages laissés depuis le site public (bulle de discussion) par un visiteur sans session : nom et numéro obligatoires.
+// Le numéro est rapproché des comptes : l'administration voit si c'est un simple visiteur, un client ou un menuisier.
+export const siteMessages = pgTable(
+  "site_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    phone: text("phone").notNull(), // forme normalisée +261…
+    message: text("message").notNull(),
+    page: text("page").notNull().default(""),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }), // compte qui porte ce numéro, s'il existe
+    role: text("role").$type<"visitor" | "client" | "menuisier" | "admin">().notNull().default("visitor"),
+    status: text("status").$type<"new" | "done">().notNull().default("new"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("site_messages_status_idx").on(t.status, t.createdAt), index("site_messages_created_idx").on(t.createdAt)],
+);
