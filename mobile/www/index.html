@@ -17,6 +17,7 @@
   .spin { width: 28px; height: 28px; margin: 0 auto; border: 3px solid rgba(246,243,237,.25); border-top-color: #C58A58; border-radius: 50%; -webkit-animation: s .8s linear infinite; animation: s .8s linear infinite; }
   @-webkit-keyframes s { to { -webkit-transform: rotate(360deg); } }
   @keyframes s { to { transform: rotate(360deg); } }
+  a.link { color: #F6F3ED; font-size: 15px; text-decoration: underline; display: inline-block; margin-top: 18px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -24,7 +25,7 @@
 <div class="box">
   <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#2f4d41"/><path d="M4 4h8v16h16v8H4z" fill="#F6F3ED"/><path d="M16 4h12v12H16z" fill="#C58A58"/></svg>
   <div id="load"><div class="spin"></div></div>
-  <div id="offline" hidden><h1 id="offT"></h1><p id="offP"></p><button id="retry" class="btn" type="button"></button></div>
+  <div id="offline" hidden><h1 id="offT"></h1><p id="offP"></p><button id="retry" class="btn" type="button"></button><p><a id="cont" class="link" href="#"></a></p></div>
   <div id="old" hidden><h1 id="oldT"></h1><p id="oldP"></p><a id="upd" class="btn" href="https://play.google.com/store/apps/details?id=com.google.android.webview"></a></div>
 </div>
 <script>
@@ -32,15 +33,15 @@
   var URL = "https://alumg.vercel.app/";
   var MIN_CHROME = 111; // le site (Tailwind v4, conteneurs CSS) demande un WebView Chrome 111 ou plus
   var T = {
-    fr: { offT: "Pas de connexion", offP: "AluMg a besoin d'internet. Vérifiez votre réseau puis réessayez.", retry: "Réessayer", oldT: "Mise à jour nécessaire", oldP: "Le composant « Android System WebView » de votre téléphone est trop ancien. Mettez-le à jour dans le Play Store, puis rouvrez AluMg.", upd: "Mettre à jour" },
-    en: { offT: "No connection", offP: "AluMg needs internet. Check your network and try again.", retry: "Try again", oldT: "Update required", oldP: "Your phone's “Android System WebView” is too old. Update it in the Play Store, then reopen AluMg.", upd: "Update" },
-    mg: { offT: "Tsy misy fifandraisana", offP: "Mila internet ny AluMg. Jereo ny tambajotra dia andramo indray.", retry: "Andramo indray", oldT: "Ilaina ny fanavaozana", oldP: "Efa antitra loatra ny « Android System WebView » ao amin'ny findainao. Havaozy ao amin'ny Play Store, dia sokafy indray ny AluMg.", upd: "Havaozy" }
+    fr: { offT: "Pas de connexion", offP: "Vous pouvez préparer vos devis sans connexion si vous avez déjà ouvert AluMg sur ce téléphone. L'enregistrement demandera Internet.", retry: "Réessayer", cont: "Continuer sans connexion", oldT: "Mise à jour nécessaire", oldP: "Le composant « Android System WebView » de votre téléphone est trop ancien. Mettez-le à jour dans le Play Store, puis rouvrez AluMg.", upd: "Mettre à jour" },
+    en: { offT: "No connection", offP: "You can prepare quotes offline if you have already opened AluMg on this phone. Saving will need the Internet.", retry: "Try again", cont: "Continue offline", oldT: "Update required", oldP: "Your phone's “Android System WebView” is too old. Update it in the Play Store, then reopen AluMg.", upd: "Update" },
+    mg: { offT: "Tsy misy fifandraisana", offP: "Afaka manomana tolotra vidiny tsy misy fifandraisana ianao raha efa nosokafanao tamin'ity finday ity ny AluMg. Mila Internet ny firaketana.", retry: "Andramo indray", cont: "Hanohy tsy misy fifandraisana", oldT: "Ilaina ny fanavaozana", oldP: "Efa antitra loatra ny « Android System WebView » ao amin'ny findainao. Havaozy ao amin'ny Play Store, dia sokafy indray ny AluMg.", upd: "Havaozy" }
   };
   var lang = String(navigator.language || "fr").slice(0, 2);
   var t = T[lang] || T.fr;
   document.documentElement.lang = T[lang] ? lang : "fr";
   function $(id) { return document.getElementById(id); }
-  $("offT").textContent = t.offT; $("offP").textContent = t.offP; $("retry").textContent = t.retry;
+  $("offT").textContent = t.offT; $("offP").textContent = t.offP; $("retry").textContent = t.retry; $("cont").textContent = t.cont;
   $("oldT").textContent = t.oldT; $("oldP").textContent = t.oldP; $("upd").textContent = t.upd;
   function show(id) { $("load").hidden = id !== "load"; $("offline").hidden = id !== "offline"; $("old").hidden = id !== "old"; }
 
@@ -62,6 +63,8 @@
     x.send();
   }
   $("retry").onclick = go;
+  // pages gardées par le service worker du site lors d'une ouverture précédente
+  $("cont").onclick = function (e) { e.preventDefault(); window.location.replace(URL + "tableau-de-bord"); };
   go();
 })();
 </script>
