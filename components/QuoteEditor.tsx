@@ -11,7 +11,6 @@ import { useToast } from "./Toast";
 import { openTariffs } from "./TariffsPanel";
 import ClientDirectory from "./ClientDirectory";
 import ClientMessage from "./quote/ClientMessage";
-import ShareQuote from "./quote/ShareQuote";
 import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
 import { Avatar, Field } from "./ui";
@@ -27,6 +26,7 @@ import { activeLines, totals } from "@/lib/totals";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { DEFAULT_SIZE, newLine, price } from "./quote/line";
 import { useDraft } from "./quote/useDraft";
+import WhatsAppButton from "./quote/WhatsAppButton";
 import { LineCard } from "./quote/LineCard";
 import SummaryAside from "./quote/SummaryAside";
 import { errorText } from "@/lib/errors";
@@ -271,6 +271,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{q.number ? `${t("editor.titleEdit")} ${q.number}` : t("editor.titleNew")}</h1>
         <div className="flex flex-wrap gap-2">
+          {persisted && <WhatsAppButton q={q} />}
           {persisted && (
             <Link href={`/devis/${q.id}/apercu`} className="btn-secondary">
               <Eye size={16} aria-hidden />
@@ -553,7 +554,6 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
           <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
             <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
-            <ShareQuote q={q} persisted={persisted} />
             <ClientMessage q={q} persisted={persisted} />
             {q.clientId && persisted && <QuoteDiscussion quoteId={q.id} me="menuisier" />}
           </fieldset>

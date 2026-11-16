@@ -2084,4 +2084,5 @@ export const mg: Messages = {
   "offline.restored": "Hita indray ny drafitra : voatahiry tao amin'ity finday ity ny tolotra vidiny tsy mbola voarakitra.",
   "offline.keptTitle": "Tsy misy fifandraisana",
   "offline.kept": "Voatahiry ao amin'ity finday ity ny tolotra vidinao. Midira amin'ny Internet, dia tsindrio indray ny Tehirizina.",
+  "share.sendShort": "WhatsApp",
 };

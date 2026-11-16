@@ -18,6 +18,7 @@
   --danger: #a8321f;
   --ok: #2b6a47;
   --warn: #86560f;
+  --whatsapp: #0e7a4a;
   /* barre latérale : vert atelier, identique en clair et en sombre */
   --side-bg: #1b2b24;
   --side-fg: #e4e1d8;
@@ -72,6 +73,7 @@
   --danger: #f09a8a;
   --ok: #6fd09a;
   --warn: #e8b455;
+  --whatsapp: #3ccf7c;
   --mine: #2a3a31;
   --on-mine: #eef2ec;
   --logo: #f6f3ed;
@@ -234,7 +236,9 @@ body {
   .btn-secondary,
   .btn-danger,
   .btn-ghost,
-  .btn-accent {
+  .btn-accent,
+  .btn-whatsapp,
+  .btn-whatsapp-solid {
     @apply inline-flex min-h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm md:min-h-10 font-semibold tracking-[-0.005em] transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-primary {
@@ -248,6 +252,13 @@ body {
   }
   .btn-accent {
     @apply bg-accent text-on-accent shadow-[0_1px_2px_rgb(0_0_0/0.25)] hover:brightness-105;
+  }
+  /* Envoi par WhatsApp, même bouton partout : contour comme ses voisins et glyphe vert dans les barres d'actions ; plein dans le panneau d'envoi (texte blanc, contraste 5,5:1) */
+  .btn-whatsapp {
+    @apply border border-line bg-surface text-ink shadow-[0_1px_1px_rgb(0_0_0/0.05)] hover:border-(--whatsapp)/60 hover:bg-surface-2 [&>svg]:text-(--whatsapp);
+  }
+  .btn-whatsapp-solid {
+    @apply bg-[#0e7a4a] text-white shadow-[0_1px_2px_rgb(0_0_0/0.25)] hover:bg-[#0b6a40];
   }
   .btn-danger {
     @apply border border-danger/30 bg-danger/5 text-danger hover:border-danger/60 hover:bg-danger/10;

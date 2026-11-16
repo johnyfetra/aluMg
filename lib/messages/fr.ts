@@ -2082,6 +2082,7 @@ export const fr = {
   "offline.restored": "Brouillon récupéré : votre devis non enregistré a été gardé sur ce téléphone.",
   "offline.keptTitle": "Pas de connexion",
   "offline.kept": "Votre devis est gardé sur ce téléphone. Connectez-vous à Internet, puis appuyez de nouveau sur Enregistrer.",
+  "share.sendShort": "WhatsApp",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

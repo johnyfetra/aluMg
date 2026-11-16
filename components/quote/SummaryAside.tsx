@@ -5,6 +5,7 @@ import type { Dispatch, SetStateAction } from "react";
 import Calibration from "../Calibration";
 import Select from "../Select";
 import { Field } from "../ui";
+import ShareQuote from "./ShareQuote";
 import { fmt, meters, type planTotals } from "@/lib/calc";
 import type { quoteMargin } from "@/lib/costing";
 import { presetOf } from "@/lib/docStyle";
@@ -94,6 +95,10 @@ export default function SummaryAside({ t, q, setQ, totals, margin, plan, persist
               <Ruler size={14} aria-hidden />
               {t("needsPage.openShort")}
             </button>
+          </section>
+
+          <section className="card !p-3.5">
+            <ShareQuote q={q} persisted={persisted} />
           </section>
 
           {canAct && (

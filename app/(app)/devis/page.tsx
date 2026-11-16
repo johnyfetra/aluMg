@@ -13,6 +13,7 @@ import { STATUSES, type Quote, type Status } from "@/lib/model";
 import { totals } from "@/lib/totals";
 import Select from "@/components/Select";
 import { useConfirm } from "@/components/ConfirmDialog";
+import WhatsAppButton from "@/components/quote/WhatsAppButton";
 
 export default function QuotesPage() {
   return (
@@ -72,6 +73,7 @@ function QuotesView() {
     const text = (key: Parameters<typeof t>[0]) => !compact && <span>{t(key)}</span>;
     return (
       <div className={compact ? "flex flex-nowrap justify-end gap-1.5" : "flex flex-wrap gap-2"}>
+        <WhatsAppButton q={q} compact={compact} className="!min-h-9 !px-3" />
         <button type="button" className="btn-secondary !min-h-9 !px-3" onClick={() => pdf(q)} {...label("quotes.pdf")}>
           <Download size={16} aria-hidden />
           {!compact && "PDF"}

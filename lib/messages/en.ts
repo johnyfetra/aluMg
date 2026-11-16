@@ -2082,4 +2082,5 @@ export const en: Messages = {
   "offline.restored": "Draft recovered: your unsaved quote was kept on this phone.",
   "offline.keptTitle": "No connection",
   "offline.kept": "Your quote is kept on this phone. Connect to the Internet, then tap Save again.",
+  "share.sendShort": "WhatsApp",
 };

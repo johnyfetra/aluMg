@@ -3,6 +3,7 @@ import { ArrowLeft, FileDown, Pencil, Printer, Ruler } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import QuotePaper from "./QuotePaper";
+import WhatsAppButton from "./quote/WhatsAppButton";
 import { StatusBadge } from "./ui";
 import { trackDownload, useQuotes, useSettings } from "@/lib/client";
 import { DATE_LOCALE, type T, useI18n } from "@/lib/i18n";
@@ -59,6 +60,7 @@ function Document({ q, s, t, locale }: { q: Quote; s: Settings; t: T; locale: ke
           <StatusBadge status={q.status} label={t(`status.${q.status}`)} />
         </div>
         <div className="flex flex-wrap gap-2">
+          <WhatsAppButton q={q} className="!min-h-10" />
           <Link href={`/devis/${q.id}/profils`} className="btn-secondary !min-h-10">
             <Ruler size={16} aria-hidden />
             {t("needsPage.open")}
