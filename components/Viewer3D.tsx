@@ -547,16 +547,20 @@ function Shutter({ v, W, H, amount, onToggle }: { v: Viewable; W: number; H: num
   const { highlight } = useScene();
   const rideau = v.shutter === "rideau";
   const pitch = rideau ? 0.07 : 0.037;
-  const count = Math.ceil(H / pitch);
   const boxH = 0.2;
+  const barH = 0.05; // lame finale
+  const depth = rideau ? 0.016 : 0.014;
+  const count = Math.ceil((H - boxH - barH) / pitch) + 1;
   const slats = useRef<THREE.Group>(null);
   const last = useRef<THREE.Group>(null);
   const el = rideau ? "el.slatR" : "el.slat";
-  // les lames remontent dans le caisson de bas en haut : au-delà de la longueur déroulée, elles disparaissent
+  // le tablier entier suit la lame finale ; les lames entrées dans le caisson disparaissent (la dernière, à moitié dedans, est cachée par le coffre)
   useSpring(amount, (x) => {
     const unrolled = (H - boxH) * (1 - x);
-    slats.current?.children.forEach((c, i) => (c.visible = (i + 1) * pitch <= unrolled));
-    if (last.current) last.current.position.y = H - boxH - unrolled;
+    const y = H - boxH - unrolled + barH / 2;
+    slats.current?.position.setY(y);
+    slats.current?.children.forEach((c, i) => (c.visible = barH + i * pitch < unrolled));
+    last.current?.position.setY(y);
   }, 4.5);
   const hl = highlight === el;
   const steel = <meshStandardMaterial color="#7d848d" metalness={0.7} roughness={0.35} />;
@@ -583,15 +587,16 @@ function Shutter({ v, W, H, amount, onToggle }: { v: Viewable; W: number; H: num
       {channel(-W / 2 + 0.025, 1)}
       {channel(W / 2 - 0.025, -1)}
       <group ref={slats}>
-        {Array.from({ length: Math.max(0, count - 1) }, (_, i) => (
-          <RoundedBox key={i} args={[W - 0.08, pitch * 0.9, rideau ? 0.016 : 0.014]} radius={pitch * 0.3} smoothness={3} position={[0, H - boxH - (i + 0.5) * pitch, 0]} castShadow>
+        {Array.from({ length: count }, (_, i) => (
+          // lames jointives (léger recouvrement) ; rayon sous la demi-épaisseur, sinon RoundedBox se déforme
+          <RoundedBox key={i} args={[W - 0.08, pitch * 1.02, depth]} radius={depth * 0.4} smoothness={3} position={[0, barH / 2 + (i + 0.5) * pitch, 0]} castShadow>
             <ProfileMat soft={0.9} hl={hl} />
           </RoundedBox>
         ))}
       </group>
       {/* lame finale plus haute, avec ses butées en caoutchouc */}
-      <group ref={last} position={[0, H - boxH, 0]}>
-        <RoundedBox args={[W - 0.06, 0.05, 0.03]} radius={0.01} smoothness={3} castShadow><ProfileMat soft={0.9} /></RoundedBox>
+      <group ref={last}>
+        <RoundedBox args={[W - 0.06, barH, 0.03]} radius={0.01} smoothness={3} castShadow><ProfileMat soft={0.9} /></RoundedBox>
         {[-1, 1].map((k) => <mesh key={k} position={[k * (W / 2 - 0.05), 0.0, 0.02]}><boxGeometry args={[0.04, 0.03, 0.01]} /><meshStandardMaterial color="#15171a" roughness={0.9} /></mesh>)}
       </group>
       {v.control === "motorise" && (
