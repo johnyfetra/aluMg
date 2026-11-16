@@ -2078,6 +2078,10 @@ export const fr = {
   "share.msg": "voici votre devis, à ouvrir sur votre téléphone :",
   "share.hint": "Votre client ouvre le devis sur son téléphone, sans créer de compte, et vous répond sur WhatsApp.",
   "share.saveFirst": "Enregistrez le devis pour pouvoir l'envoyer.",
+  "offline.banner": "Pas de connexion. Vous pouvez préparer vos devis ; l'enregistrement et l'envoi demandent Internet.",
+  "offline.restored": "Brouillon récupéré : votre devis non enregistré a été gardé sur ce téléphone.",
+  "offline.keptTitle": "Pas de connexion",
+  "offline.kept": "Votre devis est gardé sur ce téléphone. Connectez-vous à Internet, puis appuyez de nouveau sur Enregistrer.",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

@@ -2078,4 +2078,8 @@ export const en: Messages = {
   "share.msg": "here is your quote, to open on your phone:",
   "share.hint": "Your client opens the quote on their phone, without an account, and replies on WhatsApp.",
   "share.saveFirst": "Save the quote to be able to send it.",
+  "offline.banner": "No connection. You can prepare your quotes; saving and sending need the Internet.",
+  "offline.restored": "Draft recovered: your unsaved quote was kept on this phone.",
+  "offline.keptTitle": "No connection",
+  "offline.kept": "Your quote is kept on this phone. Connect to the Internet, then tap Save again.",
 };

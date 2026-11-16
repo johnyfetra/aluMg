@@ -2080,4 +2080,8 @@ export const mg: Messages = {
   "share.msg": "indro ny tolotra vidinao, sokafy amin'ny findainao :",
   "share.hint": "Sokafan'ny mpanjifanao amin'ny findainy ny tolotra vidiny, tsy mila kaonty, ary mamaly amin'ny WhatsApp izy.",
   "share.saveFirst": "Raketo aloha ny tolotra vidiny vao afaka mandefa azy.",
+  "offline.banner": "Tsy misy fifandraisana. Afaka manomana ny tolotra vidinao ianao ; mila Internet ny firaketana sy ny fandefasana.",
+  "offline.restored": "Hita indray ny drafitra : voatahiry tao amin'ity finday ity ny tolotra vidiny tsy mbola voarakitra.",
+  "offline.keptTitle": "Tsy misy fifandraisana",
+  "offline.kept": "Voatahiry ao amin'ity finday ity ny tolotra vidinao. Midira amin'ny Internet, dia tsindrio indray ny Tehirizina.",
 };

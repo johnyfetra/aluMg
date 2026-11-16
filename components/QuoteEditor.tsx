@@ -26,6 +26,7 @@ import Select from "./Select";
 import { activeLines, totals } from "@/lib/totals";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { DEFAULT_SIZE, newLine, price } from "./quote/line";
+import { useDraft } from "./quote/useDraft";
 import { LineCard } from "./quote/LineCard";
 import SummaryAside from "./quote/SummaryAside";
 import { errorText } from "@/lib/errors";
@@ -67,26 +68,26 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   // Ce que devient une modification selon l'état du devis (voir `editMode` dans lib/model.ts) : seul un chantier terminé est figé.
   // ouvrages créés pendant cette session : saisie guidée (les ouvrages d'un devis existant s'ouvrent en récapitulatif)
   const [focusId, setFocusId] = useState<string | null>(null);
-  const [q, setQ] = useState<Quote>(
-    () =>
-      existing ?? {
-        id: crypto.randomUUID(),
-        number: "",
-        date: new Date().toISOString(),
-        status: "draft",
-        client: { name: "", phone: "", address: "", email: "" },
-        project: "",
-        delay: "",
-        notes: "",
-        lines: [first],
-        services: [],
-        warranty: 12,
-        discount: 0,
-        progress: 0,
-        rev: 0,
-        terms: { tva: 0, deposit: settings.deposit, validityDays: settings.validityDays },
-      },
-  );
+  const { q, setQ, commit, restored } = useDraft(existing, () => ({
+    id: crypto.randomUUID(),
+    number: "",
+    date: new Date().toISOString(),
+    status: "draft",
+    client: { name: "", phone: "", address: "", email: "" },
+    project: "",
+    delay: "",
+    notes: "",
+    lines: [first],
+    services: [],
+    warranty: 12,
+    discount: 0,
+    progress: 0,
+    rev: 0,
+    terms: { tva: 0, deposit: settings.deposit, validityDays: settings.validityDays },
+  }));
+  useEffect(() => {
+    if (restored) toast.info(t("offline.restored"));
+  }, [restored]); // eslint-disable-line react-hooks/exhaustive-deps -- une seule fois à l'ouverture
   const mode: EditMode = existing ? editMode(q.status, !!q.clientId) : "free";
   const revisable = mode === "revise" || mode === "reconfirm" || mode === "amend";
   const locked = mode === "locked";
@@ -190,9 +191,14 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     try {
       const saved = await save(q, !persisted);
       setPersisted(true);
-      setQ(saved);
+      commit(saved);
       return saved;
     } catch (e) {
+      if (e instanceof ApiError && e.status === 0) {
+        setMsg({ ok: false, text: t("offline.kept") });
+        toast.warning(t("offline.keptTitle"), t("offline.kept"));
+        return null;
+      }
       console.error("[alumg] enregistrement en échec", e);
       setMsg({ ok: false, text: errorText(e, t) });
       toast.error(t("toast.errorTitle"), t("toast.errorText"));

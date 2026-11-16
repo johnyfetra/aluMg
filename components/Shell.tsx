@@ -17,7 +17,8 @@ import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 
 import { Boxes, Briefcase, Building2, CalendarCheck, Share2, ClipboardList, Gauge, MessageSquareText, MessagesSquare, ScrollText, Search, Store, Users } from "lucide-react";
-import { request, useNotifications, useSession, useUnread } from "@/lib/client";
+import OfflineSupport from "./offline/OfflineSupport";
+import { logout, useNotifications, useSession, useUnread } from "@/lib/client";
 import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
 type Item = { href: string; key: keyof Messages; Icon: typeof Settings; match: (p: string) => boolean };
@@ -164,8 +165,8 @@ function PageTitle({ nav }: { nav: Nav }) {
 function DrawerUser({ name, email, avatar }: { name: string; email?: string | null; avatar?: string | null }) {
   const { t } = useI18n();
   const router = useRouter();
-  const logout = async () => {
-    await request("POST", "/api/auth/logout");
+  const signOut = async () => {
+    await logout();
     router.replace("/connexion");
   };
   return (
@@ -175,7 +176,7 @@ function DrawerUser({ name, email, avatar }: { name: string; email?: string | nu
         <p className="truncate text-sm font-semibold text-white">{name}</p>
         {email && <p className="truncate text-xs text-(--side-muted)">{email}</p>}
       </div>
-      <button type="button" onClick={logout} aria-label={t("menu.logout")} data-tooltip={t("menu.logout")} className="grid size-10 shrink-0 place-items-center rounded-full text-(--side-fg) transition-colors hover:bg-(--side-active)">
+      <button type="button" onClick={signOut} aria-label={t("menu.logout")} data-tooltip={t("menu.logout")} className="grid size-10 shrink-0 place-items-center rounded-full text-(--side-fg) transition-colors hover:bg-(--side-active)">
         <LogOut size={18} aria-hidden />
       </button>
     </div>
@@ -305,6 +306,7 @@ export default function Shell({ children }: { children: ReactNode }) {
               <Link href="/compte" className="text-primary underline">{t("account.mustChangeGo")}</Link>
             </p>
           )}
+          {me?.role === "menuisier" && <OfflineSupport />}
           {children}
         </main>
         {me?.role === "menuisier" && <TariffsPanel />}

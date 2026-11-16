@@ -6,7 +6,7 @@ import useSWR, { mutate } from "swr";
 import AtelierShowcase from "./AtelierShowcase";
 import OtpInput from "./OtpInput";
 import { LangMenu, ThemeSwitch } from "../Controls";
-import { ApiError, fetcher, homeFor, request, useSession } from "@/lib/client";
+import { ApiError, fetcher, homeFor, logout, request, useSession } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 import { errorText } from "@/lib/errors";
@@ -78,9 +78,8 @@ export default function VerifyAccount() {
       setBusy(false);
     }
   };
-  const logout = async () => {
-    await request("POST", "/api/auth/logout");
-    await mutate(() => true, undefined, { revalidate: false });
+  const signOut = async () => {
+    await logout();
     router.replace("/connexion");
   };
 
@@ -157,7 +156,7 @@ export default function VerifyAccount() {
           )}
 
           <p className="text-center text-sm">
-            <button type="button" className="text-muted hover:text-ink hover:underline" onClick={logout}>{t("vf.logout")}</button>
+            <button type="button" className="text-muted hover:text-ink hover:underline" onClick={signOut}>{t("vf.logout")}</button>
           </p>
         </div>
       </section>

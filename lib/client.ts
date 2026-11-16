@@ -1,5 +1,5 @@
 "use client";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import type { SessionUser } from "./auth";
 import { type Market, type Quote, type Settings } from "./model";
 import type { DirectoryEntry, DirectorySummary, PortfolioInput, PortfolioItem, Profile, ProfileInput, PublicMenuisier, PublicWork } from "./profiles";
@@ -13,6 +13,7 @@ import type { DemoRow } from "./demos";
 import type { SiteMessageRow } from "./site-messages";
 import type { PublicSocial, SocialLink } from "./social";
 import type { AccountConfig, AdminQuote, AdminQuoteRow, AdminStats, AdminUser, AdminUserRow, AuditRow, PageOf } from "./admin";
+import { clearOffline, isCached, readCached, writeCached } from "./offline";
 
 class ApiError extends Error {
   constructor(public status: number, public code: string, public issues: string[] = []) {
@@ -23,14 +24,19 @@ class ApiError extends Error {
 // Une session expirée renvoie 401 : on repart vers la connexion.
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
   // coupure réseau : fetch lève une TypeError ; on la rend reconnaissable (status 0) pour afficher « connexion impossible »
-  const res = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined }).catch(() => {
+  const res = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
+  if (!res) {
+    // hors connexion : une lecture déjà faite repart de sa dernière copie, le reste demande le réseau
+    const copy = method === "GET" && isCached(url) ? readCached<T>(url) : undefined;
+    if (copy !== undefined) return copy;
     throw new ApiError(0, "network");
-  });
+  }
   if (res.status === 401 && !url.startsWith("/api/auth/") && typeof location !== "undefined") location.replace("/connexion");
   const data = await res.json().catch(() => ({}));
   // compte pas encore vérifié : toute action est refusée, on renvoie vers l'écran de vérification
   if (res.status === 403 && data.error === "unverified" && typeof location !== "undefined" && !location.pathname.startsWith("/verification")) location.replace("/verification");
   if (!res.ok) throw new ApiError(res.status, data.error ?? "error", Array.isArray(data.issues) ? data.issues : []);
+  if (method === "GET") writeCached(url, data);
   return data as T;
 }
 export const fetcher = <T,>(url: string) => request<T>("GET", url);
@@ -83,11 +89,20 @@ export const useSession = () =>
   useSWR<SessionInfo | null>(
     "session",
     async () => {
-      const r = await fetch("/api/session");
-      return r.ok ? ((await r.json()) as SessionInfo | null) : null;
+      const r = await fetch("/api/session").catch(() => null);
+      if (!r) return readCached<SessionInfo | null>("/api/session") ?? null;
+      const data = r.ok ? ((await r.json()) as SessionInfo | null) : null;
+      writeCached("/api/session", data);
+      return data;
     },
     { revalidateOnFocus: false },
   );
+
+export async function logout() {
+  await request("POST", "/api/auth/logout");
+  await clearOffline();
+  await mutate(() => true, undefined, { revalidate: false });
+}
 
 // Où envoyer un utilisateur selon son rôle.
 export const homeFor = (role?: SessionInfo["role"]) => (role === "client" ? "/espace-client" : role === "admin" ? "/admin" : "/tableau-de-bord");

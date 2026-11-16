@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Menu, { menuItem } from "./Menu";
 import Flag from "./Flag";
 import { Avatar } from "./ui";
-import { request, useMe } from "@/lib/client";
+import { logout, useMe } from "@/lib/client";
 import { LOCALES, type Locale, useI18n } from "@/lib/i18n";
 import { supportUrl } from "@/lib/support";
 import { type Theme, setTheme, useTheme } from "@/lib/theme";
@@ -82,8 +82,8 @@ export function UserMenu() {
   const { t, locale, setLocale } = useI18n();
   const { data: me } = useMe();
   const router = useRouter();
-  const logout = async () => {
-    await request("POST", "/api/auth/logout");
+  const signOut = async () => {
+    await logout();
     router.replace("/connexion");
   };
   return (
@@ -133,7 +133,7 @@ export function UserMenu() {
           {me?.role === "menuisier" && <Link href="/guide" role="menuitem" className={menuItem} onClick={close}><BookOpen size={17} aria-hidden className="text-muted" />{t("nav.guide")}</Link>}
           <a href={supportUrl(t("support.msg"))} target="_blank" rel="noopener noreferrer" role="menuitem" className={menuItem} onClick={close}><MessageCircle size={17} aria-hidden className="text-muted" />{t("support.contact")}</a>
           <div className="my-1 border-t border-line" />
-          <button type="button" role="menuitem" className={`${menuItem} text-danger`} onClick={logout}><LogOut size={17} aria-hidden />{t("menu.logout")}</button>
+          <button type="button" role="menuitem" className={`${menuItem} text-danger`} onClick={signOut}><LogOut size={17} aria-hidden />{t("menu.logout")}</button>
         </>
       )}
     </Menu>
