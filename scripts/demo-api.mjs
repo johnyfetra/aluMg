@@ -29,7 +29,10 @@ export async function account(a, role, name, email, phone) {
     return;
   }
   if (s.status >= 300) throw new Error(`signup ${email}: ${s.status} ${JSON.stringify(s.body)}`);
-  const sent = await a.must("POST", "/api/auth/verify/send", { channel: "sms", lang: "fr" });
+  const send = await a.call("POST", "/api/auth/verify/send", { channel: "sms", lang: "fr" });
+  if (send.status === 409 && send.body?.error === "already_verified") return; // compte vérifié dès l'inscription
+  if (send.status >= 300) throw new Error(`verify ${email}: ${send.status} ${JSON.stringify(send.body)}`);
+  const sent = send.body;
   if (!sent.devCode) throw new Error("pas de code « dev » : lancez le serveur de développement (npm run dev)");
   await a.must("POST", "/api/auth/verify/confirm", { code: sent.devCode });
 }
