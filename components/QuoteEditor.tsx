@@ -11,6 +11,7 @@ import { useToast } from "./Toast";
 import { openTariffs } from "./TariffsPanel";
 import ClientDirectory from "./ClientDirectory";
 import ClientMessage from "./quote/ClientMessage";
+import ShareQuote from "./quote/ShareQuote";
 import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
 import { Avatar, Field } from "./ui";
@@ -546,6 +547,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
 
           <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
             <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
+            <ShareQuote q={q} persisted={persisted} />
             <ClientMessage q={q} persisted={persisted} />
             {q.clientId && persisted && <QuoteDiscussion quoteId={q.id} me="menuisier" />}
           </fieldset>

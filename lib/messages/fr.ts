@@ -2063,6 +2063,21 @@ export const fr = {
   "admin.perPeriod": "Par période",
   "admin.cumul": "Cumulé",
   "admin.cumulTotal": "au total",
+  "share.from": "Devis de",
+  "share.total": "Total TTC",
+  "share.accept": "Je suis d'accord",
+  "share.question": "Poser une question",
+  "share.acceptMsg": "Bonjour, je suis d'accord pour le devis",
+  "share.questionMsg": "Bonjour, j'ai une question sur le devis",
+  "share.gone": "Ce lien n'est plus valable. Demandez un nouveau lien à votre menuisier.",
+  "share.made": "Devis réalisé avec AluMg",
+  "share.send": "Envoyer le devis par WhatsApp",
+  "share.copy": "Copier le lien",
+  "share.stop": "Retirer le lien",
+  "share.stopped": "Lien retiré : l'adresse déjà envoyée ne montre plus le devis.",
+  "share.msg": "voici votre devis, à ouvrir sur votre téléphone :",
+  "share.hint": "Votre client ouvre le devis sur son téléphone, sans créer de compte, et vous répond sur WhatsApp.",
+  "share.saveFirst": "Enregistrez le devis pour pouvoir l'envoyer.",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

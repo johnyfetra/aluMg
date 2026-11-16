@@ -111,6 +111,8 @@ export const quotes = pgTable(
     progress: integer("progress").notNull().default(0), // avancement du chantier, en %
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     data: jsonb("data").$type<Quote>().notNull(),
+    // lien public du devis (/d/<code>) envoyé au client par WhatsApp ; null : pas de lien ou lien retiré
+    shareToken: text("share_token").unique(),
   },
   (t) => [index("quotes_user_idx").on(t.userId), index("quotes_client_idx").on(t.clientId), uniqueIndex("quotes_user_number_idx").on(t.userId, t.number), index("quotes_created_idx").on(t.createdAt), index("quotes_user_status_idx").on(t.userId, t.status)], // chantiers terminés par menuisier (annuaire)
 );

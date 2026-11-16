@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { normalize } from "./calc";
@@ -151,7 +152,7 @@ export async function listEvents(quoteId: string): Promise<EventView[]> {
 
 export type ClientQuote = { siblings: SiblingQuote[]; quote: Quote; menuisier: { id: string; name: string; slug: string; logo: string; city: string; phone: string; email: string; verified: boolean }; issuer: Issuer; reviewed: boolean };
 
-async function toClientQuote(row: typeof schema.quotes.$inferSelect, withSiblings = false): Promise<ClientQuote> {
+async function toClientQuote(row: typeof schema.quotes.$inferSelect, withSiblings = false, view = clientView): Promise<ClientQuote> {
   const db = await getDb();
   const [m] = await db
     .select({ name: schema.users.name, phone: schema.users.phone, email: schema.users.email })
@@ -162,7 +163,7 @@ async function toClientQuote(row: typeof schema.quotes.$inferSelect, withSibling
   const settings = await getSettings(row.userId);
   return {
     siblings: withSiblings ? await openSiblings(row) : [], // seule la fiche d'un devis en a besoin (la liste n'en fait pas la requête)
-    quote: clientView({ ...row.data, status: row.status as Status, progress: row.progress }),
+    quote: view({ ...row.data, status: row.status as Status, progress: row.progress }),
     issuer: { ...(Object.fromEntries(ISSUER_KEYS.map((k) => [k, settings[k]])) as Issuer), company: settings.company || p?.displayName || m?.name || "" }, // entête jamais remplie : le nom du menuisier plutôt qu'un tiret
     menuisier: { id: row.userId, name: p?.displayName || m?.name || "", slug: p?.slug ?? "", logo: imageSrc(p?.slug ?? "", "logo", p?.logo ?? ""), city: p?.city ?? "", phone: m?.phone ?? "", email: m?.email ?? "", verified: p?.verified ?? false },
     reviewed: !!r,
@@ -179,6 +180,34 @@ export async function listClientQuotes(clientId: string): Promise<ClientQuote[]>
 export async function getClientQuote(clientId: string, id: string): Promise<ClientQuote | null> {
   const s = await sideOf(clientId, id);
   return s && s.side === "client" ? toClientQuote(s.row, true) : null;
+}
+
+// ---------- Lien public du devis (/d/<code>), envoyé par WhatsApp à un client sans compte ----------
+// Le menuisier partage lui-même ce lien : les prix y sont donc visibles même en brouillon ; les coûts internes, jamais.
+const sharedView = (q: Quote): Quote => ({ ...q, services: q.services?.map((s) => ({ ...s, cost: undefined })) });
+
+// Renvoie le code du lien (créé au premier partage, inchangé ensuite), ou null si le devis n'est pas à ce menuisier.
+export async function shareQuote(userId: string, quoteId: string): Promise<string | null> {
+  const db = await getDb();
+  const [row] = await db.select({ token: schema.quotes.shareToken }).from(schema.quotes).where(and(eq(schema.quotes.id, quoteId), eq(schema.quotes.userId, userId)));
+  if (!row) return null;
+  if (row.token) return row.token;
+  const token = randomBytes(12).toString("base64url"); // 96 bits : impossible à deviner
+  await db.update(schema.quotes).set({ shareToken: token }).where(and(eq(schema.quotes.id, quoteId), eq(schema.quotes.userId, userId)));
+  return token;
+}
+
+// Retire le lien : l'adresse déjà envoyée ne montre plus rien.
+export async function unshareQuote(userId: string, quoteId: string): Promise<boolean> {
+  const db = await getDb();
+  const done = await db.update(schema.quotes).set({ shareToken: null }).where(and(eq(schema.quotes.id, quoteId), eq(schema.quotes.userId, userId))).returning({ id: schema.quotes.id });
+  return done.length > 0;
+}
+
+export async function getSharedQuote(token: string): Promise<ClientQuote | null> {
+  const db = await getDb();
+  const [row] = await db.select().from(schema.quotes).where(eq(schema.quotes.shareToken, token));
+  return row ? toClientQuote(row, false, sharedView) : null;
 }
 
 // ---------- Une même demande envoyée à plusieurs menuisiers ----------

@@ -36,7 +36,8 @@ const eslintConfig = defineConfig([
     },
   },
   // Exception : cette page est un composant serveur, elle lit le profil pour ses balises de partage (titre, image).
-  { files: ["app/(public)/menuisiers/[[]slug]/page.tsx"], rules: { "@typescript-eslint/no-restricted-imports": "off" } },
+  // Idem pour le devis partagé par lien : la page serveur le lit en base et ne transmet au navigateur que la vue client.
+  { files: ["app/(public)/menuisiers/[[]slug]/page.tsx", "app/d/[[]token]/page.tsx"], rules: { "@typescript-eslint/no-restricted-imports": "off" } },
 ]);
 
 export default eslintConfig;
