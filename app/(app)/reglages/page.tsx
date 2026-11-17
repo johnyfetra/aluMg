@@ -43,7 +43,7 @@ function Form({ initial, tab }: { initial: Settings; tab: Exclude<CompanyTab, "m
       <input id={id} type={type} className="input" value={s[key]} onChange={(e) => set({ [key]: e.target.value })} />
     </Field>
   );
-  const numeric = (id: string, key: "tva" | "deposit" | "validityDays" | "minArea" | "barLength" | "kerf", label: string) => (
+  const numeric = (id: string, key: "tva" | "deposit" | "validityDays" | "minArea" | "kerf", label: string) => (
     <Field htmlFor={id} label={label}>
       <input id={id} type="number" inputMode="decimal" min={0} className="input" value={s[key]} onChange={(e) => set({ [key]: Number(e.target.value) || 0 })} />
     </Field>
@@ -203,7 +203,6 @@ function Form({ initial, tab }: { initial: Settings; tab: Exclude<CompanyTab, "m
           {t("settings.cutting")}
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          {numeric("bar", "barLength", t("settings.barLength"))}
           {numeric("kerf", "kerf", t("settings.kerf"))}
         </div>
         <Link href="/fournisseurs" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">

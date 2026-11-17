@@ -8,7 +8,6 @@ export type Piece = { profile: Label; element: Label; len: number; qty: number; 
 export type Pane = { w: number; h: number; qty: number };
 export type Dims = Pick<Line, "category" | "opening" | "leaves" | "shutter" | "guard" | "infill" | "width" | "height"> & Partial<Pick<Line, "box" | "slat">>;
 
-export const BAR_LEN = 6000;
 // Naco : des lames de verre de 100 mm empilées entre deux montants ; leur nombre découle de la hauteur (40 mm de jeu en haut et en bas), jamais saisi.
 export const NACO_BLADE = 100;
 export const nacoBlades = (heightMm: number) => Math.max(1, Math.ceil((heightMm - 40) / NACO_BLADE));
@@ -115,77 +114,8 @@ export function cutList(l: Dims) {
   return { pieces, glass, panels };
 }
 
-// ---------- Plan de coupe ----------
+// Pièces d'un même élément et d'une même longueur, regroupées pour le plan de coupe (voir lib/procure.ts).
 export type ElementUse = { element: Label; len: number; qty: number; lines: number[] };
-export type Bar = { cuts: number[]; left: number };
-export type ProfilePlan = {
-  profile: Label;
-  elements: ElementUse[];
-  bars: Bar[];
-  barLen: number;
-  usedLen: number; // somme des pièces coupées
-  totalLen: number; // barres achetées × longueur
-  wasteLen: number; // chutes + traits de scie
-  reusableLen: number; // part des chutes d'au moins REUSE_MIN, à garder
-  wastePct: number;
-  tooLong: number[]; // pièces plus longues qu'une barre : impossibles à couper
-};
-
-// First-fit decreasing, une barre par profilé : où chaque pièce est coupée, ce qui reste, ce qui se perd.
-export function cuttingPlan(pieces: Piece[], barLen = BAR_LEN, kerf = KERF): ProfilePlan[] {
-  const byProfile = new Map<Label, Piece[]>();
-  for (const p of pieces) byProfile.set(p.profile, [...(byProfile.get(p.profile) ?? []), p]);
-
-  return [...byProfile].map(([profile, list]) => {
-    const uses = new Map<string, ElementUse>();
-    for (const p of list) {
-      const k = `${p.element}|${p.len}`;
-      const u = uses.get(k) ?? { element: p.element, len: p.len, qty: 0, lines: [] };
-      u.qty += p.qty;
-      if (p.line !== undefined && !u.lines.includes(p.line)) u.lines.push(p.line);
-      uses.set(k, u);
-    }
-    const lens = list.flatMap((p) => Array<number>(p.qty).fill(p.len)).sort((a, b) => b - a);
-    const bars: Bar[] = [];
-    const tooLong: number[] = [];
-    let usedLen = 0;
-    for (const len of lens) {
-      if (len + kerf > barLen) {
-        tooLong.push(len);
-        continue;
-      }
-      usedLen += len;
-      const bar = bars.find((b) => b.left >= len + kerf);
-      if (bar) {
-        bar.cuts.push(len);
-        bar.left -= len + kerf;
-      } else bars.push({ cuts: [len], left: barLen - len - kerf });
-    }
-    const totalLen = bars.length * barLen;
-    const wasteLen = totalLen - usedLen;
-    return {
-      profile,
-      elements: [...uses.values()],
-      bars,
-      barLen,
-      usedLen,
-      totalLen,
-      wasteLen,
-      reusableLen: bars.reduce((s, b) => s + (b.left >= REUSE_MIN ? b.left : 0), 0),
-      wastePct: totalLen ? Math.round((wasteLen / totalLen) * 100) : 0,
-      tooLong,
-    };
-  });
-}
-
-export function planTotals(plans: ProfilePlan[]) {
-  const bars = plans.reduce((s, p) => s + p.bars.length, 0);
-  const totalLen = plans.reduce((s, p) => s + p.totalLen, 0);
-  const usedLen = plans.reduce((s, p) => s + p.usedLen, 0);
-  const wasteLen = totalLen - usedLen;
-  const reusableLen = plans.reduce((s, p) => s + p.reusableLen, 0);
-  return { bars, totalLen, usedLen, wasteLen, reusableLen, wastePct: totalLen ? Math.round((wasteLen / totalLen) * 100) : 0 };
-}
 
 // ---------- Prix ----------
 export const tariffKey = (l: Pick<Line, "category" | "opening" | "shutter" | "guard">): TariffKey =>

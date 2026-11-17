@@ -14,7 +14,7 @@ import ClientMessage from "./quote/ClientMessage";
 import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
 import { Avatar, Field } from "./ui";
-import { allPieces, cuttingPlan, normalize, planTotals } from "@/lib/calc";
+import { normalize } from "@/lib/calc";
 import { marginBasis, productionDays, quoteMargin } from "@/lib/costing";
 import { initSim, simulate } from "@/lib/procure";
 import { useContacts } from "@/lib/client";
@@ -167,9 +167,9 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   // après acceptation, les ouvrages mis en attente par le client sont hors chantier : ni total, ni matière, ni marge
   const live = activeLines({ lines: validLines, status: q.status, lineReviews: q.lineReviews });
   const { discount, ht, tva, ttc } = totals({ lines: live, terms: q.terms, discount: q.discount, services: q.services });
-  const plan = planTotals(cuttingPlan(allPieces(live), settings.barLength, settings.kerf));
-  // marge du devis entier : achats chiffrés avec le catalogue de ce devis, remise et coût des prestations compris
-  const purchases = simulate(live, initSim(eff.market), settings.kerf).allCost; // React Compiler mémoïse
+  // achats aux longueurs et prix des fournisseurs (catalogue de ce devis s'il en a un) : barres à couper, chute, et coût pour la marge
+  const plan = simulate(live, initSim(eff.market), settings.kerf); // React Compiler mémoïse
+  const purchases = plan.allCost;
   const days = productionDays(live, eff); // temps d'atelier : dépend du nombre et de la taille des ouvrages
   const margin = quoteMargin({ lines: validLines, terms: q.terms, discount: q.discount, services: q.services, status: q.status, lineReviews: q.lineReviews }, marginBasis(eff), purchases);
 
@@ -553,7 +553,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
           <ServicesEditor services={q.services ?? []} onChange={(services) => setQ((c) => ({ ...c, services }))} prices={settings.servicePrices} t={t} locked={locked} />
 
           <fieldset disabled={locked} className="m-0 min-w-0 space-y-6 border-0 p-0">
-            <ProfileNeeds lines={validLines} barLen={settings.barLength} kerf={settings.kerf} t={t} />
+            <ProfileNeeds lines={live} plan={plan} quoteId={persisted ? q.id : undefined} t={t} />
             <ClientMessage q={q} persisted={persisted} />
             {q.clientId && persisted && <QuoteDiscussion quoteId={q.id} me="menuisier" />}
           </fieldset>

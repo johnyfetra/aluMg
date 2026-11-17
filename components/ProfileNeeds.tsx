@@ -1,16 +1,17 @@
 "use client";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { type ProfilePlan, allPieces, cutList, cuttingPlan, meters, planTotals } from "@/lib/calc";
+import GroupCard from "./needs/GroupCard";
+import { cutList, meters } from "@/lib/calc";
 import { type T } from "@/lib/i18n";
 import type { Line } from "@/lib/model";
+import type { Procurement } from "@/lib/procure";
 
-// Détail du besoin en profilés : par profilé (longueur de barre, éléments qui l'utilisent, coupes), plan de coupe barre par barre,
-// et totaux (barres à acheter, longueur utilisée, perte). Les vitrages à commander sont listés dessous.
-export default function ProfileNeeds({ lines, barLen, kerf, t }: { lines: Line[]; barLen: number; kerf: number; t: T }) {
+// Détail du besoin en profilés, aux longueurs et prix des fournisseurs : par profilé, série et couleur, barres à acheter et plan de coupe,
+// et totaux (barres, longueur utilisée, perte). Les vitrages à commander sont listés dessous.
+export default function ProfileNeeds({ lines, plan: tot, quoteId, t }: { lines: Line[]; plan: Procurement; quoteId?: string; t: T }) {
   const [open, setOpen] = useState(false); // replié au départ : l'essentiel d'abord, le détail à la demande
-  const plans = cuttingPlan(allPieces(lines), barLen, kerf);
-  const tot = planTotals(plans);
+  const plans = tot.groups;
   const glass = lines.flatMap((l, i) => cutList(l).glass.map((g) => ({ ...g, qty: g.qty * l.qty, line: i + 1, l })));
   const panels = lines.flatMap((l, i) => cutList(l).panels.map((g) => ({ ...g, qty: g.qty * l.qty, line: i + 1, l })));
   const area = glass.reduce((s, g) => s + (g.qty * g.w * g.h) / 1e6, 0);
@@ -54,7 +55,7 @@ export default function ProfileNeeds({ lines, barLen, kerf, t }: { lines: Line[]
       {open && (
       <div className="grid gap-4 xl:grid-cols-2">
         {plans.map((p) => (
-          <ProfileCard key={p.profile} p={p} t={t} />
+          <GroupCard key={p.key} g={p} quoteId={quoteId} lines={lines} t={t} />
         ))}
       </div>
       )}
@@ -91,79 +92,5 @@ export default function ProfileNeeds({ lines, barLen, kerf, t }: { lines: Line[]
         </div>
       )}
     </section>
-  );
-}
-
-function ProfileCard({ p, t }: { p: ProfilePlan; t: T }) {
-  return (
-    <article className="card !p-4">
-      <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-semibold">{t(p.profile)}</h3>
-        <span className="text-xs text-muted">
-          {t("needs.barLength")} {meters(p.barLen)}
-        </span>
-      </header>
-
-      <table className="w-full text-sm">
-        <thead className="text-left text-xs text-muted">
-          <tr>
-            <th className="pb-1 font-medium">{t("needs.element")}</th>
-            <th className="pb-1 font-medium">{t("needs.ouvrages")}</th>
-            <th className="pb-1 text-right font-medium">{t("needs.pieces")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {p.elements.map((e) => (
-            <tr key={`${e.element}|${e.len}`} className="border-t border-line">
-              <td className="py-1.5">{t(e.element)}</td>
-              <td className="py-1.5 text-muted">{e.lines.map((n) => `#${n}`).join(" ")}</td>
-              <td className="py-1.5 text-right font-medium">
-                {e.qty} × {e.len} mm
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <dl className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-surface-2 p-3 text-sm">
-        <div>
-          <dt className="text-xs text-muted">{t("needs.bars")}</dt>
-          <dd className="font-bold">{p.bars.length}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted">{t("needs.used")}</dt>
-          <dd className="font-bold">{meters(p.usedLen)}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted">{t("needs.waste")}</dt>
-          <dd className={`font-bold ${p.wastePct > 40 ? "text-warn" : ""}`}>
-            {meters(p.wasteLen)} · {p.wastePct} %
-          </dd>
-        </div>
-      </dl>
-
-      {p.tooLong.length > 0 && (
-        <p role="alert" className="mt-2 text-sm font-medium text-danger">
-          {t("needs.tooLong")} {[...new Set(p.tooLong)].join(", ")} mm
-        </p>
-      )}
-
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer font-medium text-primary">{t("needs.plan")}</summary>
-        <ol className="mt-2 space-y-1">
-          {p.bars.map((b, i) => (
-            <li key={i} className="flex flex-wrap items-baseline gap-x-2">
-              <span className="w-16 shrink-0 text-muted">
-                {t("needs.bar")} {i + 1}
-              </span>
-              <span className="min-w-0 flex-1">{b.cuts.join(" + ")}</span>
-              <span className="text-xs text-muted">
-                {t("needs.left")} {b.left} mm
-              </span>
-            </li>
-          ))}
-        </ol>
-      </details>
-    </article>
   );
 }

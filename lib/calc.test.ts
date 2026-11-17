@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accessoriesFor, cutList, cuttingPlan, normalize, planTotals, surchargeKeys, unitPrice } from "./calc";
+import { accessoriesFor, cutList, normalize, surchargeKeys, unitPrice } from "./calc";
 import { drawingSvg } from "./drawing";
 import { CATEGORIES, DEFAULT_SETTINGS, GUARDS, INFILLS, type Line, OPENINGS_BY_CATEGORY, SHUTTERS, leafMarks, leafMotion, leavesSpec, lineSchema } from "./model";
 
@@ -111,44 +111,6 @@ describe("nouvelles catégories et nombre de vantaux libre", () => {
     expect(normalize({ ...base, opening: "oscillo", leaves: 9 }).leaves).toBe(4);
     expect(normalize({ ...base, category: "cloison", leaves: 0 }).leaves).toBe(1);
     expect(normalize({ ...base, opening: "jalousie", leaves: 5 }).leaves).toBe(1);
-  });
-});
-
-describe("cuttingPlan", () => {
-  const piece = (len: number, qty: number, element: "el.sashH" | "el.sashV" = "el.sashH", line = 1) => ({ profile: "pf.sash" as const, element, len, qty, line });
-  it("regroupe les coupes sur une barre en comptant le trait de scie", () => {
-    expect(cuttingPlan([piece(1990, 3)])[0].bars).toHaveLength(1);
-    expect(cuttingPlan([piece(1990, 4)])[0].bars).toHaveLength(2);
-  });
-  it("calcule longueur utilisée, achetée et perte", () => {
-    const [p] = cuttingPlan([piece(2000, 3)]); // 3 x 2000 = 6000 + 3 traits > 6000 : 2 barres
-    expect(p.bars).toHaveLength(2);
-    expect(p.usedLen).toBe(6000);
-    expect(p.totalLen).toBe(12000);
-    expect(p.wasteLen).toBe(6000);
-    expect(p.wastePct).toBe(50);
-    const bar0 = p.bars[0];
-    expect(bar0.cuts.reduce((s, c) => s + c, 0) + bar0.cuts.length * 5 + bar0.left).toBe(6000);
-  });
-  it("garde le détail par élément et par ouvrage", () => {
-    const [p] = cuttingPlan([piece(1000, 2, "el.sashH", 1), piece(1000, 4, "el.sashH", 2), piece(800, 2, "el.sashV", 1)]);
-    expect(p.elements.find((e) => e.len === 1000)).toMatchObject({ qty: 6, lines: [1, 2] });
-    expect(p.elements).toHaveLength(2);
-  });
-  it("respecte la longueur de barre et le trait de scie réglés", () => {
-    expect(cuttingPlan([piece(1490, 4)], 4000, 10)[0].bars).toHaveLength(2); // 2 x 1500 par barre de 4 m
-    expect(cuttingPlan([piece(1490, 4)], 6000, 5)[0].bars).toHaveLength(1); // 4 x 1495 = 5980
-  });
-  it("signale une pièce plus longue que la barre", () => {
-    expect(cuttingPlan([piece(6000, 1)])[0].tooLong).toEqual([6000]);
-  });
-  it("totalise plusieurs profilés", () => {
-    const plans = cuttingPlan([piece(2000, 3), { profile: "pf.dormant", element: "el.dormantH", len: 1000, qty: 2 }]);
-    const t = planTotals(plans);
-    expect(t.bars).toBe(3);
-    expect(t.totalLen).toBe(18000);
-    expect(t.usedLen).toBe(8000);
-    expect(t.wasteLen).toBe(10000);
   });
 });
 

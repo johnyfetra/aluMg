@@ -6,12 +6,13 @@ import Calibration from "../Calibration";
 import Select from "../Select";
 import { Field } from "../ui";
 import ShareQuote from "./ShareQuote";
-import { fmt, meters, type planTotals } from "@/lib/calc";
+import { fmt, meters } from "@/lib/calc";
 import type { quoteMargin } from "@/lib/costing";
 import { presetOf } from "@/lib/docStyle";
 import type { T } from "@/lib/i18n";
 import type { Messages } from "@/lib/messages/fr";
 import { DOC_PRESETS, type DocPreset, type EditMode, type Quote, type Settings } from "@/lib/model";
+import type { Procurement } from "@/lib/procure";
 
 type Props = {
   t: T;
@@ -19,7 +20,7 @@ type Props = {
   setQ: Dispatch<SetStateAction<Quote>>;
   totals: { discount: number; ht: number; tva: number; ttc: number };
   margin: ReturnType<typeof quoteMargin> | null;
-  plan: ReturnType<typeof planTotals>;
+  plan: Pick<Procurement, "bars" | "totalLen" | "usedLen" | "wasteLen" | "reusableLen" | "wastePct">;
   persisted: boolean;
   canAct: boolean;
   locked: boolean;

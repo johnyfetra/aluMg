@@ -8,7 +8,8 @@ import InfoTip, { type HelpTerm } from "../InfoTip";
 import { Choice, Field, FinishPicker } from "../ui";
 import WorksButton from "../WorksDialog";
 import SectionView from "../SectionView";
-import { billedArea, cutList, cuttingPlan, fmt, lineTotal, nacoBlades } from "@/lib/calc";
+import { allPieces, billedArea, fmt, lineTotal, nacoBlades } from "@/lib/calc";
+import { procure } from "@/lib/procure";
 import { costLine, marginBasis, marginOf } from "@/lib/costing";
 import { lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
@@ -49,7 +50,7 @@ export function LineCard({
   const hasGlass = cat === "garde-corps" ? l.guard === "verre" : cat !== "volet" && !(cat === "porte" && l.infill === "pleine");
   const canPattern = PATTERN_GLASSES.includes(l.glassType);
   const sk = valid ? drawingSvg(l, l.id, 360, 280) : null;
-  const tooLong = valid && cuttingPlan(cutList(l).pieces).some((p) => p.tooLong.length > 0);
+  const tooLong = valid && procure(allPieces([l]), settings.market, settings.kerf).groups.some((g) => g.tooLong.length > 0); // pièce plus longue que les barres des fournisseurs
   const auto = valid ? price(l, settings) : l.unit;
   // coût de revient d'un ouvrage (jamais montré au client)
   const cost = open && !clientMode && valid ? costLine(l, marginBasis(settings)) : null;
