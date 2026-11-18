@@ -119,7 +119,7 @@ export default function ClientsPage() {
 
       {editing === "new" && form}
 
-      <div className="relative max-w-md">
+      <div className="relative max-w-md lg:hidden">
         <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
         <input className="input !pl-9" type="search" aria-label={t("ct.search")} placeholder={t("ct.search")} value={q} onChange={(e) => setQ(e.target.value)} />
       </div>

@@ -41,7 +41,7 @@ export default function AdminQuotesPage() {
         <p className="text-sm text-muted">{t("admin.quotesSub")}</p>
       </div>
       <div className="flex flex-wrap gap-2">
-        {box(t("admin.searchQuotes"), q, setQ)}
+        {box(t("admin.searchQuotes"), q, setQ, "lg:hidden")}
         {box(t("admin.byOwner"), owner, setOwner)}
         {box(t("admin.byClient"), client, setClient)}
         <div className="w-full sm:w-56">

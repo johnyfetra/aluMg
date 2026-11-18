@@ -28,6 +28,8 @@ export const en: Messages = {
   "nav.settings": "Settings",
   "nav.account": "My account",
   "nav.skip": "Skip to content",
+  "nav.collapse": "Collapse menu",
+  "nav.expand": "Expand menu",
   "nav.main": "Main navigation",
   "theme.toggle": "Switch theme",
   "theme.light": "Light",

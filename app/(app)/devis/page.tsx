@@ -109,7 +109,7 @@ function QuotesView() {
 
       {quotes.length > 0 && (
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-full max-w-md">
+          <div className="relative w-full max-w-md lg:hidden">
             <Search size={18} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input type="search" aria-label={t("quotes.search")} placeholder={t("quotes.search")} className="input !pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>

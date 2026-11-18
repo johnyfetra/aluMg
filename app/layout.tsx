@@ -20,8 +20,8 @@ export const viewport: Viewport = {
   ],
 };
 
-// Applique le thème avant le premier rendu pour éviter un flash clair/sombre.
-const themeInit = `try{var t=localStorage.getItem('alumg.theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t}catch(e){}`;
+// Applique le thème (et le menu plié) avant le premier rendu pour éviter un flash.
+const themeInit = `try{var t=localStorage.getItem('alumg.theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t;if(localStorage.getItem('alumg.nav')==='mini')document.documentElement.dataset.nav='mini'}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

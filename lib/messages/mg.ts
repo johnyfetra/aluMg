@@ -30,6 +30,8 @@ export const mg: Messages = {
   "nav.settings": "Fandrindrana",
   "nav.account": "Ny kaontiko",
   "nav.skip": "Mandehana any amin'ny votoaty",
+  "nav.collapse": "Ahelino ny menio",
+  "nav.expand": "Velarina ny menio",
   "nav.main": "Fitetezana lehibe",
   "theme.toggle": "Hanova lohahevitra",
   "theme.light": "Mazava",

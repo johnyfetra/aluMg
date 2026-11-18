@@ -117,8 +117,8 @@ export default function AccountsPage() {
       {password && <TempPassword title={t("admin.created")} password={password} onDone={() => setPassword("")} />}
       {creating && <CreateForm onCancel={() => setCreating(false)} onCreated={(p) => { setCreating(false); setPassword(p); toast.success(t("admin.created")); }} />}
 
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
-        <div className="relative">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="relative lg:hidden">
           <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input className="input !pl-9" type="search" maxLength={80} aria-label={t("admin.search")} placeholder={t("admin.search")} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>

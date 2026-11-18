@@ -1,152 +1,28 @@
 "use client";
-import Brand from "./Brand";
-import TariffsPanel, { openTariffs } from "./TariffsPanel";
+import { AlignLeft, BadgePercent, FilePlus2, MessageCircle, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import AppUpdate from "./AppUpdate";
+import Brand from "./Brand";
 import ChatWidget from "./ChatWidget";
+import { UserMenu } from "./Controls";
+import CountBadge from "./CountBadge";
 import FeedbackButton from "./FeedbackDialog";
 import GuideTour from "./GuideTour";
-import CountBadge from "./CountBadge";
+import IconButton from "./IconButton";
 import NotificationBell from "./NotificationBell";
-import { AlignLeft, BadgePercent, FilePlus2, MessageCircle, FileText, LayoutDashboard, LogOut, Settings, UserCircle, X } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
-import { LangMenu, ThemeSwitch, UserMenu } from "./Controls";
-import { Avatar } from "./ui";
-import { useI18n } from "@/lib/i18n";
-import type { Messages } from "@/lib/messages/fr";
-
-import { Boxes, Briefcase, Building2, CalendarCheck, Share2, ClipboardList, Gauge, MessageSquareText, MessagesSquare, ScrollText, Search, Store, Users } from "lucide-react";
+import TopSearch, { SearchProvider, useSearchActive } from "./PageSearch";
+import TariffsPanel, { openTariffs } from "./TariffsPanel";
 import OfflineSupport from "./offline/OfflineSupport";
-import { logout, useNotifications, useSession, useUnread } from "@/lib/client";
-import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
+import DrawerUser from "./shell/DrawerUser";
+import NavLinks from "./shell/NavLinks";
+import SideNavToggle, { useMiniNav } from "./shell/SideNavToggle";
+import { currentItem, navFor, type Nav } from "./shell/nav";
+import { useNotifications, useSession, useUnread } from "@/lib/client";
+import { useI18n } from "@/lib/i18n";
 
-type Item = { href: string; key: keyof Messages; Icon: typeof Settings; match: (p: string) => boolean };
-type Group = { label: keyof Messages; items: Item[] };
-type Nav = { home: string; cta?: Item; groups: Group[] }; // navigation adaptée au rôle
-
-const starts = (...prefix: string[]) => (p: string) => prefix.some((x) => p === x || p.startsWith(`${x}/`));
-
-const FULL_MENUISIER: Nav = {
-  home: "/tableau-de-bord",
-  cta: { href: "/devis/nouveau", key: "nav.new", Icon: FilePlus2, match: (p) => p === "/devis/nouveau" },
-  groups: [
-    {
-      label: "nav.group.main",
-      items: [
-        { href: "/tableau-de-bord", key: "nav.dashboard", Icon: LayoutDashboard, match: starts("/tableau-de-bord") },
-        { href: "/devis", key: "nav.quotes", Icon: FileText, match: (p) => (p === "/devis" || p.startsWith("/devis/")) && p !== "/devis/nouveau" },
-        { href: "/chantiers", key: "nav.sites", Icon: Briefcase, match: starts("/chantiers") },
-        { href: "/clients", key: "nav.clients", Icon: Users, match: starts("/clients") },
-        { href: "/messages", key: "nav.messages", Icon: MessageCircle, match: starts("/messages") },
-      ],
-    },
-    {
-      label: "nav.group.config",
-      items: [
-        // trois rubriques à onglets ; le guide et le compte sont dans le menu de l'utilisateur (barre du haut)
-        { href: "/fournisseurs", key: "nav.prices", Icon: Boxes, match: starts("/fournisseurs") },
-        { href: "/reglages", key: "cfg.company", Icon: Building2, match: starts("/reglages", "/modele-devis") },
-        { href: "/profil-public", key: "cfg.showcase", Icon: Store, match: starts("/profil-public", "/realisations") },
-      ],
-    },
-  ],
-};
-
-// Le mode MVP ne masque que les écrans avancés, pas la vitrine publique.
-const MENUISIER: Nav = MVP
-  ? { ...FULL_MENUISIER, groups: FULL_MENUISIER.groups.map((g) => ({ ...g, items: g.items.filter((i) => !HIDDEN.some((h) => i.href === h)) })).filter((g) => g.items.length) }
-  : FULL_MENUISIER;
-
-const FULL_CLIENT: Nav = {
-  home: "/espace-client",
-  cta: { href: "/espace-client/nouvelle", key: "cl.newRequest", Icon: FilePlus2, match: starts("/espace-client/nouvelle") },
-  groups: [
-    {
-      label: "nav.group.main",
-      items: [
-        { href: "/espace-client", key: "cl.myRequests", Icon: ClipboardList, match: (p) => p === "/espace-client" || p.startsWith("/espace-client/devis") },
-        { href: "/messages", key: "nav.messages", Icon: MessageCircle, match: starts("/messages") },
-        { href: "/menuisiers", key: "cl.findJoiner", Icon: Search, match: starts("/menuisiers") },
-      ],
-    },
-    { label: "nav.group.config", items: [{ href: "/compte", key: "nav.account", Icon: UserCircle, match: starts("/compte") }] },
-  ],
-};
-
-const CLIENT: Nav = MVP
-  ? { home: FULL_CLIENT.home, cta: FULL_CLIENT.cta, groups: FULL_CLIENT.groups.map((g) => ({ ...g, items: g.items.filter((i) => !HIDDEN_CLIENT.includes(i.href)) })) }
-  : FULL_CLIENT;
-
-// L'administrateur garde l'accès aux écrans du menuisier, sous l'espace « Administration ».
-const ADMIN: Nav = {
-  home: "/admin",
-  groups: [
-    {
-      label: "nav.group.admin",
-      items: [
-        { href: "/admin", key: "admin.dashboard", Icon: Gauge, match: (p) => p === "/admin" },
-        { href: "/admin/comptes", key: "admin.accounts", Icon: Users, match: starts("/admin/comptes") },
-        { href: "/admin/devis", key: "admin.allQuotes", Icon: FileText, match: starts("/admin/devis") },
-        { href: "/admin/reseaux", key: "admin.social", Icon: Share2, match: starts("/admin/reseaux") },
-        { href: "/admin/retours", key: "admin.feedback", Icon: MessageSquareText, match: starts("/admin/retours") },
-        { href: "/admin/rendez-vous", key: "admin.demos", Icon: CalendarCheck, match: starts("/admin/rendez-vous") },
-        { href: "/admin/messages-site", key: "admin.siteMsgs", Icon: MessagesSquare, match: starts("/admin/messages-site") },
-        { href: "/admin/journal", key: "admin.audit", Icon: ScrollText, match: starts("/admin/journal") },
-      ],
-    },
-    ...MENUISIER.groups,
-  ],
-};
-
-// usePathname() est lu à l'exécution : isolé dans Suspense pour garder le reste du layout prérendu.
-function NavLinks({ nav, onNavigate }: { nav: Nav; onNavigate: () => void }) {
-  const { t } = useI18n();
-  const path = usePathname();
-  const creating = !!nav.cta?.match(path);
-  const unread = useUnread();
-  return (
-    <nav aria-label={t("nav.main")} className="flex flex-1 flex-col gap-6 px-4">
-      {nav.cta && (
-        <Link
-          href={nav.cta.href}
-          onClick={onNavigate}
-          aria-current={creating ? "page" : undefined}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white text-sm font-semibold text-(--side-bg) shadow-sm transition hover:bg-white/90"
-        >
-          <FilePlus2 size={18} aria-hidden />
-          {t(nav.cta.key)}
-        </Link>
-      )}
-      {nav.groups.map((g) => (
-        <div key={g.label}>
-          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-(--side-muted)">{t(g.label)}</p>
-          <ul className="space-y-1">
-            {g.items.map(({ href, key, Icon, match }) => {
-              const active = match(path);
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    onClick={onNavigate}
-                    aria-current={active ? "page" : undefined}
-                    className={`relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors ${active ? "bg-(--side-active) text-white" : "text-(--side-fg) hover:bg-(--side-hover) hover:text-white"}`}
-                  >
-                    {active && <span aria-hidden className="absolute -left-4 top-2 bottom-2 w-1 rounded-r-full bg-(--side-accent)" />}
-                    <Icon size={18} aria-hidden className={active ? "shrink-0 text-(--side-accent)" : "shrink-0"} />
-                    <span className="min-w-0 break-words">{t(key)}</span>
-                    {href === "/messages" && <CountBadge n={unread} label={`${unread} ${t("msg.unread")}`} className="ml-auto !ring-0" />}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
-    </nav>
-  );
-}
-
+// Cadre de l'application : barre latérale (navigation par rôle, voir shell/nav.ts), barre du haut (titre, recherche de la page, actions), contenu.
 // Le contenu défile dans son propre cadre (≥ lg) : le routeur ne le remonte pas, on le fait à chaque changement de page.
 function ScrollTop() {
   const path = usePathname();
@@ -156,31 +32,10 @@ function ScrollTop() {
 
 function PageTitle({ nav }: { nav: Nav }) {
   const { t } = useI18n();
+  const searching = useSearchActive(); // sur écran moyen, la recherche prend la place du titre
   const path = usePathname();
-  const cur = [...(nav.cta ? [nav.cta] : []), ...nav.groups.flatMap((g) => g.items)].find((i) => i.match(path));
-  return cur ? <p className="min-w-0 truncate text-[15px] font-semibold sm:text-sm sm:text-muted">{t(cur.key)}</p> : null;
-}
-
-// Pied du tiroir mobile : qui est connecté, et la déconnexion à portée de pouce.
-function DrawerUser({ name, email, avatar }: { name: string; email?: string | null; avatar?: string | null }) {
-  const { t } = useI18n();
-  const router = useRouter();
-  const signOut = async () => {
-    await logout();
-    router.replace("/connexion");
-  };
-  return (
-    <div className="mx-4 mt-6 flex items-center gap-3 rounded-2xl bg-(--side-hover) p-3 lg:hidden">
-      <Avatar name={name} src={avatar ?? undefined} size={40} round />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-white">{name}</p>
-        {email && <p className="truncate text-xs text-(--side-muted)">{email}</p>}
-      </div>
-      <button type="button" onClick={signOut} aria-label={t("menu.logout")} data-tooltip={t("menu.logout")} className="grid size-10 shrink-0 place-items-center rounded-full text-(--side-fg) transition-colors hover:bg-(--side-active)">
-        <LogOut size={18} aria-hidden />
-      </button>
-    </div>
-  );
+  const cur = currentItem(nav, path);
+  return cur ? <p className={`min-w-0 shrink-0 truncate text-[15px] font-semibold tracking-tight max-lg:shrink lg:max-w-[14rem] lg:pl-2 lg:text-lg ${searching ? "lg:hidden xl:block" : ""}`}>{t(cur.key)}</p> : null;
 }
 
 export default function Shell({ children }: { children: ReactNode }) {
@@ -193,8 +48,9 @@ export default function Shell({ children }: { children: ReactNode }) {
   useEffect(() => {
     (window as { AluMgNative?: { setBadge(n: number): void } }).AluMgNative?.setBadge(badge);
   }, [badge]);
-  const nav = me?.role === "client" ? CLIENT : me?.role === "admin" ? ADMIN : MENUISIER;
+  const nav = navFor(me?.role);
   const [open, setOpen] = useState(false);
+  const [mini] = useMiniNav();
 
   const sidebar = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -228,19 +84,24 @@ export default function Shell({ children }: { children: ReactNode }) {
   }, [open]);
 
   return (
-    <div className="app-frame min-h-screen lg:fixed lg:inset-0 lg:grid lg:grid-cols-[17rem_1fr] lg:overflow-clip">
+    <div className="app-frame min-h-screen bg-bg lg:fixed lg:inset-0 lg:grid lg:grid-cols-[17.5rem_1fr] lg:overflow-clip lg:transition-[grid-template-columns] lg:duration-300 lg:mini:grid-cols-[5.75rem_1fr]">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-surface focus:p-3">
         {t("nav.skip")}
       </a>
 
       {open && <div className="fixed inset-0 z-30 bg-black/55 backdrop-blur-[2px] lg:hidden" onClick={() => setOpen(false)} aria-hidden />}
+      {/* sur grand écran, la barre et sa languette de pliage partagent ce cadre */}
+      <div className="group/side lg:relative lg:min-w-0">
       <aside ref={sidebar} id="app-navigation"
-        className={`fixed inset-y-0 left-0 z-40 flex w-[min(20rem,86vw)] flex-col overflow-y-auto overscroll-contain rounded-r-3xl bg-(--side-bg) pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 shadow-2xl transition-transform duration-200 lg:static lg:h-dvh lg:w-auto lg:translate-x-0 lg:rounded-none lg:pb-6 lg:shadow-none ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-[min(20rem,86vw)] flex-col overflow-clip rounded-r-[2rem] bg-linear-to-b from-(--side-bg) to-(--side-bg-2) pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 shadow-2xl transition-transform duration-200 lg:relative lg:my-3 lg:ml-3 lg:h-[calc(100dvh-1.5rem)] lg:w-auto lg:translate-x-0 lg:rounded-[2rem] lg:pb-5 lg:pt-5 lg:shadow-[0_18px_40px_-18px_rgb(14_76_140/0.6)] ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="mb-8 flex items-start justify-between px-6">
+        {/* halos décoratifs, derrière le contenu */}
+        <span aria-hidden className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-white/[.06]" />
+        <span aria-hidden className="pointer-events-none absolute -bottom-20 -left-20 size-64 rounded-full bg-white/[.05]" />
+        <div className="relative mb-6 flex shrink-0 items-start justify-between px-5 lg:mini:justify-center lg:mini:px-0">
           <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-3">
             <Brand light compact />
-            <span>
+            <span className="lg:mini:sr-only">
               <span className="block text-xl font-bold leading-tight tracking-tight text-white">AluMg</span>
               <span className="block text-xs leading-tight text-(--side-muted)">{t(me?.role === "client" ? "ui.client" : me?.role === "admin" ? "nav.group.admin" : "ui.professional")}</span>
             </span>
@@ -249,8 +110,10 @@ export default function Shell({ children }: { children: ReactNode }) {
             <X size={20} aria-hidden />
           </button>
         </div>
+        {/* le logo reste en place ; seule la liste défile, et seulement si l'écran est trop bas */}
+        <div className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
         <Suspense fallback={null}>
-          {me && <NavLinks nav={nav} onNavigate={() => setOpen(false)} />}
+          {me && <NavLinks nav={nav} mini={mini} onNavigate={() => setOpen(false)} />}
         </Suspense>
         {me?.role === "menuisier" && (
           <button type="button" onClick={() => { setOpen(false); openTariffs(); }} className="mx-4 mt-4 flex min-h-11 items-center gap-3 rounded-xl border border-(--side-active) px-3 text-sm font-medium text-(--side-fg) transition-colors hover:bg-(--side-hover) lg:hidden">
@@ -259,10 +122,16 @@ export default function Shell({ children }: { children: ReactNode }) {
           </button>
         )}
         {me && <DrawerUser name={me.name} email={me.email || me.phone} avatar={me.avatar} />}
+        </div>
       </aside>
+      <SideNavToggle controls="app-navigation" />
+      </div>
 
+      <SearchProvider>
       <div id="scroller" className="min-w-0 lg:h-dvh lg:overflow-y-auto lg:overscroll-contain">
-        <header id="topbar" className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-line bg-surface px-3 sm:gap-3 sm:px-8">
+        {/* la barre flotte : un fondu du fond masque le contenu qui défile au-dessus d'elle */}
+        <div className="sticky top-0 z-20 bg-linear-to-b from-bg from-60% to-transparent px-3 pt-3 sm:px-6 xl:px-8">
+        <header id="topbar" className="flex h-16 items-center gap-2 rounded-[1.25rem] border border-line/60 bg-surface/80 px-2 shadow-(--shadow-card) backdrop-blur-xl backdrop-saturate-150 sm:gap-3 sm:px-4">
           <button ref={toggle} data-tour="menu" aria-controls="app-navigation" type="button" className="relative -ml-1 grid size-11 shrink-0 place-items-center rounded-xl text-ink transition-colors hover:bg-surface-2 active:bg-surface-2 lg:hidden" onClick={() => setOpen(true)} aria-label={`${t("menu.open")}${unread ? ` (${unread} ${t("msg.unread")})` : ""}`} aria-expanded={open}>
             <AlignLeft size={24} strokeWidth={2} aria-hidden />
           </button>
@@ -270,12 +139,13 @@ export default function Shell({ children }: { children: ReactNode }) {
             <ScrollTop />
             <PageTitle nav={nav} />
           </Suspense>
+          <div className="flex min-w-0 flex-1 justify-center px-2"><TopSearch /></div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
             {me && (
-              <Link href="/messages" className="relative grid size-10 shrink-0 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:bg-surface-2 hover:text-ink lg:hidden" aria-label={unread > 0 ? `${t("nav.messages")}, ${unread} ${t("msg.unread")}` : t("nav.messages")}>
+              <IconButton href="/messages" tip={false} className="lg:hidden" label={unread > 0 ? `${t("nav.messages")}, ${unread} ${t("msg.unread")}` : t("nav.messages")}>
                 <MessageCircle size={18} aria-hidden />
                 <CountBadge n={unread} className="absolute -right-1 -top-1" />
-              </Link>
+              </IconButton>
             )}
             {me?.role === "menuisier" && <GuideTour userId={me.id} />}
             {me && <FeedbackButton role={me.role} />}
@@ -286,19 +156,16 @@ export default function Shell({ children }: { children: ReactNode }) {
               </Link>
             )}
             {me?.role === "menuisier" && (
-              <button type="button" data-tour="tariffs" onClick={openTariffs} className="hidden h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 text-sm font-medium transition-colors hover:bg-surface-2 lg:flex" data-tooltip={t("tariffs.sub")}>
+              <button type="button" data-tour="tariffs" onClick={openTariffs} className="hidden h-10 items-center gap-2 rounded-full bg-surface-2 px-3 text-sm xl:px-4 font-medium transition-colors hover:bg-primary/10 hover:text-primary lg:flex" data-tooltip={t("tariffs.sub")}>
                 <BadgePercent size={16} aria-hidden className="text-primary" />
-                {t("tariffs.title")}
+                <span className="max-xl:sr-only">{t("tariffs.title")}</span>
               </button>
             )}
-            <div className="hidden items-center gap-2 sm:flex">
-              <LangMenu />
-              <ThemeSwitch />
-            </div>
             <NotificationBell />
-            <UserMenu />
+            <UserMenu prefs />
           </div>
         </header>
+        </div>
         <main id="main" className="mx-auto w-full max-w-[110rem] px-4 pb-20 pt-6 sm:px-8 xl:px-10">
           {me?.mustChangePassword && (
             <p role="status" className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-medium">
@@ -315,6 +182,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         </Suspense>
         <AppUpdate />
       </div>
+      </SearchProvider>
     </div>
   );
 }

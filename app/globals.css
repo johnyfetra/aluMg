@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant mini (&:where([data-nav="mini"], [data-nav="mini"] *)); /* barre latérale pliée (voir Shell) */
 
 /* Jetons de design : tout le thème passe par ces variables (voir docs/architecture.md). */
 :root {
@@ -286,6 +287,31 @@ body {
 aside :focus-visible {
   outline-color: var(--side-accent);
 }
+
+/* Barre latérale : au survol l'icône grossit et le libellé glisse ; l'onglet actif est une pastille blanche. */
+.side-link { transition: background-color 0.2s, color 0.2s, box-shadow 0.2s; }
+.side-link .side-ico { transition: transform 0.25s var(--ease-out), background-color 0.2s, color 0.2s; }
+.side-link .side-txt { transition: transform 0.25s var(--ease-out); }
+.side-link:hover .side-ico { transform: scale(1.08); }
+.side-link:hover .side-txt { transform: translateX(3px); }
+@media (prefers-reduced-motion: reduce) { .side-link:hover .side-ico, .side-link:hover .side-txt { transform: none; } }
+
+/* Poignée de pliage de la barre latérale (voir Shell) : barrette d'aluminium brossé, comme la poignée d'une baie coulissante.
+   Rentrée au repos (on en voit le bout, plus quand le menu est plié), sortie au survol, au focus et sur écran tactile. */
+.side-tab {
+  color: #1d2b3a;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 5px, rgb(0 0 0 / 0.07) 5px 6px) center / 100% 40% no-repeat, /* stries de prise */
+    linear-gradient(90deg, #a9b5c1 0%, #f3f6f9 35%, #d5dde5 60%, #9aa7b4 100%); /* reflet du métal */
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8), inset 0 -1px 0 rgb(0 0 0 / 0.15), 0 0 0 1px rgb(0 0 0 / 0.14), 0 6px 14px -4px rgb(11 42 77 / 0.45);
+  translate: -0.5rem 0;
+  transition: translate 0.3s var(--ease-out), filter 0.15s;
+}
+:where([data-nav="mini"]) .side-tab { translate: -0.25rem 0; }
+.group\/side:hover .side-tab, .side-tab:focus-visible { translate: 0 0; }
+.side-tab:hover { filter: brightness(1.06); }
+.side-tab:active { filter: brightness(0.95); }
+@media (hover: none) { .side-tab { translate: 0 0; } }
 
 /* Boutons ronds de la barre du haut (aide, avis, messages, cloche) */
 @layer components {

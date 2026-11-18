@@ -28,6 +28,8 @@ export const fr = {
   "nav.settings": "Réglages",
   "nav.account": "Mon compte",
   "nav.skip": "Aller au contenu",
+  "nav.collapse": "Réduire le menu",
+  "nav.expand": "Agrandir le menu",
   "nav.main": "Navigation principale",
   "theme.toggle": "Changer de thème",
   "theme.light": "Clair",
