@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Génère la trame de fond de la messagerie (public/brand/chat-pattern-{light,dark}.svg) : motifs d'outils et d'ouvrages de menuiserie,
-posés au hasard et serrés (position, angle, taille très variés) sur une grande tuile qui se raccorde sans coupure. Graine fixe : reproductible.
+"""Génère la trame de fond de la messagerie (public/brand/chat-pattern-{light,dark}.svg), dessinée comme celle de WhatsApp :
+de grandes scènes racontent le métier (mesurer, couper, assembler, vitrer, livrer, poser, chiffrer, serrer la main du client),
+des outils moyens les entourent et de petits détails (vis, étincelles, points) comblent les vides. Trois tailles bien distinctes,
+angles variés, tuile qui se raccorde sans coupure. Graine fixe : reproductible.
     python3 scripts/make-chat-pattern.py"""
 import math
 import random
@@ -56,30 +58,68 @@ ICONS = {
  "chisel": '<path d="M12 4h8v14h-8zM14 18h4l-1 16h-2z"/>',
  "nail": '<path d="M13 5h14M20 5v28l-1.5 3h3z"/>',
 }
-NAMES = list(ICONS)
-SIZE = 640     # tuile de 640 px qui se raccorde sans coupure (le placement boucle sur les bords)
-COUNT = 400    # nombre de motifs : serré, avec des tailles très différentes
-rng = random.Random(5)
+# Le récit du chantier, dessiné plus finement : ces scènes sont posées en grand.
+SCENES = {
+ "measure": '<rect x="8" y="13" width="24" height="23" rx="1"/><path d="M20 13v23M8 24.5h24M23 27v4"/><path d="M8 7h24M8 4v6M32 4v6M10.5 5.5L8 7l2.5 1.5M29.5 5.5L32 7l-2.5 1.5"/><path d="M11 30l4-6M24 20l5-5"/>',
+ "chopsaw": '<path d="M3 35h34M7 35v-3h26v3M2 29h36v3H2z"/><circle cx="21" cy="16" r="8"/><circle cx="21" cy="16" r="2"/><path d="M14 12.5l-2-1M13 16h-2.5M14 19.5l-2 1"/><path d="M26 22l7 7M31 25l4-4 3 3"/><path d="M11 24l-3-2M10 27l-4 0M12 21l-2-4"/>',
+ "assemble": '<path d="M5 5h30v7H12v23H5z"/><path d="M5 5l7 7"/><path d="M16 16h9M16 16v9M16 25l9-9"/><path d="M27 36l6-6M33 30l3-3 1 1-3 3M29 34l-3 3"/>',
+ "glazing": '<rect x="7" y="13" width="26" height="24" rx="1"/><path d="M12 31l9-13M18 34l8-11M28 19l2-3"/><path d="M13 13V9h14v4M11 6h18v3H11z"/><path d="M20 6V2"/>',
+ "install": '<path d="M2 37h36M6 37V15l14-10 14 10v22"/><rect x="13" y="18" width="14" height="12" rx=".5"/><path d="M20 18v12M13 24h14M17 37v-4h6v4"/><path d="M33 37l3-15M38 37l-3-14M33.5 33h4M34.5 28h3"/>',
+ "delivery": '<path d="M2 15h21v15H2zM23 20h8l5 5v5H23z"/><circle cx="9" cy="32" r="3"/><circle cx="29" cy="32" r="3"/><path d="M0 12h29M0 9.5h29M25 9.5v5M4 22h13M27 22h4"/>',
+ "quote": '<path d="M9 3h16l6 6v28H9z"/><path d="M25 3v6h6M13 14h14M13 19h14M13 24h8"/><circle cx="26" cy="30" r="4.5"/><path d="M24 30l1.6 1.6 2.8-3"/>',
+ "handshake": '<path d="M2 16l6-6 6 3M38 16l-6-6-9 4-6 5a2 2 0 0 0 3 3l5-3 7 6"/><path d="M8 10l-6 12 6 6M32 10l6 12-4 4M12 25l3 3M15 22l4 4M19 21l4 4M23 22l4 4"/>',
+ "worker": '<path d="M10 16c0-7 4-11 10-11s10 4 10 11zM8 16h24M20 5v4"/><path d="M12 16a8 8 0 0 0 16 0"/><path d="M17 19h.01M23 19h.01M17.5 22c1.5 1 3.5 1 5 0"/><path d="M8 38c1-7 5-11 12-11s11 4 12 11M20 24v3M16 27l4 5 4-5M29 13l6-6"/>',
+ "bay": '<rect x="3" y="5" width="30" height="27" rx="1"/><rect x="6" y="8" width="13" height="21"/><rect x="16" y="8" width="14" height="21"/><path d="M9 24l5-8M20 25l6-9M17.5 17v4"/><path d="M33 36h-6l1-4h4zM30 32c0-5-3-8-5-9M30 32c1-5 4-8 7-8"/><path d="M1 36h24"/>',
+ "workbench": '<path d="M3 18h34v4H3zM6 22v15M34 22v15M6 30h28"/><path d="M8 18v-5h24v5M8 15h24"/><path d="M26 13V7h6v6M24 7h10"/>',
+ "talk": '<circle cx="10" cy="20" r="4"/><path d="M3 37c0-7 3-11 7-11s7 4 7 11"/><circle cx="30" cy="20" r="4"/><path d="M25.5 19a4.5 4.5 0 0 1 9 0zM24.5 19h11M23 37c0-7 3-11 7-11s7 4 7 11"/><path d="M3 3h14v9H9l-3 3v-3H3zM6 6.5h8M6 9h5"/><path d="M23 5h14v9h-3v3l-3-3h-8zM26.5 11.5l3.5-3.5 3.5 3.5M27.5 10.5V12h5v-1.5"/>',
+ "phone": '<rect x="11" y="2" width="18" height="34" rx="3"/><path d="M17 5h6M15 11h10M15 15h10M15 19h6"/><circle cx="20" cy="27" r="4"/><path d="M18.3 27l1.2 1.2 2.4-2.6"/><circle cx="29" cy="3.5" r="3"/><path d="M3 24c3-2 6-1 8 2M3 31c3 0 6 1 8-1"/><path d="M33 12c2 1 3 3 3 5M34 9c3 2 5 5 5 8"/>',
+ "crane": '<path d="M1 37h38"/><path d="M5 37V21h15v16M8 24h3v3H8zM14 24h3v3h-3zM8 30h3v3H8zM14 30h3v3h-3z"/><path d="M27 37V7M30 37V7M27 12l3-3M27 17l3-3M27 22l3-3M27 27l3-3M27 32l3-3"/><path d="M15 7h24M15 7l12-4h3l9 4M35 7v3h3V7"/><path d="M19 7v8M16 15h7v6h-7zM19.5 15v6"/>',
+ "keys": '<path d="M4 37h20M7 37V23l8.5-7 8.5 7v14"/><rect x="12" y="26" width="7" height="6"/><path d="M15.5 26v6"/><circle cx="31" cy="11" r="5"/><circle cx="31" cy="11" r="1.6"/><path d="M28 15l-7 8M23 20.5l2 2M25 18.2l2 2"/><path d="M34 22c2 0 3 2 2 4l-2 4M31 33c2-1 4-2 5-4M36 2l1-2M39 6l1-1"/>',
+ "plan": '<path d="M3 7h28v28H3z"/><path d="M31 7c3 0 4 2 4 4v24l-4 0"/><path d="M9 13h16v15H9zM17 13v15M9 20.5h16"/><path d="M9 31.5h16M9 30v3M25 30v3M6 13v15M5 13h2M5 28h2"/><path d="M27 37l9-9 2 2-9 9h-2z"/>',
+ "sunhouse": '<path d="M6 37V20l11-9 11 9v17zM2 37h36"/><rect x="11" y="24" width="12" height="9"/><path d="M17 24v9"/><circle cx="32" cy="8" r="4"/><path d="M32 1v2M32 13v2M25 8h2M37 8h2M27 3l1.5 1.5M35.5 11.5L37 13M37 3l-1.5 1.5"/>',
+}
+# Petits détails qui remplissent les vides
+FILLERS = {
+ "dot": '<circle cx="20" cy="20" r="2.5"/>',
+ "spark": '<path d="M20 8v24M8 20h24M13 13l14 14M27 13L13 27"/>',
+ "plus": '<path d="M20 10v20M10 20h20"/>',
+ "star": '<path d="M20 6l4 9 10 1-7.5 6.5L29 33l-9-5.5L11 33l2.5-10.5L6 16l10-1z"/>',
+ "ring": '<circle cx="20" cy="20" r="8"/>',
+ "wave": '<path d="M4 20c4-6 8-6 12 0s8 6 12 0 8-6 8-6"/>',
+}
+ART = {**ICONS, **SCENES, **FILLERS}
+SIZE = 640     # tuile qui se raccorde sans coupure (le placement boucle sur les bords)
+rng = random.Random(7)
+# (catalogue, nombre, taille min, taille max) : les grandes scènes d'abord, puis les outils, puis les détails
+# Petit et serré, comme le papier peint de WhatsApp : les scènes du récit un peu plus grandes, les outils moyens, beaucoup de petits détails.
+TIERS = [(SCENES, 44, 0.95, 1.35), (ICONS, 230, 0.55, 0.9), (FILLERS, 140, 0.26, 0.4)]
+GAP = 3        # écart minimal entre deux motifs, en px : serré sans se toucher
 
 def tdist(a, b):
     dx, dy = abs(a[0] - b[0]), abs(a[1] - b[1])
     return math.hypot(min(dx, SIZE - dx), min(dy, SIZE - dy))
 
-# Tailles tirées avec beaucoup de petits et quelques grands ; on place les grands d'abord, puis les petits comblent les vides.
-sizes = sorted((0.36 + 0.7 * rng.random() ** 1.7 for _ in range(COUNT)), reverse=True)
-placed = []   # (x, y, rayon, nom)
-for s in sizes:
-    r = 20 * s
-    best = None
-    for _ in range(60):
-        p = (rng.uniform(0, SIZE), rng.uniform(0, SIZE))
-        gap = min((tdist(p, q) - r - q[2] for q in placed), default=99)
-        if best is None or gap > best[0]:
-            best = (gap, p)
-    x, y = best[1]
-    near = sorted(placed, key=lambda q: tdist((x, y), q))[:8]
-    name = rng.choice([n for n in NAMES if n not in {q[3] for q in near}])
-    placed.append((x, y, r, name, s, rng.uniform(-55, 55)))
+placed = []   # (x, y, rayon, nom, échelle, angle)
+for cat, count, lo, hi in TIERS:
+    names = list(cat)
+    big = cat is SCENES
+    for i in range(count):
+        s = rng.uniform(lo, hi)
+        r = 17 * s
+        best = None
+        for _ in range(120):
+            p = (rng.uniform(0, SIZE), rng.uniform(0, SIZE))
+            gap = min((tdist(p, q) - r - q[2] for q in placed), default=99)
+            if best is None or gap > best[0]:
+                best = (gap, p)
+        if best[0] < GAP and not big:
+            continue  # plus de place : on n'entasse pas
+        x, y = best[1]
+        near = {q[3] for q in sorted(placed, key=lambda q: tdist((x, y), q))[:6]}
+        # les scènes passent chacune à leur tour pour que tout le récit soit sur la tuile
+        name = names[i % len(names)] if big else rng.choice([n for n in names if n not in near] or names)
+        a = rng.uniform(-25, 25) if big else rng.uniform(-50, 50)  # les scènes restent presque droites, lisibles
+        placed.append((x, y, r, name, s, a))
 
 def svg(color, opacity):
     g = []
@@ -87,11 +127,13 @@ def svg(color, opacity):
         for dx in (-SIZE, 0, SIZE):
             for dy in (-SIZE, 0, SIZE):
                 X, Y = x + dx - 20 * s, y + dy - 20 * s
-                if -40 < X < SIZE + 40 and -40 < Y < SIZE + 40:
-                    g.append(f'<g transform="translate({X:.1f} {Y:.1f}) scale({s:.2f}) rotate({a:.0f} 20 20)" stroke-width="{1.4 / s:.2f}">{ICONS[name]}</g>')
+                if -140 < X < SIZE + 140 and -140 < Y < SIZE + 140:
+                    w = (1.6 if name in SCENES else 1.4) / s
+                    fill = ' fill="currentColor"' if name in ("dot", "star") else ""
+                    g.append(f'<g transform="translate({X:.1f} {Y:.1f}) scale({s:.2f}) rotate({a:.0f} 20 20)" stroke-width="{w:.2f}"{fill}>{ART[name]}</g>')
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{SIZE}" height="{SIZE}" viewBox="0 0 {SIZE} {SIZE}" fill="none" stroke="{color}" '
-            f'stroke-opacity="{opacity}" stroke-linecap="round" stroke-linejoin="round">{"".join(g)}</svg>\n')
+            f'stroke-opacity="{opacity}" color="{color}" fill-opacity="{opacity}" stroke-linecap="round" stroke-linejoin="round">{"".join(g)}</svg>\n')
 
-for name, color, op in (("light", "#243b32", "0.10"), ("dark", "#ece9e2", "0.07")):
+for name, color, op in (("light", "#1a74c7", "0.11"), ("dark", "#e9ecf2", "0.07")):
     open(f"public/brand/chat-pattern-{name}.svg", "w").write(svg(color, op))
-print(len(NAMES), "motifs,", len(placed), "posés, tailles", f"{min(sizes):.2f}-{max(sizes):.2f}")
+print(len(placed), "motifs posés :", {n: sum(1 for q in placed if q[3] in c) for n, c in (("scènes", SCENES), ("outils", ICONS), ("détails", FILLERS))})
