@@ -287,6 +287,18 @@ aside :focus-visible {
   outline-color: var(--side-accent);
 }
 
+/* Boutons ronds de la barre du haut (aide, avis, messages, cloche) */
+@layer components {
+  .top-btn { position: relative; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; flex-shrink: 0; border-radius: 9999px; background: var(--surface-2); color: var(--muted); transition: background-color 0.2s, color 0.2s, transform 0.2s var(--ease-out); }
+  .top-btn:hover, .top-btn[aria-expanded="true"] { background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--primary); }
+  .top-btn:active { transform: scale(0.94); }
+}
+
+/* La cloche tinte une fois quand des notifications attendent */
+@keyframes bell-ring { 0%, 100% { rotate: 0deg; } 15% { rotate: 14deg; } 30% { rotate: -12deg; } 45% { rotate: 8deg; } 60% { rotate: -5deg; } 75% { rotate: 2deg; } }
+.bell-ring { transform-origin: 50% 10%; animation: bell-ring 1s var(--ease-out) 0.4s 2; }
+@media (prefers-reduced-motion: reduce) { .bell-ring { animation: none; } }
+
 /* Les schémas SVG (attributs width/height fixes) s'adaptent à leur conteneur. */
 [role="img"] > svg {
   max-width: 100%;

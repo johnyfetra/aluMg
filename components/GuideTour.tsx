@@ -1,5 +1,6 @@
 "use client";
 import { ArrowLeft, ArrowRight, BadgePercent, BookOpen, Bell, Boxes, Building2, FilePlus2, FileText, ImagePlus, LayoutTemplate, LifeBuoy, MessageCircle, Send, Sparkles, Store, UserRound, X } from "lucide-react";
+import IconButton from "./IconButton";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -146,9 +147,9 @@ export default function GuideTour({ userId }: { userId: string }) {
 
   return (
     <>
-      <button type="button" data-tour="guide" onClick={() => (setBox(null), go(0))} aria-label={t("guide.open")} data-tooltip={t("guide.open")} className="grid size-10 max-lg:hidden place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:bg-surface-2 hover:text-ink">
+      <IconButton label={t("guide.open")} data-tour="guide" onClick={() => (setBox(null), go(0))} className="max-lg:hidden">
         <BookOpen size={18} aria-hidden />
-      </button>
+      </IconButton>
       {open &&
         createPortal(
           <div className="fixed inset-0 z-[200]">

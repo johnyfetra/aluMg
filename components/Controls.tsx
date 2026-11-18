@@ -78,7 +78,8 @@ export function LangMenu({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function UserMenu() {
+// prefs : langue et thème dans le menu à toutes les tailles (application, où la barre du haut porte la recherche)
+export function UserMenu({ prefs = false }: { prefs?: boolean }) {
   const { t, locale, setLocale } = useI18n();
   const { data: me } = useMe();
   const router = useRouter();
@@ -94,7 +95,7 @@ export function UserMenu() {
       trigger={
         <>
           <Avatar name={me?.name ?? "?"} src={me?.avatar} size={32} round />
-          <span className="hidden max-w-36 truncate text-sm font-medium md:block">{me?.name}</span>
+          <span className={`hidden max-w-36 truncate text-sm font-medium ${prefs ? "2xl:block" : "md:block"}`}>{me?.name}</span>
           <ChevronDown size={14} aria-hidden className="hidden text-muted sm:block" />
         </>
       }
@@ -113,8 +114,8 @@ export function UserMenu() {
               )}
             </div>
           </div>
-          {/* langue et thème : dans l'en-tête sur grand écran, ici sur mobile pour ne pas surcharger la barre */}
-          <div className="space-y-2 border-t border-line px-1 pb-2 pt-3 sm:hidden">
+          {/* langue et thème : dans l'en-tête du site public sur grand écran, ici sur mobile et dans l'application (prefs) pour ne pas surcharger la barre */}
+          <div className={`space-y-2 border-t border-line px-1 pb-2 pt-3 ${prefs ? "" : "sm:hidden"}`}>
             <p className="px-2 text-xs font-semibold uppercase tracking-wide text-muted">{t("lang.label")}</p>
             <div role="radiogroup" aria-label={t("lang.label")} className="grid grid-cols-3 gap-1.5 px-2">
               {(Object.entries(LOCALES) as [Locale, string][]).map(([k, name]) => (

@@ -1,5 +1,6 @@
 "use client";
 import { Bug, Lightbulb, LifeBuoy, Loader2, MessageCircle, Send, X } from "lucide-react";
+import IconButton from "./IconButton";
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "./Toast";
 import { Field } from "./ui";
@@ -49,9 +50,9 @@ export default function FeedbackButton({ role }: { role: "client" | "menuisier" 
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} aria-label={t("fb.open")} data-tooltip={t("fb.open")} className="grid size-10 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:bg-surface-2 hover:text-ink">
+      <IconButton label={t("fb.open")} onClick={() => setOpen(true)}>
         <LifeBuoy size={18} aria-hidden />
-      </button>
+      </IconButton>
       <dialog ref={dialog} onClose={() => setOpen(false)} aria-labelledby="fb-title" className="m-auto w-[min(34rem,94vw)] rounded-2xl border border-line bg-surface p-0 text-ink shadow-[0_24px_64px_rgba(0,0,0,0.4)] backdrop:bg-black/60">
         <form onSubmit={submit} noValidate className="space-y-5 p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
