@@ -10,6 +10,7 @@ import { fmt } from "@/lib/calc";
 import { useMe, useQuotes, useSettings } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
 import { STATUSES, type Quote, type Status } from "@/lib/model";
+import WindowScene from "@/components/WindowScene";
 import { totals } from "@/lib/totals";
 import { MVP } from "@/lib/mvp";
 
@@ -27,14 +28,15 @@ const STATUS_COLOR: Record<Status, string> = {
 export const ROW = "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-lg px-2 py-3 hover:bg-surface-2 sm:flex sm:flex-wrap sm:gap-x-4";
 const WON: Status[] = ["accepted", "in_progress", "completed"];
 
-function Kpi({ label, value, Icon, color, href, title }: { label: string; value: ReactNode; Icon: typeof Wallet; color: string; href?: string; title?: string }) {
+// `featured` : carte pleine en couleur (la plus importante), les autres blanches avec une pastille colorée.
+function Kpi({ label, value, Icon, color, href, title, featured = false }: { label: string; value: ReactNode; Icon: typeof Wallet; color: string; href?: string; title?: string; featured?: boolean }) {
   const body = (
-    <div title={title} className="card flex h-full flex-col items-start gap-3 !p-3.5 transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:gap-4 sm:!p-4">
-      <span aria-hidden className="grid size-10 shrink-0 sm:size-12 place-items-center rounded-xl" style={{ background: `color-mix(in srgb, ${color} 16%, transparent)`, color }}>
+    <div title={title} className={`card flex h-full flex-col items-start gap-3 !p-3.5 transition hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-center sm:gap-4 sm:!p-4 ${featured ? "!border-transparent !bg-primary text-on-primary" : ""}`}>
+      <span aria-hidden className="grid size-10 shrink-0 sm:size-12 place-items-center rounded-xl" style={featured ? { background: "rgb(255 255 255 / 0.18)" } : { background: color, color: "white" }}>
         <Icon size={22} />
       </span>
       <div className="min-w-0 flex-1">
-        <dt className="text-xs text-muted">{label}</dt>
+        <dt className={`text-xs ${featured ? "text-on-primary/85" : "text-muted"}`}>{label}</dt>
         <dd className="text-lg font-bold leading-tight">{value}</dd>
       </div>
     </div>
@@ -69,6 +71,12 @@ function MonthlyChart({ quotes, locale, title, empty }: { quotes: Quote[]; local
         <p className="py-10 text-center text-sm text-muted">{empty}</p>
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: ${data.map((d) => `${d.label} ${fmt(d.value)}`).join(", ")}`} className="w-full">
+          <defs>
+            <linearGradient id="bar-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="var(--c3)" />
+              <stop offset="1" stopColor="var(--c1)" />
+            </linearGradient>
+          </defs>
           {[0, 0.5, 1].map((r) => (
             <line key={r} x1={0} x2={W} y1={top + plotH * (1 - r)} y2={top + plotH * (1 - r)} stroke="var(--grid)" strokeWidth={1} />
           ))}
@@ -79,7 +87,7 @@ function MonthlyChart({ quotes, locale, title, empty }: { quotes: Quote[]; local
             return (
               <g key={d.label + i}>
                 <title>{`${d.label} : ${fmt(d.value)} Ar`}</title>
-                {h > 0 && <path d={`M${x},${top + plotH} V${y + 4} Q${x},${y} ${x + 4},${y} H${x + bw - 4} Q${x + bw},${y} ${x + bw},${y + 4} V${top + plotH} Z`} fill="var(--c1)" />}
+                {h > 0 && <path d={`M${x},${top + plotH} V${y + 4} Q${x},${y} ${x + 4},${y} H${x + bw - 4} Q${x + bw},${y} ${x + bw},${y + 4} V${top + plotH} Z`} fill="url(#bar-fill)" />}
                 {d.value > 0 && <text x={x + bw / 2} y={y - 6} textAnchor="middle" fontSize="12" fill="var(--text)">{compact.format(d.value)}</text>}
                 <text x={x + bw / 2} y={H - 8} textAnchor="middle" fontSize="12" fill="var(--muted)">{d.label}</text>
               </g>
@@ -112,18 +120,20 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="page-heading flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">
+      {/* bandeau d'accueil en couleur, illustration à droite (masquée sur petit écran) */}
+      <div className="relative flex items-center overflow-hidden rounded-(--radius-card) bg-linear-to-br from-(--side-bg) to-[#2f8fe8] px-5 py-6 text-white shadow-(--shadow-card) sm:px-8">
+        <div className="relative z-10 max-w-md">
+          <h1 className="text-2xl font-bold sm:text-3xl">
             {t("dash.hello")}
             {me ? `, ${me.name}` : ""}
           </h1>
-          <p className="text-muted">{t("dash.subtitle")}</p>
+          <p className="mt-1 text-white/90">{t("dash.subtitle")}</p>
+          <Link href="/devis/nouveau" className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-(--radius-control) bg-white px-5 font-semibold text-[#155fa8] transition hover:bg-white/90">
+            <Plus size={18} aria-hidden />
+            {t("nav.new")}
+          </Link>
         </div>
-        <Link href="/devis/nouveau" className="btn-primary">
-          <Plus size={18} aria-hidden />
-          {t("nav.new")}
-        </Link>
+        <WindowScene className="pointer-events-none absolute -bottom-2 right-2 hidden h-[115%] w-auto sm:block" />
       </div>
 
       {error ? <ErrorState error={error} retry={retry} /> : loading ? <LoadingState /> : quotes.length === 0 ? (
@@ -159,9 +169,9 @@ export default function Dashboard() {
           </section>
           <FollowUp quotes={quotes} t={t} />
           <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Kpi label={t("dash.revenue")} value={`${fmt(sum(inStatus(...WON)))} ${cur}`} Icon={Wallet} color="var(--c2)" />
-            <Kpi label={t("dash.pipeline")} value={`${fmt(sum(inStatus("sent", "negotiation")))} ${cur}`} Icon={Hourglass} color="var(--c3)" />
-            <Kpi label={t("dash.requests")} value={requests.length} Icon={Inbox} color="var(--c1)" href="/devis" />
+            <Kpi featured label={t("dash.revenue")} value={`${fmt(sum(inStatus(...WON)))} ${cur}`} Icon={Wallet} color="var(--c1)" />
+            <Kpi label={t("dash.pipeline")} value={`${fmt(sum(inStatus("sent", "negotiation")))} ${cur}`} Icon={Hourglass} color="var(--c2)" />
+            <Kpi label={t("dash.requests")} value={requests.length} Icon={Inbox} color="var(--c3)" href="/devis" />
             <Kpi label={t("dash.conversion")} value={rate} Icon={Percent} color="var(--c4)" title={t("dash.conversionHint")} />
           </dl>
 
