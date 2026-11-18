@@ -13,6 +13,7 @@ import { Avatar, Field } from "@/components/ui";
 import type { AdminUserRow } from "@/lib/admin";
 import { request, useAdminUsers } from "@/lib/client";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
+import { usePageSearch, useSearchItems } from "@/components/PageSearch";
 import { ROLES, type Role } from "@/lib/model";
 
 type Draft = { role: Role; name: string; email: string; phone: string };
@@ -88,7 +89,7 @@ function CreateForm({ onCreated, onCancel }: { onCreated: (password: string) => 
 export default function AccountsPage() {
   const { t } = useI18n();
   const toast = useToast();
-  const [q, setQ] = useState("");
+  const [q, setQ] = usePageSearch(t("admin.search"), { scope: "admin-comptes" });
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({ role: "", status: "", verified: "" });
   const [page, setPage] = useState(1);
@@ -100,6 +101,7 @@ export default function AccountsPage() {
     return () => clearTimeout(id);
   }, [q]);
   const { data, error, isLoading, mutate: retry } = useAdminUsers({ q: search, ...filters, page: String(page) });
+  useSearchItems((data?.items ?? []).map((u) => ({ id: u.id, title: u.name, sub: [t(`admin.role.${u.role}`), u.email || u.phone].filter(Boolean).join(" · "), href: `/admin/comptes/${u.id}` })));
   const filter = (k: keyof typeof filters) => (v: string) => { setFilters({ ...filters, [k]: v }); setPage(1); };
 
   return (

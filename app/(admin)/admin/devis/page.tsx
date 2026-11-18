@@ -7,13 +7,14 @@ import { EmptyState, ErrorState } from "@/components/Feedback";
 import Select from "@/components/Select";
 import { useAdminQuotes } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
+import { usePageSearch, useSearchItems } from "@/components/PageSearch";
 import { STATUSES } from "@/lib/model";
 import type { Messages } from "@/lib/messages/fr";
 
 // Tous les devis de la plateforme (consultation seule).
 export default function AdminQuotesPage() {
   const { t } = useI18n();
-  const [q, setQ] = useState("");
+  const [q, setQ] = usePageSearch(t("admin.searchQuotes"), { scope: "admin-devis" });
   const [term, setTerm] = useState("");
   const [owner, setOwner] = useState("");
   const [client, setClient] = useState("");
@@ -25,8 +26,9 @@ export default function AdminQuotesPage() {
     return () => clearTimeout(id);
   }, [q, owner, client]);
   const { data, error, isLoading, mutate } = useAdminQuotes({ q: term, ...terms, status, page: String(page) });
-  const box = (label: string, value: string, set: (v: string) => void) => (
-    <label className="relative min-w-0 flex-1 sm:max-w-xs">
+  useSearchItems((data?.items ?? []).map((x) => ({ id: x.id, title: x.number, sub: [x.clientName, x.project, x.ownerName].filter(Boolean).join(" · "), href: `/admin/devis/${x.id}`, doc: true })));
+  const box = (label: string, value: string, set: (v: string) => void, cls = "") => (
+    <label className={`relative min-w-0 flex-1 sm:max-w-xs ${cls}`}>
       <span className="sr-only">{label}</span>
       <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
       <input className="input !pl-9" type="search" maxLength={80} placeholder={label} value={value} onChange={(e) => set(e.target.value)} />

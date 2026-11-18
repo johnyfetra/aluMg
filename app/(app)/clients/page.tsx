@@ -2,6 +2,7 @@
 import { BadgePercent, Check, Copy, Link2, Mail, Pencil, Phone, Plus, Search, Trash2, UserCheck, UserX } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { usePageSearch, useSearchItems } from "@/components/PageSearch";
 import { mutate } from "swr";
 import ChatButton from "@/components/ChatButton";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -22,12 +23,13 @@ export default function ClientsPage() {
   const toast = useToast();
   const { data: list = [], isLoading } = useContacts();
   const { profile } = useProfile();
-  const [q, setQ] = useState("");
+  const [q, setQ] = usePageSearch(t("ct.search"), { scope: "clients" });
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
 
+  useSearchItems(list.map((c) => ({ id: c.id, title: c.name, sub: [c.phone, c.email].filter(Boolean).join(" · ") })));
   const shown = list.filter((c) => !q.trim() || `${c.name} ${c.phone} ${c.email}`.toLowerCase().includes(q.trim().toLowerCase()));
   const origin = typeof location === "undefined" ? "" : location.origin;
   const requestLink = profile ? `${origin}/espace-client/nouvelle?menuisier=${profile.slug}` : "";

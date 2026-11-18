@@ -3,6 +3,7 @@ import { Copy, Download, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react"
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { usePageSearch, useSearchItems } from "@/components/PageSearch";
 import { LoadingState, ErrorState, EmptyState } from "@/components/Feedback";
 import { useToast } from "@/components/Toast";
 import { StatusBadge } from "@/components/ui";
@@ -34,13 +35,14 @@ function QuotesView() {
   const params = useSearchParams();
   const { quotes = [], loading, error, retry, save, remove } = useQuotes();
   const { settings } = useSettings();
-  const [search, setSearch] = useState(params.get("q") ?? "");
+  const [search, setSearch] = usePageSearch(t("quotes.search"), { scope: "devis", initial: params.get("q") ?? "" });
+  useSearchItems(quotes.map((q) => ({ id: q.id, title: q.number, sub: [q.client.name, q.project].filter(Boolean).join(" · "), href: `/devis/${q.id}`, doc: true })));
   const [status, setStatus] = useState<Status | "all">(STATUSES.includes(params.get("status") as Status) ? params.get("status") as Status : "all");
 
   const needle = search.trim().toLowerCase();
   const shown = [...quotes]
     .sort((a, b) => b.date.localeCompare(a.date))
-    .filter((q) => (status === "all" || q.status === status) && (!needle || q.number.toLowerCase().includes(needle) || q.client.name.toLowerCase().includes(needle)));
+    .filter((q) => (status === "all" || q.status === status) && (!needle || `${q.number} ${q.client.name} ${q.project}`.toLowerCase().includes(needle)));
 
   const pdf = async (q: Quote) => {
     if (!settings) return;
