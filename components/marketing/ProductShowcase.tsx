@@ -8,10 +8,11 @@ import { onImgError } from "@/lib/fallback";
 // À l'écran, la pile se redresse doucement quand on défile (voir .deck dans globals.css).
 const IDS = ["pro-dashboard", "pro-quote", "client-quote", "client-mobile"] as const;
 
-export default function ProductShowcase({ side = false }: { side?: boolean }) {
+// `start` : capture affichée d'abord (0 tableau de bord du menuisier, 2 validation par le client).
+export default function ProductShowcase({ side = false, start = 0 }: { side?: boolean; start?: number }) {
   const { locale } = useI18n();
   const c = marketing[locale];
-  const [i, setI] = useState(0);
+  const [i, setI] = useState(start);
   const stage = useRef<HTMLDivElement>(null);
   const raf = useRef(0);
   // la pile suit la souris : légère rotation d'ensemble et décalage entre couches (variables --mx, --my entre -1 et 1)
