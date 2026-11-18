@@ -2,7 +2,7 @@
 
 ## Direction
 
-« La précision, en confiance. » Un outil de travail chaleureux : vert atelier, surfaces ivoire, accents bois, formes d'assemblage orthogonales. Conserver le positionnement menuiserie aluminium et le nom AluMg.
+« La précision, en confiance. » Un outil de travail élégant et chaleureux : bleu azur, fond bleu-gris clair, cartes blanches arrondies, accents orange vif (complémentaire du bleu), illustrations en aplats, formes d'assemblage orthogonales. Conserver le positionnement menuiserie aluminium et le nom AluMg.
 
 ## Source de vérité
 

@@ -27,8 +27,8 @@ export default function AndroidDownload() {
               <a href="/downloads/AluMg.apk.sha256" className="underline underline-offset-2 hover:text-ink">{c.apkHash}</a>
             </p>
           </div>
-          <div className="mx-auto grid size-40 place-items-center rounded-[2.2rem] bg-[#243B32] shadow-[0_24px_60px_rgba(36,59,50,0.35)] sm:size-52" aria-hidden>
-            <svg viewBox="0 0 32 32" className="size-24 sm:size-32"><path d="M4 4h8v16h16v8H4z" fill="#F6F3ED" /><path d="M16 4h12v12H16z" fill="#C58A58" /></svg>
+          <div className="mx-auto grid size-40 place-items-center rounded-[2.2rem] bg-[#1A74C7] shadow-[0_24px_60px_rgba(36,59,50,0.35)] sm:size-52" aria-hidden>
+            <svg viewBox="0 0 32 32" className="size-24 sm:size-32"><path d="M4 4h8v16h16v8H4z" fill="#EEF3F8" /><path d="M16 4h12v12H16z" fill="#FF9F43" /></svg>
           </div>
         </div>
       </section>

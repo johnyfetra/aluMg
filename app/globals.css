@@ -4,51 +4,52 @@
 
 /* Jetons de design : tout le thème passe par ces variables (voir docs/architecture.md). */
 :root {
-  /* Identité AluMg : vert atelier, bois chaud, ivoire. Contrastes WCAG AA vérifiés (texte ≥ 4.5:1). */
-  --bg: #f6f3ed;
-  --surface: #fdfcf9;
-  --surface-2: #ece6db;
-  --text: #252725;
-  --muted: #4b514b;
-  --border: #d8d0c2;
+  /* Identité AluMg : bleu azur, orange vif, fond bleu-gris clair. Contrastes WCAG AA vérifiés (texte ≥ 4.5:1). */
+  --bg: #eef3f8;
+  --surface: #ffffff;
+  --surface-2: #e6eef6;
+  --text: #1d2b3a;
+  --muted: #566576;
+  --border: #d9e3ee;
   --verified: #1877f2; /* badge « Vérifié » : bleu, comme les comptes certifiés */
-  --primary: #243b32;
-  --primary-hover: #1a2c25;
-  --on-primary: #f6f3ed;
+  --primary: #1a74c7;
+  --primary-hover: #155fa8;
+  --on-primary: #ffffff;
   --danger: #a8321f;
   --ok: #2b6a47;
   --warn: #86560f;
   --whatsapp: #0e7a4a;
-  /* barre latérale : vert atelier, identique en clair et en sombre */
-  --side-bg: #1b2b24;
-  --side-fg: #e4e1d8;
-  --side-muted: #9aa69f;
-  --side-hover: rgba(246, 243, 237, 0.08);
-  --side-active: rgba(246, 243, 237, 0.15);
-  --side-accent: #d9a273;
-  /* palette du tableau de bord (catégorielle : vert, bois, bleu ardoise, gris pierre) */
-  --c1: #3c6e57;
-  --c2: #c58a58;
-  --c3: #5b7fa3;
-  --c4: #8a8d86;
-  --logo: #243b32;
+  /* barre latérale : bleu azur, identique en clair et en sombre */
+  --side-bg: #1769b8;
+  --side-bg-2: #0e4c8c; /* bas du dégradé de la barre latérale */
+  --side-fg: #ffffff;
+  --side-muted: #e6f0fb;
+  --side-hover: rgba(255, 255, 255, 0.12);
+  --side-active: rgba(255, 255, 255, 0.22);
+  --side-accent: #ffe2bd;
+  /* palette du tableau de bord (catégorielle, couleurs vives : bleu, orange, violet, vert) */
+  --c1: #2f8fe8;
+  --c2: #ff9f43;
+  --c3: #7b61ff;
+  --c4: #2ec27e;
+  --logo: #1a74c7;
   --rating: #d98a00;
-  --accent: #c58a58; /* le bois : appels à l'action et mises en avant, avec parcimonie */
-  --on-accent: #1f140a;
-  /* bulles « moi » de la messagerie : vert très pâle */
-  --mine: #dfe8e0;
-  --on-mine: #17251e;
-  --hero-from: #16231d;
-  --hero-to: #243b32;
+  --accent: #ff9f43; /* orange vif, complémentaire du bleu : appels à l'action et mises en avant, avec parcimonie */
+  --on-accent: #1d2b3a;
+  /* bulles « moi » de la messagerie : bleu très pâle */
+  --mine: #dbeafb;
+  --on-mine: #12324f;
+  --hero-from: #0b2a4d;
+  --hero-to: #1769b8;
   --good: #2f8f5b;
   --critical: #b3402e;
-  --bar-neutral: #8a8d86;
-  --grid: #e4ddd0;
-  --info: #355D71;
+  --bar-neutral: #9aa8b6;
+  --grid: #e3ebf3;
+  --info: #1769b8;
   --radius-control: 0.625rem;
-  --radius-card: 1rem;
-  --shadow-card: 0 2px 8px rgb(36 59 50 / 0.035);
-  --shadow-overlay: 0 20px 60px rgb(24 43 35 / 0.18);
+  --radius-card: 1.25rem;
+  --shadow-card: 0 6px 20px rgb(23 105 184 / 0.06);
+  --shadow-overlay: 0 24px 60px rgb(11 42 77 / 0.18);
   /* mouvements de la vitrine : une courbe douce pour poser, une courbe d'atelier pour coulisser */
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-slide: cubic-bezier(0.7, 0, 0.2, 1);
@@ -60,30 +61,30 @@
 
 [data-theme="dark"] {
   --rating: #f5a524;
-  --bg: #141916;
-  --surface: #1c231f;
-  --surface-2: #27302b;
-  --text: #ece9e2;
-  --muted: #bcc4bd;
-  --border: #36403a;
+  --bg: #0f1722;
+  --surface: #172231;
+  --surface-2: #1f2c3e;
+  --text: #e8eef5;
+  --muted: #a9b7c6;
+  --border: #2a3a4f;
   --verified: #4aa3ff;
-  --primary: #c58a58;
-  --primary-hover: #d39c6e;
-  --on-primary: #1f140a;
+  --primary: #5cb3f5;
+  --primary-hover: #7cc3f8;
+  --on-primary: #0b1520;
   --danger: #f09a8a;
   --ok: #6fd09a;
   --warn: #e8b455;
   --whatsapp: #3ccf7c;
-  --mine: #2a3a31;
-  --on-mine: #eef2ec;
-  --logo: #f6f3ed;
-  --c1: #6fb392;
-  --c2: #d9a273;
-  --c3: #86a8cb;
-  --c4: #9a9d96;
-  --bar-neutral: #6b6f68;
-  --grid: #36403a;
-  --info: #A5CDDF;
+  --mine: #1c3550;
+  --on-mine: #eaf3fc;
+  --logo: #eef3f8;
+  --c1: #5cb3f5;
+  --c2: #ffb067;
+  --c3: #9d8bff;
+  --c4: #4fd69b;
+  --bar-neutral: #6d7b8a;
+  --grid: #2a3a4f;
+  --info: #9cc9f0;
   color-scheme: dark;
 }
 
@@ -508,7 +509,7 @@ aside :focus-visible {
 /* Sections lourdes sous le pli : le navigateur ne les met en page qu'à l'approche. */
 .cv { content-visibility: auto; contain-intrinsic-size: auto 900px; }
 
-/* Mètre ruban : graduations tous les 8 px, grands traits tous les 40 px, sur le bois de la marque. */
+/* Mètre ruban : graduations tous les 8 px, grands traits tous les 40 px, sur l'orange de la marque. */
 .ruler-ticks { background: repeating-linear-gradient(to bottom, var(--on-accent) 0 1.5px, transparent 1.5px 40px) left top / 70% 100% no-repeat, repeating-linear-gradient(to bottom, var(--on-accent) 0 1px, transparent 1px 8px) left top / 38% 100% no-repeat, var(--accent); }
 /* Plan d'une baie : profilés (alu), vitrage teinté, cotes ; tout est posé si le défilement ne pilote pas les animations. */
 .plan { view-timeline-name: --plan; }
