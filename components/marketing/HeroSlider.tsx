@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, CalendarCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -8,13 +8,12 @@ import RollerShutter from "./RollerShutter";
 import Stats from "./Stats";
 import { onImgError } from "@/lib/fallback";
 
-// Hero plein cadre : une fenêtre coulissante à vitres transparentes s'ouvre sur la photo, une promesse fixe (rendue sans JS) et les deux parcours, client et menuisier.
+// Hero plein cadre : une fenêtre coulissante à vitres transparentes s'ouvre sur la photo, une promesse fixe (rendue sans JS) et les deux parcours : le client d'abord, le menuisier ensuite.
 // Seules les photos défilent (fondu enchaîné, suspendu au survol, sur un onglet masqué ou si l'on préfère moins d'animation).
 const SLIDES = [
   { src: "/brand/architecture-aluminium.webp", pos: "62% center", mobile: "/brand/architecture-aluminium-mobile.webp" },
   { src: "/brand/precision-aluminium.webp", pos: "55% center" },
   { src: "/brand/realisation-aluminium.webp", pos: "center 30%" },
-  { src: "/brand/atelier.webp", pos: "center 62%" },
 ];
 const DELAY = 6500;
 
@@ -71,12 +70,11 @@ export default function HeroSlider() {
       <noscript><style>{".shutter{display:none}"}</style></noscript>
       <div data-above={above || undefined} className="hero-text pointer-events-none px-5 pb-14 pt-28 text-white sm:px-10 sm:pb-16 lg:px-14 lg:pb-20 [&_a]:pointer-events-auto [&_button]:pointer-events-auto"> {/* les textes passent au-dessus du volet sans lui voler les clics */}
         <p className="hero-in eyebrow flex items-center gap-3 !text-white/85"><span className="h-px w-8 shrink-0 bg-accent" />{c.eyebrow}</p>
-        <h1 id="home-title" className="hero-in mt-5 max-w-[15ch] font-[family-name:var(--font-display)] text-[clamp(2.6rem,7.2vw,6rem)] font-normal leading-[0.98] tracking-[-0.015em]" style={{ "--i": 1 } as React.CSSProperties}>{c.title} <em className="block text-(--side-accent)">{c.titleEnd}</em></h1>
+        <h1 id="home-title" className="hero-in mt-5 max-w-[20ch] font-[family-name:var(--font-display)] text-[clamp(2.4rem,5.4vw,4.75rem)] font-normal leading-[0.98] tracking-[-0.015em]" style={{ "--i": 1 } as React.CSSProperties}>{c.title} <em className="block text-(--side-accent)">{c.titleEnd}</em></h1>
         <p className="hero-in mt-5 max-w-xl text-[15px] leading-7 text-white/85 sm:text-base" style={{ "--i": 2 } as React.CSSProperties}>{c.intro}</p>
         <div className="hero-in mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap" style={{ "--i": 3 } as React.CSSProperties}>
           <Link href="/menuisiers" className="btn-accent !min-h-12 !px-6 !text-[15px]">{c.find}<ArrowRight size={17} aria-hidden /></Link>
           <Link href="/inscription?role=menuisier" className="hero-glass btn-secondary !min-h-12 !px-6 !text-[15px]">{c.pro}</Link>
-          <a href="#demo" className="hero-glass btn-secondary !min-h-12 !px-6 !text-[15px]"><CalendarCheck size={17} aria-hidden />{c.demoHero}</a>
         </div>
         <div className="mt-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-5 border-t border-white/20 pt-5">
           <div className="hero-in w-full sm:w-auto" style={{ "--i": 4 } as React.CSSProperties}><Stats /></div>
