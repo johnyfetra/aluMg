@@ -31,13 +31,19 @@ function PublicNavigation() {
   return <nav aria-label={t("nav.main")} className="flex items-center gap-1 text-sm">{navLinks(c).map(([href,label,Icon])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className={href === "/telecharger" ? "ml-2 inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-accent/15 py-1.5 pl-1.5 pr-4 font-semibold text-ink ring-1 ring-accent/50 transition-colors hover:bg-accent/25 aria-[current=page]:bg-accent/30" : "nav-link relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 font-medium text-muted transition-colors hover:bg-black/5 hover:text-ink aria-[current=page]:bg-primary/12 aria-[current=page]:font-semibold aria-[current=page]:text-primary dark:hover:bg-white/10"}>{href === "/telecharger" && <span aria-hidden className="grid size-7 place-items-center rounded-full bg-accent text-on-accent"><Icon size={14} /></span>}{label}</Link>)}</nav>;
 }
 
+// Thème : un bouton qui bascule (en-tête des visiteurs non connectés ; connecté, il est dans le menu du compte).
+function ThemeToggle() {
+  const { t } = useI18n(); const theme = useTheme();
+  const next = theme === "dark" ? "light" : "dark";
+  return <IconButton label={t(next === "dark" ? "theme.dark" : "theme.light")} onClick={()=>setTheme(next)}>{theme === "dark" ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}</IconButton>;
+}
+
 // Langue : trois codes côte à côte (un seul geste, pas de menu) ; thème : un bouton qui bascule.
 function GlassControls() {
-  const { t, locale, setLocale } = useI18n(); const theme = useTheme();
-  const next = theme === "dark" ? "light" : "dark";
+  const { t, locale, setLocale } = useI18n();
   return <div className="flex items-center gap-1">
     <div role="group" aria-label={t("lang.label")} className="flex items-center rounded-full bg-black/10 p-0.5 font-mono text-[11px] font-semibold dark:bg-white/10">{(Object.keys(LOCALES) as Locale[]).map(k=><button key={k} type="button" lang={k} aria-pressed={k===locale} title={LOCALES[k]} onClick={()=>setLocale(k)} className={`grid h-8 min-w-9 place-items-center rounded-full px-2 uppercase transition-colors ${k===locale ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}>{k}</button>)}</div>
-    <IconButton label={t(next === "dark" ? "theme.dark" : "theme.light")} onClick={()=>setTheme(next)}>{theme === "dark" ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}</IconButton>
+    <ThemeToggle />
   </div>;
 }
 
@@ -123,7 +129,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
           <HomeLink aria-label={`AluMg, ${c.home}`} className="shrink-0"><Brand /></HomeLink>
           <div className="hidden xl:block"><Suspense fallback={null}><PublicNavigation /></Suspense></div>
           {/* l'essentiel seulement : connecté, l'espace, la cloche et le compte (langue et thème dans son menu) ; sinon la langue, la connexion et l'inscription */}
-          <div className="flex items-center gap-1 sm:gap-2">{me ? <><Link href={homeFor(me.role)} className="btn-primary hidden !min-h-10 !rounded-full !px-5 sm:inline-flex">{t("pub.myspace")}<ArrowUpRight size={15} aria-hidden /></Link><NotificationBell /><UserMenu prefs /></> : <><div className="hidden sm:block"><LangMenu compact /></div><Link href="/connexion" className="hidden rounded-full px-4 py-2 text-sm font-semibold text-muted transition-colors hover:text-ink sm:inline-flex">{t("pub.login")}</Link><Link href="/inscription" className="btn-accent hidden !rounded-full !px-5 md:inline-flex">{c.start}<ArrowUpRight size={15} aria-hidden /></Link></>}<Link href="/telecharger" aria-label={c.getApp} data-tooltip={c.getApp} className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-on-accent shadow-sm transition hover:brightness-105 xl:hidden"><Smartphone size={18} aria-hidden /></Link><MobileMenu myHref={me ? homeFor(me.role) : null} /></div>
+          <div className="flex items-center gap-1 sm:gap-2">{me ? <><Link href={homeFor(me.role)} className="btn-primary hidden !min-h-10 !rounded-full !px-5 sm:inline-flex">{t("pub.myspace")}<ArrowUpRight size={15} aria-hidden /></Link><NotificationBell /><UserMenu prefs /></> : <><div className="hidden items-center gap-1 sm:flex"><LangMenu compact /><ThemeToggle /></div><Link href="/connexion" className="hidden rounded-full px-4 py-2 text-sm font-semibold text-muted transition-colors hover:text-ink sm:inline-flex">{t("pub.login")}</Link><Link href="/inscription" className="btn-accent hidden !rounded-full !px-5 md:inline-flex">{c.start}<ArrowUpRight size={15} aria-hidden /></Link></>}<Link href="/telecharger" aria-label={c.getApp} data-tooltip={c.getApp} className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-on-accent shadow-sm transition hover:brightness-105 xl:hidden"><Smartphone size={18} aria-hidden /></Link><MobileMenu myHref={me ? homeFor(me.role) : null} /></div>
         </div>
         <span aria-hidden className="nav-meter pointer-events-none absolute inset-x-8 bottom-0 h-0.5 origin-left rounded-full bg-accent" />
       </div>
