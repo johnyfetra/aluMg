@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
-import Shot from "./Shot";
+import { onImgError } from "@/lib/fallback";
 
 // Vraies captures de l'application (données d'exemple), empilées en fenêtres inclinées : celle choisie passe devant, les autres restent en profondeur.
 // À l'écran, la pile se redresse doucement quand on défile (voir .deck dans globals.css).
@@ -47,7 +47,7 @@ export default function ProductShowcase({ side = false }: { side?: boolean }) {
               <div key={id} className={`layer absolute inset-0 ${id === "client-mobile" ? "" : "overflow-hidden rounded-xl border border-line bg-surface transition-[border-color] will-change-transform shadow-[0_18px_36px_-20px_rgb(0_0_0/0.5)]"}`} style={{ "--d": d } as React.CSSProperties} data-back={d > 0 ? "" : undefined} data-phone={id === "client-mobile" ? "" : undefined}>
                 {id === "client-mobile" ? (
                   <div className="pointer-events-none grid h-full place-items-center">
-                    <Phone pick={d > 0 ? () => setI(n) : undefined} label={names[n]}><Shot id={id} alt={`${names[n]}. ${caps[n]}`} /></Phone>
+                    <Phone pick={d > 0 ? () => setI(n) : undefined} label={names[n]}><Shot id={id} alt={`${names[n]}. ${caps[n]}`} cls="" /></Phone>
                   </div>
                 ) : (
                   <>
@@ -61,7 +61,7 @@ export default function ProductShowcase({ side = false }: { side?: boolean }) {
                       </span>
                       <span className="ml-2 truncate rounded-md bg-surface-2 px-3 py-0.5 text-[10px] text-muted sm:text-[11px]">app.alumg.mg</span>
                     </div>
-                    <Shot id={id} alt={`${names[n]}. ${caps[n]}`} />
+                    <Shot id={id} alt={`${names[n]}. ${caps[n]}`} cls="" />
                     {d > 0 && <button type="button" aria-label={names[n]} onClick={() => setI(n)} className="absolute inset-0 z-20 cursor-pointer" />}
                   </>
                 )}
@@ -72,6 +72,18 @@ export default function ProductShowcase({ side = false }: { side?: boolean }) {
         </div></div>
       </div>
     </figure>
+  );
+}
+
+// Deux images, une par thème : la bonne s'affiche selon le thème choisi.
+function Shot({ id, alt, cls }: { id: string; alt: string; cls: string }) {
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/marketing/${id}-light.webp`} onError={onImgError} alt={alt} loading="lazy" decoding="async" className={`block h-auto w-full dark-hidden ${cls}`} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/marketing/${id}-dark.webp`} alt="" aria-hidden loading="lazy" decoding="async" className={`hidden h-auto w-full dark-shown ${cls}`} />
+    </>
   );
 }
 
