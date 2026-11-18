@@ -7,7 +7,9 @@ import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ArrowUp, ArrowUpRight, ChevronRight, Images, LayoutGrid, MessageCircle, Moon, Smartphone, Sun, Users } from "lucide-react";
-import { UserMenu } from "./Controls";
+import { LangMenu, ThemeSwitch, UserMenu } from "./Controls";
+import IconButton from "./IconButton";
+import NotificationBell from "./NotificationBell";
 import { setTheme, useTheme } from "@/lib/theme";
 import { homeFor, usePublicSocial, useSession } from "@/lib/client";
 import SocialIcon from "./SocialIcon";
@@ -26,7 +28,7 @@ const navLinks = (c: (typeof marketing)[Locale]) => [["/application", c.app, Lay
 
 function PublicNavigation() {
   const { locale, t } = useI18n(); const c = marketing[locale]; const path = usePathname();
-  return <nav aria-label={t("nav.main")} className="flex items-center gap-0.5 text-sm">{navLinks(c).map(([href,label,Icon])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className="nav-link relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-muted transition-colors hover:text-ink aria-[current=page]:font-semibold aria-[current=page]:text-ink">{href === "/telecharger" && <Icon size={14} aria-hidden className="text-accent" />}{label}</Link>)}</nav>;
+  return <nav aria-label={t("nav.main")} className="flex items-center gap-1 text-sm">{navLinks(c).map(([href,label,Icon])=><Link key={href} href={href} aria-current={path === href || path.startsWith(href+"/") ? "page" : undefined} className={href === "/telecharger" ? "ml-2 inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-accent/15 py-1.5 pl-1.5 pr-4 font-semibold text-ink ring-1 ring-accent/50 transition-colors hover:bg-accent/25 aria-[current=page]:bg-accent/30" : "nav-link relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 font-medium text-muted transition-colors hover:bg-black/5 hover:text-ink aria-[current=page]:bg-primary/12 aria-[current=page]:font-semibold aria-[current=page]:text-primary dark:hover:bg-white/10"}>{href === "/telecharger" && <span aria-hidden className="grid size-7 place-items-center rounded-full bg-accent text-on-accent"><Icon size={14} /></span>}{label}</Link>)}</nav>;
 }
 
 // Langue : trois codes côte à côte (un seul geste, pas de menu) ; thème : un bouton qui bascule.
@@ -35,7 +37,7 @@ function GlassControls() {
   const next = theme === "dark" ? "light" : "dark";
   return <div className="flex items-center gap-1">
     <div role="group" aria-label={t("lang.label")} className="flex items-center rounded-full bg-black/10 p-0.5 font-mono text-[11px] font-semibold dark:bg-white/10">{(Object.keys(LOCALES) as Locale[]).map(k=><button key={k} type="button" lang={k} aria-pressed={k===locale} title={LOCALES[k]} onClick={()=>setLocale(k)} className={`grid h-8 min-w-9 place-items-center rounded-full px-2 uppercase transition-colors ${k===locale ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}>{k}</button>)}</div>
-    <button type="button" aria-label={t(next === "dark" ? "theme.dark" : "theme.light")} data-tooltip={t(next === "dark" ? "theme.dark" : "theme.light")} onClick={()=>setTheme(next)} className="grid size-10 place-items-center rounded-full text-muted transition-colors hover:bg-black/10 hover:text-ink dark:hover:bg-white/10">{theme === "dark" ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}</button>
+    <IconButton label={t(next === "dark" ? "theme.dark" : "theme.light")} onClick={()=>setTheme(next)}>{theme === "dark" ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}</IconButton>
   </div>;
 }
 
@@ -83,9 +85,9 @@ function MobileMenu({ myHref }: { myHref: string | null }) {
   // trois lames de volet roulant : la lame du milieu rentre, les deux autres se croisent
   const lame = "absolute left-0 h-0.5 rounded-full bg-current transition-all duration-300";
   return <div ref={root} className="xl:hidden">
-    <button ref={btn} type="button" aria-label={t("pub.menu")} aria-expanded={open} aria-controls="public-menu" onClick={() => setOpen((o) => !o)} className="grid size-10 place-items-center rounded-full text-ink transition-colors hover:bg-black/10 dark:hover:bg-white/10">
+    <IconButton ref={btn} label={t("pub.menu")} tip={false} aria-expanded={open} aria-controls="public-menu" onClick={() => setOpen((o) => !o)} className="!text-ink">
       <span aria-hidden className="relative block h-3.5 w-5"><span className={`${lame} top-0 w-5 ${open ? "translate-y-[6px] rotate-45" : ""}`} /><span className={`${lame} top-[6px] ${open ? "w-0 opacity-0" : "w-3.5"}`} /><span className={`${lame} top-3 w-5 ${open ? "-translate-y-[6px] -rotate-45" : ""}`} /></span>
-    </button>
+    </IconButton>
     {open && <>
       {/* voile derrière l'en-tête : hors de l'en-tête, dont le flou limiterait un élément fixed à sa propre taille */}
       {createPortal(<div aria-hidden onClick={close} className="fixed inset-0 z-[25] bg-black/35 backdrop-blur-[2px]" />, document.body)}
@@ -93,7 +95,7 @@ function MobileMenu({ myHref }: { myHref: string | null }) {
         {/* cadre de profilé : un second filet intérieur, comme la chambre d'un dormant aluminium */}
         <div className="rounded-[1.4rem] border border-line/60 p-2">
           <Suspense fallback={null}><PanelLinks onNavigate={close} /></Suspense>
-          <div className="menu-item mt-3 flex items-center justify-between gap-3 border-t border-line/60 px-2 pt-3 sm:hidden" style={{ "--i": 5 } as CSSProperties}><span className="text-xs font-semibold uppercase tracking-wide text-muted">{t("lang.label")}</span><GlassControls /></div>
+          <div className="menu-item mt-3 flex items-center justify-between gap-3 border-t border-line/60 px-2 pt-3" style={{ "--i": 5 } as CSSProperties}><span className="text-xs font-semibold uppercase tracking-wide text-muted">{t("lang.label")}</span><GlassControls /></div>
           <div className="menu-item mt-3 grid gap-2 border-t border-line/60 pt-3 md:hidden" style={{ "--i": 6 } as CSSProperties}>
             {myHref ? <Link href={myHref} onClick={close} className="btn-accent !rounded-full">{t("pub.myspace")}<ArrowUpRight size={15} aria-hidden /></Link> : <>
               <Link href="/inscription" onClick={close} className="btn-accent !rounded-full">{c.start}<ArrowUpRight size={15} aria-hidden /></Link>
@@ -120,7 +122,8 @@ export default function PublicShell({ children }: { children: ReactNode }) {
         <div className="flex min-h-16 items-center justify-between gap-x-3 px-3 py-2 sm:pl-5 sm:pr-3">
           <HomeLink aria-label={`AluMg, ${c.home}`} className="shrink-0"><Brand /></HomeLink>
           <div className="hidden xl:block"><Suspense fallback={null}><PublicNavigation /></Suspense></div>
-          <div className="flex items-center gap-1 sm:gap-2"><div className="hidden sm:block"><GlassControls /></div>{me ? <><Link href={homeFor(me.role)} className="hidden items-center rounded-full border border-line/70 px-4 py-2 text-sm font-semibold transition-colors hover:bg-black/10 sm:inline-flex dark:hover:bg-white/10">{t("pub.myspace")}</Link><UserMenu /></> : <><Link href="/connexion" className="hidden rounded-full px-4 py-2 text-sm font-semibold text-muted transition-colors hover:text-ink sm:inline-flex">{t("pub.login")}</Link><Link href="/inscription" className="btn-accent hidden !rounded-full !px-5 md:inline-flex">{c.start}<ArrowUpRight size={15} aria-hidden /></Link></>}<MobileMenu myHref={me ? homeFor(me.role) : null} /></div>
+          {/* l'essentiel seulement : connecté, l'espace, la cloche et le compte (langue et thème dans son menu) ; sinon la langue, la connexion et l'inscription */}
+          <div className="flex items-center gap-1 sm:gap-2">{me ? <><Link href={homeFor(me.role)} className="btn-primary hidden !min-h-10 !rounded-full !px-5 sm:inline-flex">{t("pub.myspace")}<ArrowUpRight size={15} aria-hidden /></Link><NotificationBell /><UserMenu prefs /></> : <><div className="hidden sm:block"><LangMenu compact /></div><Link href="/connexion" className="hidden rounded-full px-4 py-2 text-sm font-semibold text-muted transition-colors hover:text-ink sm:inline-flex">{t("pub.login")}</Link><Link href="/inscription" className="btn-accent hidden !rounded-full !px-5 md:inline-flex">{c.start}<ArrowUpRight size={15} aria-hidden /></Link></>}<Link href="/telecharger" aria-label={c.getApp} data-tooltip={c.getApp} className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-on-accent shadow-sm transition hover:brightness-105 xl:hidden"><Smartphone size={18} aria-hidden /></Link><MobileMenu myHref={me ? homeFor(me.role) : null} /></div>
         </div>
         <span aria-hidden className="nav-meter pointer-events-none absolute inset-x-8 bottom-0 h-0.5 origin-left rounded-full bg-accent" />
       </div>
@@ -151,7 +154,7 @@ export default function PublicShell({ children }: { children: ReactNode }) {
         </div>
         <div className="flex flex-col items-center gap-3 text-xs text-muted md:col-span-3 md:flex-row md:justify-between md:border-t md:border-line md:pt-6">
           <p>© AluMg</p>
-          <a href="#main" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors hover:text-ink"><ArrowUp size={14} aria-hidden />{t("pub.top")}</a>
+          <div className="flex items-center gap-3"><ThemeSwitch compact /><a href="#main" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition-colors hover:text-ink"><ArrowUp size={14} aria-hidden />{t("pub.top")}</a></div>
         </div>
       </div>
     </footer>
