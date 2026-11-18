@@ -1,5 +1,5 @@
 "use client";
-import { CalendarCheck, MessageCircle, Send, X } from "lucide-react";
+import { ArrowRight, CalendarCheck, MessageCircle, Send, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -69,10 +69,11 @@ export default function FloatingActions() {
         aria-hidden={!showDemo}
         tabIndex={showDemo ? 0 : -1}
         data-on={showDemo || undefined}
-        className="fab-demo fixed left-1/2 z-40 inline-flex min-h-12 items-center gap-2 overflow-hidden whitespace-nowrap rounded-full px-5 text-sm font-semibold text-bg shadow-xl"
+        className="fab-demo fixed left-1/2 z-40 inline-flex min-h-12 items-center gap-2.5 whitespace-nowrap rounded-full py-1.5 pl-1.5 pr-4 text-sm font-semibold text-on-accent"
       >
-        <CalendarCheck size={17} aria-hidden className="fab-demo-icon" />
+        <span aria-hidden className="fab-demo-icon grid size-9 shrink-0 place-items-center rounded-full bg-white text-[#155fa8] shadow-sm"><CalendarCheck size={17} /></span>
         {c.demoHero}
+        <ArrowRight size={16} aria-hidden className="fab-demo-arrow" />
       </Link>
 
       {open && (
