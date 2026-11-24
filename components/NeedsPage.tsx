@@ -1,6 +1,6 @@
 "use client";
 import { FinishSwatch } from "./Swatch";
-import { ArrowLeft, ArrowRight, Box, Coins, PackageCheck, Percent, Scissors, Settings2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Box, ClipboardList, Coins, PackageCheck, Percent, Scissors, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useMemo, useState } from "react";
 import Budget from "./Budget";
@@ -100,10 +100,16 @@ function QuoteView({ quote, base, settings, market, specific, catalog, t }: { qu
         <h1 className="text-2xl font-bold">
           {t("needsPage.title")} · {quote.number}
         </h1>
-        <Link href="/fournisseurs" className="btn-secondary">
-          <Settings2 size={16} aria-hidden />
-          {t("needsPage.configure")}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/devis/${quote.id}/atelier`} className="btn-primary">
+            <ClipboardList size={16} aria-hidden />
+            {t("ws.open")}
+          </Link>
+          <Link href="/fournisseurs" className="btn-secondary">
+            <Settings2 size={16} aria-hidden />
+            {t("needsPage.configure")}
+          </Link>
+        </div>
       </div>
 
       <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
