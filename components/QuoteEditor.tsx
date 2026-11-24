@@ -1,5 +1,5 @@
 "use client";
-import { BadgePercent, Check, ChevronUp, Mail, Plus, Pencil, Phone, UserCheck, Eye, Inbox, LayoutGrid, Rows3, Table2, Users } from "lucide-react";
+import { BadgePercent, Check, ChevronUp, Mail, Plus, Pencil, Phone, ReceiptText, UserCheck, Eye, Inbox, LayoutGrid, Rows3, Table2, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -276,6 +276,12 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
             <Link href={`/devis/${q.id}/apercu`} className="btn-secondary">
               <Eye size={16} aria-hidden />
               {t("preview.open")}
+            </Link>
+          )}
+          {persisted && ["accepted", "in_progress", "completed"].includes(q.status) && (
+            <Link href={`/devis/${q.id}/facture`} className="btn-secondary">
+              <ReceiptText size={16} aria-hidden />
+              {t("inv.page")}
             </Link>
           )}
           <button type="button" className="btn-secondary lg:hidden" onClick={openTariffs}>

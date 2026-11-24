@@ -1,5 +1,5 @@
 "use client";
-import { ArrowLeft, FileDown, Pencil, Printer, Ruler } from "lucide-react";
+import { ArrowLeft, FileDown, Pencil, Printer, ReceiptText, Ruler } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import QuotePaper from "./QuotePaper";
@@ -65,6 +65,12 @@ function Document({ q, s, t, locale }: { q: Quote; s: Settings; t: T; locale: ke
             <Ruler size={16} aria-hidden />
             {t("needsPage.open")}
           </Link>
+          {["accepted", "in_progress", "completed"].includes(q.status) && (
+            <Link href={`/devis/${q.id}/facture`} className="btn-secondary !min-h-10">
+              <ReceiptText size={16} aria-hidden />
+              {t("inv.page")}
+            </Link>
+          )}
           <Link href={`/devis/${q.id}`} className="btn-secondary !min-h-10">
             <Pencil size={16} aria-hidden />
             {t("preview.edit")}

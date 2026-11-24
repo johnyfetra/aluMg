@@ -1,7 +1,7 @@
 "use client";
 import useSWR, { mutate } from "swr";
 import type { SessionUser } from "./auth";
-import { type Market, type Quote, type Settings } from "./model";
+import { type Market, type Quote, type Receipt, type Settings } from "./model";
 import type { DirectoryEntry, DirectorySummary, PortfolioInput, PortfolioItem, Profile, ProfileInput, PublicMenuisier, PublicWork } from "./profiles";
 import type { ClientQuote, EventView, LineComment } from "./workflow";
 import type { NotificationView } from "./notifications";
@@ -53,6 +53,15 @@ export function useSettings() {
     return saved;
   };
   return { settings: data, loading: isLoading, error, retry: () => mutate(), save };
+}
+
+// Encaissements d'un devis : ajout et suppression renvoient la liste à jour.
+export function useReceipts(id: string) {
+  const url = `/api/quotes/${id}/receipts`;
+  const { data, mutate, isLoading, error } = useSWR<Receipt[]>(url, fetcher, { revalidateOnFocus: false });
+  const add = async (r: Omit<Receipt, "id">) => mutate(await request<Receipt[]>("POST", url, r), false);
+  const remove = async (rid: string) => mutate(await request<Receipt[]>("DELETE", `${url}/${rid}`), false);
+  return { receipts: data, loading: isLoading, error, retry: () => mutate(), add, remove };
 }
 
 // Catalogue des fournisseurs propre à un devis ({ market: null } : le devis suit le catalogue général).

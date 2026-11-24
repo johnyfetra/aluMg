@@ -3,7 +3,7 @@ import { billedArea, fmt, lineTotal } from "@/lib/calc";
 import { lineDetails, lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { DATE_LOCALE, type T } from "@/lib/i18n";
-import { DOC_PRESETS, type Issuer, type Quote } from "@/lib/model";
+import { DOC_PRESETS, type Issuer, type Quote, type Receipt } from "@/lib/model";
 import { serviceTotal, totals } from "@/lib/totals";
 import { amountInWords } from "@/lib/words";
 
@@ -11,12 +11,15 @@ const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 
 // La « feuille » du devis, telle qu'elle sera remise au client : entête de l'entreprise, client, ouvrages détaillés, totaux, conditions, signatures.
 // Elle reste blanche quel que soit le thème, pour ressembler au PDF ; l'impression ne garde que la feuille.
-export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t: T; locale: keyof typeof DATE_LOCALE }) {
+// Avec `invoice`, la même feuille devient la facture : numéro de facture, encaissements reçus et reste à payer à la place de l'acompte prévu.
+export default function QuotePaper({ q, s, t, locale, invoice }: { q: Quote; s: Issuer; t: T; locale: keyof typeof DATE_LOCALE; invoice?: { number: string; receipts: Receipt[] } }) {
   const { gross, discount, ht, tva, ttc } = totals(q);
   const date = new Date(q.date);
   const until = new Date(date.getTime() + q.terms.validityDays * 86_400_000);
   const d = (x: Date) => x.toLocaleDateString(DATE_LOCALE[locale], { day: "numeric", month: "long", year: "numeric" });
   const deposit = Math.round((ttc * q.terms.deposit) / 100);
+  const paid = (invoice?.receipts ?? []).reduce((a, r) => a + r.amount, 0);
+  const docName = t(invoice ? "inv.title" : "pdf.quote");
   const accent = s.accent || "#1d4ed8";
   const cur = t("common.currency");
   const small = "text-xs text-slate-500";
@@ -45,17 +48,18 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
   const meta = (
     <dl className={`mt-3 inline-grid gap-x-6 gap-y-1 rounded-lg bg-slate-50 px-4 py-3 text-left text-sm ${st.header === "center" ? "grid-cols-[auto_auto_auto_auto_auto_auto]" : "grid-cols-[auto_auto]"}`}>
       <dt className="text-slate-500">{t("pdf.number")}</dt>
-      <dd className="text-right font-bold tabular-nums">{q.number}</dd>
+      <dd className="text-right font-bold tabular-nums">{invoice?.number ?? q.number}</dd>
       <dt className="text-slate-500">{t("pdf.date")}</dt>
-      <dd className="text-right font-semibold">{d(date)}</dd>
-      <dt className="text-slate-500">{t("pdf.validUntil")}</dt>
-      <dd className="text-right font-semibold">{d(until)}</dd>
+      {/* shortcut: la facture porte la date du jour d'impression, enregistrer une date d'émission quand la facturation devra être opposable */}
+      <dd className="text-right font-semibold">{d(invoice ? new Date() : date)}</dd>
+      <dt className="text-slate-500">{t(invoice ? "inv.quoteRef" : "pdf.validUntil")}</dt>
+      <dd className="text-right font-semibold">{invoice ? q.number : d(until)}</dd>
     </dl>
   );
-  const title = <p className="text-3xl font-bold uppercase tracking-wide" style={{ color: accent }}>{t("pdf.quote")}</p>;
+  const title = <p className="text-3xl font-bold uppercase tracking-wide" style={{ color: accent }}>{docName}</p>;
 
   return (
-    <article id="quote-paper" aria-label={`${t("pdf.quote")} ${q.number}`} className="mx-auto w-full max-w-[56rem] overflow-hidden rounded-xl bg-white text-slate-900 shadow-lg ring-1 ring-black/5 print:max-w-none print:rounded-none print:shadow-none print:ring-0" style={st.font === "serif" ? { fontFamily: 'Georgia, "Times New Roman", serif' } : undefined}>
+    <article id="quote-paper" aria-label={`${docName} ${invoice?.number ?? q.number}`} className="mx-auto w-full max-w-[56rem] overflow-hidden rounded-xl bg-white text-slate-900 shadow-lg ring-1 ring-black/5 print:max-w-none print:rounded-none print:shadow-none print:ring-0" style={st.font === "serif" ? { fontFamily: 'Georgia, "Times New Roman", serif' } : undefined}>
       {st.header === "banner" ? (
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-6 text-white sm:px-10" style={{ background: accent }}>
           <div className="flex items-center gap-4">
@@ -65,7 +69,7 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
             )}
             <p className="text-2xl font-bold leading-tight">{s.company || "-"}</p>
           </div>
-          <p className="text-2xl font-bold uppercase tracking-wide">{t("pdf.quote")}</p>
+          <p className="text-2xl font-bold uppercase tracking-wide">{docName}</p>
         </div>
       ) : (
         <div className="h-2" style={{ background: accent }} />
@@ -173,12 +177,24 @@ export default function QuotePaper({ q, s, t, locale }: { q: Quote; s: Issuer; t
           <div className="space-y-1.5">
             <p className={label} style={{ color: accent }}>{t("pdf.conditions")}</p>
             <ul className="space-y-1 text-sm text-slate-600">
-              <li>{t("pdf.deposit")} : <strong className="text-slate-900">{q.terms.deposit} %</strong> ({fmt(deposit)} {cur})</li>
-              <li>{t("pdf.balance")} : <strong className="text-slate-900">{fmt(ttc - deposit)} {cur}</strong></li>
+              {invoice ? (
+                <>
+                  {invoice.receipts.map((r) => (
+                    <li key={r.id}>{t("inv.received")} {new Date(r.paidOn).toLocaleDateString(DATE_LOCALE[locale])} ({t(`rc.m.${r.method}`)}{r.reference ? ` ${r.reference}` : ""}) : <strong className="text-slate-900">{fmt(r.amount)} {cur}</strong></li>
+                  ))}
+                  <li>{t("inv.paid")} : <strong className="text-slate-900">{fmt(paid)} {cur}</strong></li>
+                  <li>{t("inv.due")} : <strong className="text-slate-900">{fmt(Math.max(0, ttc - paid))} {cur}</strong></li>
+                </>
+              ) : (
+                <>
+                  <li>{t("pdf.deposit")} : <strong className="text-slate-900">{q.terms.deposit} %</strong> ({fmt(deposit)} {cur})</li>
+                  <li>{t("pdf.balance")} : <strong className="text-slate-900">{fmt(ttc - deposit)} {cur}</strong></li>
+                </>
+              )}
               {(q.warranty ?? 0) > 0 && <li>{t("svc.warrantyLine")} : <strong className="text-slate-900">{q.warranty} {t("svc.months")}</strong></li>}
               {s.paymentInfo && <li>{t("pdf.payment")} : {s.paymentInfo}</li>}
               {q.notes && <li>{t("pdf.notes")} : {q.notes}</li>}
-              {locale === "fr" && <li className="pt-1 italic">{t("pdf.words").replace("{w}", amountInWords(ttc))}</li>}
+              {locale === "fr" && <li className="pt-1 italic">{t(invoice ? "inv.words" : "pdf.words").replace("{w}", amountInWords(ttc))}</li>}
             </ul>
           </div>
           <dl className="space-y-1.5 text-sm">
