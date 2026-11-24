@@ -9,6 +9,7 @@ import type { ContactView } from "./contacts";
 import type { ConversationView, MessageView } from "./chat";
 import type { ConversationInfo, Person } from "./chat-info";
 import type { FeedbackRow } from "./feedback";
+import type { PaymentRow, Subscription } from "./billing";
 import type { DemoRow } from "./demos";
 import type { SiteMessageRow } from "./site-messages";
 import type { PublicSocial, SocialLink } from "./social";
@@ -197,6 +198,13 @@ export const useAdminFeedback = (params: Record<string, string>) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
   return useSWR<PageOf<FeedbackRow> & { news: number }>(`/api/admin/feedback${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
 };
+export const useAdminPayments = (params: Record<string, string>) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return useSWR<PageOf<PaymentRow> & { news: number }>(`/api/admin/payments${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });
+};
+// Abonnement du menuisier : dates en texte (JSON).
+export type SubscriptionView = Omit<Subscription, "paidUntil" | "trialUntil" | "payments"> & { paidUntil: string | null; trialUntil: string; payments: (Omit<Subscription["payments"][number], "createdAt"> & { createdAt: string })[] };
+export const useSubscription = (enabled = true) => useSWR<SubscriptionView>(enabled ? "/api/billing" : null, fetcher, { revalidateOnFocus: false });
 export const useAdminDemos = (params: Record<string, string>) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
   return useSWR<PageOf<DemoRow> & { news: number }>(`/api/admin/demo-bookings${qs ? `?${qs}` : ""}`, fetcher, { revalidateOnFocus: false, keepPreviousData: true });

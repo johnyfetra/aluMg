@@ -6,6 +6,7 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import AppUpdate from "./AppUpdate";
 import Brand from "./Brand";
 import ChatWidget from "./ChatWidget";
+import { SubscriptionBanner } from "./Subscription";
 import { UserMenu } from "./Controls";
 import CountBadge from "./CountBadge";
 import FeedbackButton from "./FeedbackDialog";
@@ -173,6 +174,7 @@ export default function Shell({ children }: { children: ReactNode }) {
               <Link href="/compte" className="text-primary underline">{t("account.mustChangeGo")}</Link>
             </p>
           )}
+          {me?.role === "menuisier" && <SubscriptionBanner />}
           {me?.role === "menuisier" && <OfflineSupport />}
           {children}
         </main>

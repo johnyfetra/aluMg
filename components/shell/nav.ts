@@ -1,4 +1,4 @@
-import { Boxes, Briefcase, Building2, CalendarCheck, ClipboardList, FilePlus2, FileText, Gauge, LayoutDashboard, MessageCircle, MessageSquareText, MessagesSquare, ScrollText, Search, Settings, Share2, Store, UserCircle, Users } from "lucide-react";
+import { Banknote, Boxes, Briefcase, Building2, CalendarCheck, ClipboardList, FilePlus2, FileText, Gauge, LayoutDashboard, MessageCircle, MessageSquareText, MessagesSquare, ScrollText, Search, Settings, Share2, Store, UserCircle, Users } from "lucide-react";
 import type { Messages } from "@/lib/messages/fr";
 import { HIDDEN, HIDDEN_CLIENT, MVP } from "@/lib/mvp";
 
@@ -72,6 +72,7 @@ const ADMIN: Nav = {
         { href: "/admin/comptes", key: "admin.accounts", Icon: Users, match: starts("/admin/comptes") },
         { href: "/admin/devis", key: "admin.allQuotes", Icon: FileText, match: starts("/admin/devis") },
         { href: "/admin/reseaux", key: "admin.social", Icon: Share2, match: starts("/admin/reseaux") },
+        { href: "/admin/paiements", key: "admin.payments", Icon: Banknote, match: starts("/admin/paiements") },
         { href: "/admin/retours", key: "admin.feedback", Icon: MessageSquareText, match: starts("/admin/retours") },
         { href: "/admin/rendez-vous", key: "admin.demos", Icon: CalendarCheck, match: starts("/admin/rendez-vous") },
         { href: "/admin/messages-site", key: "admin.siteMsgs", Icon: MessagesSquare, match: starts("/admin/messages-site") },
