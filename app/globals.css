@@ -20,7 +20,7 @@
   --ok: #2b6a47;
   --warn: #86560f;
   --whatsapp: #0e7a4a;
-  /* barre latérale : bleu azur, identique en clair et en sombre */
+  /* barre latérale : bleu azur ; en sombre, bleu nuit plus sourd (voir [data-theme="dark"]) */
   --side-bg: #1769b8;
   --side-bg-2: #0e4c8c; /* bas du dégradé de la barre latérale */
   --side-fg: #ffffff;
@@ -86,6 +86,10 @@
   --bar-neutral: #6d7b8a;
   --grid: #2a3a4f;
   --info: #9cc9f0;
+  /* barre latérale : bleu nuit, moins lumineux que l'azur du thème clair ; texte blanc ≥ 4.5:1 */
+  --side-bg: #173a5e;
+  --side-bg-2: #0f2741;
+  --side-muted: #b9cbe0;
   color-scheme: dark;
 }
 

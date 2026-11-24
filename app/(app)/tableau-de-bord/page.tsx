@@ -121,7 +121,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* bandeau d'accueil en couleur, illustration à droite (masquée sur petit écran) */}
-      <div className="relative flex items-center overflow-hidden rounded-(--radius-card) bg-linear-to-br from-(--side-bg) to-[#2f8fe8] px-5 py-6 text-white shadow-(--shadow-card) sm:px-8">
+      <div className="relative flex items-center overflow-hidden rounded-(--radius-card) bg-linear-to-br from-(--side-bg) to-[#2f8fe8] dark:to-[#1f5d96] px-5 py-6 text-white shadow-(--shadow-card) sm:px-8">
         <div className="relative z-10 max-w-md">
           <h1 className="text-2xl font-bold sm:text-3xl">
             {t("dash.hello")}

@@ -41,7 +41,7 @@ export default function NavLinks({ nav, onNavigate, mini }: { nav: Nav; onNaviga
                     onClick={onNavigate}
                     aria-current={active ? "page" : undefined}
                     title={mini ? t(key) : undefined}
-                    className={`side-link relative flex min-h-11 items-center gap-3 rounded-2xl px-2 text-sm lg:mini:justify-center lg:mini:px-0 ${active ? "bg-white font-semibold text-[#155fa8] shadow-[0_10px_24px_-12px_rgb(0_0_0/0.45)]" : "font-medium text-(--side-fg) hover:bg-(--side-hover)"}`}
+                    className={`side-link relative flex min-h-11 items-center gap-3 rounded-2xl px-2 text-sm lg:mini:justify-center lg:mini:px-0 ${active ? "bg-white font-semibold text-[#155fa8] dark:bg-[#dbe6f2] dark:text-[#173a5e] shadow-[0_10px_24px_-12px_rgb(0_0_0/0.45)]" : "font-medium text-(--side-fg) hover:bg-(--side-hover)"}`}
                   >
                     <span aria-hidden className={`side-ico grid size-8 shrink-0 place-items-center rounded-xl ${active ? "bg-(--side-bg) text-white" : "bg-white/10"}`}><Icon size={17} /></span>
                     <span className="side-txt min-w-0 break-words lg:mini:sr-only">{t(key)}</span>
