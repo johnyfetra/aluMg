@@ -46,11 +46,33 @@ export const REPORT_REASONS = ["quality", "no_response", "price", "behavior", "f
 export const ROLES = ["client", "menuisier", "admin"] as const;
 export type Role = (typeof ROLES)[number];
 // Actions inscrites au journal de l'administration (admin_audit.action) ; libellés « admin.act.* ».
-export const AUDIT_ACTIONS = ["create", "reset", "suspend", "reactivate", "role", "delete", "badge_on", "badge_off", "social_add", "social_edit", "social_delete"] as const;
+export const AUDIT_ACTIONS = ["create", "reset", "suspend", "reactivate", "role", "delete", "badge_on", "badge_off", "social_add", "social_edit", "social_delete", "payment_confirm", "payment_reject"] as const;
 // Réseaux sociaux de la plateforme, gérés par l'administration et affichés dans le pied de page du site.
 export const SOCIAL_NETWORKS = ["facebook", "instagram", "tiktok", "youtube", "whatsapp", "linkedin", "x"] as const;
 export type SocialNetwork = (typeof SOCIAL_NETWORKS)[number];
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+// Abonnement des menuisiers, payé par transfert mobile money : le menuisier déclare le code reçu, l'équipe vérifie la réception puis confirme.
+export const PAY_OPERATORS = ["mvola", "orange", "airtel"] as const;
+export type PayOperator = (typeof PAY_OPERATORS)[number];
+export const PAY_STATUSES = ["pending", "confirmed", "rejected"] as const;
+export type PayStatus = (typeof PAY_STATUSES)[number];
+export const PAY_MONTHS = [1, 3, 6, 12] as const;
+
+// Encaissements d'un devis accepté (acompte, solde…) : saisis par le menuisier, ils donnent le reste à payer et la facture.
+export const RECEIPT_METHODS = ["especes", "mvola", "orange", "airtel", "virement", "cheque"] as const;
+export type ReceiptMethod = (typeof RECEIPT_METHODS)[number];
+export const receiptSchema = z.object({
+  amount: z.number().int().min(1).max(1e11),
+  method: z.enum(RECEIPT_METHODS),
+  reference: z.string().trim().max(80).default(""),
+  paidOn: z.iso.date(), // AAAA-MM-JJ, date réelle (pas de 2026-13-45)
+  note: z.string().trim().max(200).default(""),
+});
+export type ReceiptInput = z.infer<typeof receiptSchema>;
+export type Receipt = ReceiptInput & { id: string };
+// Facture d'un devis : même suite que le devis (DV-2026-0012 → FA-2026-0012), une facture par devis.
+export const invoiceNumber = (quoteNumber: string) => quoteNumber.replace(/^DV-/, "FA-");
 
 // Retours des utilisateurs sur l'application : un problème, une idée de fonction, une remarque. Le statut suit le traitement par l'équipe.
 export const MAX_EXTRA_PHONES = 4; // numéros supplémentaires d'un compte (avec le principal : 5 au plus)

@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { type AnyPgColumn, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { DemoMode, DemoStatus } from "../booking";
-import { AUDIT_ACTIONS, SOCIAL_NETWORKS, type FeedbackKind, type FeedbackStatus, type Market, type Quote, type Settings } from "../model";
+import { AUDIT_ACTIONS, SOCIAL_NETWORKS, type FeedbackKind, type PayOperator, type PayStatus, type ReceiptMethod, type FeedbackStatus, type Market, type Quote, type Settings } from "../model";
 
 // Texte cherché par l'administration ; la requête (lib/admin.ts) reprend exactement cette expression pour que l'index serve.
 export const USER_SEARCH = sql.raw(`lower(name || ' ' || coalesce(email, '') || ' ' || regexp_replace(phone, '[^0-9]', '', 'g'))`);
@@ -22,6 +22,7 @@ export const users = pgTable(
   avatar: text("avatar").notNull().default(""), // photo de profil (data URL réduite), facultative
   mustChangePassword: boolean("must_change_password").notNull().default(false), // mot de passe temporaire donné par l'administration : à remplacer à la première connexion
   suspendedAt: timestamp("suspended_at", { withTimezone: true }), // suspendu par un administrateur : ni connexion, ni session valide
+  paidUntil: timestamp("paid_until", { withTimezone: true }), // abonnement payé jusqu'à cette date (voir lib/billing.ts) ; null : jamais payé
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 },
   (t) => [
@@ -510,4 +511,47 @@ export const visits = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), // première page vue ce jour-là
   },
   (t) => [uniqueIndex("visits_day_visitor_idx").on(t.day, t.visitor), index("visits_created_idx").on(t.createdAt)],
+);
+
+// Paiements d'abonnement déclarés par les menuisiers (transfert MVola, Orange Money, Airtel Money).
+// Un code de transfert ne sert qu'une fois par opérateur : la base refuse qu'on le déclare deux fois.
+export const subscriptionPayments = pgTable(
+  "subscription_payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    operator: text("operator").$type<PayOperator>().notNull(),
+    reference: text("reference").notNull(), // code de transfert reçu par SMS, en majuscules sans espaces
+    payerPhone: text("payer_phone").notNull().default(""),
+    amount: integer("amount").notNull(), // montant déclaré, en Ar
+    months: integer("months").notNull(),
+    status: text("status").$type<PayStatus>().notNull().default("pending"),
+    note: text("note").notNull().default(""), // motif de refus, lu par le menuisier
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("subscription_payments_ref_idx").on(t.operator, t.reference), index("subscription_payments_status_idx").on(t.status, t.createdAt), index("subscription_payments_user_idx").on(t.userId, t.createdAt)],
+);
+
+// Encaissements d'un devis (acompte, solde, versements) : le reste à payer et la facture s'en déduisent.
+export const quoteReceipts = pgTable(
+  "quote_receipts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    quoteId: uuid("quote_id")
+      .notNull()
+      .references(() => quotes.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(), // Ar
+    method: text("method").$type<ReceiptMethod>().notNull(),
+    reference: text("reference").notNull().default(""),
+    paidOn: text("paid_on").notNull(), // AAAA-MM-JJ
+    note: text("note").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("quote_receipts_quote_idx").on(t.quoteId, t.paidOn)],
 );
