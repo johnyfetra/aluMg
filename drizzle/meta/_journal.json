@@ -211,6 +211,13 @@
       "when": 1795527860770,
       "tag": "0029_abonnement_encaissements",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795588019909,
+      "tag": "0030_rls_nouvelles_tables",
+      "breakpoints": true
     }
   ]
 }
