@@ -11,9 +11,9 @@ import { onImgError } from "@/lib/fallback";
 // Hero plein cadre : une fenêtre coulissante à vitres transparentes s'ouvre sur la photo, une promesse fixe (rendue sans JS) et les deux parcours : le client d'abord, le menuisier ensuite.
 // Seules les photos défilent (fondu enchaîné, suspendu au survol, sur un onglet masqué ou si l'on préfère moins d'animation).
 const SLIDES = [
-  { src: "/brand/architecture-aluminium.webp", pos: "62% center", mobile: "/brand/architecture-aluminium-mobile.webp" },
-  { src: "/brand/precision-aluminium.webp", pos: "55% center" },
-  { src: "/brand/realisation-aluminium.webp", pos: "center 30%" },
+  { src: "/brand/landing-architecture-v2.webp", pos: "center", mobile: "/brand/landing-architecture-mobile-v2.webp" },
+  { src: "/brand/landing-workshop-v2.webp", pos: "center" },
+  { src: "/brand/landing-installation-v2.webp", pos: "center" },
 ];
 const DELAY = 6500;
 

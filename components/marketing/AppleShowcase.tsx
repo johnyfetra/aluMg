@@ -29,7 +29,7 @@ export default function AppleShowcase() {
           </div>
         </Reveal>
         <Reveal variant="scale" className="mt-12 sm:mt-16">
-          <div className="apple-media overflow-hidden rounded-[1.5rem] shadow-2xl sm:rounded-[2rem]"><Photo src="/brand/architecture-aluminium.webp" alt={c.appleAlt} className="aspect-[16/9]" /></div>
+          <div className="apple-media overflow-hidden rounded-[1.5rem] shadow-2xl sm:rounded-[2rem]"><Photo src="/brand/landing-architecture-v2.webp" alt={c.appleAlt} className="aspect-[16/9]" /></div>
         </Reveal>
       </div>
 
