@@ -502,6 +502,15 @@ export const siteMessages = pgTable(
 
 // Visites du site public, sans cookie ni donnée personnelle : une empreinte (adresse + navigateur + jour, hachés avec un sel) par visiteur et par jour.
 // Le jour fait partie de l'empreinte : on ne peut pas suivre un visiteur d'un jour à l'autre.
+// Essai de l'application Android locale (AluMg Devis) : date du premier lancement par appareil, pour que réinstaller ne relance pas l'essai.
+// `device` : empreinte de l'ANDROID_ID (stable pour une même clé de signature, même après désinstallation), jamais l'identifiant lui-même.
+export const appTrials = pgTable("app_trials", {
+  device: text("device").primaryKey(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSeen: timestamp("last_seen", { withTimezone: true }).notNull().defaultNow(),
+  checks: integer("checks").notNull().default(1),
+});
+
 export const visits = pgTable(
   "visits",
   {

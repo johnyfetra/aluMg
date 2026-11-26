@@ -218,6 +218,13 @@
       "when": 1795588019909,
       "tag": "0030_rls_nouvelles_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795720064441,
+      "tag": "0031_essai_app",
+      "breakpoints": true
     }
   ]
 }
