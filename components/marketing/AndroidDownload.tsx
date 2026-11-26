@@ -1,5 +1,6 @@
 "use client";
 import { Download, ShieldCheck, Smartphone, WifiOff } from "lucide-react";
+import { useSession } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
 import { marketing } from "@/lib/marketing";
 
@@ -8,6 +9,7 @@ export default function AndroidDownload() {
   const { locale } = useI18n();
   const c = marketing[locale];
   const steps = [[c.apk1, c.apk1d], [c.apk2, c.apk2d], [c.apk3, c.apk3d]] as const;
+  const { data: me } = useSession();
   return (
     <>
       <section className="public-container py-12 sm:py-16">
@@ -33,8 +35,8 @@ export default function AndroidDownload() {
         </div>
       </section>
 
-      {/* app locale d'essai (appli/, construite par appli/build-apk.sh) : produit d'appel vers le compte en ligne */}
-      <section className="public-container pb-12 sm:pb-16">
+      {/* app locale d'essai (appli/, construite par appli/build-apk.sh) : produit d'appel vers le compte en ligne ; proposée seulement aux comptes connectés */}
+      {me && <section className="public-container pb-12 sm:pb-16">
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[.14em] text-primary">{c.trialEyebrow}</p>
           <h2 className="mt-3 text-2xl font-semibold sm:text-3xl">{c.trialTitle}</h2>
@@ -48,7 +50,7 @@ export default function AndroidDownload() {
             <a href="/downloads/AluMg-Devis.apk.sha256" className="text-xs text-muted underline underline-offset-2 hover:text-ink">{c.apkHash}</a>
           </div>
         </div>
-      </section>
+      </section>}
 
       <section className="border-y border-line bg-surface">
         <div className="public-container py-14 sm:py-20">
