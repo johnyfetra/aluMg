@@ -1,5 +1,6 @@
 "use client";
 import { ExternalLink, FileText, Plus, RefreshCw, Settings2, Wifi } from "lucide-react";
+import { useEffect } from "react";
 import { LogoMark } from "@/components/Logo";
 import { useI18n } from "@/lib/i18n";
 import { go, href, useRoute } from "../lib/route";
@@ -21,6 +22,14 @@ export default function AppShell() {
   const { settings } = useSettings();
   const { quotes, save } = useQuotes();
   const trial = useTrial();
+  const id = params.get("id") ?? "";
+  // nouvel écran : on repart du haut (la navigation par ancre garderait la position de l'écran précédent)
+  useEffect(() => window.scrollTo(0, 0), [screen, id]);
+  // impression : window.print() ne fait rien dans le WebView, le pont natif (MainActivity) ouvre le service d'impression d'Android
+  useEffect(() => {
+    const native = (window as { AluMgPrint?: { print: (title: string) => void } }).AluMgPrint;
+    if (native) window.print = () => native.print(document.title);
+  }, []);
   if (!settings || !quotes || trial.state === "loading") return <Splash />; // prérendu et premier contrôle de l'essai
   if (trial.state === "ended") return <TrialEnded />;
   if (trial.state === "activate") return <Activate retry={trial.retry} />;
@@ -30,7 +39,6 @@ export default function AppShell() {
     save(q);
     go("devis", { id: q.id });
   };
-  const id = params.get("id") ?? "";
   const quote = quotes.find((q) => q.id === id);
   const needsQuote = screen === "devis" || screen === "atelier" || screen === "apercu";
   const tabs = [
@@ -58,7 +66,7 @@ export default function AppShell() {
         ) : screen === "apercu" ? (
           <Preview quote={quote!} settings={settings} />
         ) : screen === "reglages" ? (
-          <SettingsScreen settings={settings} />
+          <SettingsScreen settings={settings} initialTab={params.get("tab")} />
         ) : (
           <QuoteList quotes={quotes} settings={settings} />
         )}

@@ -2207,4 +2207,8 @@ export const en: Messages = {
   "app.activateTitle": "Activate your trial",
   "app.activateText": "Connect the phone to the internet once to start your 14-day free trial. After that, the app works offline.",
   "app.activateRetry": "Try again",
+  "app.saveLine": "Save this item",
+  "app.lineSaved": "Item saved",
+  "app.print": "Print",
+  "app.editHeader": "Edit the header",
 };

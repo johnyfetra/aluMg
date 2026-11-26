@@ -9,7 +9,7 @@ import type { Procurement } from "@/lib/procure";
 
 // Détail du besoin en profilés, aux longueurs et prix des fournisseurs : par profilé, série et couleur, barres à acheter et plan de coupe,
 // et totaux (barres, longueur utilisée, perte). Les vitrages à commander sont listés dessous.
-export default function ProfileNeeds({ lines, plan: tot, quoteId, t }: { lines: Line[]; plan: Procurement; quoteId?: string; t: T }) {
+export default function ProfileNeeds({ lines, plan: tot, quoteId, t, suppliersHref }: { lines: Line[]; plan: Procurement; quoteId?: string; t: T; suppliersHref?: string }) {
   const [open, setOpen] = useState(false); // replié au départ : l'essentiel d'abord, le détail à la demande
   const plans = tot.groups;
   const glass = lines.flatMap((l, i) => cutList(l).glass.map((g) => ({ ...g, qty: g.qty * l.qty, line: i + 1, l })));
@@ -55,7 +55,7 @@ export default function ProfileNeeds({ lines, plan: tot, quoteId, t }: { lines: 
       {open && (
       <div className="grid gap-4 xl:grid-cols-2">
         {plans.map((p) => (
-          <GroupCard key={p.key} g={p} quoteId={quoteId} lines={lines} t={t} />
+          <GroupCard key={p.key} g={p} quoteId={quoteId} lines={lines} t={t} suppliersHref={suppliersHref} />
         ))}
       </div>
       )}

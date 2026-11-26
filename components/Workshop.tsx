@@ -32,8 +32,7 @@ export default function Workshop({ id }: { id: string }) {
 }
 
 // Bon de commande et fiche de coupe d'un devis déjà chargé (site, et application locale qui lit ses devis dans le téléphone).
-// `print` : faux dans l'application Android, dont le WebView n'imprime pas.
-export function WorkshopView({ quote, settings, market, backHref, print = true }: { quote: Quote; settings: Settings; market: Settings["market"]; backHref: string; print?: boolean }) {
+export function WorkshopView({ quote, settings, market, backHref }: { quote: Quote; settings: Settings; market: Settings["market"]; backHref: string }) {
   const { t, locale } = useI18n();
   const [tab, setTab] = useState<Tab>("order");
   const plan = simulate(activeLines(quote), initSim(market), settings.kerf);
@@ -53,12 +52,10 @@ export function WorkshopView({ quote, settings, market, backHref, print = true }
             ))}
           </div>
         </div>
-        {print && (
-          <button type="button" className="btn-primary !min-h-10" onClick={() => window.print()}>
-            <Printer size={16} aria-hidden />
-            {t("preview.print")}
-          </button>
-        )}
+        <button type="button" className="btn-primary !min-h-10" onClick={() => window.print()}>
+          <Printer size={16} aria-hidden />
+          {t("preview.print")}
+        </button>
       </div>
       <Sheet quote={quote} s={settings} supplier={market.supplier} title={t(tab === "order" ? "ws.orderTitle" : "ws.cutsTitle")} t={t} locale={locale}>
         {tab === "order" ? <Order plan={plan} t={t} /> : <Cuts plan={plan} quote={quote} kerf={settings.kerf} t={t} />}

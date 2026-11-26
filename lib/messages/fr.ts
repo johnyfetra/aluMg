@@ -2207,6 +2207,10 @@ export const fr = {
   "app.activateTitle": "Activez votre essai",
   "app.activateText": "Connectez le téléphone à internet une seule fois pour démarrer vos 14 jours d'essai gratuit. Ensuite, l'application marche sans connexion.",
   "app.activateRetry": "Réessayer",
+  "app.saveLine": "Enregistrer l'ouvrage",
+  "app.lineSaved": "Ouvrage enregistré",
+  "app.print": "Imprimer",
+  "app.editHeader": "Modifier l'en-tête",
 } as const;
 
 export type Messages = Record<keyof typeof fr, string>;

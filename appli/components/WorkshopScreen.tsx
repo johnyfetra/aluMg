@@ -16,10 +16,10 @@ export default function WorkshopScreen({ quote, settings }: { quote: Quote; sett
       {/* feuille A4 : défile en largeur sur un téléphone plutôt que d'écraser les tableaux */}
       <div className="-mx-4 overflow-x-auto px-4">
         <div className="min-w-[40rem]">
-          <WorkshopView quote={{ ...quote, lines }} settings={settings} market={settings.market} backHref={href("devis", { id: quote.id })} print={false} />
+          <WorkshopView quote={{ ...quote, lines }} settings={settings} market={settings.market} backHref={href("devis", { id: quote.id })} />
         </div>
       </div>
-      <ProfileNeeds lines={lines} plan={plan} t={t} />
+      <ProfileNeeds lines={lines} plan={plan} t={t} suppliersHref={href("reglages")} />
     </div>
   );
 }

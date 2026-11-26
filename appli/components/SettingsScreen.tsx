@@ -18,13 +18,13 @@ type Tab = (typeof TABS)[number];
 const APP_LOCALES: Locale[] = ["fr", "en"];
 
 // Réglages de l'application, enregistrés à chaque modification.
-export default function SettingsScreen({ settings }: { settings: Settings }) {
+export default function SettingsScreen({ settings, initialTab }: { settings: Settings; initialTab?: string | null }) {
   const { t, locale, setLocale } = useI18n();
   const theme = useTheme();
   const toast = useToast();
   const { save } = useSettings();
   const [s, setS] = useState(settings);
-  const [tab, setTab] = useState<Tab>("company");
+  const [tab, setTab] = useState<Tab>(TABS.find((x) => x === initialTab) ?? "company");
   const first = useRef(true);
   useEffect(() => {
     if (first.current) return void (first.current = false);

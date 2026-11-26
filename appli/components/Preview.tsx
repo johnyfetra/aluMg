@@ -1,5 +1,5 @@
 "use client";
-import { ArrowLeft, Share2 } from "lucide-react";
+import { ArrowLeft, PenLine, Printer, Share2 } from "lucide-react";
 import { useState } from "react";
 import QuotePaper from "@/components/QuotePaper";
 import { useToast } from "@/components/Toast";
@@ -33,11 +33,18 @@ export default function Preview({ quote, settings }: { quote: Quote; settings: S
           <ArrowLeft size={18} aria-hidden />
         </a>
         <h1 className="min-w-0 flex-1 truncate text-xl font-bold">{q.number}</h1>
+        <button type="button" className="btn-secondary !min-h-10 !px-2.5" onClick={() => window.print()} aria-label={t("app.print")} title={t("app.print")}>
+          <Printer size={18} aria-hidden />
+        </button>
         <button type="button" className="btn-primary !min-h-10" disabled={busy} onClick={pdf}>
           <Share2 size={16} aria-hidden />
-          {t("app.sharePdf")}
+          PDF
         </button>
       </div>
+      <a href={href("reglages", { tab: "company" })} className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+        <PenLine size={15} aria-hidden />
+        {t("app.editHeader")}
+      </a>
       <div className="-mx-4 overflow-x-auto px-4">
         <div className="min-w-[40rem]">
           <QuotePaper q={q} s={settings} t={t} locale={locale} />

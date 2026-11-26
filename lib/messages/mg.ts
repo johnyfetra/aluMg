@@ -2209,4 +2209,8 @@ export const mg: Messages = {
   "app.activateTitle": "Alefaso ny fanandramanao",
   "app.activateText": "Ampifandraiso amin'ny internet indray mandeha ny finday hanombohana ny 14 andro maimaim-poana. Aorian'izay dia mandeha tsy misy connexion ny rindrankajy.",
   "app.activateRetry": "Andramo indray",
+  "app.saveLine": "Tehirizo ny asa",
+  "app.lineSaved": "Voatahiry ny asa",
+  "app.print": "Atontay",
+  "app.editHeader": "Ovay ny loha-devis",
 };

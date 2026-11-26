@@ -15,7 +15,8 @@ const lineLink = (id: string, lineId: string, n: number) => (
 
 // Un profilé dans une série et une couleur : barres à acheter aux longueurs et prix des fournisseurs, pièces coupées, plan de coupe barre par barre.
 // Sans devis enregistré (`quoteId` absent), les numéros d'ouvrage ne sont pas des liens.
-export default function GroupCard({ g, quoteId, lines, t }: { g: GroupPlan; quoteId?: string; lines: Line[]; t: T }) {
+// `suppliersHref` : page des prix fournisseurs (l'application locale les règle dans ses réglages).
+export default function GroupCard({ g, quoteId, lines, t, suppliersHref = "/fournisseurs" }: { g: GroupPlan; quoteId?: string; lines: Line[]; t: T; suppliersHref?: string }) {
   const cur = t("common.currency");
   return (
     <article className="card !p-4">
@@ -40,7 +41,7 @@ export default function GroupCard({ g, quoteId, lines, t }: { g: GroupPlan; quot
       )}
       {g.noOffer ? (
         <p role="alert" className="text-sm font-medium text-danger">
-          {t("needsPage.noOffer")} <Link href="/fournisseurs" className="underline">{t("needsPage.configure")}</Link>
+          {t("needsPage.noOffer")} <Link href={suppliersHref} className="underline">{t("needsPage.configure")}</Link>
         </p>
       ) : (
         <ul className="mb-3 space-y-1 text-sm">

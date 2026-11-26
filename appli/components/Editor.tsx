@@ -130,6 +130,12 @@ export default function Editor({ quote, settings }: { quote: Quote; settings: Se
             onDuplicate={() => duplicate(i)}
             onNeeds={() => go("atelier", { id: q.id })}
             num={num}
+            slides
+            onSave={() => {
+              toggle(l.id);
+              toast.success(t("app.lineSaved"), `${marks[i]} · ${fmt(l.unit * l.qty)} ${cur}`);
+              requestAnimationFrame(() => document.getElementById(`line-${l.id}`)?.scrollIntoView({ block: "start" }));
+            }}
           />
         ))}
         <button type="button" className="btn-secondary w-full" onClick={addLine}>
