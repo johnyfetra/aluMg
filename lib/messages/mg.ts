@@ -312,6 +312,7 @@ export const mg: Messages = {
   "pdf.unit": "V. iray (Ar)",
   "pdf.total": "Total (Ar)",
   "pdf.area": "Velarana",
+  "pdf.length": "Halavany",
   "pdf.totalHt": "Total tsy misy hetra",
   "pdf.totalTva": "TVA",
   "pdf.totalTtc": "Total miaraka amin'ny hetra",

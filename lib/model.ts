@@ -396,7 +396,10 @@ export const TARIFF_KEYS = [
   "cloison.fixe",
 ] as const;
 export type TariffKey = (typeof TARIFF_KEYS)[number];
-export type Tariffs = Record<TariffKey, number>; // Ar par m², gamme asiatique, profil blanc, verre clair 5 mm
+export type Tariffs = Record<TariffKey, number>; // Ar par m² (ou par mètre, voir TARIFF_UNITS), gamme asiatique, profil blanc, verre clair 5 mm
+// Unité d'un tarif : m² (surface) ou ml (mètre linéaire, sur la largeur de l'ouvrage : garde-corps, cloison…).
+export const TARIFF_UNITS = ["m2", "ml"] as const;
+export type TariffUnit = (typeof TARIFF_UNITS)[number];
 
 // Majorations en % du prix de base. `group` ne sert qu'à l'affichage dans les réglages.
 export const SURCHARGES: readonly { key: string; group: Label; label: Label; def: number }[] = [
@@ -547,12 +550,13 @@ export const settingsSchema = z.object({
   marginPct: z.number().min(0).max(300), // marge visée, en % du prix de revient
   minMarginPct: z.number().min(0).max(100), // sous ce seuil, l'éditeur alerte
   tariffs: z.record(z.string(), z.number().min(0).max(1e9)),
+  tariffUnits: z.record(z.string(), z.enum(TARIFF_UNITS)).optional(), // absent : tout au m²
   surcharges: z.record(z.string(), z.number().min(-90).max(500)),
   market: marketSchema,
 });
 export type Settings = z.infer<typeof settingsSchema> & { tariffs: Tariffs };
 // Ce que le client voit de l'entreprise sur son devis (les mêmes mentions que sur le PDF) : jamais les tarifs ni les prix d'achat.
-export const ISSUER_KEYS = ["company", "address", "phone", "email", "website", "nif", "stat", "logo", "accent", "paymentInfo", "signature", "signer", "minArea", "docStyle"] as const;
+export const ISSUER_KEYS = ["company", "address", "phone", "email", "website", "nif", "stat", "logo", "accent", "paymentInfo", "signature", "signer", "minArea", "tariffUnits", "docStyle"] as const;
 export type Issuer = Pick<Settings, (typeof ISSUER_KEYS)[number]>;
 
 // Anciens tarifs d'exemple : un compte qui les a gardés n'a pas réglé ses prix (voir calibration dans costing.ts).

@@ -1,5 +1,5 @@
 import type { Messages } from "./messages/fr";
-import { type AccessoryKey, type Line, FINISHES, PATTERN_GLASSES, type TariffKey, type Tariffs, OPENINGS_BY_CATEGORY, SLATS_ROULANT, SLATS_RIDEAU, SLAT_PITCH, hasLeafConfig, leafMotion, leavesSpec, splitOf } from "./model";
+import { type AccessoryKey, type Line, FINISHES, PATTERN_GLASSES, type TariffKey, type TariffUnit, type Tariffs, OPENINGS_BY_CATEGORY, SLATS_ROULANT, SLATS_RIDEAU, SLAT_PITCH, hasLeafConfig, leafMotion, leavesSpec, splitOf } from "./model";
 
 type Label = keyof Messages;
 
@@ -122,6 +122,16 @@ export const tariffKey = (l: Pick<Line, "category" | "opening" | "shutter" | "gu
   (l.category === "volet" ? `volet.${l.shutter}` : l.category === "garde-corps" ? `garde-corps.${l.guard}` : l.category === "cloison" ? "cloison.fixe" : `${l.category}.${l.opening}`) as TariffKey;
 
 export const billedArea = (l: Pick<Line, "width" | "height">, minArea: number) => Math.max(minArea, (l.width * l.height) / 1e6);
+// Quantité facturée selon l'unité du tarif : surface (au moins minArea) ou mètre linéaire (largeur de l'ouvrage).
+export function billed(l: Line, s: { minArea: number; tariffUnits?: Partial<Record<string, TariffUnit>> }) {
+  const ml = s.tariffUnits?.[tariffKey(l)] === "ml";
+  return { qty: ml ? l.width / 1e3 : billedArea(l, s.minArea), unit: ml ? "ml" : "m²" };
+}
+// « Surface 1,2 m² » ou « Longueur 2 ml » (devis, PDF, carte d'ouvrage).
+export function billedText(l: Line, s: { minArea: number; tariffUnits?: Partial<Record<string, TariffUnit>> }, t: (k: "pdf.area" | "pdf.length") => string) {
+  const b = billed(l, s);
+  return `${t(b.unit === "ml" ? "pdf.length" : "pdf.area")} ${fmt(Math.round(b.qty * 100) / 100)} ${b.unit}`;
+}
 
 // Clés de majoration qui s'appliquent à une ligne (une option sans objet ne coûte rien).
 export function surchargeKeys(l: Line): string[] {
@@ -146,9 +156,9 @@ export function surchargeKeys(l: Line): string[] {
   return keys;
 }
 
-export function unitPrice(l: Line, tariffs: Tariffs, surcharges: Record<string, number>, minArea: number) {
+export function unitPrice(l: Line, tariffs: Tariffs, surcharges: Record<string, number>, minArea: number, tariffUnits?: Partial<Record<string, TariffUnit>>) {
   const pct = surchargeKeys(l).reduce((s, k) => s + (surcharges[k] ?? 0), 0);
-  return Math.round(billedArea(l, minArea) * tariffs[tariffKey(l)] * (1 + pct / 100));
+  return Math.round(billed(l, { minArea, tariffUnits }).qty * tariffs[tariffKey(l)] * (1 + pct / 100));
 }
 
 export const lineTotal = (l: Pick<Line, "unit" | "qty">) => l.unit * l.qty;

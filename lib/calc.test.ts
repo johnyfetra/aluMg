@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accessoriesFor, cutList, normalize, surchargeKeys, unitPrice } from "./calc";
+import { accessoriesFor, billed, cutList, normalize, surchargeKeys, unitPrice } from "./calc";
 import { drawingSvg } from "./drawing";
 import { CATEGORIES, DEFAULT_SETTINGS, GUARDS, INFILLS, type Line, OPENINGS_BY_CATEGORY, SHUTTERS, leafMarks, leafMotion, leavesSpec, lineSchema } from "./model";
 
@@ -11,6 +11,15 @@ const base: Line = {
 };
 const { tariffs, surcharges, minArea } = DEFAULT_SETTINGS;
 const price = (l: Partial<Line>) => unitPrice({ ...base, ...l }, tariffs, surcharges, minArea);
+
+describe("unité du tarif (m² ou mètre linéaire)", () => {
+  it("au ml : largeur × tarif, sans surface minimale ; au m² par défaut", () => {
+    const l = { ...base, category: "garde-corps" as const, guard: "barreaudage" as const, width: 2500, height: 300 };
+    expect(unitPrice(l, tariffs, surcharges, minArea, { "garde-corps.barreaudage": "ml" })).toBe(2.5 * tariffs["garde-corps.barreaudage"]);
+    expect(billed(l, { minArea })).toEqual({ qty: minArea, unit: "m²" }); // 0,75 m² ramené à la surface minimale
+    expect(billed(l, { minArea, tariffUnits: { "fenetre.coulissant": "ml" } }).unit).toBe("m²"); // l'unité est propre à chaque type
+  });
+});
 
 describe("options des volets (coffre, lames, moustiquaire)", () => {
   const volet = (p: Partial<Line> = {}): Line => lineSchema.parse({ id: "v", category: "volet", opening: "fixe", leaves: 1, shutter: "roulant", control: "manuel", guard: "barreaudage", range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], width: 1200, height: 1400, qty: 1, unit: 0, ...p });

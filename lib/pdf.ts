@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { billedArea, fmt, lineTotal } from "./calc";
+import { billedText, fmt, lineTotal } from "./calc";
 import { lineDetails, lineTitle } from "./describe";
 import { drawingSvg, svgToPng } from "./drawing";
 import { DATE_LOCALE, type Locale, type T } from "./i18n";
@@ -135,7 +135,7 @@ export async function buildQuotePdf(q: Quote, s: Settings, t: T, locale: Locale)
   y += 7.5;
   let n = 0;
   for (const l of q.lines) {
-    const size = `${l.width} × ${l.height} ${t("common.mm")}  ·  ${t("pdf.area")} ${fmt(Math.round(billedArea(l, s.minArea) * 100) / 100)} m²`;
+    const size = `${l.width} × ${l.height} ${t("common.mm")}  ·  ${billedText(l, s, t)}`;
     const info = [...(l.room ? [l.room] : []), size, ...(l.note ? [`« ${l.note} »`] : []), ...lineDetails(l, t)].slice(0, compact ? 4 : 6);
     const ROW = st.drawings ? (compact ? 28 : 36) : Math.max(14, 13 + info.length * 4.2);
     if (y + ROW > 268) {

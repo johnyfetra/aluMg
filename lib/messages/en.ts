@@ -310,6 +310,7 @@ export const en: Messages = {
   "pdf.unit": "Unit (Ar)",
   "pdf.total": "Total (Ar)",
   "pdf.area": "Area",
+  "pdf.length": "Length",
   "pdf.totalHt": "Total excl. VAT",
   "pdf.totalTva": "VAT",
   "pdf.totalTtc": "Total incl. VAT",

@@ -8,7 +8,7 @@ import InfoTip, { type HelpTerm } from "../InfoTip";
 import { Choice, Field, FinishPicker } from "../ui";
 import WorksButton from "../WorksDialog";
 import SectionView from "../SectionView";
-import { allPieces, billedArea, fmt, lineTotal, nacoBlades } from "@/lib/calc";
+import { allPieces, billedText, fmt, lineTotal, nacoBlades } from "@/lib/calc";
 import { procure } from "@/lib/procure";
 import { costLine, marginBasis, marginOf } from "@/lib/costing";
 import { lineTitle } from "@/lib/describe";
@@ -249,7 +249,7 @@ export function LineCard({
                 )}
               </div>
               <div className="text-right">
-                <p className="text-xs text-muted">{t("editor.lineTotal")}{valid ? ` · ${fmt(Math.round(billedArea(l, settings.minArea) * 100) / 100)} m²` : ""}</p>
+                <p className="text-xs text-muted">{t("editor.lineTotal")}{valid ? ` · ${billedText(l, settings, t)}` : ""}</p>
                 <p className="text-xl font-bold tabular-nums">{fmt(lineTotal(l))} {t("common.currency")}</p>
               </div>
             </div>

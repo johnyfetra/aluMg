@@ -310,6 +310,7 @@ export const fr = {
   "pdf.unit": "P.U. (Ar)",
   "pdf.total": "Total (Ar)",
   "pdf.area": "Surface",
+  "pdf.length": "Longueur",
   "pdf.totalHt": "Total HT",
   "pdf.totalTva": "TVA",
   "pdf.totalTtc": "Total TTC",

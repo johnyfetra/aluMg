@@ -1,5 +1,5 @@
 "use client";
-import { billedArea, fmt, lineTotal } from "@/lib/calc";
+import { billedText, fmt, lineTotal } from "@/lib/calc";
 import { lineDetails, lineTitle } from "@/lib/describe";
 import { drawingSvg } from "@/lib/drawing";
 import { DATE_LOCALE, type T } from "@/lib/i18n";
@@ -145,7 +145,7 @@ export default function QuotePaper({ q, s, t, locale, invoice }: { q: Quote; s: 
                           <div className="min-w-0 space-y-0.5">
                             <p className="font-bold">{cap(lineTitle(l, t))}</p>
                             {l.room && <p className="text-sm font-semibold text-slate-700">{l.room}</p>}
-                            <p className={small}>{l.width} × {l.height} {t("common.mm")}  ·  {t("pdf.area")} {fmt(Math.round(billedArea(l, s.minArea) * 100) / 100)} m²</p>
+                            <p className={small}>{l.width} × {l.height} {t("common.mm")}  ·  {billedText(l, s, t)}</p>
                             {lineDetails(l, t).map((x) => (
                               <p key={x} className={small}>{x}</p>
                             ))}

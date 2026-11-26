@@ -38,7 +38,7 @@ export function costLine(l: Line, s: Settings): LineCost {
 export const marginBasis = (s: Settings): Settings => (s.pricing === "cost" ? s : { ...s, labor: { ...s.labor, rate: 0 }, overheadPct: 0 });
 
 // Prix de vente unitaire d'un ouvrage selon le mode choisi dans les réglages.
-export const salePrice = (l: Line, s: Settings) => (s.pricing === "cost" ? costLine(l, s).price : unitPrice(l, s.tariffs, s.surcharges, s.minArea));
+export const salePrice = (l: Line, s: Settings) => (s.pricing === "cost" ? costLine(l, s).price : unitPrice(l, s.tariffs, s.surcharges, s.minArea, s.tariffUnits));
 
 // Marge d'un prix de vente sur le prix de revient, en % du prix de revient (négatif : vente à perte).
 export const marginOf = (unit: number, full: number) => (full > 0 ? Math.round(((unit - full) / full) * 100) : 0);
