@@ -1,5 +1,5 @@
 "use client";
-import { Copy, Plus, Search, Trash2 } from "lucide-react";
+import { Copy, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { newLine } from "@/components/quote/line";
@@ -55,13 +55,7 @@ export default function QuoteList({ quotes, settings }: { quotes: Quote[]; setti
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">{t("nav.quotes")}</h1>
-        <button type="button" className="btn-primary" onClick={create}>
-          <Plus size={18} aria-hidden />
-          {t("nav.new")}
-        </button>
-      </div>
+      <h1 className="text-2xl font-bold">{t("nav.quotes")}</h1>
       <p className="text-xs text-muted">{t("app.local")}</p>
       {quotes.length > 3 && (
         <label className="relative block">
