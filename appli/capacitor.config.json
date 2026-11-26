@@ -1,0 +1,7 @@
+{
+  "appId": "mg.alumg.devis",
+  "appName": "AluMg Devis",
+  "webDir": "out",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}
