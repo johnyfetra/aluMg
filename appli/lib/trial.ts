@@ -9,14 +9,25 @@ import { useEffect, useState } from "react";
 const API = "https://alumg.vercel.app/api/app-trial";
 const KEY = "alumg.app.trial";
 const DAY = 864e5;
+export const TRIAL_DAYS = 14;
 
-export type TrialCache = { startedAt: string; serverNow: string; days: number; localAt: number; maxLocal: number };
+export type TrialCache = { startedAt: string; serverNow: string; localAt: number; maxLocal: number };
 export type Trial = { state: "loading" } | { state: "activate"; retry: () => void } | { state: "active"; left: number } | { state: "ended" };
 
 // Jours restants : temps écoulé selon le serveur au dernier contrôle, plus le temps local écoulé depuis (jamais négatif).
-export function daysLeft(c: TrialCache, now: number) {
-  const elapsed = Date.parse(c.serverNow) - Date.parse(c.startedAt) + Math.max(0, Math.max(now, c.maxLocal) - c.localAt);
-  return Math.max(0, c.days - Math.floor(elapsed / DAY));
+// null : contrôle illisible (jamais pris pour un essai terminé).
+export function daysLeft(c: TrialCache, now: number): number | null {
+  const elapsed = Date.parse(c.serverNow) - Date.parse(c.startedAt) + Math.max(0, Math.max(now, c.maxLocal || 0) - c.localAt);
+  return Number.isFinite(elapsed) ? Math.max(0, TRIAL_DAYS - Math.floor(Math.max(0, elapsed) / DAY)) : null;
+}
+
+// Réponse du serveur : selon le téléphone, le pont natif la rend en objet ou en texte JSON. Tout ce qui n'a pas deux dates valides est rejeté.
+export function readTrial(data: unknown): Pick<TrialCache, "startedAt" | "serverNow"> {
+  const d = (typeof data === "string" ? JSON.parse(data) : data) as { startedAt?: unknown; now?: unknown } | null;
+  const startedAt = d?.startedAt;
+  const serverNow = d?.now;
+  if (typeof startedAt !== "string" || typeof serverNow !== "string" || !Number.isFinite(Date.parse(startedAt)) || !Number.isFinite(Date.parse(serverNow))) throw new Error("trial: bad response");
+  return { startedAt, serverNow };
 }
 
 function readCache(): TrialCache | null {
@@ -40,17 +51,17 @@ async function deviceId() {
   return id;
 }
 
-async function fetchTrial(): Promise<Omit<TrialCache, "localAt" | "maxLocal">> {
+async function fetchTrial(): Promise<Pick<TrialCache, "startedAt" | "serverNow">> {
   const data = { device: await deviceId() };
   // requête native : pas de CORS, l'app est servie depuis https://localhost
   if (Capacitor.isNativePlatform()) {
     const r = await CapacitorHttp.post({ url: API, headers: { "Content-Type": "application/json" }, data, connectTimeout: 8000, readTimeout: 8000 });
     if (r.status !== 200) throw new Error(`trial ${r.status}`);
-    return r.data;
+    return readTrial(r.data);
   }
   const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
   if (!r.ok) throw new Error(`trial ${r.status}`);
-  return r.json();
+  return readTrial(await r.json());
 }
 
 // Dernier contrôle gardé, avec l'heure la plus tardive vue sur ce téléphone ; renvoie les jours restants (null : jamais activé).
