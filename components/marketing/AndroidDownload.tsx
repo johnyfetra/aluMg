@@ -33,6 +33,23 @@ export default function AndroidDownload() {
         </div>
       </section>
 
+      {/* app locale d'essai (appli/, construite par appli/build-apk.sh) : produit d'appel vers le compte en ligne */}
+      <section className="public-container pb-12 sm:pb-16">
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6 sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[.14em] text-primary">{c.trialEyebrow}</p>
+          <h2 className="mt-3 text-2xl font-semibold sm:text-3xl">{c.trialTitle}</h2>
+          <p className="mt-3 max-w-2xl leading-7 text-muted">{c.trialText}</p>
+          <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <a href="/downloads/AluMg-Devis.apk" download className="btn-primary !rounded-full !px-6 !py-3">
+              <Download size={18} aria-hidden />
+              {c.trialButton}
+            </a>
+            <span className="text-sm text-muted">{c.trialMeta}</span>
+            <a href="/downloads/AluMg-Devis.apk.sha256" className="text-xs text-muted underline underline-offset-2 hover:text-ink">{c.apkHash}</a>
+          </div>
+        </div>
+      </section>
+
       <section className="border-y border-line bg-surface">
         <div className="public-container py-14 sm:py-20">
           <h2 className="max-w-2xl text-3xl font-medium sm:text-4xl">{c.apkStepsTitle}</h2>
