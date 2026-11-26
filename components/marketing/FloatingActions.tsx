@@ -72,8 +72,8 @@ export default function FloatingActions() {
         className="fab-demo fixed left-1/2 z-40 inline-flex min-h-12 items-center gap-2.5 whitespace-nowrap rounded-full py-1.5 pl-1.5 pr-4 text-sm font-semibold text-on-accent"
       >
         <span aria-hidden className="fab-demo-icon grid size-9 shrink-0 place-items-center rounded-full bg-white text-[#155fa8] shadow-sm"><CalendarCheck size={17} /></span>
-        {c.demoHero}
-        <ArrowRight size={16} aria-hidden className="fab-demo-arrow" />
+        <span className="min-w-0 truncate">{c.demoHero}</span>
+        <ArrowRight size={16} aria-hidden className="fab-demo-arrow shrink-0" />
       </Link>
 
       {open && (
