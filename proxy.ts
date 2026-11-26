@@ -16,6 +16,8 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Application Android (marqueur AluMgApp/ dans l'identifiant du navigateur) : c'est un outil, pas la vitrine ; l'accueil ouvre l'espace de travail ou la connexion.
+  if (pathname === "/" && req.headers.get("user-agent")?.includes("AluMgApp/")) return NextResponse.redirect(new URL(req.cookies.has("alumg_session") ? "/tableau-de-bord" : "/connexion", req.url));
   // Seul le suivi avancé de chantier reste soumis au mode MVP.
   if (MVP && HIDDEN.some((h) => pathname === h || pathname.startsWith(`${h}/`))) return NextResponse.redirect(new URL("/tableau-de-bord", req.url));
   // Sections réservées aux comptes (une par dossier de pages connectées). Tout le reste (vitrine, connexion, adresses inconnues) passe :

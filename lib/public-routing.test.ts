@@ -16,6 +16,11 @@ describe("accès à la vitrine sans session", () => {
     expect(target.pathname).toBe("/connexion");
     expect(target.searchParams.get("next")).toBe(path);
   });
+  it("dans l'application Android, l'accueil mène à la connexion (ou à l'espace de travail), pas à la vitrine", () => {
+    const ua = { "user-agent": "Mozilla/5.0 (Linux; Android 13) Chrome/120 AluMgApp/3" };
+    expect(new URL(proxy(new NextRequest(origin + "/", { headers: ua })).headers.get("location")!).pathname).toBe("/connexion");
+    expect(new URL(proxy(new NextRequest(origin + "/", { headers: { ...ua, cookie: "alumg_session=x" } })).headers.get("location")!).pathname).toBe("/tableau-de-bord");
+  });
   it("laisse une adresse inconnue arriver jusqu'à la page 404", () => {
     const response = proxy(new NextRequest(origin + "/page-qui-nexiste-pas"));
     expect(response.status).toBe(200);
