@@ -13,6 +13,7 @@ import { STATUSES, type Quote, type Status } from "@/lib/model";
 import WindowScene from "@/components/WindowScene";
 import { totals } from "@/lib/totals";
 import { MVP } from "@/lib/mvp";
+import DashboardEmpty from "@/components/DashboardEmpty";
 
 const STATUS_COLOR: Record<Status, string> = {
   requested: "var(--c3)",
@@ -68,7 +69,7 @@ function MonthlyChart({ quotes, locale, title, empty }: { quotes: Quote[]; local
     <figure className="card">
       <figcaption className="mb-3 font-semibold">{title}</figcaption>
       {max === 0 ? (
-        <p className="py-10 text-center text-sm text-muted">{empty}</p>
+        <DashboardEmpty kind="chart" title={empty} compact />
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${title}: ${data.map((d) => `${d.label} ${fmt(d.value)}`).join(", ")}`} className="w-full">
           <defs>
@@ -137,12 +138,7 @@ export default function Dashboard() {
       </div>
 
       {error ? <ErrorState error={error} retry={retry} /> : loading ? <LoadingState /> : quotes.length === 0 ? (
-        <div className="card py-12 text-center">
-          <p className="mb-4 text-muted">{t("dash.empty")}</p>
-          <Link href="/devis/nouveau" className="btn-primary">
-            {t("quotes.emptyCta")}
-          </Link>
-        </div>
+        <DashboardEmpty kind="quote" title={t("dash.empty")} action={t("quotes.emptyCta")} href="/devis/nouveau" />
       ) : (
         <>
           {settings && <Calibration settings={settings} t={t} />}
@@ -164,7 +160,7 @@ export default function Dashboard() {
                 ))}
               </ul>
             ) : (
-              <p className="mt-4 text-sm text-muted">{t("ui.noPriority")}</p>
+              <div className="mt-4"><DashboardEmpty kind="calm" title={t("ui.noPriority")} compact /></div>
             )}
           </section>
           <FollowUp quotes={quotes} t={t} />
@@ -215,7 +211,7 @@ export default function Dashboard() {
                 </Link>
               </div>
               {requests.length === 0 ? (
-                <p className="py-4 text-sm text-muted">{t("dash.noRequests")}</p>
+                <DashboardEmpty kind="inbox" title={t("dash.noRequests")} compact />
               ) : (
                 <ul className="divide-y divide-line">
                   {requests.slice(0, 5).map((q) => (
@@ -243,7 +239,7 @@ export default function Dashboard() {
                 </Link>
               </div>
               {sites.length === 0 ? (
-                <p className="py-4 text-sm text-muted">{t("dash.noSites")}</p>
+                <DashboardEmpty kind="calm" title={t("dash.noSites")} compact />
               ) : (
                 <ul className="space-y-3">
                   {sites.slice(0, 5).map((q) => (

@@ -5,6 +5,7 @@ import { fmt } from "@/lib/calc";
 import type { T } from "@/lib/i18n";
 import { LOSS_REASONS, type LossReason, type Quote } from "@/lib/model";
 import { daysLeft, totals } from "@/lib/totals";
+import DashboardEmpty from "@/components/DashboardEmpty";
 
 const SOON = 7; // jours : en dessous, un devis envoyé sans réponse est à relancer
 
@@ -56,7 +57,7 @@ export function LostQuotes({ quotes, t }: { quotes: Quote[]; t: T }) {
       </h2>
       <p className="mt-1 text-sm text-muted">{t("dash.lostSub")}</p>
       {rows.length === 0 ? (
-        <p className="py-4 text-sm text-muted">{t("dash.noLost")}</p>
+        <div className="mt-3"><DashboardEmpty kind="calm" title={t("dash.noLost")} compact /></div>
       ) : (
         <table className="mt-3 w-full text-sm">
           <caption className="sr-only">{t("dash.lostTitle")}</caption>
