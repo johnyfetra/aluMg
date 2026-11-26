@@ -835,7 +835,8 @@ type Ctl = { reset: () => void; saveState: () => void; object: THREE.Camera; tar
 export type View = { az: number; el: number; dist?: number }; // azimut et élévation en degrés, distance relative
 
 // dims : cotes et repères (F1, V1…) ; par défaut seulement hors décor, pour ne pas charger les rendus d'ambiance.
-export default function Viewer3D({ line, highlight = null, stage: baseStage, bare = false, initialOpen = 0, view, dims }: { line: Viewable; highlight?: string | null; stage?: Stage; bare?: boolean; initialOpen?: number; view?: View; dims?: boolean }) {
+// `compact` : vue plus basse, sans choix du mur, de la pièce ni de la qualité, ni mode d'emploi (carte d'ouvrage en slides de l'application mobile).
+export default function Viewer3D({ line, highlight = null, stage: baseStage, bare = false, initialOpen = 0, view, dims, compact = false }: { line: Viewable; highlight?: string | null; stage?: Stage; bare?: boolean; initialOpen?: number; view?: View; dims?: boolean; compact?: boolean }) {
   const { t } = useI18n();
   // couleur du mur choisie (éditeur et vue du client seulement, pas les rendus d'ambiance) : mémorisée dans le navigateur
   const picker = !!baseStage && !!dims && !bare;
@@ -980,7 +981,7 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
 
   return (
     <div className={bare ? "h-full w-full" : "space-y-3"}>
-      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line"}`} style={bare ? undefined : { height: 440, background: backdropFor(ctx.hex), cursor: grab ? (grab === "x" ? "ew-resize" : "ns-resize") : hover ? "pointer" : drag ? (rotating ? "grabbing" : "move") : "grab", touchAction: "none" }} onPointerDown={(e) => { setDrag(true); setRotating(e.button === 0 && !(e.shiftKey || e.ctrlKey || e.metaKey)); }} onContextMenu={(e) => e.preventDefault()} onDoubleClick={() => controls.current?.reset()}>
+      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line"}`} style={bare ? undefined : { height: compact ? 240 : 440, background: backdropFor(ctx.hex), cursor: grab ? (grab === "x" ? "ew-resize" : "ns-resize") : hover ? "pointer" : drag ? (rotating ? "grabbing" : "move") : "grab", touchAction: "none" }} onPointerDown={(e) => { setDrag(true); setRotating(e.button === 0 && !(e.shiftKey || e.ctrlKey || e.metaKey)); }} onContextMenu={(e) => e.preventDefault()} onDoubleClick={() => controls.current?.reset()}>
         <Canvas shadows={qs.shadows ? "percentage" : false} scene={stage ? { environmentIntensity: 0.85 } : undefined} dpr={bare ? 1 : qs.dpr} frameloop="demand" camera={{ position: cam, fov: 32, near: 0.05, far: 80 }} aria-label={t("viewer.aria")} role="img" gl={{ antialias: true, preserveDrawingBuffer: bare }}>
           <SceneCtx.Provider value={ctx}>
             {stage ? <OutdoorEnv /> : <Env />}
@@ -1012,7 +1013,7 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
         </Canvas>
       </div>
 
-      {picker && stage && (
+      {picker && !compact && stage && (
         <div className="space-y-2">
           <WallPicker value={stage.wall} onChange={chooseWall} />
           <RoomPicker value={room} onChange={setRoomPick} />
@@ -1042,7 +1043,7 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
       ) : (
         <p className="text-sm text-muted">{t("viewer.static")}</p>
       )}
-      {!bare && (
+      {!bare && !compact && (
         <div role="radiogroup" aria-label={t("viewer.quality")} className="flex flex-wrap items-center gap-1.5 text-xs">
           <span className="text-muted">{t("viewer.quality")}</span>
           {QUALITIES.map((k) => (
@@ -1052,7 +1053,7 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
           ))}
         </div>
       )}
-      {!bare && <p className="text-xs text-muted">{t("viewer.hint")}</p>}
+      {!bare && !compact && <p className="text-xs text-muted">{t("viewer.hint")}</p>}
     </div>
   );
 }

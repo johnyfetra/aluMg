@@ -1,7 +1,7 @@
 "use client";
 import { FinishSwatch, GlassSwatch } from "../Swatch";
 import { Box, CheckCircle2, ChevronDown, Copy, MessageSquareWarning, PauseCircle, Minus, Plus, Image as ImageIcon, Ruler, Trash2 } from "lucide-react";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useRef, useState } from "react";
 import LineComments from "../LineComments";
 import Viewer3DLoader from "../Viewer3DLoader";
 import InfoTip, { type HelpTerm } from "../InfoTip";
@@ -20,7 +20,7 @@ import { cap, price } from "./line";
 
 // Une carte d'ouvrage : configuration (type, dimensions, finitions, prix), aperçu 2D/3D et commentaires.
 export function LineCard({
-  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark, quoteId, focused = false, review,
+  l, i, t, settings, valid, onChange, onRemove, onDuplicate, onNeeds, num, clientMode = false, open = true, onToggle, locked = false, mark, quoteId, focused = false, review, slides = false, onSave,
 }: {
   l: Line;
   i: number;
@@ -40,11 +40,14 @@ export function LineCard({
   quoteId?: string; // devis lié à un client : affiche le fil de commentaires de l'ouvrage
   focused?: boolean; // ouvrage visé par une notification
   review?: LineReview; // avis du client sur cet ouvrage
+  onSave?: () => void; // bouton « Enregistrer l'ouvrage » (mode slides)
+  slides?: boolean; // téléphone (application locale) : aperçu fixé en haut, une section de réglages à la fois, au doigt
 }) {
   const [view, setView] = useState<"2d" | "3d" | "section">("2d");
   // toutes les sections sont visibles et repliables ; seule « Configuration » est ouverte au départ (le reste se déplie à la demande)
   const [shut, setShut] = useState<Set<Sec>>(() => new Set<Sec>(["size", "finish", "price"]));
-  const sec = useMemo<SecState>(() => ({ current: null, shut, toggle: (n) => setShut((o) => { const c = new Set(o); if (!c.delete(n)) c.add(n); return c; }) }), [shut]);
+  const [tab, setTab] = useState<Sec>("config");
+  const sec = useMemo<SecState>(() => ({ current: slides ? tab : null, shut, toggle: (n) => setShut((o) => { const c = new Set(o); if (!c.delete(n)) c.add(n); return c; }) }), [shut, slides, tab]);
   const cat = l.category;
   const openable = cat === "fenetre" || cat === "porte";
   const hasGlass = cat === "garde-corps" ? l.guard === "verre" : cat !== "volet" && !(cat === "porte" && l.infill === "pleine");
@@ -104,11 +107,7 @@ export function LineCard({
           )}
         </Panel>
   );
-  const body = (
-    <SecCtx.Provider value={sec}>
-      <div className="@container min-w-0">
-       <div className="grid gap-3 @2xl:grid-cols-[1.15fr_1fr] @2xl:items-start">
-        <div className="contents @2xl:flex @2xl:min-w-0 @2xl:flex-col @2xl:gap-3">
+  const configPanel = (
         <Panel name="config" title={t("editor.sectionConfig")} className="order-2 @2xl:order-none">
           <Choice dense name={p("cat")} legend={t("editor.category")} help="category" value={workType(l)} options={WORK_TYPES.map((w) => ({ value: w, label: cap(w === "naco" ? t("opening.jalousie") : w === "roulant" || w === "rideau" ? t(`shutter.${w}`) : t(`cat.${w}`)) }))} onChange={(w) => onChange(workPatch(w, l))} />
 
@@ -188,7 +187,8 @@ export function LineCard({
 
           {hasLeafConfig(l) && <LeafConfig l={l} t={t} onChange={onChange} id={l.id} />}
         </Panel>
-
+  );
+  const sizePanel = (
         <Panel name="size" title={t("editor.sectionSizePlace")} className="order-3 @2xl:order-none">
           <div className="grid grid-cols-3 gap-3">
             <Field required htmlFor={p("w")} label={cat === "garde-corps" ? t("editor.length") : t("editor.width")} help="dims">
@@ -232,8 +232,8 @@ export function LineCard({
             </Field>
           </div>
         </Panel>
-
-        {!clientMode && (
+  );
+  const pricePanel = !clientMode && (
           <Panel name="price" title={t("editor.sectionPrice")} className="order-5 @2xl:order-none">
             <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
               <div className="flex flex-wrap items-end gap-3">
@@ -279,10 +279,8 @@ export function LineCard({
             )}
             <p className="text-xs text-muted">{t("editor.unitHint")}</p>
           </Panel>
-        )}
-        </div>
-        <div className="contents @2xl:flex @2xl:min-w-0 @2xl:flex-col @2xl:gap-3">
-        <div className="order-1 min-w-0 space-y-3 @2xl:order-none">
+  );
+  const preview = (
         <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs text-muted">{view === "3d" ? t("viewer.title") : t("editor.preview")}</p>
@@ -306,13 +304,15 @@ export function LineCard({
         {view === "section" && valid && (cat === "fenetre" || cat === "porte") ? (
           <SectionView line={l} />
         ) : view === "3d" && valid ? (
-          <Viewer3DLoader line={l} />
+          <Viewer3DLoader line={l} compact={slides} />
         ) : sk ? (
-          <div role="img" aria-label={`${lineTitle(l, t)} ${l.width} × ${l.height} mm`} className="flex justify-center rounded-xl bg-white p-2" dangerouslySetInnerHTML={{ __html: sk.svg }} />
+          <div role="img" aria-label={`${lineTitle(l, t)} ${l.width} × ${l.height} mm`} className={`flex justify-center rounded-xl bg-white p-2 ${slides ? "[&>svg]:h-52 [&>svg]:w-auto" : ""}`} dangerouslySetInnerHTML={{ __html: sk.svg }} />
         ) : (
           <div className="h-44 rounded-xl bg-surface-2" />
         )}
         </div>
+  );
+  const actions = (
         <div className="space-y-3">
         {!clientMode && (
           <button type="button" className="btn-secondary w-full" onClick={onNeeds} disabled={!valid}>
@@ -333,6 +333,22 @@ export function LineCard({
           )}
         </div>
         </div>
+  );
+  const body = (
+    <SecCtx.Provider value={sec}>
+      <div className="@container min-w-0">
+       <div className="grid gap-3 @2xl:grid-cols-[1.15fr_1fr] @2xl:items-start">
+        <div className="contents @2xl:flex @2xl:min-w-0 @2xl:flex-col @2xl:gap-3">
+        {configPanel}
+
+        {sizePanel}
+
+        {pricePanel}
+        </div>
+        <div className="contents @2xl:flex @2xl:min-w-0 @2xl:flex-col @2xl:gap-3">
+        <div className="order-1 min-w-0 space-y-3 @2xl:order-none">
+        {preview}
+        {actions}
       </div>
         {finishPanel}
 
@@ -340,6 +356,56 @@ export function LineCard({
        </div>
       </div>
 
+    </SecCtx.Provider>
+  );
+
+  // Slides : l'aperçu reste collé sous la barre de l'application pendant qu'on règle ; on passe d'une section à l'autre par onglet ou balayage.
+  const tabs: Sec[] = clientMode ? ["config", "size", "finish"] : ["config", "size", "finish", "price"];
+  const tabTitle: Record<Sec, string> = { config: t("editor.sectionConfig"), size: t("editor.sectionSizePlace"), finish: t("editor.sectionFinish"), price: t("editor.sectionPrice") };
+  const at = tabs.indexOf(tab);
+  const move = (d: number) => setTab(tabs[Math.min(tabs.length - 1, Math.max(0, at + d))]);
+  const touch = useRef<{ x: number; y: number } | null>(null);
+  const slidesBody = (
+    <SecCtx.Provider value={sec}>
+      <div className="min-w-0 space-y-3">
+        <div className="sticky top-[calc(3.4rem+env(safe-area-inset-top))] z-10 -mx-4 -mt-4 border-b border-line bg-surface px-4 pb-3 pt-3">{preview}</div>
+        <div role="tablist" aria-label={t("editor.lines")} className="-mx-4 flex gap-1.5 overflow-x-auto px-4">
+          {tabs.map((k, i) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${tab === k ? "bg-primary text-on-primary" : "border border-line text-muted"}`}>
+              <span className={`grid size-5 place-items-center rounded-full text-[11px] ${tab === k ? "bg-on-primary/20" : "bg-surface-2"}`}>{i + 1}</span>
+              {tabTitle[k]}
+            </button>
+          ))}
+        </div>
+        <div
+          role="tabpanel"
+          aria-label={tabTitle[tab]}
+          onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
+          onTouchEnd={(e) => {
+            const s0 = touch.current;
+            touch.current = null;
+            if (!s0) return;
+            const dx = e.changedTouches[0].clientX - s0.x;
+            const dy = e.changedTouches[0].clientY - s0.y;
+            if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) move(dx < 0 ? 1 : -1);
+          }}
+        >
+          {configPanel}
+          {sizePanel}
+          {finishPanel}
+          {pricePanel}
+        </div>
+        <span className="flex justify-center gap-1.5" aria-hidden>
+          {tabs.map((k) => <span key={k} className={`h-1.5 rounded-full transition-all ${k === tab ? "w-5 bg-primary" : "w-1.5 bg-line"}`} />)}
+        </span>
+        {onSave && (
+          <button type="button" className="btn-primary w-full" onClick={onSave} disabled={!valid}>
+            <CheckCircle2 size={17} aria-hidden />
+            {t("app.saveLine")}
+          </button>
+        )}
+        {actions}
+      </div>
     </SecCtx.Provider>
   );
 
@@ -401,7 +467,7 @@ export function LineCard({
                 <strong>{review.state === "request" ? t("line.requestedByClient") : review.state === "hold" ? t("line.heldByClient") : t("line.opinion")} :</strong> {review.message}
               </p>
             )}
-            {body}
+            {slides ? slidesBody : body}
           </div>
         </LockedCtx.Provider>
       )}
@@ -427,6 +493,12 @@ function Panel({ name, title, children, className = "" }: { name: Sec; title: st
   const { current, shut, toggle } = useContext(SecCtx);
   if (current !== null && current !== name) return null;
   const folded = current === null && shut.has(name);
+  if (current !== null)
+    return (
+      <fieldset disabled={locked} className={`m-0 min-w-0 space-y-3 ${className}`}>
+        {children}
+      </fieldset>
+    );
   const head = (
     <>
       <span aria-hidden className="h-6 w-1.5 rounded-full bg-primary" />
