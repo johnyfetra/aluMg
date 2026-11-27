@@ -473,6 +473,8 @@ aside :focus-visible {
 .hero-text { position: relative; z-index: 0; } /* derrière le volet (z 5) tant qu'il n'est pas entièrement fermé */
 .hero-text[data-above] { z-index: 10; }
 .hero-text[data-above] .hero-in { animation: hero-in 0.9s var(--ease-out) calc(var(--i, 0) * 0.09s) both; } /* une fois fermé, le texte apparaît au-dessus du volet */
+/* Téléphone : ni volet ni cadre de baie (une fenêtre aussi haute et étroite n'existe pas) ; la photo et le texte s'affichent tout de suite. */
+@media (max-width: 767px) { .door .win, .door .shutter { display: none; } }
 .hero-glass { background: color-mix(in srgb, white 10%, transparent); border-color: color-mix(in srgb, white 38%, transparent); color: white; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
 .hero-glass:hover { background: color-mix(in srgb, white 18%, transparent); border-color: color-mix(in srgb, white 55%, transparent); }
 @media (prefers-reduced-motion: reduce) { .deck { animation: none !important; } .layer { transition: none; } .win, .shutter { display: none; } .hero-in, .hero-text[data-above] .hero-in { animation: none; } .slide-img { transform: none; transition: opacity 0.4s; } .vitrine :is(h2, .eyebrow, p, figure, article, details, li, a, .border-t) { animation: none; } .draw { animation: none !important; stroke-dashoffset: 0 !important; } }
