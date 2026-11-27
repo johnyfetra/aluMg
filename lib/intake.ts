@@ -472,7 +472,7 @@ export function questions(r: IntakeResult): Question[] {
 
 // Ouvrage complet (valeurs par défaut du schéma, combinaison valide) à partir d'une spécification ; `unit` est fixé par l'appelant (prix du menuisier) ou laissé à 0.
 export function toLine(spec: Spec, unit = 0): Line {
-  const base = { id: crypto.randomUUID(), shutter: "roulant", control: "manuel", guard: "verre", range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], opening: "coulissant" as Opening, leaves: 2, width: 1200, height: 1200, qty: 1, unit };
+  const base = { id: crypto.randomUUID(), shutter: "roulant", control: "manuel", guard: "verre", range: "europeen", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], opening: "coulissant" as Opening, leaves: 2, width: 1200, height: 1200, qty: 1, unit };
   const clamp = (n: number | undefined, d: number) => Math.min(6000, Math.max(200, n ?? d));
   return normalize(lineSchema.parse({ ...base, ...spec, width: clamp(spec.width, 1200), height: clamp(spec.height, 1200), unit }));
 }

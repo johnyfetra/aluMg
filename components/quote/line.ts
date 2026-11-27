@@ -21,7 +21,7 @@ export function newLine(s: Settings): Line {
     shutter: "roulant",
     control: "manuel",
     guard: "barreaudage",
-    range: RANGES.find((r) => rangeOn(s.market, r)) ?? "asiatique", // premier choix que les fournisseurs ont
+    range: RANGES.find((r) => rangeOn(s.market, r)) ?? "europeen", // européenne par défaut, sinon la première gamme que les fournisseurs ont
     finish: FINISHES.find((f) => finishOn(s.market, f.id))?.id ?? "blanc",
     infill: "vitree",
     glassType: "clair",

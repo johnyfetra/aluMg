@@ -16,7 +16,7 @@ export const missingMentions = (s: Pick<Issuer, Mandatory>): Mandatory[] => MAND
 
 // Devis d'exemple pour l'aperçu des réglages (jamais enregistré).
 export function sampleQuote(project = "Villa Ivandry"): Quote {
-  const base = { shutter: "roulant", control: "manuel", guard: "barreaudage", range: "asiatique", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], qty: 1 } as const;
+  const base = { shutter: "roulant", control: "manuel", guard: "barreaudage", range: "europeen", finish: "blanc", infill: "vitree", glassType: "clair", thickness: "5", pattern: "none", extras: [], qty: 1 } as const;
   return quoteSchema.parse({
     id: "00000000-0000-4000-8000-000000000000", number: "DV-2026-0001", date: new Date().toISOString(), status: "sent",
     client: { name: "Lalao Ramanantsoa", phone: "033 90 214 65", address: "Ivandry, Antananarivo", email: "" }, project, delay: "3 semaines", notes: "", warranty: 12,
