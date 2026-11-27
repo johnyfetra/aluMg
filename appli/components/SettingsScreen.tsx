@@ -64,7 +64,7 @@ export default function SettingsScreen({ settings, initialTab }: { settings: Set
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-bold">{t("nav.settings")}</h1>
-      <div role="tablist" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
+      <div role="tablist" className="flex flex-wrap gap-1.5">
         {TABS.map((k) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`min-h-9 shrink-0 rounded-full px-4 text-sm font-semibold ${tab === k ? "bg-primary text-on-primary" : "border border-line text-muted"}`}>
             {t(`app.tab.${k}`)}

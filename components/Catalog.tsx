@@ -48,10 +48,10 @@ export function ProfilesEditor({ market, onChange, t }: { market: Market; onChan
             {sold && (
               <div className="flex flex-wrap items-center gap-2">
                 {offers.map((o, i) => (
-                  <span key={i} className={`flex items-center gap-1 rounded-xl border border-line bg-surface-2/40 p-1 ${o.off ? "opacity-60" : ""}`}>
-                    <NumField label={`${t(k)}, ${t("cat.bar.length")}`} unit="m" width="w-24" value={o.length / 1000} onChange={(v) => edit(k, i, { length: Math.round(v * 1000) })} />
-                    <NumField label={`${t(k)}, ${t("cat.bar.price")}`} unit="Ar" width="w-36" value={o.price} onChange={(v) => edit(k, i, { price: v })} />
-                    <button type="button" className="rounded-lg p-2 text-muted hover:bg-surface hover:text-danger" aria-label={`${t("cat.bar.remove")} ${o.length / 1000} m`} data-tooltip={t("cat.bar.remove")} onClick={() => setOffers(k, (l) => l.filter((_, j) => j !== i))}>
+                  <span key={i} className={`flex w-full min-w-0 items-center gap-1 rounded-xl border border-line bg-surface-2/40 p-1 sm:w-auto ${o.off ? "opacity-60" : ""}`}>
+                    <NumField label={`${t(k)}, ${t("cat.bar.length")}`} unit="m" width="w-20 shrink-0 sm:w-24" value={o.length / 1000} onChange={(v) => edit(k, i, { length: Math.round(v * 1000) })} />
+                    <NumField label={`${t(k)}, ${t("cat.bar.price")}`} unit="Ar" width="min-w-0 flex-1 sm:w-36 sm:flex-none" value={o.price} onChange={(v) => edit(k, i, { price: v })} />
+                    <button type="button" className="shrink-0 rounded-lg p-2 text-muted hover:bg-surface hover:text-danger" aria-label={`${t("cat.bar.remove")} ${o.length / 1000} m`} data-tooltip={t("cat.bar.remove")} onClick={() => setOffers(k, (l) => l.filter((_, j) => j !== i))}>
                       <Trash2 size={15} aria-hidden />
                     </button>
                   </span>
@@ -70,12 +70,12 @@ export function ProfilesEditor({ market, onChange, t }: { market: Market; onChan
 
 function PriceRow({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <li className="flex items-center gap-4 px-4 py-3">
+    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
       <span className="min-w-0 flex-1">
         <span className="block font-medium">{title}</span>
         {hint && <span className="block text-xs text-muted">{hint}</span>}
       </span>
-      <span className="w-44 shrink-0">{children}</span>
+      <span className="w-full sm:w-44 sm:shrink-0">{children}</span>
     </li>
   );
 }
