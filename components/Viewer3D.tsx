@@ -981,7 +981,7 @@ export default function Viewer3D({ line, highlight = null, stage: baseStage, bar
 
   return (
     <div className={bare ? "h-full w-full" : "space-y-3"}>
-      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line"}`} style={bare ? undefined : { height: compact ? 240 : 440, background: backdropFor(ctx.hex), cursor: grab ? (grab === "x" ? "ew-resize" : "ns-resize") : hover ? "pointer" : drag ? (rotating ? "grabbing" : "move") : "grab", touchAction: "none" }} onPointerDown={(e) => { setDrag(true); setRotating(e.button === 0 && !(e.shiftKey || e.ctrlKey || e.metaKey)); }} onContextMenu={(e) => e.preventDefault()} onDoubleClick={() => controls.current?.reset()}>
+      <div className={`relative overflow-hidden ${bare ? "h-full w-full" : "rounded-xl border border-line"}`} style={bare ? undefined : { height: compact ? "min(240px, 30vh)" : 440, background: backdropFor(ctx.hex), cursor: grab ? (grab === "x" ? "ew-resize" : "ns-resize") : hover ? "pointer" : drag ? (rotating ? "grabbing" : "move") : "grab", touchAction: "none" }} onPointerDown={(e) => { setDrag(true); setRotating(e.button === 0 && !(e.shiftKey || e.ctrlKey || e.metaKey)); }} onContextMenu={(e) => e.preventDefault()} onDoubleClick={() => controls.current?.reset()}>
         <Canvas shadows={qs.shadows ? "percentage" : false} scene={stage ? { environmentIntensity: 0.85 } : undefined} dpr={bare ? 1 : qs.dpr} frameloop="demand" camera={{ position: cam, fov: 32, near: 0.05, far: 80 }} aria-label={t("viewer.aria")} role="img" gl={{ antialias: true, preserveDrawingBuffer: bare }}>
           <SceneCtx.Provider value={ctx}>
             {stage ? <OutdoorEnv /> : <Env />}

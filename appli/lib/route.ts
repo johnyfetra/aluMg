@@ -3,8 +3,8 @@ import { useSyncExternalStore } from "react";
 
 // Navigation par l'ancre (#/devis?id=…) : une seule page HTML, ce que sert sans surprise le serveur local de Capacitor.
 // Chaque écran ajoute une entrée d'historique : le bouton retour d'Android revient à l'écran précédent.
-export type Screen = "list" | "devis" | "atelier" | "apercu" | "reglages";
-const SCREENS: Screen[] = ["list", "devis", "atelier", "apercu", "reglages"];
+export type Screen = "list" | "nouveau" | "devis" | "atelier" | "apercu" | "reglages";
+const SCREENS: Screen[] = ["list", "nouveau", "devis", "atelier", "apercu", "reglages"];
 
 const subscribe = (cb: () => void) => {
   window.addEventListener("hashchange", cb);

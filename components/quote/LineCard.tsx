@@ -283,8 +283,9 @@ export function LineCard({
   const preview = (
         <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-muted">{view === "3d" ? t("viewer.title") : t("editor.preview")}</p>
-          <div role="group" aria-label={t("editor.preview")} className="flex gap-0.5 rounded-full border border-line p-0.5">
+          {/* téléphone : pas de titre, les trois vues prennent toute la largeur */}
+          {!slides && <p className="text-xs text-muted">{view === "3d" ? t("viewer.title") : t("editor.preview")}</p>}
+          <div role="group" aria-label={t("editor.preview")} className={`flex gap-0.5 rounded-full border border-line p-0.5 ${slides ? "w-full [&>button]:flex-1 [&>button]:justify-center [&>button]:whitespace-nowrap" : ""}`}>
             <button type="button" aria-pressed={view === "2d"} onClick={() => setView("2d")} className={`flex min-h-8 items-center gap-1 rounded-full px-2.5 text-xs font-medium ${view === "2d" ? "bg-primary text-on-primary" : "text-muted hover:text-ink"}`}>
               <ImageIcon size={13} aria-hidden />
               {t("viewer.show2d")}
@@ -306,7 +307,7 @@ export function LineCard({
         ) : view === "3d" && valid ? (
           <Viewer3DLoader line={l} compact={slides} />
         ) : sk ? (
-          <div role="img" aria-label={`${lineTitle(l, t)} ${l.width} × ${l.height} mm`} className={`flex justify-center rounded-xl bg-white p-2 ${slides ? "[&>svg]:h-52 [&>svg]:w-auto" : ""}`} dangerouslySetInnerHTML={{ __html: sk.svg }} />
+          <div role="img" aria-label={`${lineTitle(l, t)} ${l.width} × ${l.height} mm`} className={`flex justify-center rounded-xl bg-white p-2 ${slides ? "[&>svg]:h-[18vh] [&>svg]:w-auto" : ""}`} dangerouslySetInnerHTML={{ __html: sk.svg }} />
         ) : (
           <div className="h-44 rounded-xl bg-surface-2" />
         )}
@@ -359,7 +360,7 @@ export function LineCard({
     </SecCtx.Provider>
   );
 
-  // Slides : l'aperçu reste collé sous la barre de l'application pendant qu'on règle ; on passe d'une section à l'autre par onglet ou balayage.
+  // Slides : l'aperçu et les onglets restent collés sous la barre de l'application pendant qu'on règle ; on passe d'une section à l'autre par onglet ou balayage.
   const tabs: Sec[] = clientMode ? ["config", "size", "finish"] : ["config", "size", "finish", "price"];
   const tabTitle: Record<Sec, string> = { config: t("editor.sectionConfig"), size: t("editor.sectionSizePlace"), finish: t("editor.sectionFinish"), price: t("editor.sectionPrice") };
   const at = tabs.indexOf(tab);
@@ -368,14 +369,18 @@ export function LineCard({
   const slidesBody = (
     <SecCtx.Provider value={sec}>
       <div className="min-w-0 space-y-3">
-        <div className="sticky top-[calc(3.4rem+env(safe-area-inset-top))] z-10 -mx-4 -mt-4 border-b border-line bg-surface px-4 pb-3 pt-3">{preview}</div>
-        <div role="tablist" aria-label={t("editor.lines")} className="-mx-4 flex gap-1.5 overflow-x-auto px-4">
+        {/* aperçu et titres des sections restent collés en haut : on voit toujours où l'on est et on change de section sans remonter */}
+        <div className="sticky top-[calc(var(--head,3.4rem)+env(safe-area-inset-top))] z-10 -mx-3 -mt-3 space-y-2 border-b border-line bg-surface px-3 pb-2 pt-2.5">
+        {preview}
+        {/* une colonne par section : tout reste visible sur un téléphone, rien ne déborde */}
+        <div role="tablist" aria-label={t("editor.lines")} className="grid gap-1" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
           {tabs.map((k, i) => (
-            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold ${tab === k ? "bg-primary text-on-primary" : "border border-line text-muted"}`}>
+            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 text-center text-[11px] font-semibold leading-tight ${tab === k ? "bg-primary text-on-primary" : "border border-line text-muted"}`}>
               <span className={`grid size-5 place-items-center rounded-full text-[11px] ${tab === k ? "bg-on-primary/20" : "bg-surface-2"}`}>{i + 1}</span>
               {tabTitle[k]}
             </button>
           ))}
+        </div>
         </div>
         <div
           role="tabpanel"
@@ -423,7 +428,7 @@ export function LineCard({
   return (
     <div id={`line-${l.id}`} className={`card scroll-mt-20 !p-0 ${valid ? "" : "border-danger"} ${focused ? "ring-2 ring-primary" : ""}`}>
       <h3 className="m-0">
-        <button type="button" aria-expanded={open} aria-controls={`${l.id}-body`} onClick={onToggle} className="flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left hover:bg-surface-2/60 sm:px-6">
+        <button type="button" aria-expanded={open} aria-controls={`${l.id}-body`} onClick={onToggle} className={`flex w-full items-center rounded-2xl text-left hover:bg-surface-2/60 ${slides ? "gap-2 px-3 py-3" : "gap-3 px-4 py-3.5 sm:px-6"}`}>
           <ChevronDown size={18} aria-hidden className={`shrink-0 text-muted transition-transform ${open ? "" : "-rotate-90"}`} />
           {thumb && <span aria-hidden className="hidden h-14 w-[4.75rem] shrink-0 place-items-center rounded-lg bg-white sm:grid p-0.5 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: thumb.svg }} />}
           <span className="min-w-0 flex-1">
@@ -461,7 +466,7 @@ export function LineCard({
       {open && (
         // seuls les champs de saisie (les blocs « Panel ») sont verrouillés : l'aperçu 2D/3D et le détail des profilés restent consultables
         <LockedCtx.Provider value={locked}>
-          <div id={`${l.id}-body`} className={`border-t border-line p-4 sm:p-6 ${grid}`}>
+          <div id={`${l.id}-body`} className={`border-t border-line ${slides ? "p-3" : "p-4 sm:p-6"} ${grid}`}>
             {review?.message && (
               <p role="note" className={`mb-4 rounded-lg border px-3 py-2 text-sm ${review.state === "request" ? "border-warn/40 bg-warn/10" : review.state === "hold" ? "border-line bg-surface-2" : "border-good/40 bg-good/10"}`}>
                 <strong>{review.state === "request" ? t("line.requestedByClient") : review.state === "hold" ? t("line.heldByClient") : t("line.opinion")} :</strong> {review.message}

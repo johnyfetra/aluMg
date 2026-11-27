@@ -1,8 +1,10 @@
 "use client";
-import { ExternalLink, FileText, Plus, RefreshCw, Settings2, Wifi } from "lucide-react";
+import { ArrowLeft, ExternalLink, Moon, Sun, FileText, Plus, RefreshCw, Settings2, Wifi } from "lucide-react";
 import { useEffect } from "react";
 import { LogoMark } from "@/components/Logo";
 import { useI18n } from "@/lib/i18n";
+import { setTheme, useTheme } from "@/lib/theme";
+import type { WorkType } from "@/lib/model";
 import { go, href, useRoute } from "../lib/route";
 import { useQuotes, useSettings } from "../lib/store";
 import { useTrial } from "../lib/trial";
@@ -10,10 +12,12 @@ import Editor from "./Editor";
 import Preview from "./Preview";
 import QuoteList, { blankQuote } from "./QuoteList";
 import SettingsScreen from "./SettingsScreen";
+import WorkPicker, { lineOf } from "@/components/quote/WorkPicker";
 import WorkshopScreen from "./WorkshopScreen";
 
 // Application web : là où l'essai mène (compte menuisier, mêmes devis, envoi au client).
-export const WEB_SIGNUP = "https://alumg.vercel.app/inscription?role=menuisier";
+export const WEB_HOME = "https://alumg.vercel.app";
+export const WEB_SIGNUP = `${WEB_HOME}/inscription?role=menuisier`;
 
 // Cadre de l'application : barre du haut, écran courant, barre d'onglets en bas (pouce).
 export default function AppShell() {
@@ -22,6 +26,7 @@ export default function AppShell() {
   const { settings } = useSettings();
   const { quotes, save } = useQuotes();
   const trial = useTrial();
+  const theme = useTheme();
   const id = params.get("id") ?? "";
   // nouvel écran : on repart du haut (la navigation par ancre garderait la position de l'écran précédent)
   // corps en bloc : les WebView récents font renvoyer une promesse à scrollTo, que React prendrait pour la fonction de nettoyage
@@ -37,8 +42,9 @@ export default function AppShell() {
   if (trial.state === "ended") return <TrialEnded />;
   if (trial.state === "activate") return <Activate retry={trial.retry} />;
   const left = trial.left;
-  const create = () => {
-    const q = blankQuote(settings, quotes);
+  // le devis n'est créé qu'une fois l'ouvrage choisi : pas de devis vide laissé dans la liste
+  const create = (w: WorkType) => {
+    const q = blankQuote(settings, quotes, lineOf(w, settings));
     save(q);
     go("devis", { id: q.id });
   };
@@ -50,13 +56,20 @@ export default function AppShell() {
   ] as const;
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-30 flex items-center gap-2.5 border-b border-line bg-surface/90 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur print:hidden">
-        <LogoMark size={28} />
-        <p className="text-base font-bold">AluMg <span className="font-medium text-muted">Devis</span></p>
-        <a href={WEB_SIGNUP} target="_blank" rel="noopener" className="ml-auto rounded-full bg-warn/15 px-3 py-1 text-xs font-semibold text-warn">{t("app.trialLeft").replace("{n}", String(left))}</a>
+    // barre du haut compacte (3rem) : --head est sa hauteur, sous laquelle se collent l'aperçu de l'ouvrage et le zoom du PDF.
+    // Marges latérales réduites : les blocs prennent presque toute la largeur du téléphone.
+    <div className="flex min-h-dvh flex-col" style={{ "--head": "3rem" } as React.CSSProperties}>
+      <header className="sticky top-0 z-30 flex h-[calc(3rem+env(safe-area-inset-top))] items-center gap-2 border-b border-line bg-surface/90 px-2.5 pt-[env(safe-area-inset-top)] backdrop-blur print:hidden">
+        <a href={WEB_HOME} target="_blank" rel="noopener" className="flex min-w-0 items-center gap-2">
+          <LogoMark size={24} />
+          <span className="truncate text-sm font-bold">AluMg <span className="font-medium text-muted">Devis</span></span>
+        </a>
+        <a href={WEB_SIGNUP} target="_blank" rel="noopener" title={t("app.trialLeft").replace("{n}", String(left))} className="ml-auto whitespace-nowrap rounded-full bg-warn/15 px-2.5 py-1 text-xs font-semibold text-warn">{t("app.trialShort").replace("{n}", String(left))}</a>
+        <button type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label={t("theme.toggle")} title={t("theme.toggle")} className="grid size-8 shrink-0 place-items-center rounded-full border border-line text-muted">
+          {theme === "dark" ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}
+        </button>
       </header>
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-40 pt-4">
+      <main className={`mx-auto w-full max-w-3xl flex-1 px-2.5 pt-3 ${screen === "list" ? "pb-36" : "pb-20"}`}>
         {needsQuote && !quote ? (
           <p className="card">
             {t("editor.notFound")}{" "}
@@ -68,20 +81,30 @@ export default function AppShell() {
           <WorkshopScreen quote={quote!} settings={settings} />
         ) : screen === "apercu" ? (
           <Preview quote={quote!} settings={settings} />
+        ) : screen === "nouveau" ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <a href={href("list")} className="btn-secondary !min-h-10 !px-2.5" aria-label={t("common.back")}>
+                <ArrowLeft size={18} aria-hidden />
+              </a>
+              <h1 className="text-xl font-bold">{t("editor.titleNew")}</h1>
+            </div>
+            <WorkPicker onPick={create} />
+          </div>
         ) : screen === "reglages" ? (
           <SettingsScreen settings={settings} initialTab={params.get("tab")} />
         ) : (
-          <QuoteList quotes={quotes} settings={settings} />
+          <QuoteList quotes={quotes} />
         )}
       </main>
-      {/* nouveau devis depuis n'importe quel écran : au-dessus de la barre d'onglets, à droite (pouce), la page garde une marge en bas pour ne rien cacher */}
-      <button type="button" onClick={create} aria-label={t("nav.new")} title={t("nav.new")} className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-40 grid size-14 place-items-center rounded-full bg-primary text-on-primary shadow-[0_10px_24px_-6px_rgb(0_0_0/0.45)] transition-transform active:scale-95 print:hidden">
+      {/* nouveau devis depuis la liste (ailleurs il cacherait des champs) : au-dessus de la barre d'onglets, à droite (pouce), la page garde une marge en bas pour ne rien cacher */}
+      {screen === "list" && <button type="button" onClick={() => go("nouveau")} aria-label={t("nav.new")} title={t("nav.new")} className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-3 z-40 grid size-14 place-items-center rounded-full bg-primary text-on-primary shadow-[0_10px_24px_-6px_rgb(0_0_0/0.45)] transition-transform active:scale-95 print:hidden">
         <Plus size={28} strokeWidth={2.5} aria-hidden />
-      </button>
+      </button>}
       <nav aria-label={t("nav.main")} className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-2 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur print:hidden">
         {tabs.map(({ to, label, Icon, on }) => (
-          <a key={to} href={href(to)} aria-current={on ? "page" : undefined} className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-semibold ${on ? "text-primary" : "text-muted"}`}>
-            <Icon size={22} aria-hidden />
+          <a key={to} href={href(to)} aria-current={on ? "page" : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold ${on ? "text-primary" : "text-muted"}`}>
+            <Icon size={20} aria-hidden />
             {label}
           </a>
         ))}

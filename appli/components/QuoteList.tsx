@@ -2,16 +2,15 @@
 import { Copy, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useConfirm } from "@/components/ConfirmDialog";
-import { newLine } from "@/components/quote/line";
 import { fmt } from "@/lib/calc";
 import { DATE_LOCALE, useI18n } from "@/lib/i18n";
-import type { Quote, Settings } from "@/lib/model";
+import type { Line, Quote, Settings } from "@/lib/model";
 import { totals } from "@/lib/totals";
 import { go, href } from "../lib/route";
 import { nextNumber, useQuotes } from "../lib/store";
 
 // Devis vierge, numéroté et enregistré tout de suite : l'éditeur enregistre ensuite chaque modification.
-export function blankQuote(settings: Settings, quotes: Quote[]): Quote {
+export function blankQuote(settings: Settings, quotes: Quote[], line: Line): Quote {
   return {
     id: crypto.randomUUID(),
     number: nextNumber(quotes),
@@ -21,7 +20,7 @@ export function blankQuote(settings: Settings, quotes: Quote[]): Quote {
     project: "",
     delay: "",
     notes: "",
-    lines: [newLine(settings)],
+    lines: [line],
     services: [],
     warranty: 12,
     discount: 0,
@@ -31,7 +30,7 @@ export function blankQuote(settings: Settings, quotes: Quote[]): Quote {
   };
 }
 
-export default function QuoteList({ quotes, settings }: { quotes: Quote[]; settings: Settings }) {
+export default function QuoteList({ quotes }: { quotes: Quote[] }) {
   const { t, locale } = useI18n();
   const ask = useConfirm();
   const { save, remove } = useQuotes();
@@ -39,11 +38,6 @@ export default function QuoteList({ quotes, settings }: { quotes: Quote[]; setti
   const needle = query.trim().toLowerCase();
   const list = quotes.filter((q) => !needle || `${q.number} ${q.client.name} ${q.project}`.toLowerCase().includes(needle)).sort((a, b) => b.date.localeCompare(a.date));
 
-  const create = () => {
-    const q = blankQuote(settings, quotes);
-    save(q);
-    go("devis", { id: q.id });
-  };
   const duplicate = (q: Quote) => {
     const copy = { ...q, id: crypto.randomUUID(), number: nextNumber(quotes), date: new Date().toISOString() };
     save(copy);
@@ -67,7 +61,7 @@ export default function QuoteList({ quotes, settings }: { quotes: Quote[]; setti
       {quotes.length === 0 ? (
         <div className="card space-y-4 py-10 text-center">
           <p className="text-muted">{t("quotes.empty")}</p>
-          <button type="button" className="btn-primary" onClick={create}>{t("quotes.emptyCta")}</button>
+          <button type="button" className="btn-primary" onClick={() => go("nouveau")}>{t("quotes.emptyCta")}</button>
         </div>
       ) : (
         <ul className="space-y-2.5">
