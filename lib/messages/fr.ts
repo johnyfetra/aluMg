@@ -2210,6 +2210,8 @@ export const fr = {
   "app.activateRetry": "Réessayer",
   "app.saveLine": "Enregistrer l'ouvrage",
   "app.lineSaved": "Ouvrage enregistré",
+  "app.facebook": "AluMg sur Facebook",
+  "app.facebookSub": "Nouveautés, astuces et réalisations",
   "app.clientAsk": "Pour qui est ce devis ?",
   "app.clientAskText": "Le nom du client apparaît sur le devis.",
   "app.moreDetails": "Chantier, délai, notes",

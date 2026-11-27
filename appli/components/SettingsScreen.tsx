@@ -12,6 +12,7 @@ import { fileToDataUrl } from "@/lib/image";
 import { SURCHARGES, type Settings, TARIFF_KEYS, type TariffUnit } from "@/lib/model";
 import { setTheme, useTheme } from "@/lib/theme";
 import { useSettings } from "../lib/store";
+import Community from "./Community";
 
 const TABS = ["company", "prices", "suppliers", "pdf", "app"] as const;
 type Tab = (typeof TABS)[number];
@@ -191,6 +192,7 @@ export default function SettingsScreen({ settings, initialTab }: { settings: Set
           <Choice name="lang" legend={t("app.language")} value={APP_LOCALES.includes(locale) ? locale : "fr"} options={APP_LOCALES.map((l) => ({ value: l, label: l === "fr" ? "Français" : "English" }))} onChange={setLocale} />
           <Choice name="theme" legend={t("theme.toggle")} value={theme} options={[{ value: "light", label: t("theme.light") }, { value: "dark", label: t("theme.dark") }]} onChange={setTheme} />
           <p className="text-sm text-muted">{t("app.local")}</p>
+          <Community />
         </section>
       )}
     </div>

@@ -8,6 +8,7 @@ import type { Line, Quote, Settings } from "@/lib/model";
 import { totals } from "@/lib/totals";
 import { go, href } from "../lib/route";
 import { nextNumber, useQuotes } from "../lib/store";
+import Community from "./Community";
 
 // Devis vierge, numéroté et enregistré tout de suite : l'éditeur enregistre ensuite chaque modification.
 export function blankQuote(settings: Settings, quotes: Quote[], line: Line): Quote {
@@ -82,6 +83,7 @@ export default function QuoteList({ quotes }: { quotes: Quote[] }) {
           ))}
         </ul>
       )}
+      <Community />
     </div>
   );
 }

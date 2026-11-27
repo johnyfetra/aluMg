@@ -2210,6 +2210,8 @@ export const en: Messages = {
   "app.activateRetry": "Try again",
   "app.saveLine": "Save this item",
   "app.lineSaved": "Item saved",
+  "app.facebook": "AluMg on Facebook",
+  "app.facebookSub": "News, tips and projects",
   "app.clientAsk": "Who is this quote for?",
   "app.clientAskText": "The client's name appears on the quote.",
   "app.moreDetails": "Project, lead time, notes",

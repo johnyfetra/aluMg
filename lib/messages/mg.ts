@@ -2212,6 +2212,8 @@ export const mg: Messages = {
   "app.activateRetry": "Andramo indray",
   "app.saveLine": "Tehirizo ny asa",
   "app.lineSaved": "Voatahiry ny asa",
+  "app.facebook": "AluMg ao amin'ny Facebook",
+  "app.facebookSub": "Vaovao, torohevitra ary asa vita",
   "app.clientAsk": "Ho an'iza ity devis ity ?",
   "app.clientAskText": "Miseho amin'ny devis ny anaran'ny mpanjifa.",
   "app.moreDetails": "Tranokala, fe-potoana, fanamarihana",
