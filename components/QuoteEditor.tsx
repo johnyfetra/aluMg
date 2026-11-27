@@ -14,17 +14,16 @@ import ClientMessage from "./quote/ClientMessage";
 import ServicesEditor from "./ServicesEditor";
 import LinesTable from "./LinesTable";
 import { Avatar, Field } from "./ui";
-import { normalize } from "@/lib/calc";
 import { marginBasis, productionDays, quoteMargin } from "@/lib/costing";
 import { initSim, simulate } from "@/lib/procure";
 import { useContacts } from "@/lib/client";
 import { ApiError, request, trackDownload, useQuoteCatalog, useQuotes, useSettings } from "@/lib/client";
 import { useI18n } from "@/lib/i18n";
-import { type EditMode, editMode, type Line, lineMarks, type Quote, type Settings, lineSchema } from "@/lib/model";
+import { type EditMode, editMode, type Line, lineMarks, type Quote, type Settings, lineSchema, type WorkType } from "@/lib/model";
 import Select from "./Select";
 import { activeLines, totals } from "@/lib/totals";
 import { useConfirm } from "@/components/ConfirmDialog";
-import { DEFAULT_SIZE, newLine, price } from "./quote/line";
+import WorkPicker, { lineOf, patchLine } from "./quote/WorkPicker";
 import { useDraft } from "./quote/useDraft";
 import WhatsAppButton from "./quote/WhatsAppButton";
 import { LineCard } from "./quote/LineCard";
@@ -62,9 +61,8 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [persisted, setPersisted] = useState(!!existing);
   // Ouvrages : cartes dépliables ou tableau. Un devis à un seul ouvrage s'ouvre déplié, un devis plus long s'ouvre replié.
-  const [first] = useState(() => newLine(settings));
   const [layout, setLayout] = useState<"cards" | "table">("cards");
-  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set((existing ?? { lines: [first] }).lines.length > 1 ? [] : (existing ?? { lines: [first] }).lines.map((l) => l.id)));
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set(existing && existing.lines.length === 1 ? [existing.lines[0].id] : []));
   // Ce que devient une modification selon l'état du devis (voir `editMode` dans lib/model.ts) : seul un chantier terminé est figé.
   // ouvrages créés pendant cette session : saisie guidée (les ouvrages d'un devis existant s'ouvrent en récapitulatif)
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -77,7 +75,7 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
     project: "",
     delay: "",
     notes: "",
-    lines: [first],
+    lines: [], // l'ouvrage est choisi d'abord (WorkPicker), ses réglages viennent ensuite
     services: [],
     warranty: 12,
     discount: 0,
@@ -92,19 +90,15 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
   const revisable = mode === "revise" || mode === "reconfirm" || mode === "amend";
   const locked = mode === "locked";
 
-  const setLine = (i: number, patch: Partial<Line>) =>
-    setQ((cur) => ({
-      ...cur,
-      lines: cur.lines.map((l, j) => {
-        if (j !== i) return l;
-        const sizeReset = patch.category && patch.category !== l.category ? { width: DEFAULT_SIZE[patch.category][0], height: DEFAULT_SIZE[patch.category][1], leaves: patch.category === "cloison" ? 3 : 2 } : {};
-        // une porte battante a un seul vantail (deux, c'est une porte à deux battants : choix du menuisier)
-        const oneLeaf = (patch.opening ?? l.opening) === "ouvrant" && (patch.category ?? l.category) === "porte" && ("opening" in patch || "category" in patch) && !("leaves" in patch) ? { leaves: 1 } : {};
-        const next = normalize({ ...l, ...sizeReset, ...oneLeaf, ...patch });
-        // le prix suit la configuration, sauf si le menuisier vient de le fixer à la main
-        return "unit" in patch ? next : { ...next, unit: price(next, settings) };
-      }),
-    }));
+  const setLine = (i: number, patch: Partial<Line>) => setQ((cur) => ({ ...cur, lines: cur.lines.map((l, j) => (j === i ? patchLine(l, patch, settings) : l)) }));
+  const [picking, setPicking] = useState(false);
+  const addLine = (w: WorkType) => {
+    const nl = lineOf(w, eff);
+    setQ((c) => ({ ...c, lines: [...c.lines, nl] }));
+    setOpenIds((o) => new Set(o).add(nl.id));
+    setLayout("cards");
+    setPicking(false);
+  };
   const marks = lineMarks(q.lines);
   const allOpen = q.lines.every((l) => openIds.has(l.id));
   const toggleOpen = (id: string) =>
@@ -539,21 +533,17 @@ function Form({ existing, settings }: { existing?: Quote; settings: Settings }) 
                 />
               ))
             )}
-            {!locked && (
-              <button
-                type="button"
-                data-tour="add-line"
-                className="btn-secondary"
-                onClick={() => {
-                  const nl = newLine(eff);
-                  setQ({ ...q, lines: [...q.lines, nl] });
-                  setOpenIds((o) => new Set(o).add(nl.id));
-                  setLayout("cards");
-                }}
-              >
-                + {t("editor.addLine")}
-              </button>
-            )}
+            {!locked &&
+              (picking || q.lines.length === 0 ? (
+                <div data-tour="add-line" className="card space-y-3">
+                  <WorkPicker onPick={addLine} />
+                  {q.lines.length > 0 && <button type="button" className="btn-secondary w-full" onClick={() => setPicking(false)}>{t("dlg.cancel")}</button>}
+                </div>
+              ) : (
+                <button type="button" data-tour="add-line" className="btn-secondary" onClick={() => setPicking(true)}>
+                  + {t("editor.addLine")}
+                </button>
+              ))}
           </section>
 
           <ServicesEditor services={q.services ?? []} onChange={(services) => setQ((c) => ({ ...c, services }))} prices={settings.servicePrices} t={t} locked={locked} />
