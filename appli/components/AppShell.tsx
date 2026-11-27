@@ -24,7 +24,10 @@ export default function AppShell() {
   const trial = useTrial();
   const id = params.get("id") ?? "";
   // nouvel écran : on repart du haut (la navigation par ancre garderait la position de l'écran précédent)
-  useEffect(() => window.scrollTo(0, 0), [screen, id]);
+  // corps en bloc : les WebView récents font renvoyer une promesse à scrollTo, que React prendrait pour la fonction de nettoyage
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [screen, id]);
   // impression : window.print() ne fait rien dans le WebView, le pont natif (MainActivity) ouvre le service d'impression d'Android
   useEffect(() => {
     const native = (window as { AluMgPrint?: { print: (title: string) => void } }).AluMgPrint;
