@@ -14,3 +14,12 @@
 @media (max-width: 639px) {
   .card { padding: 0.875rem; }
 }
+
+/* Fond légèrement teinté (bleu en haut, orange en bas) : le verre des barres a de la couleur à réfracter. */
+body {
+  background:
+    radial-gradient(50rem 32rem at 110% -10%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 60%),
+    radial-gradient(40rem 28rem at -15% 110%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}

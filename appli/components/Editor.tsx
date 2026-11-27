@@ -237,12 +237,12 @@ export default function Editor({ quote, settings }: { quote: Quote; settings: Se
       </button>
 
       {ask && (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/50 sm:items-center sm:justify-center" onClick={() => setAsk(null)} onKeyDown={(e) => e.key === "Escape" && setAsk(null)}>
+        <div className="fixed inset-0 z-50 flex items-end bg-black/35 sm:items-center sm:justify-center" onClick={() => setAsk(null)} onKeyDown={(e) => e.key === "Escape" && setAsk(null)}>
           <form
             role="dialog"
             aria-modal="true"
             aria-labelledby="ask-title"
-            className="w-full space-y-4 rounded-t-2xl bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:max-w-md sm:rounded-2xl"
+            className="liquid-strong w-full space-y-4 rounded-t-3xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:max-w-md sm:rounded-3xl"
             onClick={(e) => e.stopPropagation()}
             onSubmit={(e) => {
               e.preventDefault();

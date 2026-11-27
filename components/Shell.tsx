@@ -132,7 +132,7 @@ export default function Shell({ children }: { children: ReactNode }) {
       <div id="scroller" className="min-w-0 lg:h-dvh lg:overflow-y-auto lg:overscroll-contain">
         {/* la barre flotte : un fondu du fond masque le contenu qui défile au-dessus d'elle */}
         <div className="sticky top-0 z-20 bg-linear-to-b from-bg from-60% to-transparent px-3 pt-3 sm:px-6 xl:px-8">
-        <header id="topbar" className="flex h-16 items-center gap-2 rounded-[1.25rem] border border-line/60 bg-surface/80 px-2 shadow-(--shadow-card) backdrop-blur-xl backdrop-saturate-150 sm:gap-3 sm:px-4">
+        <header id="topbar" className="flex h-16 items-center gap-2 liquid rounded-[1.25rem] px-2 sm:gap-3 sm:px-4">
           <button ref={toggle} data-tour="menu" aria-controls="app-navigation" type="button" className="relative -ml-1 grid size-11 shrink-0 place-items-center rounded-xl text-ink transition-colors hover:bg-surface-2 active:bg-surface-2 lg:hidden" onClick={() => setOpen(true)} aria-label={`${t("menu.open")}${unread ? ` (${unread} ${t("msg.unread")})` : ""}`} aria-expanded={open}>
             <AlignLeft size={24} strokeWidth={2} aria-hidden />
           </button>

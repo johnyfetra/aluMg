@@ -56,20 +56,23 @@ export default function AppShell() {
   ] as const;
 
   return (
-    // barre du haut compacte (3rem) : --head est sa hauteur, sous laquelle se collent l'aperçu de l'ouvrage et le zoom du PDF.
+    // Barres en verre liquide (.liquid) qui flottent au-dessus du contenu : capsule en haut, capsule d'onglets en bas.
+    // --head : hauteur de la zone de la capsule du haut (3.5rem), sous laquelle se collent l'aperçu de l'ouvrage et le zoom du PDF.
     // Marges latérales réduites : les blocs prennent presque toute la largeur du téléphone.
-    <div className="flex min-h-dvh flex-col" style={{ "--head": "3rem" } as React.CSSProperties}>
-      <header className="sticky top-0 z-30 flex h-[calc(3rem+env(safe-area-inset-top))] items-center gap-2 border-b border-line bg-surface/90 px-2.5 pt-[env(safe-area-inset-top)] backdrop-blur print:hidden">
+    <div className="flex min-h-dvh flex-col" style={{ "--head": "3.5rem" } as React.CSSProperties}>
+      <header className="sticky top-0 z-30 px-2 pb-1.5 pt-[calc(env(safe-area-inset-top)+0.375rem)] print:hidden">
+        <div className="liquid flex h-11 items-center gap-2 rounded-full pl-3 pr-1.5">
         <a href={WEB_HOME} target="_blank" rel="noopener" className="flex min-w-0 items-center gap-2">
           <LogoMark size={24} />
           <span className="truncate text-sm font-bold">AluMg <span className="font-medium text-muted">Devis</span></span>
         </a>
         <a href={WEB_SIGNUP} target="_blank" rel="noopener" title={t("app.trialLeft").replace("{n}", String(left))} className="ml-auto whitespace-nowrap rounded-full bg-warn/15 px-2.5 py-1 text-xs font-semibold text-warn">{t("app.trialShort").replace("{n}", String(left))}</a>
-        <button type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label={t("theme.toggle")} title={t("theme.toggle")} className="grid size-8 shrink-0 place-items-center rounded-full border border-line text-muted">
+        <button type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label={t("theme.toggle")} title={t("theme.toggle")} className="grid size-8 shrink-0 place-items-center rounded-full text-muted hover:bg-surface-2/70">
           {theme === "dark" ? <Sun size={17} aria-hidden /> : <Moon size={17} aria-hidden />}
         </button>
+        </div>
       </header>
-      <main className={`mx-auto w-full max-w-3xl flex-1 px-2.5 pt-3 ${screen === "list" ? "pb-36" : "pb-20"}`}>
+      <main className={`mx-auto w-full max-w-3xl flex-1 px-2.5 pt-3 ${screen === "list" ? "pb-40" : "pb-24"}`}>
         {needsQuote && !quote ? (
           <p className="card">
             {t("editor.notFound")}{" "}
@@ -98,12 +101,12 @@ export default function AppShell() {
         )}
       </main>
       {/* nouveau devis depuis la liste (ailleurs il cacherait des champs) : au-dessus de la barre d'onglets, à droite (pouce), la page garde une marge en bas pour ne rien cacher */}
-      {screen === "list" && <button type="button" onClick={() => go("nouveau")} aria-label={t("nav.new")} title={t("nav.new")} className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-3 z-40 grid size-14 place-items-center rounded-full bg-primary text-on-primary shadow-[0_10px_24px_-6px_rgb(0_0_0/0.45)] transition-transform active:scale-95 print:hidden">
+      {screen === "list" && <button type="button" onClick={() => go("nouveau")} aria-label={t("nav.new")} title={t("nav.new")} className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-3 z-40 grid size-14 place-items-center rounded-full bg-primary text-on-primary shadow-[inset_0_1px_0_rgb(255_255_255/0.4),0_10px_24px_-6px_rgb(0_0_0/0.45)] transition-transform active:scale-95 print:hidden">
         <Plus size={28} strokeWidth={2.5} aria-hidden />
       </button>}
-      <nav aria-label={t("nav.main")} className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-2 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur print:hidden">
+      <nav aria-label={t("nav.main")} className="liquid fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-30 mx-auto grid w-[min(20rem,calc(100%-1.5rem))] grid-cols-2 gap-1 rounded-full p-1 print:hidden">
         {tabs.map(({ to, label, Icon, on }) => (
-          <a key={to} href={href(to)} aria-current={on ? "page" : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold ${on ? "text-primary" : "text-muted"}`}>
+          <a key={to} href={href(to)} aria-current={on ? "page" : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-semibold transition-colors ${on ? "bg-primary/15 text-primary" : "text-muted"}`}>
             <Icon size={20} aria-hidden />
             {label}
           </a>

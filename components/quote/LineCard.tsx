@@ -370,7 +370,7 @@ export function LineCard({
     <SecCtx.Provider value={sec}>
       <div className="min-w-0 space-y-3">
         {/* aperçu et titres des sections restent collés en haut : on voit toujours où l'on est et on change de section sans remonter */}
-        <div className="sticky top-[calc(var(--head,3.4rem)+env(safe-area-inset-top))] z-10 -mx-3 -mt-3 space-y-2 border-b border-line bg-surface px-3 pb-2 pt-2.5">
+        <div className="sticky top-[calc(var(--head,3.4rem)+env(safe-area-inset-top))] liquid z-10 -mx-3 -mt-3 space-y-2 !rounded-none border-x-0 border-t-0 px-3 pb-2 pt-2.5">
         {preview}
         {/* une colonne par section : tout reste visible sur un téléphone, rien ne déborde */}
         <div role="tablist" aria-label={t("editor.lines")} className="grid gap-1" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>

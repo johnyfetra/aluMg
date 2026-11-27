@@ -21,15 +21,15 @@ export default function ZoomBox({ children }: { children: React.ReactNode }) {
   const step = (d: number) => setZoom(Math.min(3, Math.max(0.3, Math.round((z + d) * 100) / 100)));
   return (
     <>
-      <div className="sticky top-[calc(var(--head,3.4rem)+env(safe-area-inset-top))] z-10 flex items-center justify-end gap-1.5 print:hidden">
-        <button type="button" className="btn-secondary !min-h-10 !px-2.5" onClick={() => step(-0.25)} aria-label={t("app.zoomOut")} title={t("app.zoomOut")}>
+      <div className="liquid sticky top-[calc(var(--head,3.4rem)+env(safe-area-inset-top))] z-10 ml-auto flex w-fit items-center gap-0.5 rounded-full p-1 print:hidden">
+        <button type="button" className="grid size-9 place-items-center rounded-full text-ink hover:bg-surface-2/70" onClick={() => step(-0.25)} aria-label={t("app.zoomOut")} title={t("app.zoomOut")}>
           <Minus size={18} aria-hidden />
         </button>
         <span className="w-12 text-center text-sm font-semibold tabular-nums" aria-live="polite">{Math.round(z * 100)} %</span>
-        <button type="button" className="btn-secondary !min-h-10 !px-2.5" onClick={() => step(0.25)} aria-label={t("app.zoomIn")} title={t("app.zoomIn")}>
+        <button type="button" className="grid size-9 place-items-center rounded-full text-ink hover:bg-surface-2/70" onClick={() => step(0.25)} aria-label={t("app.zoomIn")} title={t("app.zoomIn")}>
           <Plus size={18} aria-hidden />
         </button>
-        <button type="button" className="btn-secondary !min-h-10 !px-2.5" onClick={() => setZoom(null)} aria-label={t("app.zoomFit")} title={t("app.zoomFit")}>
+        <button type="button" className="grid size-9 place-items-center rounded-full text-ink hover:bg-surface-2/70" onClick={() => setZoom(null)} aria-label={t("app.zoomFit")} title={t("app.zoomFit")}>
           <Maximize2 size={18} aria-hidden />
         </button>
       </div>
