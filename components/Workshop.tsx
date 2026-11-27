@@ -32,7 +32,8 @@ export default function Workshop({ id }: { id: string }) {
 }
 
 // Bon de commande et fiche de coupe d'un devis déjà chargé (site, et application locale qui lit ses devis dans le téléphone).
-export function WorkshopView({ quote, settings, market, backHref }: { quote: Quote; settings: Settings; market: Settings["market"]; backHref: string }) {
+// `wrapSheet` : l'application mobile y met la feuille dans son zoom (les boutons restent hors du zoom).
+export function WorkshopView({ quote, settings, market, backHref, wrapSheet = (n) => n }: { quote: Quote; settings: Settings; market: Settings["market"]; backHref: string; wrapSheet?: (sheet: React.ReactNode) => React.ReactNode }) {
   const { t, locale } = useI18n();
   const [tab, setTab] = useState<Tab>("order");
   const plan = simulate(activeLines(quote), initSim(market), settings.kerf);
@@ -57,9 +58,11 @@ export function WorkshopView({ quote, settings, market, backHref }: { quote: Quo
           {t("preview.print")}
         </button>
       </div>
-      <Sheet quote={quote} s={settings} supplier={market.supplier} title={t(tab === "order" ? "ws.orderTitle" : "ws.cutsTitle")} t={t} locale={locale}>
-        {tab === "order" ? <Order plan={plan} t={t} /> : <Cuts plan={plan} quote={quote} kerf={settings.kerf} t={t} />}
-      </Sheet>
+      {wrapSheet(
+        <Sheet quote={quote} s={settings} supplier={market.supplier} title={t(tab === "order" ? "ws.orderTitle" : "ws.cutsTitle")} t={t} locale={locale}>
+          {tab === "order" ? <Order plan={plan} t={t} /> : <Cuts plan={plan} quote={quote} kerf={settings.kerf} t={t} />}
+        </Sheet>,
+      )}
     </div>
   );
 }
