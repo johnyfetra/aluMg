@@ -84,8 +84,10 @@ function MobileMenu({ myHref }: { myHref: string | null }) {
     const away = (e: PointerEvent) => !root.current?.contains(e.target as Node) && setOpen(false);
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); btn.current?.focus(); } };
     const wide = window.matchMedia("(min-width: 1280px)"); const grow = () => wide.matches && setOpen(false);
+    // menu ouvert : la page derrière ne défile plus (état d'origine rétabli à la fermeture)
+    const html = document.documentElement; const was = html.style.overflow; html.style.overflow = "hidden";
     document.addEventListener("pointerdown", away); document.addEventListener("keydown", key); wide.addEventListener("change", grow);
-    return () => { document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", key); wide.removeEventListener("change", grow); };
+    return () => { html.style.overflow = was; document.removeEventListener("pointerdown", away); document.removeEventListener("keydown", key); wide.removeEventListener("change", grow); };
   }, [open]);
   const close = () => setOpen(false);
   // trois lames de volet roulant : la lame du milieu rentre, les deux autres se croisent
@@ -97,7 +99,7 @@ function MobileMenu({ myHref }: { myHref: string | null }) {
     {open && <>
       {/* voile derrière l'en-tête : hors de l'en-tête, dont le flou limiterait un élément fixed à sa propre taille */}
       {createPortal(<div aria-hidden onClick={close} className="fixed inset-0 z-[25] bg-black/35 backdrop-blur-[2px]" />, document.body)}
-      <div id="public-menu" className="menu-shutter absolute inset-x-0 top-full z-40 mt-2 max-h-[calc(100dvh-7.5rem)] overflow-y-auto rounded-[1.75rem] border border-line bg-gradient-to-b from-surface to-surface-2 p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
+      <div id="public-menu" className="menu-shutter absolute inset-x-0 top-full z-40 mt-2 max-h-[calc(100dvh-7.5rem)] overflow-y-auto overscroll-contain rounded-[1.75rem] border border-line bg-gradient-to-b from-surface to-surface-2 p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
         {/* cadre de profilé : un second filet intérieur, comme la chambre d'un dormant aluminium */}
         <div className="rounded-[1.4rem] border border-line/60 p-2">
           <Suspense fallback={null}><PanelLinks onNavigate={close} /></Suspense>
